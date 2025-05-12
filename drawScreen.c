@@ -919,7 +919,7 @@ int renderSprite_LRUD_ScaleMode(uint32_t screen[], int screenWidth, int screenHe
 				memcpy(screen + (i * screenWidth) + k + 3, data + (((int)pixely << 2) * spriteWidth) + ((int)pixelx << 2), sizeOfPixel);
 			}
 
-			pixelx += (xScale * 4);
+			pixelx += 4 * xScale;
 		}
 
 		// Fill in up to # - 1 pixels at right side of screen
