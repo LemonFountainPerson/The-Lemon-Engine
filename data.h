@@ -1,0 +1,298 @@
+#ifndef IS_DEFINED
+#include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <time.h>
+
+#include <stdbool.h>
+#include <Windows.h>
+#include <mmsystem.h>
+#define WIN32_LEAN_AND_MEAN
+
+#include <SDL3/SDL.h>
+#define CHANNEL_COUNT 12
+#define LOOP_CHANNELS 4
+
+#define V_RESOLUTION 720
+#define H_RESOLUTION 1280
+
+#define GRID_HEIGHT 200
+#define GRID_WIDTH 600
+#define MAX_DATA 9000
+
+// Tiles Probably wont be re-implemented, but constants are useful for stylisation
+#define Y_TILESCALE 32
+#define X_TILESCALE 32
+#define TILE_COUNT 100
+
+#define MAX_OBJECTS 128
+
+#define PLAYERHEIGHT 50
+#define PLAYERWIDTH 32
+
+#define MAX_LEN 80
+#define LEMON_ESCAPE 0
+
+#define IS_DEFINED 1
+#endif
+
+
+enum LemonKeys {
+	LMN_ESCAPE = VK_ESCAPE,
+	LMN_SPACE = VK_SPACE,
+	LMN_UP = VK_UP,
+	LMN_DOWN = VK_DOWN,
+	LMN_RIGHT = VK_RIGHT,
+	LMN_LEFT = VK_LEFT
+};
+
+
+enum ChannelNames {
+	MUSIC_CHANNEL = 0,
+	PLAYER_SFX = 4,
+	OBJECT_SFX = 6,
+	ENEMIES_SFX = 7,
+	SPEECH = 10
+};
+
+
+enum objectType {
+	LEVEL_FLAG_OBJ = 0,
+	SOLID_BLOCK = 1,
+	RIGHT_SLOPE = 2,
+	LEFT_SLOPE = 3,
+	JUMP_THRU = 4,
+	COIN = 5,
+	MOVING_PLATFORM_HOR = 6,
+	MOVING_PLATFORM_VER = 7,
+	SPRING = 8,
+	VERTICAL_GATE = 9,
+	GATE_SWITCH = 10,
+	GATE_SWITCH_TIMED = 11
+};
+
+enum Layer {
+	LEVELFLAGS = -1,
+	BACKGROUND = 0,
+	MIDDLEGROUND = 1,
+	FOREGROUND = 2,
+	PARTICLES = 3,
+	HUD = 4
+};
+
+
+enum RenderMode {
+	DO_NOT_RENDER = -2,
+	DEFAULT_TO_SPRITE = -1,
+	TILE = 0,
+	SCALE = 1,
+	TILE_SCALE = 2,
+	SCALE_TILE = 3,
+	SINGLE = 4
+};
+
+
+enum Flags {
+	BACKGROUND_SET = 0,
+	BACKGROUND_SET_TRIGGER = 1,
+	TRIGGER_CUTSCENE = 2
+};
+
+
+enum GateSwitch {
+	SINGLE_SWITCH = 0,
+	CHAIN_SWITCH = 1
+};
+
+
+// Memory allocated structs of data
+
+// Regular Sprites (Objects, player, particles, etc.)
+struct sprite
+{
+	struct sprite *nextSprite;
+	struct sprite *prevSprite;
+	unsigned char *spriteData;
+
+	int height;
+	int width;
+	enum RenderMode RenderMode;
+
+	int spriteID;
+	char spriteName[MAX_LEN];
+};
+
+
+// Sprite sets that lead to linked lists of sprites corresponding to an object type;
+// only needs to be initialised once per object type
+struct spriteSet
+{
+	struct sprite *firstSprite;
+	struct sprite *lastSprite;
+
+	struct spriteSet *nextSet;
+	struct spriteSet *prevSet;
+
+	int setID;
+	int spriteCount;
+};
+
+
+// Objects are memory-allocated instances of interactable items (tiles, enemies, etc.)
+struct object
+{
+	struct object *nextObject;
+	struct object *prevObject;
+	int objectID;
+
+	struct sprite *spriteBuffer;
+	int currentSprite;
+	int xFlip;
+	int yFlip;
+
+	// If the object's render mode is less than 0 (the default) the sprite is rendered according to the sprite's individual render mode
+	// Otherwise, it is overridden to be the rendermode of the object
+	// Objects essentially can either have the sprites render how they would like to be rendered, or can override it with a single rendermode
+	enum RenderMode objectRenderMode;
+
+	// Layer 1: In front of background, behind player, particle effects		->  order of object list determines layering of individual objects here
+	// Layer 2: In front of Player, background, objects in layer 0			->	order of object list determines layering of individual objects here
+	// Layer 3: In front of layer 0 and 1, background, Player				->	used for particles 
+	// Layer 4: In front of everything										->	used for Hud elements
+	enum Layer layer;
+
+	int xPos;
+	int yPos;
+	int xSize;
+	int ySize;
+	double xVel;
+	double yVel;
+	int solid;
+
+	int currentAnimation;
+	int animationTick;
+
+	// Multi-purpose args
+	int arg1;
+	int arg2;
+	int arg3;
+	int arg4;
+	int arg5;
+};
+
+// Memory allocated struct that contains pointers to objects and object count
+struct objectController
+{
+	int objectCount;
+	struct object *firstObject;
+	struct object *lastObject;
+
+	struct spriteSet *startSpriteSetPtr;
+	int spriteSetCount;
+};
+
+
+// Controls the player character
+struct playerData
+{
+	int xPos;
+	int xPosRight;
+	int yPos;
+	int yPosTop;
+	double yVelocity;
+	double xVelocity;
+	double maxYVel;
+	double maxXVel;
+
+	int inAir;
+	int jumpHeld;
+	int jumpProgress;
+	int crouch;
+
+	double PhysicsXVelocity;
+	double PhysicsYVelocity;
+	double direction;
+
+	int xFlip;
+	int currentSprite;
+	struct sprite *spriteBuffer;
+
+	int spriteCount;
+	struct spriteSet *spriteSetPtr;
+
+	enum Layer playerLayer;
+
+	int coinCount;
+};
+
+
+// Memory allocated struct that controls camera, holds the object list and level data
+struct world
+{
+	struct objectController *objectList;
+	int drawnObjects;
+
+	struct playerData *Player;
+
+	struct spriteSet *BackGrounds;
+	struct sprite *bgSpriteBuffer;
+
+	double bgParallax;
+	int bgTileVertically;
+	int bgParallaxChunkSize;
+	double bgChunkParallax;
+
+	int cameraX;
+	int cameraY;
+	int level;
+	double Gravity;
+
+	int drawHitboxes;
+	int drawSprites;
+	int drawBackGround;
+	int drawPlayer;
+	int playBgMusic;
+
+	//int levelData[GRID_WIDTH][GRID_HEIGHT];
+	//char tileShape[100];
+};
+
+
+typedef struct
+{
+	Uint8 *wav_data;
+	Uint32 wav_data_len;
+	SDL_AudioStream *stream;
+} SoundInstance;
+
+typedef struct {
+	int width;
+	int height;
+	uint32_t *screen;
+} RenderFrame;
+
+
+static SoundInstance AllSounds[CHANNEL_COUNT];
+
+
+
+typedef struct sprite Sprite;
+typedef struct spriteSet SpriteSet;
+typedef struct bgsprite BGSprite;
+typedef struct bgSpriteSet BGSpriteSet;
+typedef struct playerData PlayerData;
+typedef struct objectController ObjectController;
+typedef struct object Object;
+typedef struct world World;
+
+typedef enum LemonKeys LemonKeys;
+typedef enum Layer Layer;
+typedef enum RenderMode RenderMode;
+typedef enum Flags Flags;
+typedef enum GateSwitch GateSwitch;
+
+
+
