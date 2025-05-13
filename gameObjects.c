@@ -293,9 +293,10 @@ Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int ob
 	newObject->prevObject = currentObject;
 	newObject->xPos = abs(xPos - (xPos % X_TILESCALE));
 	newObject->yPos = abs(yPos - (yPos % Y_TILESCALE));
-	newObject->objectID = objectID;
 	newObject->yVel = 0.0;
 	newObject->xVel = 0.0;
+
+	newObject->objectID = objectID;
 	newObject->currentAnimation = 0;
 	newObject->animationTick = 0;
 	newObject->spriteBuffer = NULL;
@@ -456,6 +457,9 @@ Object* addObject(ObjectController *objectList, int objectID, int xPos, int yPos
 			break;
 	}
 
+	newObject->xPosRight = newObject->xPos + newObject->xSize - 1;
+	newObject->yPosTop = newObject->xPos + newObject->xSize - 1;
+
 	return newObject;
 }
 
@@ -505,6 +509,9 @@ Object* addMovingPlatform(ObjectController *objectList, int xPos, int yPos, int 
 		break;
 	}
 
+	newObject->xPosRight = newObject->xPos + newObject->xSize - 1;
+	newObject->yPosTop = newObject->xPos + newObject->xSize - 1;
+
 	return newObject;
 }
 
@@ -542,6 +549,9 @@ Object* addFlagObject(ObjectController *objectList, int xPos, int yPos, Flags fl
 	default:
 		break;
 	}
+
+	newObject->xPosRight = newObject->xPos + newObject->xSize - 1;
+	newObject->yPosTop = newObject->xPos + newObject->xSize - 1;
 
 	return newObject;
 }
@@ -947,7 +957,7 @@ int updateGate(Object *gate, ObjectController *objectList, double deltaTime, Pla
 
 		case 1:
 		{
-			gate->yVel += 0.25;
+			gate->yVel += 0.1;
 
 			if (gate->yVel > speed)
 			{
@@ -985,7 +995,7 @@ int updateGate(Object *gate, ObjectController *objectList, double deltaTime, Pla
 
 		case 3:
 		{
-			gate->yVel -= 0.25;
+			gate->yVel -= 0.1;
 
 			if (gate->yVel < -speed)
 			{
@@ -1074,17 +1084,18 @@ int moveObjectX(Object *inputObject, PlayerData *player, double deltaTime)
 		return 1;
 	}
 
-	inputObject->xPos += (int)(inputObject->xVel * deltaTime);
+	inputObject->xPos += (inputObject->xVel * deltaTime);
+	inputObject->xPosRight = inputObject->xPos + inputObject->xSize - 1;
 
 	if (player == NULL)
 	{
 		return -1;
 	}
 
-	int ObjXPos = inputObject->xPos;
-	int ObjXPosRight = inputObject->xPos + inputObject->xSize - 1;
-	int ObjYPos = inputObject->yPos;
-	int ObjYPosTop = inputObject->yPos + inputObject->ySize - 1;
+	double ObjXPos = inputObject->xPos;
+	double ObjXPosRight = inputObject->xPos + inputObject->xSize - 1;
+	double ObjYPos = inputObject->yPos;
+	double ObjYPosTop = inputObject->yPos + inputObject->ySize - 1;
 
 	int result;
 
@@ -1140,7 +1151,7 @@ int moveObjectX(Object *inputObject, PlayerData *player, double deltaTime)
 
 	if (result == 1)
 	{
-		player->xPos += (int)(inputObject->xVel * deltaTime);
+		player->xPos += (inputObject->xVel * deltaTime);
 	}	
 
 
@@ -1157,6 +1168,7 @@ int moveObjectY(Object *inputObject, PlayerData *player, double deltaTime)
 	}
 
 	inputObject->yPos += (int)(inputObject->yVel * deltaTime);
+	inputObject->yPosTop = inputObject->yPos + inputObject->ySize - 1;
 
 	if (player == NULL)
 	{

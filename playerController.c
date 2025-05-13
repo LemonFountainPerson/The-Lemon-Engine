@@ -24,8 +24,8 @@ PlayerData* initialisePlayer(World *gameWorld)
 	}
 
 	// Player set-up
-	player->xPos = 100;
-	player->yPos = 100;
+	player->xPos = 100.0;
+	player->yPos = 100.0;
 	player->xPosRight = 100 + PLAYERWIDTH - 1;
 	player->yPosTop = 100 + PLAYERHEIGHT - 1;
 	player->yVelocity = 0.0;
@@ -217,14 +217,14 @@ int updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256], double
 
 
 	// collision detection
-	player->xPos += (int)(player->xVelocity * deltaTime);
+	player->xPos += (player->xVelocity * deltaTime);
 
 	objectCollisionX(player, gameWorld);
 
 
 	for (int subStep = 4; subStep > 0; subStep--)
 	{
-		player->yPos += (int)(player->yVelocity * deltaTime) >> 2;
+		player->yPos += (player->yVelocity * deltaTime) / 4.0;
 
 		objectCollisionY(player, gameWorld);
 	}
@@ -236,13 +236,13 @@ int updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256], double
 
 	if (player->yPos < -60 || player->yPos > 60000)
 	{
-		player->yPos = 150;
+		player->yPos = 150.0;
 		player->yVelocity = 10.0;
 	}
 
 	if (player->xPos < 0)
 	{
-		player->xPos = 0;
+		player->xPos = 0.0;
 		player->xVelocity = 0.0;
 	}
 
@@ -307,7 +307,7 @@ int objectCollisionX(PlayerData *player, World *gameWorld)
 		return -1;
 	}
 
-	int objX, objY, objX2, objY2;
+	double objX, objY, objX2, objY2;
 
 
 	while (currentObject != NULL)
@@ -478,7 +478,7 @@ int objectCollisionY(PlayerData *player, World *gameWorld)
 		return -1;
 	}
 
-	int objX, objY, objX2, objY2;
+	double objX, objY, objX2, objY2;
 
 
 	while (currentObject != NULL)

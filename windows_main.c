@@ -14,9 +14,8 @@ static HDC frame_device_context = 0;
 
 int keyboard[256] = {0};
 
-int gameRunning = 1;
-
 RenderFrame frame = {0};
+
 
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -88,17 +87,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	initialiseAudio();
 
 
-     // Debug Variables
-    int clickT = 0;
-    int clickY = 0;
-    int clickU = 0;
-    int clickI = 0;
-    int clickO = 0;
-    int clickP = 0;
-    int frames = 0;
-    int frameThrottle = 1;
-    int displayPlayerData = 0;
-
 	// Core engine variables/data
 	clock_t gameTick = clock();
     double deltaTime = (double)clock();
@@ -108,19 +96,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // Game initialisation
     PlayerData *player;
-    World *gameWorld;
+    World *GameWorld;
 
-    gameWorld = initialiseGame(NULL);
-    player = initialisePlayer(gameWorld);
+    GameWorld = initialiseGame(NULL);
+    player = initialisePlayer(GameWorld);
+
+    
+    static int gameRunning = 1;
 
 
     // test data
-	loadLevel(gameWorld, 1);
+	loadLevel(GameWorld, 1);
 
-	Object *testObject = gameWorld->objectList->lastObject;
+	Object *testObject = GameWorld->objectList->lastObject;
 
 	
     LemonPlaySound("StartUp", "Music", MUSIC_CHANNEL, 0.7);
+
 
     // Game Loop
     while(gameRunning == 1)
@@ -137,29 +129,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 		// Player control
-		updatePlayer(player, gameWorld, keyboard, deltaTime);
+		updatePlayer(player, GameWorld, keyboard, deltaTime);
 
 
 		// World updates
-		updateObjects(gameWorld, keyboard, deltaTime);
+		updateObjects(GameWorld, keyboard, deltaTime);
 
-		worldCameraControl(frame.width, frame.height, player, gameWorld);
+		worldCameraControl(frame.width, frame.height, player, GameWorld);
 
 
 		// Render screen
-		cleanRenderer(gameWorld, frame.screen, frame.width, frame.height);
+		cleanRenderer(GameWorld, frame.screen, frame.width, frame.height);
 
-		renderBackGroundSprite(frame.screen, frame.width, frame.height, gameWorld);
+		renderBackGroundSprite(frame.screen, frame.width, frame.height, GameWorld);
 
-		drawObjects(BACKGROUND, frame.screen, frame.width, frame.height, gameWorld);
+		drawObjects(BACKGROUND, frame.screen, frame.width, frame.height, GameWorld);
 
-        drawObjects(MIDDLEGROUND, frame.screen, frame.width, frame.height, gameWorld);
+        drawObjects(MIDDLEGROUND, frame.screen, frame.width, frame.height, GameWorld);
 		
-		drawObjects(FOREGROUND, frame.screen, frame.width, frame.height, gameWorld);
+		drawObjects(FOREGROUND, frame.screen, frame.width, frame.height, GameWorld);
 		
-		drawObjects(PARTICLES, frame.screen, frame.width, frame.height, gameWorld);
+		drawObjects(PARTICLES, frame.screen, frame.width, frame.height, GameWorld);
 
-        drawObjects(HUD, frame.screen, frame.width, frame.height, gameWorld);
+        drawObjects(HUD, frame.screen, frame.width, frame.height, GameWorld);
 
 
         // Force window to update frame
@@ -190,101 +182,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 		// Debug Controls
-		if (keyboard['T'] && clickT == 0)
+        DebugControls(GameWorld, player, keyboard, testObject);
+
+        if (keyboard[LMN_ESCAPE] == 1)
 		{
-    		clickT = 1;
-    		frameThrottle = (frameThrottle + 1) % 2;
-    		printf("Toggling framerate throttle:\n");
+    	    gameRunning = 0;
 		}
-
-		if (keyboard['T'] == 0)
-		{
-    		clickT = 0;
-		}
-
-		if (keyboard['Y'] && clickY == 0)
-		{
-			//clearGameData(gameWorld, player);
-			//deleteObject(gameWorld->objectList, &gameWorld->objectList->startPtr);
-			//switchLevel(gameWorld, 1);
-    		testObject->layer = (testObject->layer + 1) % 4;
-			setDrawPriorityToBack(gameWorld->objectList, testObject);
-			clickY = 1;
-		}
-
-		if (keyboard['Y'] == 0)
-		{
-			clickY = 0;
-		}
-
-		if (keyboard['U'] && clickU == 0)
-		{
-			clickU = 1;
-			gameWorld->drawHitboxes = (gameWorld->drawHitboxes + 1) % 2;
-			printf("Toggling draw Hitboxes:\n");
-		}
-
-		if (keyboard['U'] == 0)
-		{
-			clickU = 0;
-		}
-
-		if (keyboard['I'] && clickI == 0)
-		{
-			clickI = 1;
-			gameWorld->drawBackGround = (gameWorld->drawBackGround + 1) % 2;
-			printf("Toggling draw background:\n");
-		}
-
-		if (keyboard['I'] == 0)
-		{
-    		clickI = 0;
-		}
-
-		if (keyboard['O'] && clickO == 0)
-		{
-    		clickO = 1;
-    		gameWorld->drawSprites = (gameWorld->drawSprites + 1) % 2;
-    		printf("Toggling Draw Sprites:\n");
-		}
-
-		if (keyboard['O'] == 0)
-		{
-    		clickO = 0;
-		}
-
-
-		if (keyboard['P'] && clickP == 0)
-		{
-    		clickP = 1;
-    		displayPlayerData = (displayPlayerData + 1 % 2);
-    		printf("Toggling Player data display:\n");
-		}
-
-		if (keyboard['P'] == 0)
-		{
-			clickP = 0;
-		}
-
-		 if (keyboard[LMN_ESCAPE] == 1)
-		 {
-    		gameRunning = 0;
-		 }
-
-		if (keyboard['0'])
-		{
-    		Sleep(60);
-		}
-
-		if (displayPlayerData == 1)
-		{
-    		printf("Player: X: %d Y: %d xVel: %lf yVel: %lf Direction: %lf\n", player->xPos, player->yPos, player->xVelocity, player->yVelocity, player->direction);
-		}
+		
     }
 
 
 	// Clear game data and cleanup
-	clearGameData(gameWorld, player);
+	clearGameData(GameWorld, player);
 
 	CleanUpAudioData();
 
@@ -377,3 +286,4 @@ LRESULT CALLBACK WndProc(HWND handle, UINT msg, WPARAM wParam, LPARAM lParam)
     }
     return 0;
 }
+

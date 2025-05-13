@@ -18,8 +18,8 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 	player = gameWorld->Player;
 
 	// Find offsets of player relative to center of screen/camera
-	int xOffset = player->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-	int yOffset = player->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+	int xOffset = (int)player->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
+	int yOffset = (int)player->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
 
 
 	// Load correct sprite
@@ -471,8 +471,8 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 	unsigned char *data = spritePtr->spriteData;		// Instead of copying the data, use a pointer to reduce memory overhead
 
 	// Locate object on screen
-	int xOffset = currentObject->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-	int yOffset = currentObject->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+	int xOffset = (int)currentObject->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
+	int yOffset = (int)currentObject->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
 	int xOffset2 = xOffset + currentObject->xSize;
 	int yOffset2 = yOffset + currentObject->ySize;
 
@@ -919,7 +919,7 @@ int renderSprite_LRUD_ScaleMode(uint32_t screen[], int screenWidth, int screenHe
 				memcpy(screen + (i * screenWidth) + k + 3, data + (((int)pixely << 2) * spriteWidth) + ((int)pixelx << 2), sizeOfPixel);
 			}
 
-			pixelx += 4 * xScale;
+			pixelx += (xScale * 4);
 		}
 
 		// Fill in up to # - 1 pixels at right side of screen
@@ -1310,7 +1310,6 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 	// Render sprite to screen
 	for (i = yDraw; i < yDraw2; i++)
 	{
-	
 		if (spritePtr->RenderMode == 2 && (i + yOffset) % gameWorld->bgParallaxChunkSize == 0)
 		{
 			xOffset = gameWorld->cameraX * (gameWorld->bgParallax - (gameWorld->bgChunkParallax * (i + yOffset) ) );

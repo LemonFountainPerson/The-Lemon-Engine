@@ -21,6 +21,9 @@ int PutScreenOnWindow(RenderFrame frame, SDL_Renderer *Renderer, SDL_Surface *sc
 int getKeyboardInput(SDL_Event *event, int keyboard[256]);
 
 
+void DebugControls(World *GameWorld, PlayerData *player, int keyboard[256], Object *testObject);
+
+
 void frameRate(int milliseconds, clock_t gameTick);
 
 

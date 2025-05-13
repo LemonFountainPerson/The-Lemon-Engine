@@ -164,8 +164,10 @@ struct object
 	// Layer 4: In front of everything										->	used for Hud elements
 	enum Layer layer;
 
-	int xPos;
-	int yPos;
+	double xPos;
+	double yPos;
+	double xPosRight;
+	double yPosTop;
 	int xSize;
 	int ySize;
 	double xVel;
@@ -198,23 +200,23 @@ struct objectController
 // Controls the player character
 struct playerData
 {
-	int xPos;
-	int xPosRight;
-	int yPos;
-	int yPosTop;
+	double xPos;
+	double yPos;
+	double xPosRight;
+	double yPosTop;
 	double yVelocity;
 	double xVelocity;
 	double maxYVel;
 	double maxXVel;
 
+	double PhysicsXVelocity;
+	double PhysicsYVelocity;
+	double direction;
+
 	int inAir;
 	int jumpHeld;
 	int jumpProgress;
 	int crouch;
-
-	double PhysicsXVelocity;
-	double PhysicsYVelocity;
-	double direction;
 
 	int xFlip;
 	int currentSprite;
