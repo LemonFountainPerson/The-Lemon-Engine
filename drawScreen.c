@@ -2,8 +2,9 @@
 
 
 // Controls what symbol is printed for each tile
-static uint32_t tileMap[100] = {0x00AA00AA, 0xFFFF0088, 0xFF0088FF, 0xFF552299, 0xFF00AA00, 0xFFBB55AA, 0xFFD0CC00, 0xFF88FF44,
-								0xFF77DD11, 0xFF11BB44, 0xFF0F449F};
+static uint32_t tileMap[32] = {0x00AA00AA, 0xFFFF0088, 0xFF0088FF, 0xFF552299, 0xFF00AA00, 0xFFBB55AA, 0xFFD0CC00, 0xFF88FF44,
+								0xFF77DD11, 0xFF11BB44, 0xFF0F449F, 0xFF000010, 0xFF001010, 0xFF101010, 0xFF1C1010, 0xFF101C10,
+								0xFF2C1010, 0xFF102C10, 0xFF10103C, 0xFF40201C, 0xFF019E30, 0xFF0514CE, 0xFFE86AA3, 0xFF0A4321};
 
 
 
@@ -46,7 +47,7 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 	uint32_t hexValue = 0x00000000;
 	size_t sizeOfPixel = sizeof(uint32_t);
 
-	if (player->xFlip == 1)
+	if (gameWorld->drawSprites == 1 && player->xFlip == 1)
 	{
 		int pixelx = xDraw - (xOffset - 16);
 
@@ -64,7 +65,7 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 	}
 
 
-	if (player->xFlip == -1)
+	if (gameWorld->drawSprites == 1 &&player->xFlip == -1)
 	{
 		int pixelx = spriteWidth - 1 + (xDraw - (xOffset - 16));
 
@@ -114,8 +115,8 @@ int worldCameraControl(int width, int height, PlayerData *player, World *gameWor
 		return -1;
 	}
 
-	int xOffset = player->xPos - gameWorld->cameraX;
-	int yOffset = player->yPos - gameWorld->cameraY;
+	int xOffset = (int)player->xPos - gameWorld->cameraX;
+	int yOffset = (int)player->yPos - gameWorld->cameraY;
 
 	gameWorld->cameraX = player->xPos;
 
@@ -131,12 +132,12 @@ int worldCameraControl(int width, int height, PlayerData *player, World *gameWor
 
 	if ( (yOffset) >= (V_RESOLUTION * 0.1))
 	{
-		gameWorld->cameraY = player->yPos - (V_RESOLUTION * 0.1);
+		gameWorld->cameraY = (int)player->yPos - (V_RESOLUTION * 0.1);
 	}
 
 	if (yOffset < (V_RESOLUTION * -0.2))
 	{
-		gameWorld->cameraY = player->yPos + (V_RESOLUTION * 0.2);
+		gameWorld->cameraY = (int)player->yPos + (V_RESOLUTION * 0.2);
 	}
 
 
@@ -293,22 +294,13 @@ int drawObjects(Layer drawLayer, uint32_t screen[], int width, int height, World
 	currentObject = gameWorld->objectList->firstObject;
 
 	int i = gameWorld->objectList->objectCount;
-	int xOffset, yOffset;
 
 
 	while(currentObject != NULL && i > 0)
 	{
-		xOffset = currentObject->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-		yOffset = currentObject->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
-
-
-		// Drawing routine - max objects on screen is 128
-		if (gameWorld->drawnObjects < MAX_OBJECTS && xOffset < width && yOffset < height && currentObject->layer == drawLayer)
-		{
-			renderObject(gameWorld, currentObject, screen, width, height, xOffset, yOffset);
-		}
-
-
+		// Drawing routine - max objects on screen is defined as Macro
+		renderObject(gameWorld, currentObject, screen, width, height, drawLayer);
+		
 		currentObject = currentObject->nextObject;
 		i--;
 	}
@@ -328,103 +320,106 @@ int drawObjects(Layer drawLayer, uint32_t screen[], int width, int height, World
 }
 
 
-int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int width, int height, int xOffset, int yOffset)
+int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int width, int height, Layer drawLayer)
 {
 	if (currentObject == NULL || currentObject->objectRenderMode == DO_NOT_RENDER)
 	{
 		return -1;
 	}
 
-	int renderSpriteX2 = xOffset + currentObject->xSize;
-	int renderSpriteY2 = yOffset + currentObject->ySize;
-
-	// If a sprite is rendered, it should be used to determine whether to draw to screen or not instead of hitbox for render type 4
-	if (currentObject->spriteBuffer != NULL && currentObject->spriteBuffer->RenderMode == 4)
+	if (gameWorld->drawnObjects > MAX_OBJECTS || currentObject->layer != drawLayer)
 	{
-		renderSpriteX2 = xOffset + currentObject->spriteBuffer->width;
-		renderSpriteY2 = yOffset + currentObject->spriteBuffer->height;
+		return 1;
+	}
+
+	
+	// Sprite
+	renderObjectSprite(screen, width, height, gameWorld, currentObject);
+
+	gameWorld->drawnObjects++;
+
+
+	if (gameWorld->drawHitboxes == 0)
+	{
+		return 0;
 	}
 
 
-	if (renderSpriteX2 > -1 && renderSpriteY2 > -1)
+	// Hitbox
+	switch (currentObject->solid)
 	{
-		// Sprite
-		renderObjectSprite(screen, width, height, gameWorld, currentObject);
-
-		gameWorld->drawnObjects++;
-
-
-		// Hitbox
-		switch (currentObject->solid * gameWorld->drawHitboxes)
+		case 2:
 		{
-			case 2:
+			// Correct Offsets
+			double ySize = currentObject->ySize;
+			double xSize = currentObject->xSize;
+
+			int xOffset = (int)currentObject->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
+			int yOffset = (int)currentObject->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+			int xDraw = correct(xOffset, 0, width - 1);
+			int yDraw = correct(yOffset, 0, height - 1);
+			int xDraw2 = correct(xOffset + currentObject->xSize, 0, width - 1);
+
+			int tile = tileMap[currentObject->objectID];
+
+			for (int k = xDraw; k < xDraw2; k++)
 			{
-				// Correct Offsets
-				double ySize = currentObject->ySize;
-				double xSize = currentObject->xSize;
-				int xDraw = correct(xOffset, 0, width - 1);
-				int yDraw = correct(yOffset, 0, height - 1);
-				int xDraw2 = correct(xOffset + currentObject->xSize, 0, width - 1);
-
-				int tile = tileMap[currentObject->objectID];
-
-				for (int k = xDraw; k < xDraw2; k++)
+				for (int i = yDraw; i < height && i - yOffset < (k - xOffset) * (ySize/xSize); i++)
 				{
-					for (int i = yDraw; i < height && i - yOffset < (k - xOffset) * (ySize/xSize); i++)
-					{
-						screen[(i * width) + k] = tile;
-					}
+					screen[(i * width) + k] = tile;
 				}
-			} break;
+			}
+		} break;
 
 
-			case 3:
+		case 3:
+		{
+			// Correct Offsets
+			double ySize = currentObject->ySize;
+			double xSize = currentObject->xSize;
+
+			int xOffset = (int)currentObject->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
+			int yOffset = (int)currentObject->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+			int xDraw = correct(xOffset, 0, width - 1);
+			int yDraw = correct(yOffset, 0, height - 1);
+			int xDraw2 = correct(xOffset + currentObject->xSize, 0, width - 1);
+
+			int tile = tileMap[currentObject->objectID];
+
+			for (int k = xDraw; k < xDraw2; k++)
 			{
-				// Correct Offsets
-				double ySize = currentObject->ySize;
-				double xSize = currentObject->xSize;
-				int xDraw = correct(xOffset, 0, width - 1);
-				int yDraw = correct(yOffset, 0, height - 1);
-				int xDraw2 = correct(xOffset + currentObject->xSize, 0, width - 1);
-
-				int tile = tileMap[currentObject->objectID];
-
-				for (int k = xDraw; k < xDraw2; k++)
+				for (int i = yDraw; i < height && i - yOffset < (xSize - (k - xOffset)) * (ySize/xSize); i++)
 				{
-					for (int i = yDraw; i < height && i - yOffset < (xSize - (k - xOffset)) * (ySize/xSize); i++)
-					{
-						screen[(i * width) + k] = tile;
-					}
+					screen[(i * width) + k] = tile;
 				}
-			} break;
+			}
+		} break;
 
 
-			default:
+		default:
+		{
+
+			// Correct Offsets
+			int xOffset = (int)currentObject->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
+			int yOffset = (int)currentObject->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+			int xDraw = correct(xOffset, 0, width - 1);
+			int yDraw = correct(yOffset, 0, height - 1);
+			int xDraw2 = correct(xOffset + currentObject->xSize, 0, width - 1);
+			int yDraw2 = correct(yOffset + currentObject->ySize, 0, height - 1);
+
+			int tile = tileMap[currentObject->objectID];
+
+			for (int k = xDraw; k < xDraw2; k++)
 			{
-				if (gameWorld->drawHitboxes == 0)
+				for (int i = yDraw; i < yDraw2; i++)
 				{
-					break;
+					screen[(i * width) + k] = tile;
 				}
 
-				// Correct Offsets
-				int xDraw = correct(xOffset, 0, width - 1);
-				int yDraw = correct(yOffset, 0, height - 1);
-				int xDraw2 = correct(xOffset + currentObject->xSize, 0, width - 1);
-				int yDraw2 = correct(yOffset + currentObject->ySize, 0, height - 1);
-
-				int tile = tileMap[currentObject->objectID];
-
-				for (int k = xDraw; k < xDraw2; k++)
-				{
-					for (int i = yDraw; i < yDraw2; i++)
-					{
-						screen[(i * width) + k] = tile;
-					}
-
-				}
-			} break;
-		}
+			}
+		} break;
 	}
+	
 
 	return 0;
 }
@@ -468,7 +463,8 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 	// Load up data buffers for sprite to be rendered
 	int spriteWidth = spritePtr->width;
 	int spriteHeight = spritePtr->height;
-	unsigned char *data = spritePtr->spriteData;		// Instead of copying the data, use a pointer to reduce memory overhead
+	unsigned char *data = spritePtr->spriteData;				// Instead of copying the data, use a pointer to reduce memory overhead
+
 
 	// Locate object on screen
 	int xOffset = (int)currentObject->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
@@ -478,19 +474,20 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 
 	int xDraw2, xDraw, yDraw2, yDraw;
 
-	// Make sure the sprite position is valid on screen to avoid a crash related to assuming the position is valid
-	if (xOffset >= screenWidth || xOffset2 < 0 || yOffset >= screenHeight || yOffset2 < 0)
-	{
-		return -2;
-	}
 
 	// Set draw locations on screen
 	if (currentRenderMode == SINGLE)
 	{
-		xDraw = correct(xOffset, 0, screenWidth - 1);
-		yDraw = correct(yOffset, 0, screenHeight - 1);
-		xDraw2 = correct(xOffset + spriteWidth, 0, screenWidth - 1);
-		yDraw2 = correct(yOffset + spriteHeight, 0, screenHeight - 1);
+		// Find center of object and then center sprite on that point
+		int centerX = (xOffset2 + xOffset) >> 1;
+		int centerY = (yOffset2 + yOffset) >> 1;
+		xOffset = centerX - (spriteWidth >> 1);
+		yOffset = centerY - (spriteWidth >> 1);
+
+		xDraw = correct(centerX - (spriteWidth >> 1), 0, screenWidth - 1);
+		yDraw = correct(centerY - (spriteWidth >> 1), 0, screenHeight - 1);
+		xDraw2 = correct(centerX + (spriteWidth >> 1), 0, screenWidth - 1);
+		yDraw2 = correct(centerY + (spriteHeight >> 1), 0, screenHeight - 1);
 	}
 	else
 	{
@@ -498,6 +495,13 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 		yDraw = correct(yOffset, 0, screenHeight - 1);
 		xDraw2 = correct(currentObject->xSize + xOffset, 0, screenWidth - 1);
 		yDraw2 = correct(currentObject->ySize + yOffset, 0, screenHeight - 1);
+	}
+
+
+	// Make sure the sprite position is valid on screen to avoid a crash related to assuming the position is valid
+	if (xDraw >= screenWidth || xDraw2 < 0 || yDraw >= screenHeight || yDraw2 < 0)
+	{
+		return -2;
 	}
 
 

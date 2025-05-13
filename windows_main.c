@@ -17,7 +17,6 @@ int keyboard[256] = {0};
 RenderFrame frame = {0};
 
 
-
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
@@ -93,6 +92,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     clock_t lastTick = clock();
     clock_t lastSecond = clock();
 
+    int windowsFrames = 0;
+
 
     // Game initialisation
     PlayerData *player;
@@ -100,9 +101,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     GameWorld = initialiseGame(NULL);
     player = initialisePlayer(GameWorld);
-
-    
-    static int gameRunning = 1;
 
 
     // test data
@@ -113,6 +111,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	
     LemonPlaySound("StartUp", "Music", MUSIC_CHANNEL, 0.7);
 
+    StopAudioInChannel(0);
 
     // Game Loop
     while(gameRunning == 1)
@@ -171,13 +170,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		if (((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) > 0.99)
 		{
-   			printf("%d at %lf\n", frames, ((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) );
-   			frames = 0;
+   			printf("%d at %lf\n", windowsFrames, ((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) );
+   			windowsFrames = 0;
    			lastSecond = clock();
 		}
 		else
 		{
-   			frames++;
+   			windowsFrames++;
 		}
 
 

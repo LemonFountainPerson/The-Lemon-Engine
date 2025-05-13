@@ -19,7 +19,7 @@ int cleanRenderer(World *gameWorld, uint32_t screen[], int width, int height);
 int drawObjects(Layer drawLayer, uint32_t screen[], int width, int height, World *gameWorld);
 
 
-int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int width, int height, int xOffset, int yOffset);
+int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int width, int height, Layer drawLayer);
 
 
 int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, World *gameWorld, Object *currentObject);

@@ -22,10 +22,10 @@ Object* addObject(ObjectController *objController, int xPos, int yPos, int objec
 
 
 // Creates new instance of a moving platform object and puts at the end of the object list
-Object* addMovingPlatform(ObjectController *objController, int xPos, int yPos, int objectID, int bound1, int bound2, int speed, int timer);
+Object* addMovingPlatform(ObjectController *objController, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer);
 
 
-Object* addFlagObject(ObjectController *objectList, int xPos, int yPos, Flags flagID, int arg1, int arg2, int arg3, int arg4, int arg5);
+Object* addFlagObject(ObjectController *objectList, Flags flagID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5);
 
 
 // deletes an object from the object list based on pointer provided and shifts surrounding objecs to fill
@@ -76,7 +76,7 @@ int updateVerticalPlatform(PlayerData *player, Object *platform, double deltaTim
 int updateGateSwitch(PlayerData *player, Object *gateSwitch);
 
 
-int updateGate(Object *door, ObjectController *objectList, double deltaTime, PlayerData *player);
+int updateVerticalGate(Object *door, ObjectController *objectList, double deltaTime, PlayerData *player);
 
 
 int gateControl(Object *gate, ObjectController *objectList);
@@ -85,10 +85,10 @@ int gateControl(Object *gate, ObjectController *objectList);
 
 
 // Check for overlap with player
-int overlapsPlayer(PlayerData *player, int X1, int X2, int Y1, int Y2);
+int overlapsPlayer(PlayerData *player, double X1, double X2, double Y1, double Y2);
 
 
-int overlapsPlayerFeet(PlayerData *player, int X1, int X2, int Y1, int Y2);
+int overlapsPlayerFeet(PlayerData *player, double X1, double X2, double Y1, double Y2);
 
 
 // Checks for object overlap with a specific object ID

@@ -30,13 +30,13 @@ int objectCollisionY(PlayerData *player, World *gameWorld);
 int ApplyYPhysics(PlayerData *player, Object *inputObject);
 
 
-int overlapsBox(PlayerData *player, int X1, int X2, int Y1, int Y2);
+int overlapsBox(PlayerData *player, double X1, double X2, double Y1, double Y2);
 
 
-int overlapsRightSlope(PlayerData *player, int X1, int X2, int Y, double slope);
+int overlapsRightSlope(PlayerData *player, double X1, double X2, double Y, double slope);
 
 
-int overlapsLeftSlope(PlayerData *player, int X1, int X2, int Y, double slope);
+int overlapsLeftSlope(PlayerData *player, double X1, double X2, double Y, double slope);
 
 
 int collideType(PlayerData *player, World *gameWorld, int objectID);

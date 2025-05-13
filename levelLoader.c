@@ -285,9 +285,28 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 		int setValue = getNextArg(fPtr, buffer, 4, 1);
 	
 		switchBackGroundSprite(spriteValue, setValue, gameWorld);
+
+		return 0;
 	}
 
-	return 0;
+	if (strcmp(buffer, "BGSET_TRIGGER") == 0)
+	{
+		int spriteValue = getNextArg(fPtr, buffer, 4, 1);
+
+		int setValue = getNextArg(fPtr, buffer, 4, 1);
+
+		int xValue = getNextArg(fPtr, buffer, 5, 1);
+
+		int yValue = getNextArg(fPtr, buffer, 5, 1);
+	
+		addFlagObject(gameWorld->objectList, BACKGROUND_SET_TRIGGER, xValue, yValue, spriteValue, setValue, 0, 0, 0);
+
+		return 0;
+	}
+
+
+
+	return -1;
 }
 
 

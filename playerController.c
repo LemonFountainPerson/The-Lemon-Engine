@@ -234,13 +234,13 @@ int updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256], double
 
 	setSprite(player);
 
-	if (player->yPos < -60 || player->yPos > 60000)
+	if (player->yPos < -60.0 || player->yPos > 60000.0)
 	{
 		player->yPos = 150.0;
 		player->yVelocity = 10.0;
 	}
 
-	if (player->xPos < 0)
+	if (player->xPos < 0.0)
 	{
 		player->xPos = 0.0;
 		player->xVelocity = 0.0;
@@ -340,11 +340,11 @@ int objectCollisionX(PlayerData *player, World *gameWorld)
 				{
 					for (int i = 0; result == 1 && i < 24; i++)
 					{
-						player->yPos++;
+						player->yPos += 1.0;
 						result = overlapsRightSlope(player, objX, objX2, objY, slope);
 					}
 
-					player->yPos -= 24 * result;
+					player->yPos -= 24.0 * result;
 				}
 
 				if (result == 1)
@@ -356,7 +356,7 @@ int objectCollisionX(PlayerData *player, World *gameWorld)
 
 					if (player->xVelocity < 0.0)
 					{
-						player->xPos += (objX2 - player->xPos);
+						player->xPos += objX2 - player->xPos;
 					}
 
 					ApplyXPhysics(player, currentObject);
@@ -375,23 +375,24 @@ int objectCollisionX(PlayerData *player, World *gameWorld)
 				{
 					for (int i = 0; result == 1 && i < 24; i++)
 					{
-						player->yPos++;
+						player->yPos += 1.0;
 						result = overlapsLeftSlope(player, objX, objX2, objY, slope);
 					}
 
-					player->yPos -= 24 * result;
+					player->yPos -= 24.0 * result;
 				}
 
 				if (result == 1)
 				{
 					if (player->xVelocity > 0.0)
 					{
-						player->xPos += (objX - player->xPos - PLAYERWIDTH);
+						player->xPos += objX - player->xPos - PLAYERWIDTH;
 					}
 
 					if (player->xVelocity < 0.0)
 					{
 						player->xPos -= ((player->xPos - objX) - (currentObject->xSize - ((player->yPos - objY) / slope)));
+						printf("EVIL GENUIUS\n");
 					}
 
 					ApplyXPhysics(player, currentObject);
@@ -408,12 +409,12 @@ int objectCollisionX(PlayerData *player, World *gameWorld)
 			{
 				if (player->xVelocity > 0.0)
 				{
-					player->xPos += (objX - (player->xPos + PLAYERWIDTH));
+					player->xPos += objX - player->xPos - PLAYERWIDTH;
 				}
 
 				if (player->xVelocity < 0.0)
 				{
-					player->xPos += (objX2 - player->xPos);
+					player->xPos += objX2 - player->xPos;
 				}
 
 				ApplyXPhysics(player, currentObject);
@@ -524,7 +525,7 @@ int objectCollisionY(PlayerData *player, World *gameWorld)
 							slopeFloor = currentObject->ySize;
 						}
 
-						player->yPos += slopeFloor - (player->yPos - objY);
+						player->yPos = slopeFloor + objY;
 
 						player->jumpProgress = 0;
 					}
@@ -560,7 +561,7 @@ int objectCollisionY(PlayerData *player, World *gameWorld)
 							slopeFloor = currentObject->ySize;
 						}
 
-						player->yPos += slopeFloor - (player->yPos - objY);
+						player->yPos = slopeFloor + objY;
 
 						player->jumpProgress = 0;
 					}
@@ -592,7 +593,7 @@ int objectCollisionY(PlayerData *player, World *gameWorld)
 			{
 				if (player->yVelocity > 0.0)
 				{
-					player->yPos += (objY - (player->yPos + PLAYERHEIGHT));
+					player->yPos += (objY - player->yPos - PLAYERHEIGHT);
 					player->jumpProgress = 100;
 				}
 
@@ -653,23 +654,23 @@ int ApplyYPhysics(PlayerData *player, Object *inputObject)
 }
 
 
-int overlapsBox(PlayerData *player, int X1, int X2, int Y1, int Y2)
+int overlapsBox(PlayerData *player, double X1, double X2, double Y1, double Y2)
 {
-	return !(player->xPos >= X2) * !((player->xPos + PLAYERWIDTH) <= X1) * !(player->yPos >= Y2) * !((player->yPos + PLAYERHEIGHT) <= Y1);
+	return !( player->xPos >= X2 || (player->xPos + PLAYERWIDTH) <= X1 || player->yPos >= Y2 || (player->yPos + PLAYERHEIGHT) <= Y1 );
 }
 
 
-int overlapsRightSlope(PlayerData *player, int X1, int X2, int Y, double slope)
+int overlapsRightSlope(PlayerData *player, double X1, double X2, double Y, double slope)
 {
-	int answer = ((player->yPos - Y) < ((player->xPos + PLAYERWIDTH - 1 - X1) * slope));
-	return answer;
+	int answer = ((player->yPos - Y) >= ((player->xPos + PLAYERWIDTH - X1) * slope));
+	return !answer;
 }
 
 
-int overlapsLeftSlope(PlayerData *player, int X1, int X2, int Y, double slope)
+int overlapsLeftSlope(PlayerData *player, double X1, double X2, double Y, double slope)
 {
-	int answer = ((player->yPos - Y) < ((X2 - player->xPos) * slope));
-	return answer;
+	int answer = ((player->yPos - Y) >= ((X2 - player->xPos) * slope));
+	return !answer;
 }
 
 
@@ -688,10 +689,10 @@ int checkIfGrounded(World *gameWorld, PlayerData *player)
 			goto skip_Ground_Check;
 		}
 
-		int objX = currentObject->xPos;
-		int objY = currentObject->yPos;
-		int objX2 = objX + currentObject->xSize;
-		int objY2 = objY + currentObject->ySize;
+		double objX = currentObject->xPos;
+		double objY = currentObject->yPos;
+		double objX2 = objX + currentObject->xSize;
+		double objY2 = objY + currentObject->ySize;
 
 		player->yPos -= 3;
 

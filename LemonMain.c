@@ -34,14 +34,14 @@ int RunLemonEngine(void)
 
    
 	// Core engine variables/data
-	int gameRunning = 1;
-
     int keyboard[256] = {0};
 
 	clock_t gameTick = clock();
     double deltaTime = (double)clock();
     clock_t lastTick = clock();
     clock_t lastSecond = clock();
+	int frames = 0;
+
 
     RenderFrame frame = {0};
 	frame.width = H_RESOLUTION;
@@ -275,14 +275,13 @@ void DebugControls(World *GameWorld, PlayerData *player, int keyboard[256], Obje
     static int clickP = 0;
 	static int displayPlayerData = 0;
 	static int frames = 0;
-    static int frameThrottle = 1;
 
 
     if (keyboard['T'] && clickT == 0)
 		{
     		clickT = 1;
     		frameThrottle = (frameThrottle + 1) % 2;
-    		printf("Toggling framerate throttle:\n");
+    		printf("Toggling framerate throttle: %d\n", frameThrottle);
 		}
 
 		if (keyboard['T'] == 0)
@@ -356,7 +355,7 @@ void DebugControls(World *GameWorld, PlayerData *player, int keyboard[256], Obje
 
 		if (keyboard['0'])
 		{
-    		Sleep(60);
+    		Sleep(800);
 		}
 
 		if (displayPlayerData == 1)
