@@ -69,10 +69,20 @@ enum objectType {
 	MOVING_PLATFORM_HOR = 6,
 	MOVING_PLATFORM_VER = 7,
 	SPRING = 8,
-	VERTICAL_GATE = 9,
-	GATE_SWITCH = 10,
-	GATE_SWITCH_TIMED = 11
+	GATE_SWITCH = 9,
+	GATE_SWITCH_TIMED = 10,
+	VERTICAL_GATE = 11,
+	HORIZONTAL_GATE = 12,
+	DESTRUCTIBLE_BLOCK = 13
 };
+
+
+// Layer 0: Background												
+// Layer 1: In front of background, behind player, particle effects		
+// Layer 2: In front of Player, background, objects in layer 0			
+// Layer 3: In front of layer 0 and 1, background, Player				->	used for particles 
+// Layer 4: In front of everything										->	used for Hud elements
+//  Order of object list determines layering of individual objects within layers
 
 enum Layer {
 	LEVELFLAGS = -1,
@@ -83,6 +93,10 @@ enum Layer {
 	HUD = 4
 };
 
+
+// If the object's render mode is less than 0 (the default) the sprite is rendered according to the sprite's individual render mode
+// Otherwise, it is overridden to be the rendermode of the object
+// Objects essentially can either have the sprites render how they would like to be rendered, or can override it with a single rendermode
 
 enum RenderMode {
 	DO_NOT_RENDER = -2,
@@ -153,15 +167,8 @@ struct object
 	int xFlip;
 	int yFlip;
 
-	// If the object's render mode is less than 0 (the default) the sprite is rendered according to the sprite's individual render mode
-	// Otherwise, it is overridden to be the rendermode of the object
-	// Objects essentially can either have the sprites render how they would like to be rendered, or can override it with a single rendermode
 	enum RenderMode objectRenderMode;
 
-	// Layer 1: In front of background, behind player, particle effects		->  order of object list determines layering of individual objects here
-	// Layer 2: In front of Player, background, objects in layer 0			->	order of object list determines layering of individual objects here
-	// Layer 3: In front of layer 0 and 1, background, Player				->	used for particles 
-	// Layer 4: In front of everything										->	used for Hud elements
 	enum Layer layer;
 
 	double xPos;
@@ -277,9 +284,6 @@ typedef struct {
 } RenderFrame;
 
 
-static SoundInstance AllSounds[CHANNEL_COUNT];
-
-
 
 typedef struct sprite Sprite;
 typedef struct spriteSet SpriteSet;
@@ -297,4 +301,9 @@ typedef enum Flags Flags;
 typedef enum GateSwitch GateSwitch;
 
 
+static SoundInstance AllSounds[CHANNEL_COUNT];
+
+static int gameRunning = 1;
+
+static int frameThrottle = 1;
 
