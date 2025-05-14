@@ -18,11 +18,11 @@ Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int ob
 
 
 // Creates new instance of an object and puts at the end of the object list
-Object* addObject(ObjectController *objController, int xPos, int yPos, int objectID, int arg1, int arg2);
+Object* addObject(ObjectController *objController, int xPos, int yPos, int objectID, int arg1, int arg2, int arg3, int arg4, int arg5);
 
 
-// Creates new instance of a moving platform object and puts at the end of the object list
-Object* addMovingPlatform(ObjectController *objController, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer);
+// Helper function to set an object to a moving platform type 
+Object* defineMovingPlatform(Object *inputObject, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer);
 
 
 Object* addFlagObject(ObjectController *objectList, Flags flagID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5);
@@ -77,6 +77,9 @@ int updateGateSwitch(PlayerData *player, Object *gateSwitch);
 
 
 int updateVerticalGate(Object *door, ObjectController *objectList, double deltaTime, PlayerData *player);
+
+
+int updateHorizontalGate(Object *gate, ObjectController *objectList, double deltaTime, PlayerData *player);
 
 
 int gateControl(Object *gate, ObjectController *objectList);

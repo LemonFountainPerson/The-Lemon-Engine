@@ -40,6 +40,16 @@
 #endif
 
 
+enum FunctionResult {
+	LEMON_ERROR = -1,
+	MISSING_DATA = -2,
+	INVALID_DATA = -3,
+	LEMON_SUCCESS = 0,
+	ACTION_DISABLED = 1,
+	END_OF_FILE = 9
+};
+
+
 enum LemonKeys {
 	LMN_ESCAPE = VK_ESCAPE,
 	LMN_SPACE = VK_SPACE,
@@ -294,6 +304,7 @@ typedef struct objectController ObjectController;
 typedef struct object Object;
 typedef struct world World;
 
+typedef enum FunctionResult FunctionResult;
 typedef enum LemonKeys LemonKeys;
 typedef enum Layer Layer;
 typedef enum RenderMode RenderMode;

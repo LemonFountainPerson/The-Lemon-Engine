@@ -51,22 +51,22 @@ int switchLevel(World *gameWorld, int level)
 
 int loadDefault(World *gameWorld)
 {
-	addObject(gameWorld->objectList, 2900, 110, 0, 1, 1);
-	addObject(gameWorld->objectList, 2940, 110, 0, 1, 1);
-	addObject(gameWorld->objectList, 2970, 110, 0, 1, 1);
+	addObject(gameWorld->objectList, 2900, 110, 0, 1, 1, 0, 0, 0);
+	addObject(gameWorld->objectList, 2940, 110, 0, 1, 1, 0, 0, 0);
+	addObject(gameWorld->objectList, 2970, 110, 0, 1, 1, 0, 0, 0);
 
-	addObject(gameWorld->objectList, 200, 100, 5, 1, 1);
-	addObject(gameWorld->objectList, 300, 130, 5, 1, 1);
-	addObject(gameWorld->objectList, 400, 160, 5, 1, 1);
-	addObject(gameWorld->objectList, 450, 200, 5, 1, 1);
+	addObject(gameWorld->objectList, 200, 100, 5, 1, 1, 0, 0, 0);
+	addObject(gameWorld->objectList, 300, 130, 5, 1, 1, 0, 0, 0);
+	addObject(gameWorld->objectList, 400, 160, 5, 1, 1, 0, 0, 0);
+	addObject(gameWorld->objectList, 450, 200, 5, 1, 1, 0, 0, 0);
 
-	addMovingPlatform(gameWorld->objectList, 1800, 200, 7, 1800, 2800, 6, 90);
-	addMovingPlatform(gameWorld->objectList, 2600, 350, 7, 2600, 3600, 6, 60);
-	addMovingPlatform(gameWorld->objectList, 8000, 128, 8, 176, 960, 6, 180);
-	addMovingPlatform(gameWorld->objectList, 5700, 128, 8, 176, 960, 6, 180);
-	addMovingPlatform(gameWorld->objectList, 3200, 100, 7, 3300, 4200, 6, 90);
+	addObject(gameWorld->objectList, 1800, 200, 7, 1800, 2800, 6, 90, 0);
+	addObject(gameWorld->objectList, 2600, 350, 7, 2600, 3600, 6, 60, 0);
+	addObject(gameWorld->objectList, 8000, 128, 8, 176, 960, 6, 180, 0);
+	addObject(gameWorld->objectList, 5700, 128, 8, 176, 960, 6, 180, 0);
+	addObject(gameWorld->objectList, 3200, 100, 7, 3300, 4200, 6, 90, 0);
 
-	addObject(gameWorld->objectList, 3200, 70, 9, 26, 0);
+	addObject(gameWorld->objectList, 3200, 70, 9, 26, 0, 0, 0, 0);
 
 	switchBackGroundSprite(0, 0, gameWorld);
 
@@ -241,10 +241,6 @@ int loadLevel(World *gameWorld, int level)
 		else if (strcmp(charBuffer, "OBJECT-") == 0)
 		{
 			loadObject(gameWorld, fPtr);
-		}
-		else if (strcmp(charBuffer, "OBJMOV-") == 0)
-		{
-			loadMovingPlatform(gameWorld, fPtr);
 		}	
 		else if (strcmp(charBuffer, "OBJREP-") == 0)
 		{
@@ -275,31 +271,37 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 {
 	char buffer[16] = {0};
 
-	getNextArg(fPtr, buffer, 15, 0);
+	getNextArg(fPtr, buffer, 15);
 
 	// Flag Decoded
 	if (strcmp(buffer, "BGSET") == 0)
 	{
-		int spriteValue = getNextArg(fPtr, buffer, 4, 1);
+		int args[3] = {0};
 
-		int setValue = getNextArg(fPtr, buffer, 4, 1);
+		int returnMsg = readMultipleIntArgs(fPtr, args, 2, 4);
+
+		if (returnMsg != 0)
+		{
+			return returnMsg;
+		}
 	
-		switchBackGroundSprite(spriteValue, setValue, gameWorld);
+		switchBackGroundSprite(args[0], args[1], gameWorld);
 
 		return 0;
 	}
 
 	if (strcmp(buffer, "BGSET_TRIGGER") == 0)
 	{
-		int spriteValue = getNextArg(fPtr, buffer, 4, 1);
+		int args[5] = {0};
 
-		int setValue = getNextArg(fPtr, buffer, 4, 1);
+		int returnMsg = readMultipleIntArgs(fPtr, args, 5, 6);
 
-		int xValue = getNextArg(fPtr, buffer, 5, 1);
-
-		int yValue = getNextArg(fPtr, buffer, 5, 1);
+		if (returnMsg != 0)
+		{
+			return returnMsg;
+		}
 	
-		addFlagObject(gameWorld->objectList, BACKGROUND_SET_TRIGGER, xValue, yValue, spriteValue, setValue, 0, 0, 0);
+		addFlagObject(gameWorld->objectList, BACKGROUND_SET_TRIGGER, args[2], args[3], args[0], args[1], 0, 0, 0);
 
 		return 0;
 	}
@@ -312,33 +314,26 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 
 int loadRepeatingObject(World *gameWorld, FILE *fPtr)
 {
-	char buffer[8] = {0};
+	int args[5] = {0};
 
+	int returnMsg = readMultipleIntArgs(fPtr, args, 4, 6);
 
-	int xCount = getNextArg(fPtr, buffer, 3, 1);
-
-	int yCount = getNextArg(fPtr, buffer, 3, 1);
-
-	int xOffset = getNextArg(fPtr, buffer, 4, 1);
-
-	int yOffset = getNextArg(fPtr, buffer, 4, 1);
-
-	if (xCount == -1 || yCount == -1 || xOffset == -1 || yOffset == -1)
+	if (returnMsg != 0)
 	{
-		return -1;
+		return returnMsg;
 	}
 
 
 	//fflush(fPtr);
 	unsigned long objectPosition = ftell(fPtr);
 			
-	for (int yIter = 0; yIter < yCount; yIter++)
+	for (int yIter = 0; yIter < args[1]; yIter++)
 	{
-		for (int xIter = 0; xIter < xCount; xIter++)
+		for (int xIter = 0; xIter < args[0]; xIter++)
 		{		
 			fseek(fPtr, objectPosition, SEEK_SET);
 
-			loadObjectOffset(gameWorld, fPtr, xOffset * xIter, yOffset * yIter);
+			loadObjectOffset(gameWorld, fPtr, args[2] * xIter, args[3] * yIter);
 		}
 	}
 
@@ -348,66 +343,27 @@ int loadRepeatingObject(World *gameWorld, FILE *fPtr)
 
 int loadObject(World *gameWorld, FILE *fPtr)
 {
-	char buffer[8] = {0};
+	// ID and X/Y pos
+	int coreArgs[5] = {0};
+	
+	int returnMsg = readMultipleIntArgs(fPtr, coreArgs, 3, 6);
 
-	// ID
-	int objectID = getNextArg(fPtr, buffer, 4, 1);
-
-	if (objectID == -1)
+	if (returnMsg != 0)
 	{
-		return -1;
-	}
-
-	// X and Y co-ords
-	int XPos = getNextArg(fPtr, buffer, 6, 1);
-
-	if (XPos == -1)
-	{
-		return -1;
-	}
-
-	int YPos = getNextArg(fPtr, buffer, 6, 1);
-
-	if (YPos == -1)
-	{
-		return -1;
+		return returnMsg;
 	}
 
 
 	// args
-	unsigned long objectPosition = ftell(fPtr);
+	int args[5] = {0};
 
-	int arg1 = getNextArg(fPtr, buffer, 6, 1);
-
-	if (arg1 == -1)
+	if (readMultipleIntArgs(fPtr, args, 5, 5) == -1)
 	{
 		return -1;
 	}
 
-	if (strcmp(buffer, "////") == 0)
-	{
-		addObject(gameWorld->objectList, objectID, XPos, YPos, 0, 0);
-		fseek(fPtr, objectPosition, SEEK_SET);
-		return 0;
-	}
 
-	objectPosition = ftell(fPtr);
-
-	int arg2 = getNextArg(fPtr, buffer, 6, 1);
-
-	if (arg2 == -1)
-	{
-		return -1;
-	}
-
-	if (strcmp(buffer, "////") == 0)
-	{
-		addObject(gameWorld->objectList, objectID, XPos, YPos, 0, 0);
-		fseek(fPtr, objectPosition, SEEK_SET);
-		return 0;
-	}
-
-	addObject(gameWorld->objectList, objectID, XPos, YPos, arg1, arg2);	
+	addObject(gameWorld->objectList, coreArgs[0], coreArgs[1], coreArgs[2], args[0], args[1], args[2], args[3], args[4]);	
 
 	return 0;
 }
@@ -415,142 +371,72 @@ int loadObject(World *gameWorld, FILE *fPtr)
 
 int loadObjectOffset(World *gameWorld, FILE *fPtr, int xOffset, int yOffset)
 {
-	char buffer[8] = {0};
+	// ID and X/Y pos
+	int coreArgs[5] = {0};
 
-	// ID
-	int objectID = getNextArg(fPtr, buffer, 4, 1);
-
-	if (objectID == -1)
-	{
-		return -1;
-	}
-
-	// X and Y co-ords
-	int XPos = getNextArg(fPtr, buffer, 6, 1);
-
-	if (XPos == -1)
-	{
-		return -1;
-	}
-
-	int YPos = getNextArg(fPtr, buffer, 6, 1);
-
-	if (YPos == -1)
+	if (readMultipleIntArgs(fPtr, coreArgs, 3, 6) != 0)
 	{
 		return -1;
 	}
 
 	// args
-	unsigned long objectPosition = ftell(fPtr);
+	int args[5] = {0};
 
-	int arg1 = getNextArg(fPtr, buffer, 6, 1);
-
-	if (arg1 == -1)
+	if (readMultipleIntArgs(fPtr, args, 5, 5) == -1)
 	{
 		return -1;
 	}
 
-	if (strcmp(buffer, "////") == 0)
-	{
-		addObject(gameWorld->objectList, objectID, XPos + xOffset, YPos + yOffset, 0, 0);
-		fseek(fPtr, objectPosition, SEEK_SET);
-		return 0;
-	}
-
-	objectPosition = ftell(fPtr);
-
-	int arg2 = getNextArg(fPtr, buffer, 6, 1);
-
-	if (arg2 == -1)
-	{
-		return -1;
-	}
-
-	if (strcmp(buffer, "////") == 0)
-	{
-		addObject(gameWorld->objectList, objectID, XPos + xOffset, YPos + yOffset, arg1, 0);
-		fseek(fPtr, objectPosition, SEEK_SET);
-		return 0;
-	}
-
-	addObject(gameWorld->objectList, objectID, XPos + xOffset, YPos + yOffset, arg1, arg2);	
+	addObject(gameWorld->objectList, coreArgs[0], coreArgs[1] + xOffset, coreArgs[2] + yOffset, args[0], args[1], args[2], args[3], args[4]);	
 
 	return 0;
 }
 
 
-int loadMovingPlatform(World *gameWorld, FILE *fPtr)
+int readMultipleIntArgs(FILE *fPtr, int argsBuffer[], int number, int argMaxLength)
 {
-	char buffer[8] = {0};
+	unsigned long objectPosition;
 
-	// ID
-	int objectID =  getNextArg(fPtr, buffer, 4, 1);
+	char inputBuffer[8] = {0};
 
-	if (objectID == -1)
+	for (int i = 0; i < number; i++)
 	{
-		return -1;
+		objectPosition = ftell(fPtr);
+
+		int returnMsg = getNextArg(fPtr, inputBuffer, argMaxLength);
+
+		if (returnMsg == -1)
+		{
+			return -1;
+		}
+
+		if (strcmp(inputBuffer, "////") == 0)
+		{
+			fseek(fPtr, objectPosition, SEEK_SET);
+			return 0;
+		}
+		else
+		{
+			argsBuffer[i] = convertStrToInt(inputBuffer, argMaxLength);
+		}
+	
 	}
-
-	// X and Y co-ords
-	int XPos = getNextArg(fPtr, buffer, 6, 1);
-
-	if (XPos == -1)
-	{
-		return -1;
-	}
-
-	int YPos = getNextArg(fPtr, buffer, 6, 1);
-
-	if (YPos == -1)
-	{
-		return -1;
-	}
-
-	// args
-	int bound1 = getNextArg(fPtr, buffer, 6, 1);
-
-	if (bound1 == -1)
-	{
-		return -1;
-	}
-
-	int bound2 =  getNextArg(fPtr, buffer, 6, 1);
-
-	if (bound2 == -1)
-	{
-		return -1;
-	}
-
-	int speed = getNextArg(fPtr, buffer, 6, 1);
-
-	if (speed == -1)
-	{
-		return -1;
-	}
-
-	int timer = getNextArg(fPtr, buffer, 6, 1);
-
-	if (timer == -1)
-	{
-		return -1;
-	}
-
-	addMovingPlatform(gameWorld->objectList, objectID, XPos, YPos, bound1, bound2, speed, timer);	
 
 	return 0;
 }
 
 
-int getNextArg(FILE *fPtr, char buffer[], int max, int convertToInteger)
+int getNextArg(FILE *fPtr, char buffer[], int max)
 {
 	int i = 0;
 
 	do
 	{
 		fread(buffer, sizeof(char), 1, fPtr);
-
+	
 		i++;
 	} while (buffer[0] == '_' && i < max);
+
 
 	if (i > 3)
 	{
@@ -558,13 +444,19 @@ int getNextArg(FILE *fPtr, char buffer[], int max, int convertToInteger)
 		return -1;
 	}
 
-
 	i = 0;
 	
 	while (buffer[i] != '_' && i < max)
 	{
 		i++;
 		fread(buffer + i, sizeof(char), 1, fPtr);
+
+		buffer[i + 1] = 0;
+
+		if (strcmp(buffer, "////") == 0)
+		{
+			return 0;
+		}
 	}
 
 	fread(buffer + i, sizeof(char), 1, fPtr);
@@ -577,15 +469,7 @@ int getNextArg(FILE *fPtr, char buffer[], int max, int convertToInteger)
 
 	buffer[i] = 0;
 
-	printf("Buffer: (%s) Length of arg: %d\n", buffer, i);
-
-
-	if (convertToInteger == 1)
-	{
-		return convertStrToInt(buffer, i);
-	}
-
-	return i;
+	return 0;
 }
 
 

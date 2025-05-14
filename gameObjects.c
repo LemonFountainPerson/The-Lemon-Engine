@@ -251,63 +251,7 @@ int switchObjectSpriteName(char spriteName[], Object *inputObject, ObjectControl
 }
 
 
-Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int objectID)
-{
-	Object *currentObject;
-	currentObject = objectList->firstObject;
-
-
-	Object *newObject = malloc(sizeof(Object));
-
-	if (newObject == NULL)
-	{
-		printf("\nError: Could not allocate memory for new object.\n\n");
-		fflush(stdout);
-		return NULL;
-	}
-
-
-	int i = 1;
-
-	if (currentObject != NULL)
-	{
-		while (currentObject->nextObject != NULL && i < objectList->objectCount)
-		{
-			currentObject = currentObject->nextObject;
-			i++;
-		}
-
-		currentObject->nextObject = newObject;
-	}
-	else
-	{
-		objectList->firstObject = newObject;
-	}
-
-	objectList->lastObject = newObject;
-
-
-	objectList->objectCount = i + 1;
-
-	newObject->nextObject = NULL;
-	newObject->prevObject = currentObject;
-	newObject->xPos = (double)abs(xPos - (xPos % X_TILESCALE));
-	newObject->yPos = (double)abs(yPos - (yPos % Y_TILESCALE));
-	newObject->yVel = 0.0;
-	newObject->xVel = 0.0;
-
-	newObject->objectID = objectID;
-	newObject->currentAnimation = 0;
-	newObject->animationTick = 0;
-	newObject->spriteBuffer = NULL;
-	newObject->xFlip = 1;
-	newObject->yFlip = 1;
-
-	return newObject;
-}
-
-
-Object* addObject(ObjectController *objectList, int objectID, int xPos, int yPos, int arg1, int arg2)
+Object* addObject(ObjectController *objectList, int objectID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5)
 {
 	Object *newObject;
 	newObject = createNewObject(objectList, xPos, yPos, objectID);
@@ -333,8 +277,6 @@ Object* addObject(ObjectController *objectList, int objectID, int xPos, int yPos
 
 	createObjectSpriteSet(objectList, objectID);
 	switchObjectSprite(1, newObject, objectList);
-
-	printf("\nCreated object %d;\n\n", objectID);
 
 
 	// Set Object parameters
@@ -417,6 +359,16 @@ Object* addObject(ObjectController *objectList, int objectID, int xPos, int yPos
 			newObject->xSize = 2 * X_TILESCALE;
 			break;
 
+		case HORIZONTAL_GATE:
+		// Medium sized, horizontal gate
+			newObject->arg1 = arg1;
+			newObject->arg2 = 0;
+			newObject->arg3 = yPos;
+			newObject->arg4 = arg2;
+			newObject->ySize = 2 * Y_TILESCALE;
+			newObject->xSize = 4 * X_TILESCALE;
+			break;
+
 
 		case GATE_SWITCH:
 		// switch for gate - arg1 is ID to match switch to gate, arg2 denotes type of switch (0 = or switch, 1 = and switch)
@@ -449,7 +401,7 @@ Object* addObject(ObjectController *objectList, int objectID, int xPos, int yPos
 
 		case MOVING_PLATFORM_VER:
 		case MOVING_PLATFORM_HOR:
-			printf("Creating platform object via generic add object function. Did you mean 'addMovingPlatform'?\n");
+			defineMovingPlatform(newObject, objectID, xPos, yPos, arg1, arg2, arg3, arg4);
 			break;
 
 
@@ -460,46 +412,96 @@ Object* addObject(ObjectController *objectList, int objectID, int xPos, int yPos
 	newObject->xPosRight = newObject->xPos + newObject->xSize;
 	newObject->yPosTop = newObject->xPos + newObject->xSize;
 
+	
+	printf("\nCreated object type: %d;\n\n", objectID);
+
+
 	return newObject;
 }
 
 
-Object* addMovingPlatform(ObjectController *objectList, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer)
+Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int objectID)
 {
-	Object *newObject;
-	newObject = createNewObject(objectList, xPos, yPos, objectID);
+	Object *currentObject;
+	currentObject = objectList->firstObject;
+
+
+	Object *newObject = malloc(sizeof(Object));
 
 	if (newObject == NULL)
+	{
+		printf("\nError: Could not allocate memory for new object.\n\n");
+		fflush(stdout);
+		return NULL;
+	}
+
+
+	int i = 1;
+
+	if (currentObject != NULL)
+	{
+		while (currentObject->nextObject != NULL && i < objectList->objectCount)
+		{
+			currentObject = currentObject->nextObject;
+			i++;
+		}
+
+		currentObject->nextObject = newObject;
+	}
+	else
+	{
+		objectList->firstObject = newObject;
+	}
+
+	objectList->lastObject = newObject;
+
+
+	objectList->objectCount = i + 1;
+
+	newObject->nextObject = NULL;
+	newObject->prevObject = currentObject;
+	newObject->xPos = (double)abs(xPos - (xPos % X_TILESCALE));
+	newObject->yPos = (double)abs(yPos - (yPos % Y_TILESCALE));
+	newObject->yVel = 0.0;
+	newObject->xVel = 0.0;
+
+	newObject->objectID = objectID;
+	newObject->currentAnimation = 0;
+	newObject->animationTick = 0;
+	newObject->spriteBuffer = NULL;
+	newObject->xFlip = 1;
+	newObject->yFlip = 1;
+
+	return newObject;
+}
+
+
+Object* defineMovingPlatform(Object *inputObject, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer)
+{
+	if (inputObject == NULL)
 	{
 		return NULL;
 	}
 
 	// Default settings
-	newObject->objectRenderMode = DEFAULT_TO_SPRITE;
-	newObject->layer = BACKGROUND;
-	newObject->ySize = Y_TILESCALE;
-	newObject->xSize = X_TILESCALE * 3;
-	newObject->arg1 = bound1;
-	newObject->arg2 = bound2;
+	inputObject->layer = BACKGROUND;
+	inputObject->ySize = Y_TILESCALE;
+	inputObject->xSize = X_TILESCALE * 3;
+	inputObject->arg1 = bound1;
+	inputObject->arg2 = bound2;
 
-	if (abs(newObject->arg3) > 16)
+	if (abs(inputObject->arg3) > 16)
 	{
-		newObject->arg3 = 16;
+		inputObject->arg3 = 16;
 	}
 	else
 	{
-		newObject->arg3 = abs(speed);
+		inputObject->arg3 = abs(speed);
 	}
 	
-	newObject->arg4 = 1;
-	newObject->arg5 = abs(timer);
-	newObject->currentSprite = 1;
-	newObject->solid = 1;
-
-	createObjectSpriteSet(objectList, objectID);
-	switchObjectSprite(1, newObject, objectList);
-
-	printf("\nCreated object %d;\n\n", objectID);
+	inputObject->arg4 = 1;
+	inputObject->arg5 = abs(timer);
+	inputObject->solid = 1;
 
 
 	switch (objectID)
@@ -509,10 +511,7 @@ Object* addMovingPlatform(ObjectController *objectList, int objectID, int xPos, 
 		break;
 	}
 
-	newObject->xPosRight = newObject->xPos + newObject->xSize;
-	newObject->yPosTop = newObject->xPos + newObject->xSize;
-
-	return newObject;
+	return inputObject;
 }
 
 
@@ -845,7 +844,7 @@ void updateObjects(World *gameWorld, int keyboard[256], double deltaTime)
 
 			case HORIZONTAL_GATE:
 			{
-				updateVerticalGate(currentObject, objectList, deltaTime, player);
+				updateHorizontalGate(currentObject, objectList, deltaTime, player);
 			} break;
 
 
@@ -1036,6 +1035,116 @@ int updateVerticalGate(Object *gate, ObjectController *objectList, double deltaT
 	}
 
 
+	return 0;
+}
+
+
+int updateHorizontalGate(Object *gate, ObjectController *objectList, double deltaTime, PlayerData *player)
+{
+	// arg1 = door ID
+	// arg2 = door open/close (0/1)
+	// arg3 = closed gate y position 
+	// arg4 = speed
+	
+	if (objectList == NULL)
+	{
+		return -1;
+	}
+
+
+	// Evaluate state of gate
+	gateControl(gate, objectList);
+
+
+	int closedPosition = gate->arg3;
+	int speed = gate->arg4;
+
+	// Animation control
+	switch (gate->currentAnimation)
+	{
+		case 0:
+		{
+			gate->yPos = closedPosition;
+			gate->yVel = 0.0;
+
+			if (gate->arg2 == 1)
+			{
+				gate->currentAnimation = 1;
+				gate->animationTick = 0;
+				LemonPlaySound("GateOpen", "Objects", 4, 1.0);
+			}
+		
+		} break;
+
+		case 1:
+		{
+			gate->xVel += 0.1 * (speed/abs(speed));
+
+			if (fabs(gate->xVel) > abs(speed))
+			{
+				gate->xVel = speed;
+			}
+
+
+			if (overlapsPlayer(player, gate->xPos + (gate->xVel * deltaTime), gate->xPos + gate->xSize + (gate->xVel * deltaTime), gate->yPos, gate->yPos + gate->ySize) == 1)
+			{
+				gate->xVel = 0.0;
+			}
+
+
+			if ( (speed < 0 && gate->xPos < closedPosition - gate->xSize) || (speed > 0 && gate->xPos > closedPosition + gate->xSize) )
+			{
+				gate->currentAnimation = 2;
+				gate->animationTick = 0;
+				gate->xVel = 0.0;
+				gate->xPos = closedPosition + (gate->ySize * (speed/abs(speed)));
+			}
+
+		} break;
+
+
+		case 2:
+		{
+			gate->xPos = closedPosition + (gate->ySize * (speed/abs(speed)));
+			gate->xVel = 0.0;
+
+			if (gate->arg2 == 0)
+			{
+				gate->currentAnimation = 3;
+				gate->animationTick = 0;
+				LemonPlaySound("GateClose", "Objects", 4, 1.0);
+			}
+
+		} break;
+
+
+		case 3:
+		{
+			gate->xVel -= 0.1 * (speed/abs(speed));
+
+			if (fabs(gate->xVel) > abs(speed))
+			{
+				gate->xVel = speed * (speed/abs(speed));
+			}
+
+
+			if (overlapsPlayer(player, gate->xPos + (gate->xVel * deltaTime), gate->xPos + gate->xSize + (gate->xVel * deltaTime), gate->yPos, gate->yPos + gate->ySize) == 1)
+			{
+				gate->xVel = 0.0;
+			}
+
+
+			if ( (speed > 0 && gate->xPos < closedPosition) || (speed < 0 && gate->xPos > closedPosition) )
+			{
+				gate->currentAnimation = 0;
+				gate->animationTick = 0;
+				gate->xVel = 0.0;
+				gate->xPos = closedPosition;
+			}
+
+		} break;
+	}
+
 
 	return 0;
 }
@@ -1158,9 +1267,7 @@ int moveObjectX(Object *inputObject, PlayerData *player, double deltaTime)
 
 	if (result == 1)
 	{
-		printf("%lf %lf >>> ", player->xPos, player->xPos + inputObject->xVel);
 		player->xPos += (inputObject->xVel * deltaTime);
-		printf("%lf %lf\n", player->xPos, player->xPos - inputObject->xVel);
 	}	
 
 
@@ -1254,12 +1361,12 @@ int updateHorizontalPlatform(PlayerData *player, Object *platform, double deltaT
 	// Accelerate
 	if (platform->arg4 > 0 && platform->xVel < (double)maxSpeed && XPos < rightBound)
 	{
-		platform->xVel += 0.75 * deltaTime;
+		platform->xVel = 0.75 * deltaTime;
 	}
 
 	if (platform->arg4 < 0 && platform->xVel > -(double)maxSpeed && XPos > leftBound)
 	{
-		platform->xVel -= 0.75 * deltaTime;
+		platform->xVel = 0.75 * deltaTime;
 	}
 
 

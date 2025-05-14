@@ -22,13 +22,15 @@ int main(void)
 /*
 TO DO:
 
-- Fix collision/magnetisation on moving platforms
+(In order of importance)
+
+- Make a good engine
+- Fix collision on moving objects (maybe to do with floating point inaccuracies?)
 - Get frame throttle toggling back online
-- Refactor add object routines so that it stems from one function?
-- Add modifiable offsets to rendermode 4 sprites/objects?
-- Add object type enum? Only for seperating groups of objects for efficiency/readability; may not be worth it
+- Fix render mode 1 on backgrounds
 - Make basis for particle system: objects that use animation tick to determine when to delete and how to animate, being on particle layer marks it as unimportant for collision evaluation, EFFICIENCYEFFICIENCY
-- Add horizontal gate
+- Add modifiable offsets to rendermode 4 sprites/objects?
 - Design HUD/menu system (??)
+- Add object type enum? Only for seperating groups of objects for efficiency/readability; may not be worth it
 
 *\

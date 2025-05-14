@@ -425,7 +425,7 @@ World* initialiseGame(PlayerData *player)
 
 	// Load backgrounds
 	loadBackGroundSprite("BG_Water", 0, 0, gameWorld);
-	loadBackGroundSprite("BG_GreenHill", 1, 0, gameWorld);
+	loadBackGroundSprite("BG_GreenHill", 1, 2, gameWorld);
 
 	//switchBackGroundSprite(1, 0, gameWorld);
 

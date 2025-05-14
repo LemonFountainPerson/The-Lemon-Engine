@@ -30,7 +30,9 @@ int loadMovingPlatform(World *gameWorld, FILE *fPtr);
 int loadLevelFlag(World *gameWorld, FILE *fPtr);
 
 
-int getNextArg(FILE *fPtr, char buffer[], int max, int convertToInteger);
+int readMultipleIntArgs(FILE *fPtr, int argsBuffer[], int number, int argMaxLength);
+
+int getNextArg(FILE *fPtr, char buffer[], int max);
 
 int convertStrToInt(char str[], int size);
 

@@ -12,7 +12,7 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 {
 	if (gameWorld == NULL || gameWorld->drawPlayer == 0 || gameWorld->Player == NULL)
 	{
-		return -1;
+		return MISSING_DATA;
 	}
 
 	PlayerData *player;
@@ -29,7 +29,7 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 
 	if (spritePtr == NULL)
 	{
-		return -1;
+		return MISSING_DATA;
 	}
 
 	// Load up data buffers for sprite to be rendered
@@ -92,7 +92,7 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 	// Player Hitbox
 	if (gameWorld->drawHitboxes == 0)
 	{
-		return 1;
+		return ACTION_DISABLED;
 	}
 
 	for (int i = xDraw; i < xDraw2; i++)
@@ -112,7 +112,7 @@ int worldCameraControl(int width, int height, PlayerData *player, World *gameWor
 {
 	if (player == NULL || gameWorld == NULL)
 	{
-		return -1;
+		return MISSING_DATA;
 	}
 
 	int xOffset = (int)player->xPos - gameWorld->cameraX;
@@ -287,7 +287,7 @@ int drawObjects(Layer drawLayer, uint32_t screen[], int width, int height, World
 	// As such, readability was sacrificed somewhat. Continue at your own risk!
 	if (gameWorld == NULL || gameWorld->objectList == NULL)
 	{
-		return -1;
+		return MISSING_DATA;
 	}
 
 	Object *currentObject;
@@ -324,12 +324,12 @@ int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int
 {
 	if (currentObject == NULL || currentObject->objectRenderMode == DO_NOT_RENDER)
 	{
-		return -1;
+		return MISSING_DATA;
 	}
 
 	if (gameWorld->drawnObjects > MAX_OBJECTS || currentObject->layer != drawLayer)
 	{
-		return 1;
+		return ACTION_DISABLED;
 	}
 
 	
@@ -437,7 +437,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 
 	if (currentObject == NULL || gameWorld->drawSprites == 0)
 	{
-		return -1;
+		return MISSING_DATA;
 	}
 
 	Sprite *spritePtr;
@@ -445,7 +445,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 
 	if (spritePtr == NULL)
 	{
-		return -1;
+		return MISSING_DATA;
 	}
 
 	// If the object's render mode is less than 0 (the default) the sprite is rendered according to the sprite's individual render mode
@@ -501,7 +501,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 	// Make sure the sprite position is valid on screen to avoid a crash related to assuming the position is valid
 	if (xDraw >= screenWidth || xDraw2 < 0 || yDraw >= screenHeight || yDraw2 < 0)
 	{
-		return -2;
+		return INVALID_DATA;
 	}
 
 
@@ -541,7 +541,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			return 0;
 		}
 
-		return -1;
+		return INVALID_DATA;
 	}
 
 
@@ -616,9 +616,8 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			return 0;
 		}
 
-		return -1;
+		return INVALID_DATA;
 	}
-
 
 
 	return 0;
@@ -1238,7 +1237,7 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 {
 	if (gameWorld == NULL || gameWorld->drawBackGround == 0)
 	{
-		return -1;
+		return MISSING_DATA;
 	}
 
 	Sprite *spritePtr;
@@ -1246,7 +1245,7 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 
 	if (spritePtr == NULL)
 	{
-		return -1;
+		return MISSING_DATA;
 	}
 
 	// Load up data buffers for sprite to be rendered
@@ -1263,14 +1262,14 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 	int xDraw2, xDraw, yDraw2, yDraw;
 
 
-	// 	RenderMode 0: Tile Mapping											(Sprite will tile across entire bounding box of object)
-	//	RenderMode 1: Straight sprite render								(Renders single instance of sprite directly to bottom-left corner)
+	//	RenderMode 0: Tile Mapping								(Sprite will tile across entire bounding box of object)
+	//	RenderMode 1: Single sprite render 						(Renders single instance of sprite directly to bottom-left corner)
 	//  RenderMode 2: Row Parallax
 
 	if (spritePtr->RenderMode == 1)
 	{
-		xDraw = correct((spriteWidth>>1) - xOffset, 0, screenWidth - 1);
-		yDraw = correct((spriteHeight>>1) - yOffset, 0, screenHeight - 1);
+		xDraw = correct(xOffset - (spriteWidth>>1), 0, screenWidth - 1);
+		yDraw = correct(yOffset - (spriteHeight>>1), 0, screenHeight - 1);
 		xDraw2 = correct((spriteWidth>>1) + xOffset, 0, screenWidth - 1);
 		yDraw2 = correct((spriteHeight>>1) + yOffset, 0, screenHeight - 1);
 	}
@@ -1280,35 +1279,27 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 		yDraw = 0;
 		xDraw2 = screenWidth - 1;
 		yDraw2 = screenHeight - 1;
+
+		// Correct y bounds if in tile mode 0
+		if (gameWorld->bgTileVertically == 0)
+		{
+			if (spriteHeight - yOffset < screenHeight)
+			{
+				yDraw2 = spriteHeight - yOffset;
+			}
+
+		}
 	}
 
-	if (spritePtr->RenderMode == 2)
-	{
-		xOffset = gameWorld->cameraX * (gameWorld->bgParallax - (gameWorld->bgChunkParallax * ((yOffset/gameWorld->bgParallaxChunkSize) * gameWorld->bgParallaxChunkSize) ) );
-	}
 
 	uint32_t hexValue = 0x00000000;
 	int pixelx = 0;
 	int pixely = 0;
 
-
-
 	size_t sizeOfPixel = sizeof(uint32_t);
 	int i, k;
 
 	pixely = spriteHeight - 1 - (((yDraw + yOffset) % spriteHeight));
-
-	// Correct y bounds if in tile mode 0
-	if (gameWorld->bgTileVertically == 0)
-	{
-
-		if (spriteHeight - yOffset < screenHeight)
-		{
-			yDraw2 = spriteHeight - yOffset;
-		}
-
-	}
-
 
 
 	// Render sprite to screen
@@ -1375,10 +1366,6 @@ int cleanRenderer(World *gameWorld, uint32_t screen[], int width, int height)
 {
 	memset(screen, 0x55, sizeof(uint32_t) * width * height);
 
-	for (int i = 0; i < width * height; i++)
-	{
-		screen[i] = 0x0090D5FF;
-	}
 
 	if (gameWorld != NULL)
 	{
