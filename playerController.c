@@ -180,7 +180,7 @@ int updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256], double
 
 		if (fabs(player->PhysicsXVelocity) > 0.2)
 		{
-			player->xVelocity = player->PhysicsXVelocity;
+			player->xVelocity = player->PhysicsXVelocity + (hAxis * 0.75 * deltaTime);
 		}
 	}
 	else
@@ -309,6 +309,8 @@ int objectCollisionX(PlayerData *player, World *gameWorld)
 
 	double objX, objY, objX2, objY2;
 
+	double prevYPos = player->yPos;
+
 
 	while (currentObject != NULL)
 	{
@@ -332,32 +334,35 @@ int objectCollisionX(PlayerData *player, World *gameWorld)
 			{
 				double slope = ((double)currentObject->ySize/(double)currentObject->xSize);
 
+				double slopeFloor = ((player->xPos + PLAYERWIDTH - objX) * slope);
+
 				result = overlapsRightSlope(player, objX, objX2, objY, slope);
 
 				int i = 0;
 
-				if (result == 1 && slope < 2.0)
+				if (result == 1 && slope < 2.0 && slopeFloor - player->yPos < 4 && player->xVelocity > 0.0)
 				{
-					for (int i = 0; result == 1 && i < 24; i++)
-					{
-						player->yPos += 1.0;
-						result = overlapsRightSlope(player, objX, objX2, objY, slope);
-					}
+					player->yPos = slopeFloor + objY + 1;
 
-					player->yPos -= 24.0 * result;
+					player->jumpProgress = 0;
+
+					result = overlapsRightSlope(player, objX, objX2, objY, slope);
 				}
+
 
 				if (result == 1)
 				{
-					if (player->xVelocity > 0.0)
+					if (player->xVelocity > 0.0 || player->PhysicsXVelocity > 0.0)
 					{
 						player->xPos -= (player->xPos + PLAYERWIDTH - objX) - ((player->yPos - objY) / slope);
 					}
 
-					if (player->xVelocity < 0.0)
+					if (player->xVelocity < 0.0 || player->PhysicsXVelocity < 0.0)
 					{
 						player->xPos += objX2 - player->xPos;
 					}
+
+					player->yPos = prevYPos;
 
 					ApplyXPhysics(player, currentObject);
 				}
@@ -384,16 +389,17 @@ int objectCollisionX(PlayerData *player, World *gameWorld)
 
 				if (result == 1)
 				{
-					if (player->xVelocity > 0.0)
+					if (player->xVelocity > 0.0  || player->PhysicsXVelocity > 0.0)
 					{
 						player->xPos += objX - player->xPos - PLAYERWIDTH;
 					}
 
-					if (player->xVelocity < 0.0)
+					if (player->xVelocity < 0.0  || player->PhysicsXVelocity < 0.0)
 					{
 						player->xPos -= ((player->xPos - objX) - (currentObject->xSize - ((player->yPos - objY) / slope)));
-						printf("EVIL GENUIUS\n");
 					}
+
+					player->yPos = prevYPos;
 
 					ApplyXPhysics(player, currentObject);
 				}
@@ -407,15 +413,17 @@ int objectCollisionX(PlayerData *player, World *gameWorld)
 
 			default:
 			{
-				if (player->xVelocity > 0.0)
+				if (player->PhysicsXVelocity + player->xVelocity > 0.0)
 				{
 					player->xPos += objX - player->xPos - PLAYERWIDTH;
 				}
 
-				if (player->xVelocity < 0.0)
+				if (player->PhysicsXVelocity + player->xVelocity < 0.0)
 				{
 					player->xPos += objX2 - player->xPos;
 				}
+
+				player->yPos = prevYPos;
 
 				ApplyXPhysics(player, currentObject);
 
@@ -481,6 +489,7 @@ int objectCollisionY(PlayerData *player, World *gameWorld)
 
 	double objX, objY, objX2, objY2;
 
+	double prevXPos = player->xPos;
 
 	while (currentObject != NULL)
 	{
@@ -508,17 +517,17 @@ int objectCollisionY(PlayerData *player, World *gameWorld)
 
 				if (result == 1)
 				{
-					if (player->yVelocity > 0.0)
+					if (player->yVelocity > 0.0 || player->PhysicsYVelocity > 0.0)
 					{
 						player->yPos = (objY - PLAYERHEIGHT);
 						player->jumpProgress = 100;
 					}
 
-					if (player->yVelocity < 0.0)
+					if (player->yVelocity < 0.0 || player->PhysicsYVelocity < 0.0)
 					{
 						// If player is halfway off edge, floor of slope continues to be calculated as Y = X * slope
 						// So here it is reset to the expected maximum if it over
-						int slopeFloor = ((player->xPos + PLAYERWIDTH - objX) * slope);
+						double slopeFloor = ((player->xPos + PLAYERWIDTH - objX) * slope);
 
 						if (slopeFloor > currentObject->ySize)
 						{
@@ -544,17 +553,17 @@ int objectCollisionY(PlayerData *player, World *gameWorld)
 
 				if (result == 1)
 				{
-					if (player->yVelocity > 0.0)
+					if (player->yVelocity > 0.0 || player->PhysicsYVelocity > 0.0)
 					{
 						player->yPos = (objY - PLAYERHEIGHT);
 						player->jumpProgress = 100;
 					}
 
-					if (player->yVelocity < 0.0)
+					if (player->yVelocity < 0.0 || player->PhysicsYVelocity < 0.0)
 					{
 						// If player is halfway off edge, floor of slope continues to be calculated as Y = xSize - X * slope
 						// So here it is reset to the expected maximum if it over
-						int slopeFloor = ((currentObject->xSize - (player->xPos - objX)) * slope);
+						double slopeFloor = ((currentObject->xSize - (player->xPos - objX)) * slope);
 
 						if (slopeFloor > currentObject->ySize)
 						{
@@ -591,17 +600,19 @@ int objectCollisionY(PlayerData *player, World *gameWorld)
 
 			default:
 			{
-				if (player->yVelocity > 0.0)
+				if (player->yVelocity > 0.0 || player->PhysicsYVelocity > 0.0)
 				{
 					player->yPos += (objY - player->yPos - PLAYERHEIGHT);
 					player->jumpProgress = 100;
 				}
 
-				if (player->yVelocity < 0.0)
+				if (player->yVelocity < 0.0 || player->PhysicsYVelocity < 0.0)
 				{
 					player->yPos += (objY2 - player->yPos);
 					player->jumpProgress = 0;
 				}
+
+				player->xPos = prevXPos;
 
 				ApplyYPhysics(player, currentObject);
 			} break;
@@ -694,7 +705,7 @@ int checkIfGrounded(World *gameWorld, PlayerData *player)
 		double objX2 = objX + currentObject->xSize;
 		double objY2 = objY + currentObject->ySize;
 
-		player->yPos -= 3;
+		player->yPos -= 2;
 
 		result = overlapsBox(player, objX, objX2, objY, objY2);
 
@@ -717,7 +728,7 @@ int checkIfGrounded(World *gameWorld, PlayerData *player)
 			}
 		}
 
-		player->yPos += 3;
+		player->yPos += 2;
 
 		if (result > 0)
 		{

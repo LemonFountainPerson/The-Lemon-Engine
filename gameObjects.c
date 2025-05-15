@@ -787,11 +787,11 @@ void updateObjects(World *gameWorld, int keyboard[256], double deltaTime)
 			{
 				updateHorizontalPlatform(player, currentObject, deltaTime);
 
-				currentObject->xPos += (int)(deltaTime * currentObject->xVel);
+				currentObject->xPos += (deltaTime * currentObject->xVel);
 
 				int overlaps = OverlapsObjectType(objectList, 3, currentObject) || OverlapsObjectType(objectList, 2, currentObject);
 
-				currentObject->xPos -= (int)(deltaTime * currentObject->xVel);
+				currentObject->xPos -= (deltaTime * currentObject->xVel);
 
 				if (overlaps == 1)
 				{
@@ -1339,7 +1339,7 @@ int moveObjectY(Object *inputObject, PlayerData *player, double deltaTime)
 
 	if (result == 1)
 	{
-		player->yPos += (int)(inputObject->yVel * deltaTime);
+		player->yPos += (inputObject->yVel * deltaTime);
 	}	
 
 	return 0;

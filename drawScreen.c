@@ -641,8 +641,9 @@ int renderSprite_LRUD_TileMode(uint32_t screen[], int screenWidth, unsigned char
 	for (j = yDraw; j < yDraw2; j++)
 	{
 		int pixelx = ((xDraw - xOffset) % spriteWidth);
+		i = xDraw;
 
-		for (i = xDraw; i < xDraw2 && (xOffset - i) % 2 != 0; i++)
+		for (; i < xDraw2 && (xOffset - i) % 2 != 0; i++)
 		{
 			if ((uint32_t)data[((pixely << 2) * spriteWidth) + (pixelx << 2) + 3] > 0x00)
 			{
@@ -666,7 +667,7 @@ int renderSprite_LRUD_TileMode(uint32_t screen[], int screenWidth, unsigned char
 
 			if (pixelx > spriteWidth - 1)
 			{
-				pixelx = 0;
+				pixelx = pixelx - spriteWidth;
 			}
 		}
 
@@ -682,7 +683,7 @@ int renderSprite_LRUD_TileMode(uint32_t screen[], int screenWidth, unsigned char
 
 			if (pixelx > spriteWidth - 1)
 			{
-				pixelx = 0;
+				pixelx = pixelx - spriteWidth;
 			}
 		}
 
@@ -736,7 +737,7 @@ int renderSprite_RLUD_TileMode(uint32_t screen[], int screenWidth, unsigned char
 
 			if (pixelx < 0)
 			{
-				pixelx = spriteWidth - 1;
+				pixelx = spriteWidth + pixelx;
 			}
 		}
 
@@ -798,7 +799,7 @@ int renderSprite_LRDU_TileMode(uint32_t screen[], int screenWidth, unsigned char
 
 			if (pixelx >= spriteWidth)
 			{
-				pixelx = 0;
+				pixelx = pixelx - spriteWidth;
 			}
 		}
 
@@ -860,7 +861,7 @@ int renderSprite_RLDU_TileMode(uint32_t screen[], int screenWidth, unsigned char
 
 			if (pixelx < 0)
 			{
-				pixelx = spriteWidth - 1;
+				pixelx = spriteWidth + pixelx;
 			}
 		}
 
@@ -1312,15 +1313,10 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 		
 		pixelx = ((xDraw + xOffset) % spriteWidth);
 
-		for (k = xDraw; k < xDraw2 && pixelx < spriteWidth; k++)
-		{
-			memcpy(screen + (i * screenWidth) + k, data + (((int)pixely << 2) * spriteWidth) + ((int)pixelx << 2), sizeOfPixel);
+		memcpy(screen + (i * screenWidth), data + (((int)pixely << 2) * spriteWidth) + ((int)pixelx << 2), sizeOfPixel * (spriteWidth - pixelx));
+		
 
-			pixelx++;
-		}
-
-
-		for (; k + spriteWidth < screenWidth; k += spriteWidth)
+		for (k = spriteWidth - pixelx; k + spriteWidth < screenWidth; k += spriteWidth)
 		{
 			memcpy(screen + (i * screenWidth) + k, data + ((pixely << 2) * spriteWidth), spriteWidth * sizeOfPixel);
 		}

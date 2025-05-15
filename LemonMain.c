@@ -1,5 +1,6 @@
 #include "LemonMain.h"
 
+static int frameThrottle = 1;
 
 // Lemon Engine main - SDL
 int RunLemonEngine(void)
@@ -127,10 +128,8 @@ int RunLemonEngine(void)
        
 
 		// Framerate control
-		if (frameThrottle == 1)
-		{
-    		frameRate(60, gameTick);
-		}
+    	frameRate(60, gameTick);
+
 
 		if (((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) > 0.99)
 		{
@@ -278,92 +277,92 @@ void DebugControls(World *GameWorld, PlayerData *player, int keyboard[256], Obje
 
 
     if (keyboard['T'] && clickT == 0)
-		{
-    		clickT = 1;
-    		frameThrottle = (frameThrottle + 1) % 2;
-    		printf("Toggling framerate throttle: %d\n", frameThrottle);
-		}
+	{
+    	clickT = 1;
+    	frameThrottle = (frameThrottle + 1) % 2;
+    	printf("Toggling framerate throttle: %d\n", frameThrottle);
+	}
 
-		if (keyboard['T'] == 0)
-		{
-    		clickT = 0;
-		}
+	if (keyboard['T'] == 0)
+	{
+    	clickT = 0;
+	}
 
-		if (keyboard['Y'] && clickY == 0)
-		{
-			//clearGameData(gameWorld, player);
-			//deleteObject(gameWorld->objectList, &gameWorld->objectList->startPtr);
-			//switchLevel(gameWorld, 1);
-    		testObject->layer = (testObject->layer + 1) % 4;
-			setDrawPriorityToBack(GameWorld->objectList, testObject);
-			clickY = 1;
-		}
+	if (keyboard['Y'] && clickY == 0)
+	{
+		//clearGameData(gameWorld, player);
+		//deleteObject(gameWorld->objectList, &gameWorld->objectList->startPtr);
+		//switchLevel(gameWorld, 1);
+    	testObject->layer = (testObject->layer + 1) % 4;
+		setDrawPriorityToBack(GameWorld->objectList, testObject);
+		clickY = 1;
+	}
 
-		if (keyboard['Y'] == 0)
-		{
-			clickY = 0;
-		}
+	if (keyboard['Y'] == 0)
+	{
+		clickY = 0;
+	}
 
-		if (keyboard['U'] && clickU == 0)
-		{
-			clickU = 1;
-			GameWorld->drawHitboxes = (GameWorld->drawHitboxes + 1) % 2;
-			printf("Toggling draw Hitboxes:\n");
-		}
+	if (keyboard['U'] && clickU == 0)
+	{
+		clickU = 1;
+		GameWorld->drawHitboxes = (GameWorld->drawHitboxes + 1) % 2;
+		printf("Toggling draw Hitboxes:\n");
+	}
 
-		if (keyboard['U'] == 0)
-		{
-			clickU = 0;
-		}
+	if (keyboard['U'] == 0)
+	{
+		clickU = 0;
+	}
 
-		if (keyboard['I'] && clickI == 0)
-		{
-			clickI = 1;
-			GameWorld->drawBackGround = (GameWorld->drawBackGround + 1) % 2;
-			printf("Toggling draw background:\n");
-		}
+	if (keyboard['I'] && clickI == 0)
+	{
+		clickI = 1;
+		GameWorld->drawBackGround = (GameWorld->drawBackGround + 1) % 2;
+		printf("Toggling draw background:\n");
+	}
 
-		if (keyboard['I'] == 0)
-		{
-    		clickI = 0;
-		}
+	if (keyboard['I'] == 0)
+	{
+    	clickI = 0;
+	}
 
-		if (keyboard['O'] && clickO == 0)
-		{
-    		clickO = 1;
-    		GameWorld->drawSprites = (GameWorld->drawSprites + 1) % 2;
-    		printf("Toggling Draw Sprites:\n");
-		}
+	if (keyboard['O'] && clickO == 0)
+	{
+    	clickO = 1;
+    	GameWorld->drawSprites = (GameWorld->drawSprites + 1) % 2;
+    	printf("Toggling Draw Sprites:\n");
+	}
 
-		if (keyboard['O'] == 0)
-		{
-    		clickO = 0;
-		}
+	if (keyboard['O'] == 0)
+	{
+    	clickO = 0;
+	}
 
 
-		if (keyboard['P'] && clickP == 0)
-		{
-    		clickP = 1;
-    		displayPlayerData = (displayPlayerData + 1 % 2);
-    		printf("Toggling Player data display:\n");
-		}
+	if (keyboard['P'] && clickP == 0)
+	{
+    	clickP = 1;
+    	displayPlayerData = (displayPlayerData + 1 % 2);
+    	printf("Toggling Player data display:\n");
+	}
 
-		if (keyboard['P'] == 0)
-		{
-			clickP = 0;
-		}
+	if (keyboard['P'] == 0)
+	{
+		clickP = 0;
+	}
 
-		if (keyboard['0'])
-		{
-    		Sleep(800);
-		}
+	if (keyboard['0'])
+	{
+    	Sleep(800);
+	}
 
-		if (displayPlayerData == 1)
-		{
-    		printf("Player: X: %.2lf Y: %.2lf xVel: %lf yVel: %lf Direction: %lf\n", player->xPos, player->yPos, player->xVelocity, player->yVelocity, player->direction);
-		}
+	if (displayPlayerData == 1)
+	{
+    	printf("Player: X: %.2lf Y: %.2lf xVel: %lf yVel: %lf Direction: %lf\n", player->xPos, player->yPos, player->xVelocity, player->yVelocity, player->direction);
+	}
 
-        return;
+    return;
 }
 
 

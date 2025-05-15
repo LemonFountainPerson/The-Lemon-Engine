@@ -163,7 +163,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
        
 
 		// Framerate control
-		if (frameThrottle == 1)
+		if (keyboard['T'] == 0)
 		{
     		frameRate(60, gameTick);
 		}

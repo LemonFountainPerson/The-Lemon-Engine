@@ -316,5 +316,5 @@ static SoundInstance AllSounds[CHANNEL_COUNT];
 
 static int gameRunning = 1;
 
-static int frameThrottle = 1;
+
 
