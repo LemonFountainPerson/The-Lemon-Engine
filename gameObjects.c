@@ -1344,7 +1344,7 @@ int moveObjectY(Object *inputObject, PlayerData *player, double deltaTime)
 	}
 	
 	
-	result = (overlapsPlayerFeet(player, ObjXPos, ObjXPos2, ObjYPos - (inputObject->yVel * deltaTime), ObjYPos2 + 2.0 - (inputObject->xVel * deltaTime) ) == 1 && player->yVelocity < 1.0);
+	result = (overlapsPlayerFeet(player, ObjXPos, ObjXPos2, ObjYPos - (inputObject->yVel * deltaTime), ObjYPos2 + 2.0 - (inputObject->yVel * deltaTime) ) == 1 && player->yVelocity < 1.0);
 
 	switch(inputObject->solid * result)
 	{

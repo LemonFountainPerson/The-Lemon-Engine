@@ -61,6 +61,7 @@ int switchBackGroundSprite(int spriteID, int desiredSetID, World *gameWorld)
 
 		while (i < currentSet->spriteCount && currentSprite != NULL && currentSprite->spriteID != spriteID)
 		{
+			printf("%d\n", currentSprite->spriteID);
 			currentSprite = currentSprite->nextSprite;
 			i++;
 		}
@@ -69,10 +70,12 @@ int switchBackGroundSprite(int spriteID, int desiredSetID, World *gameWorld)
 
 	if (currentSprite == NULL || currentSprite->spriteID != spriteID)
 	{
-		printf("Could not find sprite %d for Background\n", spriteID);
+		printf("Could not find sprite %d for Background set %d\n", spriteID, desiredSetID);
 		fflush(stdout);
 		return -1;
 	}
+
+	printf("Could not find sprite %d for Background set %d width: %d name: %s\n", spriteID, desiredSetID, currentSprite->width, currentSprite->spriteName);
 
 	gameWorld->bgSpriteBuffer = currentSprite;
 
@@ -227,6 +230,7 @@ int loadBackGroundSprite(char spriteName[], int desiredSetID, int tileMode, Worl
 	strcat(path, spriteName);
 
 	newSprite->spriteData = stbi_load(path, &spriteWidth, &spriteHeight, &n, 4);
+
 
 	// Load image
 	if (newSprite->spriteData == NULL)

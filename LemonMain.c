@@ -433,18 +433,11 @@ World* initialiseGame(PlayerData *player)
 	gameWorld->bgSpriteBuffer = NULL;
 
 	// Load backgrounds
-	loadBackGroundSprite("BG_Water", 0, 0, gameWorld);
-	loadBackGroundSprite("BG_GreenHill", 1, 2, gameWorld);
+	loadBackGroundSprite("BG_Water", 1, 0, gameWorld);
+	loadBackGroundSprite("BG_GreenHill", 1, 1, gameWorld);
 
-	//switchBackGroundSprite(1, 0, gameWorld);
+	switchBackGroundSprite(1, 1, gameWorld);
 
-	// Initialising level data and tileShape map
-	//memset(gameWorld->levelData, 0, sizeof(int) * GRID_HEIGHT * GRID_WIDTH);
-	//memset(gameWorld->tileShape, 0, sizeof(char) * TILE_COUNT);
-
-	// loading tileShape data
-	//strcpy(gameWorld->tileShape, "0#_0/");
-	//gameWorld->tileShape[3] = 92;
 
 	printf("Initialised World\n");
 	fflush(stdout);

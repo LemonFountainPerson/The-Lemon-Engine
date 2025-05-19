@@ -1388,10 +1388,10 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 
 	if (spritePtr->RenderMode == 1)
 	{
-		xDraw = correct(xOffset - (spriteWidth>>1), 0, screenWidth - 1);
-		yDraw = correct(yOffset - (spriteHeight>>1), 0, screenHeight - 1);
-		xDraw2 = correct((spriteWidth>>1) + xOffset, 0, screenWidth - 1);
-		yDraw2 = correct((spriteHeight>>1) + yOffset, 0, screenHeight - 1);
+		xDraw = correct(xOffset, 0, screenWidth - 1);
+		yDraw = correct(yOffset, 0, screenHeight - 1);
+		xDraw2 = correct(spriteWidth + xOffset, 0, screenWidth - 1);
+		yDraw2 = correct(spriteHeight + yOffset, 0, screenHeight - 1);
 	}
 	else
 	{
@@ -1427,16 +1427,19 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 			xOffset = gameWorld->cameraX * (gameWorld->bgParallax - (gameWorld->bgChunkParallax * (i + yOffset) ) );
 		}
 		
+
 		pixelx = ((xDraw + xOffset) % spriteWidth);
 
 		memcpy(screen + (i * screenWidth), data + ((pixely << 2) * spriteWidth) + (pixelx << 2), sizeOfPixel * (spriteWidth - pixelx));
 		
+		k = spriteWidth - pixelx;
 
-		for (k = spriteWidth - pixelx; k + spriteWidth < screenWidth; k += spriteWidth)
+		for (; k + spriteWidth < xDraw2; k += spriteWidth)
 		{
 			memcpy(screen + (i * screenWidth) + k, data + ((pixely << 2) * spriteWidth), spriteWidth * sizeOfPixel);
 		}
 
+	
 		memcpy(screen + (i * screenWidth) + k, data + ((pixely << 2) * spriteWidth), ((xDraw2 - k) % spriteWidth) * sizeOfPixel);
 
 		pixely--;
@@ -1445,6 +1448,7 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 		{
 			pixely = spriteHeight - 1;
 		}
+
 	}
 
 
