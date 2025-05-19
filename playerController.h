@@ -8,7 +8,7 @@ PlayerData* initialisePlayer(World *gameWorld);
 
 
 // Main player update script
-int updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256], double deltaTime);
+FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256], double deltaTime);
 
 
 int playerJump(PlayerData *player, int hAxis, int vAxis);
@@ -30,13 +30,20 @@ int objectCollisionY(PlayerData *player, World *gameWorld);
 int ApplyYPhysics(PlayerData *player, Object *inputObject);
 
 
+Object* OverlappingObject(PlayerData *player, World *gameWorld);
+
+
 int overlapsBox(PlayerData *player, double X1, double X2, double Y1, double Y2);
 
 
-int overlapsRightSlope(PlayerData *player, double X1, double X2, double Y, double slope);
+int overlapsRightSlope(PlayerData *player, Object *inputObject, double slope);
 
 
-int overlapsLeftSlope(PlayerData *player, double X1, double X2, double Y, double slope);
+int overlapsLeftSlope(PlayerData *player, Object *inputObject, double slope);
+
+
+int overlapsBoxAtFeet(PlayerData *player, double X1, double X2, double Y1, double Y2);
+
 
 
 int collideType(PlayerData *player, World *gameWorld, int objectID);

@@ -83,7 +83,10 @@ int renderSprite_RLDU_ScaleMode_Slow(uint32_t screen[], int screenWidth, int scr
 
 
 
+int renderSprite_LRUD_TileFastMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset);
 
+
+int renderSprite_LRDU_TileFastMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset);
 
 
 

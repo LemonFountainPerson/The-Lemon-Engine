@@ -19,8 +19,8 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 	player = gameWorld->Player;
 
 	// Find offsets of player relative to center of screen/camera
-	int xOffset = (int)player->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-	int yOffset = (int)player->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+	int xOffset = player->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
+	int yOffset = player->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
 
 
 	// Load correct sprite
@@ -38,10 +38,10 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 	unsigned char *data = spritePtr->spriteData;		// Instead of copying the data, use a pointer to reduce memory overhead
 
 	// Locate player on screen
-	int xDraw = correct(xOffset - (PLAYERWIDTH >> 1), 0, width - 1);
-	int yDraw = correct(yOffset, 0, height - 1);
-	int xDraw2 = correct(spriteWidth + xOffset - 16, 0, width - 1);
-	int yDraw2 = correct(spriteHeight + yOffset, 0, height - 1);
+	int xDraw = correct(xOffset - 8, 0, width);
+	int yDraw = correct(yOffset, 0, height);
+	int xDraw2 = correct(xOffset + spriteWidth - 8, -1, width - 1);
+	int yDraw2 = correct(spriteHeight + yOffset, -1, height - 1);
 
 	// Render to screen
 	uint32_t hexValue = 0x00000000;
@@ -49,7 +49,7 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 
 	if (gameWorld->drawSprites == 1 && player->xFlip == 1)
 	{
-		int pixelx = xDraw - (xOffset - 16);
+		int pixelx = 0;
 
 		for (int i = xDraw; i < xDraw2; i++, pixelx++)
 		{
@@ -67,7 +67,7 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 
 	if (gameWorld->drawSprites == 1 &&player->xFlip == -1)
 	{
-		int pixelx = spriteWidth - 1 + (xDraw - (xOffset - 16));
+		int pixelx = spriteWidth - 1;
 
 		for (int i = xDraw; i < xDraw2; i++, pixelx--)
 		{
@@ -467,13 +467,20 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 
 
 	// Locate object on screen
-	int xOffset = (int)currentObject->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-	int yOffset = (int)currentObject->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+	int xOffset = currentObject->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
+	int yOffset = currentObject->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
 	int xOffset2 = xOffset + currentObject->xSize;
 	int yOffset2 = yOffset + currentObject->ySize;
 
-	int xDraw2, xDraw, yDraw2, yDraw;
+	
+	// Make sure the sprite position is valid on screen to avoid a crash related to assuming the position is valid
+	if (xOffset >= screenWidth || currentObject->xSize + xOffset < 0 || yOffset >= screenHeight || currentObject->ySize + yOffset < 0)
+	{
+		return INVALID_DATA;
+	}
 
+
+	int xDraw2, xDraw, yDraw2, yDraw;
 
 	// Set draw locations on screen
 	if (currentRenderMode == SINGLE)
@@ -495,13 +502,6 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 		yDraw = correct(yOffset, 0, screenHeight - 1);
 		xDraw2 = correct(currentObject->xSize + xOffset, 0, screenWidth - 1);
 		yDraw2 = correct(currentObject->ySize + yOffset, 0, screenHeight - 1);
-	}
-
-
-	// Make sure the sprite position is valid on screen to avoid a crash related to assuming the position is valid
-	if (xDraw >= screenWidth || xDraw2 < 0 || yDraw >= screenHeight || yDraw2 < 0)
-	{
-		return INVALID_DATA;
 	}
 
 
@@ -543,7 +543,6 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 
 		return INVALID_DATA;
 	}
-
 
 
 	if (currentRenderMode == SCALE)
@@ -620,8 +619,49 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 	}
 
 
+		
+	if (currentRenderMode == TILE_FAST)
+	{
+		// No reflection
+		if (currentObject->xFlip == 1 && currentObject->yFlip == 1)
+		{
+			renderSprite_LRUD_TileFastMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+
+			return 0;
+		}
+
+		// Left-Right reflection
+		if (currentObject->xFlip == -1 && currentObject->yFlip == 1)
+		{
+			renderSprite_RLUD_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+
+			return 0;
+		}
+
+		// Up-Down reflection
+		if (currentObject->xFlip == 1 && currentObject->yFlip == -1)
+		{
+			renderSprite_LRDU_TileFastMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+
+			return 0;
+		}
+
+		// Up-Down and Left-Right reflection
+		if (currentObject->xFlip == -1 && currentObject->yFlip == -1)
+		{
+			renderSprite_RLDU_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+
+			return 0;
+		}
+
+		return INVALID_DATA;
+	}
+
+
+
 	return 0;
 }
+
 
 
 // renders sprite in tile mode (Render mode 0) with no reflections
@@ -632,18 +672,17 @@ int renderSprite_LRUD_TileMode(uint32_t screen[], int screenWidth, unsigned char
 	// set pixel x to difference between real xPos and first xPos on screen to obtain correct starting pixel
 	// If difference is large enough, pixelx may be larger than width of sprite,
 	// and cannot be less than 0 because then xDraw < xOffset meaning left edge is to the right of right side of screen
-	int j, i;
 
 	// Start render loop
 	int pixely = spriteHeight - 1 - ((yDraw - yOffset) % spriteHeight);
 
 
-	for (j = yDraw; j < yDraw2; j++)
+	for (int j = yDraw; j < yDraw2; j++)
 	{
 		int pixelx = ((xDraw - xOffset) % spriteWidth);
-		i = xDraw;
+		int i = xDraw;
 
-		for (; i < xDraw2 && (xOffset - i) % 2 != 0; i++)
+		if ((xOffset - i) % 2 != 0)
 		{
 			if ((uint32_t)data[((pixely << 2) * spriteWidth) + (pixelx << 2) + 3] > 0x00)
 			{
@@ -651,7 +690,7 @@ int renderSprite_LRUD_TileMode(uint32_t screen[], int screenWidth, unsigned char
 			}
 
 			pixelx++;
-
+			i++;
 		}
 
 
@@ -1233,6 +1272,86 @@ int renderSprite_RLDU_ScaleMode_Slow(uint32_t screen[], int screenWidth, int scr
 }
 
 
+// renders sprite in tile mode (Render mode 5) with no reflections
+int renderSprite_LRUD_TileFastMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
+{
+	size_t sizeOfPixel = sizeof(uint32_t);
+
+
+	// Start render loop
+	int pixely = spriteHeight - 1 - (((yDraw - yOffset) % spriteHeight));
+
+
+	// Render sprite to screen
+	for (int i = yDraw; i < yDraw2; i++)
+	{
+		int pixelx = ((xDraw - xOffset) % spriteWidth);
+		int k = xDraw;
+
+		memcpy(screen + (i * screenWidth) + k, data + ((pixely << 2) * spriteWidth) + (pixelx << 2), sizeOfPixel * (spriteWidth - pixelx));
+
+		for (k = spriteWidth - pixelx; k + spriteWidth < xDraw2; k += spriteWidth)
+		{
+			memcpy(screen + (i * screenWidth) + k, data + ((pixely << 2) * spriteWidth), spriteWidth * sizeOfPixel);
+		}
+
+		memcpy(screen + (i * screenWidth) + k, data + ((pixely << 2) * spriteWidth), ((xDraw2 - k) % spriteWidth) * sizeOfPixel);
+
+		pixely--;
+
+		if (pixely < 0)
+		{
+			pixely = spriteHeight - 1;
+		}
+	}
+
+
+	return 0;
+}
+
+
+// renders sprite in tile mode (Render mode 5) with no reflections
+int renderSprite_LRDU_TileFastMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
+{
+	size_t sizeOfPixel = sizeof(uint32_t);
+
+	int j, i;
+
+	// Start render loop
+	int pixely = ((yDraw - yOffset) % spriteHeight);
+
+
+	for (j = yDraw; j < yDraw2; j++)
+	{
+		int pixelx = ((xDraw - xOffset) % spriteWidth);
+		i = xDraw;
+
+		memcpy(screen + (j * screenWidth) + i, data + (((int)pixely << 2) * spriteWidth) + ((int)pixelx << 2), sizeOfPixel * (spriteWidth - pixelx));
+
+		pixelx = 0;
+
+		for (; i + spriteWidth - 1 < xDraw2; i += spriteWidth)
+		{
+			memcpy(screen + (j * screenWidth) + i, data + (((int)pixely << 2) * spriteWidth) + ((int)pixelx << 2), spriteWidth * sizeOfPixel);
+		}
+
+			
+		memcpy(screen + (j * screenWidth) + i, data + (((int)pixely << 2) * spriteWidth) + ((int)pixelx << 2), ((xDraw2 - i) % spriteWidth) * sizeOfPixel);
+			
+
+		pixely++;
+
+		if (pixely > spriteHeight - 1)
+		{
+			pixely =0;
+		}
+
+	}
+
+
+	return 0;
+}
+
 
 int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight, World *gameWorld)
 {
@@ -1293,14 +1412,11 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 	}
 
 
-	uint32_t hexValue = 0x00000000;
-	int pixelx = 0;
-	int pixely = 0;
-
 	size_t sizeOfPixel = sizeof(uint32_t);
 	int i, k;
 
-	pixely = spriteHeight - 1 - (((yDraw + yOffset) % spriteHeight));
+	int pixely = spriteHeight - 1 - (((yDraw + yOffset) % spriteHeight));
+	int pixelx = 0;
 
 
 	// Render sprite to screen
@@ -1313,7 +1429,7 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 		
 		pixelx = ((xDraw + xOffset) % spriteWidth);
 
-		memcpy(screen + (i * screenWidth), data + (((int)pixely << 2) * spriteWidth) + ((int)pixelx << 2), sizeOfPixel * (spriteWidth - pixelx));
+		memcpy(screen + (i * screenWidth), data + ((pixely << 2) * spriteWidth) + (pixelx << 2), sizeOfPixel * (spriteWidth - pixelx));
 		
 
 		for (k = spriteWidth - pixelx; k + spriteWidth < screenWidth; k += spriteWidth)

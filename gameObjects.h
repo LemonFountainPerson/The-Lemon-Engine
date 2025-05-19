@@ -63,7 +63,7 @@ int changeObjectYSizeBy(int change, Object *inputObject, PlayerData *player);
 
 
 // Run every fram to operate objects that can move or be interacted with, etc.
-void updateObjects(World *gameWorld, int keyboard[256], double deltaTime);
+FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTime);
 
 
 

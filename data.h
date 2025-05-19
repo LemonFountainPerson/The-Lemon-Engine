@@ -83,7 +83,8 @@ enum objectType {
 	GATE_SWITCH_TIMED = 10,
 	VERTICAL_GATE = 11,
 	HORIZONTAL_GATE = 12,
-	DESTRUCTIBLE_BLOCK = 13
+	DESTRUCTIBLE_BLOCK = 13,
+	UNDEFINED_OBJECT
 };
 
 
@@ -115,7 +116,8 @@ enum RenderMode {
 	SCALE = 1,
 	TILE_SCALE = 2,
 	SCALE_TILE = 3,
-	SINGLE = 4
+	SINGLE = 4,
+	TILE_FAST = 5
 };
 
 
@@ -274,6 +276,8 @@ struct world
 	int drawBackGround;
 	int drawPlayer;
 	int playBgMusic;
+
+	int GamePaused;
 
 	//int levelData[GRID_WIDTH][GRID_HEIGHT];
 	//char tileShape[100];

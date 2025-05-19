@@ -272,6 +272,7 @@ void DebugControls(World *GameWorld, PlayerData *player, int keyboard[256], Obje
     static int clickI = 0;
     static int clickO = 0;
     static int clickP = 0;
+	static int click0 = 0;
 	static int displayPlayerData = 0;
 	static int frames = 0;
 
@@ -352,9 +353,16 @@ void DebugControls(World *GameWorld, PlayerData *player, int keyboard[256], Obje
 		clickP = 0;
 	}
 
-	if (keyboard['0'])
+	if (keyboard['0'] && click0 == 0)
 	{
-    	Sleep(800);
+    	GameWorld->GamePaused = (GameWorld->GamePaused + 1) % 2;
+		click0 = 1;
+    	printf("Toggling Pause:\n");
+	}
+
+	if (keyboard['0'] == 0)
+	{
+		click0 = 0;
 	}
 
 	if (displayPlayerData == 1)
@@ -397,6 +405,8 @@ World* initialiseGame(PlayerData *player)
 
 	gameWorld->bgSpriteBuffer = NULL;
 	gameWorld->playBgMusic = 1;
+
+	gameWorld->GamePaused = 0;
 
 	gameWorld->Player = player;
 

@@ -24,9 +24,11 @@ TO DO:
 
 (In order of importance)
 
-- Fix collision on moving objects (maybe to do with floating point inaccuracies?)
+- Fix slope collision - NEW SYSTEM!!!!
 - Fix render mode 1 on backgrounds
+- Add sprite render modes 5/6, tile/scale rendermodes without transparency
 - Make basis for particle system: objects that use animation tick to determine when to delete and how to animate, being on particle layer marks it as unimportant for collision evaluation, EFFICIENCYEFFICIENCY
+- Add decoding/encoding function for txt -> lem files
 - Add modifiable offsets to rendermode 4 sprites/objects?
 - Design HUD/menu system (??)
 - Add object type enum? Only for seperating groups of objects for efficiency/readability; may not be worth it
