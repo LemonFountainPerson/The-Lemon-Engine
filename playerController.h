@@ -18,13 +18,13 @@ int setSprite(PlayerData *player);
 
 
 
-int objectCollisionX(PlayerData *player, World *gameWorld);
+int MovePlayerX(PlayerData *player, World *gameWorld, double deltaTime);
 
 
 int ApplyXPhysics(PlayerData *player, Object *inputObject);
 
 
-int objectCollisionY(PlayerData *player, World *gameWorld);
+int MovePlayerY(PlayerData *player, World *gameWorld, double deltaTime);
 
 
 int ApplyYPhysics(PlayerData *player, Object *inputObject);

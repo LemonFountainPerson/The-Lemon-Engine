@@ -24,8 +24,8 @@ TO DO:
 
 (In order of importance)
 
+- Fix collision on accelerating/deccelerating objects
 - Fix slope collision - NEW SYSTEM!!!!
-- Fix render mode 1 on backgrounds
 - Add sprite render modes 5/6, tile/scale rendermodes without transparency
 - Make basis for particle system: objects that use animation tick to determine when to delete and how to animate, being on particle layer marks it as unimportant for collision evaluation, EFFICIENCYEFFICIENCY
 - Add decoding/encoding function for txt -> lem files

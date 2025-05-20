@@ -1032,7 +1032,7 @@ int updateVerticalGate(Object *gate, ObjectController *objectList, double deltaT
 
 			if (fabs(gate->yVel) > abs(speed))
 			{
-				gate->yVel = speed * (speed/abs(speed));
+				gate->yVel = -speed;
 			}
 
 
@@ -1342,7 +1342,6 @@ int moveObjectY(Object *inputObject, PlayerData *player, double deltaTime)
 
 		return 0;
 	}
-	
 	
 	result = (overlapsPlayerFeet(player, ObjXPos, ObjXPos2, ObjYPos - (inputObject->yVel * deltaTime), ObjYPos2 + 2.0 - (inputObject->yVel * deltaTime) ) == 1 && player->yVelocity < 1.0);
 

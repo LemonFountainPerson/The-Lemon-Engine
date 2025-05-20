@@ -1381,6 +1381,12 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 
 	int xDraw2, xDraw, yDraw2, yDraw;
 
+	size_t sizeOfPixel = sizeof(uint32_t);
+	int i, k;
+
+	int pixely = spriteHeight - 1 - (((yDraw + yOffset) % spriteHeight));
+	int pixelx = 0;
+
 
 	//	RenderMode 0: Tile Mapping								(Sprite will tile across entire bounding box of object)
 	//	RenderMode 1: Single sprite render 						(Renders single instance of sprite directly to bottom-left corner)
@@ -1388,35 +1394,44 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 
 	if (spritePtr->RenderMode == 1)
 	{
-		xDraw = correct(xOffset, 0, screenWidth - 1);
-		yDraw = correct(yOffset, 0, screenHeight - 1);
-		xDraw2 = correct(spriteWidth + xOffset, 0, screenWidth - 1);
-		yDraw2 = correct(spriteHeight + yOffset, 0, screenHeight - 1);
-	}
-	else
-	{
-		xDraw = 0;
-		yDraw = 0;
-		xDraw2 = screenWidth - 1;
-		yDraw2 = screenHeight - 1;
+		xDraw = correct(0 - xOffset, 0, screenWidth - 1);
+		yDraw = correct(0 - yOffset, 0, screenHeight - 1);
+		xDraw2 = correct(spriteWidth - xOffset, 0, screenWidth - 1);
+		yDraw2 = correct(spriteHeight - yOffset, 0, screenHeight - 1);
 
-		// Correct y bounds if in tile mode 0
-		if (gameWorld->bgTileVertically == 0)
+		for (i = yDraw; i < yDraw2; i++)
 		{
-			if (spriteHeight - yOffset < screenHeight)
+			pixelx = (((xDraw + xOffset) % spriteWidth));
+
+			memcpy(screen + (i * screenWidth) + xDraw, data + ((pixely << 2) * spriteWidth) + (pixelx << 2), ((xDraw2 - xDraw) % spriteWidth) * sizeOfPixel);
+			
+			pixely--;
+
+			if (pixely < 0)
 			{
-				yDraw2 = spriteHeight - yOffset;
+				pixely = spriteHeight - 1;
 			}
 
 		}
+
+		return 0;
 	}
+	
 
+	xDraw = 0;
+	yDraw = 0;
+	xDraw2 = screenWidth - 1;
+	yDraw2 = screenHeight - 1;
 
-	size_t sizeOfPixel = sizeof(uint32_t);
-	int i, k;
+	// Correct y bounds if in tile mode 0
+	if (gameWorld->bgTileVertically == 0)
+	{
+		if (spriteHeight - yOffset < screenHeight)
+		{
+			yDraw2 = spriteHeight - yOffset;
+		}
 
-	int pixely = spriteHeight - 1 - (((yDraw + yOffset) % spriteHeight));
-	int pixelx = 0;
+	}
 
 
 	// Render sprite to screen
