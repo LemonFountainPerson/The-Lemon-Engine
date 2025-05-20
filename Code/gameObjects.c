@@ -95,7 +95,7 @@ void createObjectSpriteSet(ObjectController *objectList, int objectID)
 			break;
 
 		case SOLID_BLOCK:
-			loadObjectSprite("Grass_Single", newSet, 0);
+			loadObjectSprite("Grass_Block", newSet, 0);
 			break;
 
 		default:
