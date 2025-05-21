@@ -82,6 +82,9 @@ void createObjectSpriteSet(ObjectController *objectList, int objectID)
 	// Fill sprite set with sprites
 	switch (objectID)
 	{
+		case SPARKLE_PARTICLE:
+			break;
+
 		case RIGHT_SLOPE:
 		case LEFT_SLOPE:
 		{
@@ -267,11 +270,11 @@ Object* addObject(ObjectController *objectList, int objectID, int xPos, int yPos
 	newObject->objectRenderMode = DEFAULT_TO_SPRITE;
 	newObject->ySize = Y_TILESCALE;
 	newObject->xSize = X_TILESCALE;
-	newObject->arg1 = 0;
-	newObject->arg2 = 0;
-	newObject->arg3 = 0;
-	newObject->arg4 = 0;
-	newObject->arg5 = 0;
+	newObject->arg1 = arg1;
+	newObject->arg2 = arg2;
+	newObject->arg3 = arg3;
+	newObject->arg4 = arg4;
+	newObject->arg5 = arg5;
 	newObject->currentSprite = 1;
 	newObject->solid = 1;
 	newObject->layer = MIDDLEGROUND;
@@ -406,6 +409,9 @@ Object* addObject(ObjectController *objectList, int objectID, int xPos, int yPos
 			defineMovingPlatform(newObject, objectID, xPos, yPos, arg1, arg2, arg3, arg4);
 			break;
 
+		case SPARKLE_PARTICLE:
+			newObject->layer = PARTICLES;
+			break;
 
 		default:
 			break;

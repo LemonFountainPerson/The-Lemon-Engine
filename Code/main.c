@@ -23,10 +23,9 @@ TO DO:
 
 (In order of importance)
 
-- Fix collision on accelerating/deccelerating objects
 - Fix slope collision - NEW SYSTEM!!!!
-- Add sprite render modes 5/6, tile/scale rendermodes without transparency
 - Make basis for particle system: objects that use animation tick to determine when to delete and how to animate, being on particle layer marks it as unimportant for collision evaluation, EFFICIENCYEFFICIENCY
+- Add sprite render modes 5/6, tile/scale rendermodes without transparency
 - Add decoding/encoding function for txt -> lem files
 - Add modifiable offsets to rendermode 4 sprites/objects?
 - Design HUD/menu system (??)
