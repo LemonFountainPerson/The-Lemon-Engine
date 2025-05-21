@@ -57,10 +57,10 @@ The GameWorld may be passed in to various functions to perform game actions, alt
 ```
 struct playerData
 {
-	int xPos;
-	int xPosRight;
-	int yPos;
-	int yPosTop;
+	double xPos;
+	double xPosRight;
+	double yPos;
+	double yPosTop;
 	double yVelocity;
 	double xVelocity;
 	double maxYVel;
@@ -322,8 +322,10 @@ struct object
 
 	enum Layer layer;
 
-	int xPos;
-	int yPos;
+	double xPos;
+	double yPos;
+	double xPosRight;
+	double yPosTop;
 	int xSize;
 	int ySize;
 	double xVel;
@@ -356,7 +358,15 @@ While these two variables can (optionally) be used to control the state of the a
 
 **Technical Details**
 
+Objects use a double (floating-point) system to keep track of its co-ords in the gameworld - xPos and yPos are typically whats used for work and calculations, where xPosRight and yPosTop are provided for convinience. This is because xPosRight and yPosTop only get updated in the moveObjectX/moveObjectY functions each frame, and by other helper functions that modify the object's position directly such as changeSizeBy. 
 
+CurrentAnimation is used to denote what animation is currently playing while animationTick defines the frame of said animation to display. Neither of these should be negative during normal operation however you may still set them as negative for your own reasons. 
+
+Currently 5 multi-purpose integer args are provided in each object, however this may increase in the future. These can be used for whatever you like, such as health, ammo and armour, etc. for enemies, X and Y locations for pathing, IDs for connecting to other objects and more.
+
+The updatePlayer function is run before the updateObjects function, which will result in some difficulty when trying to perform interactions from the player to the objects - this was chosen deliberately to make custom behaviour less reliant on the player controller which is designed to be able to be swapped out with minimal changes. This does mean that some interactions do have to be specially handled by objects such as movement matching with moving platforms, enemy attacks hitting the player, etc. This is relatively easy to do as the update objects function provides the pointer to the player via the GameWorld struct.
+
+Objects can be deleted from update objects function, but do not attempt to delete an object while 
 
 
 # Audio
