@@ -618,8 +618,32 @@ int MarkObjectForDeletion(Object *inputObject)
 		return MISSING_DATA;
 	}
 
+	if (inputObject->objectID == TO_BE_DELETED)
+	{
+		return INVALID_DATA;
+	}
+
 	inputObject->animationTick = inputObject->objectID;
 	inputObject->objectID = TO_BE_DELETED;
+
+	return 0;
+}
+
+
+int UnmarkObjectForDeletion(Object *inputObject)
+{
+	if (inputObject == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (inputObject->objectID != TO_BE_DELETED || inputObject->animationTick >= UNDEFINED_OBJECT ||  inputObject->animationTick <= TO_BE_DELETED)
+	{
+		return INVALID_DATA;
+	}
+
+	inputObject->objectID = inputObject->animationTick;
+	inputObject->animationTick = 0;
 
 	return 0;
 }

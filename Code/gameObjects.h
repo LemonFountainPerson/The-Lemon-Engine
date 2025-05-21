@@ -40,6 +40,9 @@ void deleteObject(ObjectController *objController, Object **input);
 int MarkObjectForDeletion(Object *inputObject);
 
 
+int UnmarkObjectForDeletion(Object *inputObject);
+
+
 void deleteAllObjects(ObjectController *objectList);
 
 
