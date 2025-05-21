@@ -560,7 +560,7 @@ Object* addFlagObject(ObjectController *objectList, Flags flagID, int xPos, int 
 	newObject->xPosRight = newObject->xPos + newObject->xSize;
 	newObject->yPosTop = newObject->xPos + newObject->xSize;
 
-	setDrawPriorityToFront(objectList, newObject);
+	SetDrawPriorityToFront(objectList, newObject);
 	// Counter intuitively, by setting draw priority to front, the flag is placed at the end of the object list
 	// This is to help with efficiency somewhat as most searches begin from the start of the list as opposed to the end;
 	// Flag objects should never be directly accessed/affected by an object unless you are designing a special circumstance
@@ -611,7 +611,21 @@ void deleteObject(ObjectController *objectList, Object **input)
 }
 
 
-void incrementDrawPriority(ObjectController *objectList, Object *input)
+int MarkObjectForDeletion(Object *inputObject)
+{
+	if (inputObject == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	inputObject->animationTick = inputObject->objectID;
+	inputObject->objectID = TO_BE_DELETED;
+
+	return 0;
+}
+
+
+void IncrementDrawPriority(ObjectController *objectList, Object *input)
 {
 	Object *nextPtr;
 	nextPtr = input->nextObject;
@@ -647,7 +661,7 @@ void incrementDrawPriority(ObjectController *objectList, Object *input)
 }
 
 
-void decrementDrawPriority(ObjectController *objectList, Object *input)
+void DecrementDrawPriority(ObjectController *objectList, Object *input)
 {
 	Object *nextPtr;
 	nextPtr = input->nextObject;
@@ -683,7 +697,7 @@ void decrementDrawPriority(ObjectController *objectList, Object *input)
 }
 
 
-void setDrawPriorityToFront(ObjectController *objectList, Object *input)
+void SetDrawPriorityToFront(ObjectController *objectList, Object *input)
 {
 	Object *nextPtr;
 	nextPtr = input->nextObject;
@@ -721,7 +735,7 @@ void setDrawPriorityToFront(ObjectController *objectList, Object *input)
 }
 
 
-void setDrawPriorityToBack(ObjectController *objectList, Object *input)
+void SetDrawPriorityToBack(ObjectController *objectList, Object *input)
 {
 	Object *nextPtr;
 	nextPtr = input->nextObject;
@@ -788,15 +802,6 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 
 	while(currentObject != NULL && i > 0)
 	{
-		if (currentObject->layer > PARTICLES)
-		{
-			currentObject = currentObject->nextObject;
-			i--;
-			continue;
-		}
-
-		int deleteFlag = 0;
-
 		int ObjYPos = currentObject->yPos;
 		int ObjYPos2 = currentObject->yPos + currentObject->ySize;
 		int ObjXPos = currentObject->xPos;
@@ -806,13 +811,13 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 		{
 			case MOVING_PLATFORM_HOR:
 			{
-				updateHorizontalPlatform(player, currentObject, deltaTime);
+				UpdateHorizontalPlatform(player, currentObject, deltaTime);
 			} break;
 
 
 			case MOVING_PLATFORM_VER:
 			{
-				updateVerticalPlatform(player, currentObject, deltaTime);
+				UpdateVerticalPlatform(player, currentObject, deltaTime);
 			} break;
 
 
@@ -820,8 +825,7 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 			{
 				if (overlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
 				{
-					deleteObject(objectList, &currentObject);
-					deleteFlag++;
+					MarkObjectForDeletion(currentObject);
 					player->coinCount++;
 					LemonPlaySound("Coin_Collect", "Objects", 4, 0.8);
 				}
@@ -848,20 +852,20 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 
 			case VERTICAL_GATE:
 			{
-				updateVerticalGate(currentObject, objectList, deltaTime, player);
+				UpdateVerticalGate(currentObject, objectList, deltaTime, player);
 			} break;
 
 
 			case HORIZONTAL_GATE:
 			{
-				updateHorizontalGate(currentObject, objectList, deltaTime, player);
+				UpdateHorizontalGate(currentObject, objectList, deltaTime, player);
 			} break;
 
 
 			case GATE_SWITCH_TIMED:
 			case GATE_SWITCH:
 			{
-				updateGateSwitch(player, currentObject);
+				UpdateGateSwitch(player, currentObject);
 				currentObject->yPos = 64 + (32 * currentObject->arg3);
 			} break;
 
@@ -883,8 +887,11 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 		moveObjectY(currentObject, player, deltaTime);
 		
 		
-		// If deleted, do not move to next item
-		if (deleteFlag == 0)
+		if (currentObject->objectID == TO_BE_DELETED)
+		{
+			deleteObject(objectList, &currentObject);
+		}
+		else
 		{
 			currentObject = currentObject->nextObject;
 		}
@@ -896,7 +903,7 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 }
 
 
-int updateGateSwitch(PlayerData *player, Object *gateSwitch)
+int UpdateGateSwitch(PlayerData *player, Object *gateSwitch)
 {
 	// arg1 = switch ID
 	// arg2 = switch type (0 = or, 1 = and)
@@ -938,7 +945,7 @@ int updateGateSwitch(PlayerData *player, Object *gateSwitch)
 }
 
 
-int updateVerticalGate(Object *gate, ObjectController *objectList, double deltaTime, PlayerData *player)
+int UpdateVerticalGate(Object *gate, ObjectController *objectList, double deltaTime, PlayerData *player)
 {
 	// arg1 = door ID
 	// arg2 = door open/close (0/1)
@@ -1049,7 +1056,7 @@ int updateVerticalGate(Object *gate, ObjectController *objectList, double deltaT
 }
 
 
-int updateHorizontalGate(Object *gate, ObjectController *objectList, double deltaTime, PlayerData *player)
+int UpdateHorizontalGate(Object *gate, ObjectController *objectList, double deltaTime, PlayerData *player)
 {
 	// arg1 = door ID
 	// arg2 = door open/close (0/1)
@@ -1378,7 +1385,7 @@ int moveObjectY(Object *inputObject, PlayerData *player, double deltaTime)
 }
 
 
-int updateHorizontalPlatform(PlayerData *player, Object *platform, double deltaTime)
+int UpdateHorizontalPlatform(PlayerData *player, Object *platform, double deltaTime)
 {
 	double YPos = platform->yPos;
 	double YPos2 = platform->yPos + platform->ySize - 1;
@@ -1438,7 +1445,7 @@ int updateHorizontalPlatform(PlayerData *player, Object *platform, double deltaT
 
 
 
-int updateVerticalPlatform(PlayerData *player, Object *platform, double deltaTime)
+int UpdateVerticalPlatform(PlayerData *player, Object *platform, double deltaTime)
 {
 	double YPos = platform->yPos;
 	double YPos2 = platform->yPos + platform->ySize - 1;
@@ -1674,7 +1681,7 @@ int OverlapsObject(Object *inputObject, Object *otherObject)
 
 
 // Method for centering object size increase and handling player collisions
-int changeObjectXSizeBy(int change, Object *inputObject, PlayerData *player)
+int ChangeObjectXSizeBy(int change, Object *inputObject, PlayerData *player)
 {
 	if (inputObject == NULL)
 	{
@@ -1736,7 +1743,7 @@ int changeObjectXSizeBy(int change, Object *inputObject, PlayerData *player)
 }
 
 
-int changeObjectYSizeBy(int change, Object *inputObject, PlayerData *player)
+int ChangeObjectYSizeBy(int change, Object *inputObject, PlayerData *player)
 {
 	if (inputObject == NULL)
 	{

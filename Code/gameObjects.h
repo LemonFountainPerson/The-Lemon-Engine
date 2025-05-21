@@ -37,21 +37,24 @@ Object* addFlagObject(ObjectController *objectList, Flags flagID, int xPos, int 
 void deleteObject(ObjectController *objController, Object **input);
 
 
+int MarkObjectForDeletion(Object *inputObject);
+
+
 void deleteAllObjects(ObjectController *objectList);
 
 
 
-void incrementDrawPriority(ObjectController *objectList, Object *input);
+void IncrementDrawPriority(ObjectController *objectList, Object *input);
 
 
-void decrementDrawPriority(ObjectController *objectList, Object *input);
+void DecrementDrawPriority(ObjectController *objectList, Object *input);
 
 
 // Sets given object to end of object list to give it layer priority when being drawn
-void setDrawPriorityToFront(ObjectController *objController, Object *input);
+void SetDrawPriorityToFront(ObjectController *objController, Object *input);
 
 // Sets given object to start of object list to put it on the back layer when being drawn
-void setDrawPriorityToBack(ObjectController *objController, Object *input);
+void SetDrawPriorityToBack(ObjectController *objController, Object *input);
 
 
 int moveObjectX(Object *inputObject, PlayerData *player, double deltaTime);
@@ -60,10 +63,10 @@ int moveObjectX(Object *inputObject, PlayerData *player, double deltaTime);
 int moveObjectY(Object *inputObject, PlayerData *player, double deltaTime);
 
 
-int changeObjectXSizeBy(int change, Object *inputObject, PlayerData *player);
+int ChangeObjectXSizeBy(int change, Object *inputObject, PlayerData *player);
 
 
-int changeObjectYSizeBy(int change, Object *inputObject, PlayerData *player);
+int ChangeObjectYSizeBy(int change, Object *inputObject, PlayerData *player);
 
 
 // Run every fram to operate objects that can move or be interacted with, etc.
@@ -71,19 +74,19 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 
 
 
-int updateHorizontalPlatform(PlayerData *player, Object *platform, double deltaTime);
+int UpdateHorizontalPlatform(PlayerData *player, Object *platform, double deltaTime);
 
 
-int updateVerticalPlatform(PlayerData *player, Object *platform, double deltaTime);
+int UpdateVerticalPlatform(PlayerData *player, Object *platform, double deltaTime);
 
 
-int updateGateSwitch(PlayerData *player, Object *gateSwitch);
+int UpdateGateSwitch(PlayerData *player, Object *gateSwitch);
 
 
-int updateVerticalGate(Object *door, ObjectController *objectList, double deltaTime, PlayerData *player);
+int UpdateVerticalGate(Object *door, ObjectController *objectList, double deltaTime, PlayerData *player);
 
 
-int updateHorizontalGate(Object *gate, ObjectController *objectList, double deltaTime, PlayerData *player);
+int UpdateHorizontalGate(Object *gate, ObjectController *objectList, double deltaTime, PlayerData *player);
 
 
 int gateControl(Object *gate, ObjectController *objectList);

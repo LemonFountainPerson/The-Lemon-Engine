@@ -71,6 +71,7 @@ enum ChannelNames {
 
 
 enum objectType {
+	TO_BE_DELETED = -1,
 	LEVEL_FLAG_OBJ = 0,
 	SOLID_BLOCK = 1,
 	RIGHT_SLOPE = 2,
