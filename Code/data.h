@@ -46,6 +46,7 @@ enum FunctionResult {
 	INVALID_DATA = -3,
 	LEMON_SUCCESS = 0,
 	ACTION_DISABLED = 1,
+	EXECUTION_UNNECESSARY = 2,
 	END_OF_FILE = 9
 };
 

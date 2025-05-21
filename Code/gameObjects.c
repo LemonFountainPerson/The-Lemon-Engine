@@ -1,4 +1,4 @@
-#include "gameObjects.h"
+         #include "gameObjects.h"
 
 
 void deleteAllObjects(ObjectController *objectList)
@@ -761,10 +761,11 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 		return MISSING_DATA;
 	}
 
-	if (gameWorld->GamePaused == 1)
+	if (gameWorld->GamePaused > 0)
 	{
 		return ACTION_DISABLED;
 	}
+
 
 	PlayerData *player = gameWorld->Player;
 	ObjectController *objectList = gameWorld->objectList;
@@ -800,17 +801,6 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 			case MOVING_PLATFORM_HOR:
 			{
 				updateHorizontalPlatform(player, currentObject, deltaTime);
-
-				currentObject->xPos += (deltaTime * currentObject->xVel);
-
-				int overlaps = OverlapsObjectType(objectList, 3, currentObject) || OverlapsObjectType(objectList, 2, currentObject);
-
-				currentObject->xPos -= (deltaTime * currentObject->xVel);
-
-				if (overlaps == 1)
-				{
-					currentObject->xVel = 0.0;
-				}
 			} break;
 
 
@@ -1222,8 +1212,13 @@ int moveObjectX(Object *inputObject, PlayerData *player, double deltaTime)
 {
 	if (fabs(inputObject->xVel) < 0.1)
 	{
-		return 1;
+		inputObject->xVel = 0.0;
+		return EXECUTION_UNNECESSARY;
 	}
+
+
+	double prevObjXPos = inputObject->xPos;
+	double prevObjXPosRight = inputObject->xPos + inputObject->xSize;
 
 	inputObject->xPos += (inputObject->xVel * deltaTime);
 	inputObject->xPosRight = inputObject->xPos + inputObject->xSize;
@@ -1231,7 +1226,7 @@ int moveObjectX(Object *inputObject, PlayerData *player, double deltaTime)
 
 	if (player == NULL)
 	{
-		return -1;
+		return MISSING_DATA;
 	}
 
 	double ObjXPos = inputObject->xPos;
@@ -1239,7 +1234,11 @@ int moveObjectX(Object *inputObject, PlayerData *player, double deltaTime)
 	double ObjYPos = inputObject->yPos;
 	double ObjYPosTop = inputObject->yPos + inputObject->ySize;
 
-	int result = overlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
+	double offset = 0 * inputObject->xVel/fabs(inputObject->xVel);
+
+
+	int result = overlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop) || overlapsPlayer(player, prevObjXPos - offset, prevObjXPosRight - offset, ObjYPos, ObjYPosTop);
+
 
 	switch(inputObject->solid * result)
 	{
@@ -1254,19 +1253,22 @@ int moveObjectX(Object *inputObject, PlayerData *player, double deltaTime)
 
 	if (result == 1)
 	{
-		if (inputObject->xVel > 0.0)
+		if (player->xPos < ((prevObjXPos + prevObjXPosRight) / 2.0) )
 		{
-			player->xPos = ObjXPosRight;
+			player->xPos = ObjXPos - PLAYERWIDTH;
 		}
 		else
 		{
-			player->xPos = ObjXPos - PLAYERWIDTH - 1;
+			player->xPos = ObjXPosRight;
 		}
+
+		ApplyXPhysics(player, inputObject);
 
 		return 0;
 	}
+
 	
-	result = player->inAir == 0 && (overlapsPlayerFeet(player, ObjXPos - (inputObject->xVel * deltaTime), ObjXPosRight - (inputObject->xVel * deltaTime), ObjYPos, ObjYPosTop + 2.0) == 1 && player->yVelocity < 1.0);
+	result = player->inAir == 0 && (overlapsPlayerFeet(player, prevObjXPos, prevObjXPosRight, ObjYPos, ObjYPosTop + 2.0) == 1 && player->yVelocity < 1.0);
 
 	switch(inputObject->solid * result)
 	{
@@ -1295,23 +1297,32 @@ int moveObjectY(Object *inputObject, PlayerData *player, double deltaTime)
 {
 	if (fabs(inputObject->yVel) < 0.1)
 	{
-		return 1;
+		inputObject->yVel = 0.0;
+		return EXECUTION_UNNECESSARY;
 	}
+
+	double prevObjYPos = inputObject->yPos;
+	double prevObjYPosTop = inputObject->yPos + inputObject->ySize;
 
 	inputObject->yPos += (inputObject->yVel * deltaTime);
 	inputObject->yPosTop = inputObject->yPos + inputObject->ySize;
 
+
 	if (player == NULL)
 	{
-		return -1;
+		return MISSING_DATA;
 	}
 
 	double ObjXPos = inputObject->xPos;
-	double ObjXPos2 = inputObject->xPos + inputObject->xSize;
+	double ObjXPosRight = inputObject->xPos + inputObject->xSize;
 	double ObjYPos = inputObject->yPos;
-	double ObjYPos2 = inputObject->yPos + inputObject->ySize;
+	double ObjYPosTop = inputObject->yPos + inputObject->ySize;
 
-	int result = overlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2);
+	double offset = 0 * inputObject->yVel/fabs(inputObject->yVel);
+
+
+	int result = overlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop) || overlapsPlayer(player, ObjXPos, ObjXPosRight, prevObjYPos - offset, prevObjYPosTop - offset);
+	
 
 	switch(inputObject->solid * result)
 	{
@@ -1326,19 +1337,19 @@ int moveObjectY(Object *inputObject, PlayerData *player, double deltaTime)
 
 	if (result == 1)
 	{
-		if (inputObject->yVel > 0.0)
+		if (player->yPos < ((prevObjYPos + prevObjYPosTop) / 2.0) )
 		{
-			player->yPos = ObjYPos2;
+			player->yPos = ObjYPos - PLAYERHEIGHT;
 		}
 		else
 		{
-			player->yPos = ObjYPos - PLAYERHEIGHT - 1;
+			player->yPos = ObjYPosTop;
 		}
 
 		return 0;
 	}
 	
-	result = (overlapsPlayerFeet(player, ObjXPos, ObjXPos2, ObjYPos - (inputObject->yVel * deltaTime), ObjYPos2 + 2.0 - (inputObject->yVel * deltaTime) ) == 1 && player->yVelocity < 1.0);
+	result = (overlapsPlayerFeet(player, ObjXPos, ObjXPosRight, prevObjYPos, prevObjYPosTop + 2.0 ) == 1 && player->yVelocity < 1.0);
 
 	switch(inputObject->solid * result)
 	{
