@@ -321,9 +321,13 @@ int loadBackGroundSprite(char spriteName[], int desiredSetID, int tileMode, Worl
 
 int loadObjectSprite(char spriteName[], SpriteSet *inputSet, int tileMode)
 {
+	if (inputSet == NULL)
+	{
+		return MISSING_DATA;
+	}
+
 	Sprite *currentSpritePtr;
 	currentSpritePtr = inputSet->lastSprite;
-
 
 	Sprite *newSprite = malloc(sizeof(Sprite));
 
@@ -335,7 +339,17 @@ int loadObjectSprite(char spriteName[], SpriteSet *inputSet, int tileMode)
 	}
 
 	int spriteWidth, spriteHeight, n;
-	char path[100] = "LemonData/sprites/Objects/";
+	char path[100];
+
+	// If spriteset given is for particles, search in particles folder instead of objects
+	if (inputSet->setID == PARTICLE)
+	{
+		strcpy(path, "LemonData/sprites/Particles/");
+	}
+	else{
+		strcpy(path, "LemonData/sprites/Objects/");
+	}
+
 	strcat(path, spriteName);
 
 	newSprite->spriteData = stbi_load(path, &spriteWidth, &spriteHeight, &n, 4);

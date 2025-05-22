@@ -926,7 +926,7 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 					AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1, 0, 0, 0);
 					MarkObjectForDeletion(currentObject);
 					player->coinCount++;
-					LemonPlaySound("Coin_Collect", "Objects", 4, 0.8);
+					LemonPlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.8);
 				}
 
 			} break;
@@ -1100,6 +1100,16 @@ int LoopParticleAnimation(Object *particle)
 		else
 		{
 			particle->currentSprite = firstSprite;
+		}
+
+		if (particle->arg4 > 1)
+		{
+			particle->arg4 = -2;
+		}
+
+		if (particle->arg4 < -1)
+		{
+			particle->arg4 = 2;
 		}
 	}
 
