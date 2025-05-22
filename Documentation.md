@@ -376,9 +376,9 @@ The Lemon engine has a built-in particle system; although basic it provides an e
 ```
 	// Arg1: particle sub tpe (SPARKLE)
 	// Arg2: # of times to loop (1)
-	// Arg3: Framerate (0) 						(eg. 0 or 1 for each frame, 3 for every 3 frames, etc.)
+	// Arg3: Framerate (0) 				(eg. 0 or 1 for each frame, 3 for every 3 frames, etc.)
 	// Arg4: Particle maximum lifetime (0) 		(e.g: 0 will default to deleting as soon as loops finish)
-	// Arg5: Animation direction				(e.g: 0 or 1 for forward, -1 for backwards, 2 for forwards then reverse over and over, -2 for same but starts backwards)
+	// Arg5: Animation direction			(e.g: 0 or 1 for forward, -1 for backwards, 2 for forwards then reverse over and over, -2 for same but starts backwards)
 
 	AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1, 0, 0, 0);
 
