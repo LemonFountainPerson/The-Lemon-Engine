@@ -369,6 +369,19 @@ The updatePlayer function is run before the updateObjects function, which will r
 Objects can be directly deleted from update objects function, but this requires extra logic handling so that an object in the list does not get skipped for evaluation that frame. The delete object function works by deleting the object you provide the pointer to, and will change the given pointer to point to the next item in the object list. Because of these complications, a helper function called "MarkObjectForDeletion" is preferable as it can used at any point in the program's execution safely and will provide additional checks for you to ensure the object can be deleted without error. When an object is marked for deletion, its object type is set to (TO_BE_DELETED), and at the end of its iteration in the update objects function it will be deleted. The actual object's ID will be saved in the animationTick variable, so if you wish to undo the mark before its deletion you may use "UnmarkObjectForDeletion" to reverse this and preserve the object, although as a consequence the objects animation tick will be reset to 0.
 
 
+**Particles**
+
+The Lemon engine has a built-in particle system; although basic it provides an easy-to-use template for 2D animated effects to be created. All particles use the PARTICLE object ID (13) and each different particle is defined simply by their animation number as defined in the currentAnimation variable. (E.g: animation 0 corresponds to the coin sparkle particle effect.) The amount of animation loops, framerate, animation direction and particle lifetime can all be defined when spawning a particle but have default values if left at 0. If additional effects such as movement are required, you should simply add the behaviour logic to the updateParticles function as you would in the updateObjects function. However, by default only one integer arg variable is available for free use.
+
+To add a new particle, only three additions are required. (Other than the sprites added to the objects folder.)
+
+First, its identifier should be added to the ParticleType enum.
+
+Next, in the LoadParticleSprites function, you will add the sprites to be loaded for the particle here. The only restriction is that without edits the particle object only supports animating with sprites that are all next to each other in the sprite set. Ergo, you should load your frames one after another, in order.
+
+Finally, the first and last sprites for your particle to use should be defined in the LoopParticleAnimation function as a case in its switch statement.
+
+
 # Audio
 
 Audio uses SDL as a layer to load, play and modify sounds in real-time. The channel system is explained in the game loop section, but the method to play sounds is relatively simple. Simply by calling the LemonPlaySound function with four arguments is enough for playing sounds normally, as the engine will handle the rest. 
@@ -415,15 +428,16 @@ struct sprite
 };
 ```
 
-The last thing of note is the RenderMode of the sprite. Currently in the engine there are 3 supported render modes, although 2 more will be added soon. The rendermode, clearly enough, changes how the image is rendered to the screen relative to the object, player, etc. By default, objects will use whatever sprite it's currently using to decide the render mode, although you have the option of overriding this with the objectRenderMode integer within the object struct, by setting it to a value higher than -1. This has the effect of forcing every sprite rendered for that specific object to be rendered using that mode.
+The last thing of note is the RenderMode of the sprite. Currently in the engine there are 4 supported render modes, although 2 additional modes are planned for the future. The rendermode, clearly enough, changes how the image is rendered to the screen relative to the object, player, etc. By default, objects will use whatever sprite it's currently using to decide the render mode, although you have the option of overriding this with the objectRenderMode integer within the object struct, by setting it to a value higher than -1. This has the effect of forcing every sprite rendered for that specific object to be rendered using that mode.
 
-Every image can be rendered in any mode, they are not restrictive. Mode 0 is Tilemode, and is the most common. This mode will render the image at a 1:1 scale to be the exact size of the object's bounding box. If it is smaller than the object, it will tile across it. The tiling is based of the object's bottom-left pixel and so changing the size will not alter the position of the texture on the object relative to that corner. 
+Every image can be rendered in any mode, they are not restrictive. 
 
-Mode 1 is Scalemode, and this mode draws the sprite once, but stretches/shrinks it to fit the object's bounding box perfectly. This mode is more hardware intensive than Tilemode, and although I have optimised it over time, the engine will struggle to maintain 60 fps with 3+ instances of a scaled object covering the screen. In it's current state, it's easier on the game to use another render mode wherever possible.
+Mode 0 is Tilemode, and is the most common. This mode will render the image at a 1:1 scale to be the exact size of the object's bounding box. If it is smaller than the object, it will tile across it. The tiling is based of the object's bottom-left pixel and so changing the size will not alter the position of the texture on the object relative to that corner. This mode handles transparent pixels.
+
+Mode 1 is Scalemode, and this mode draws the sprite once, but stretches/shrinks it to fit the object's bounding box perfectly. This mode is more hardware intensive than Tilemode, and although I have optimised it over time, the engine will struggle to maintain 60 fps with 3+ instances of a scaled object covering the screen. In it's current state, it's easier on the game to use another render mode wherever possible. This mode handles transparent pixels.
 
 Mode 2-3 are for X tiling and Y scaling, or Y Tiling and X scaling respectively. These act identically to modes 0 and 1 on their respective axis. (Yet to be implemented)
 
-Mode 4 is straight rendering. This mode will simply draw the image as it is in the png file, 1:1 with no tiling. This method will render the whole image regardless of the Object's size or dimensions. It is not centered, so it is drawn from the bottom-left corner of the object. (This will change in a future update to center it by default, or control its offset, or both)
+Mode 4 is straight rendering. This mode will simply draw the image as it is in the png file, 1:1 with no tiling. This method will render the whole image regardless of the Object's size or dimensions. It is not centered, so it is drawn from the bottom-left corner of the object. (This will change in a future update to center it by default, or control its offset, or both). Mode 4 internally uses the same functions as Mode 0, so performatively, they are the same.
 
-Mode 4 internally uses the same functions as Mode 0, so performatively, they are the same.
-
+Mode 5 is fast TileMode rendering. This renders sprites in lines and has tiling, however due to the nature of its rendering it cannot handle transparent pixels. Normally TileMode is fast enough on its own for mode 5 to be unnecessary, however for objects that are known to not require transparency this is preferred as it does improve performance overall.
