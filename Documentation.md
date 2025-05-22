@@ -371,16 +371,80 @@ Objects can be directly deleted from update objects function, but this requires 
 
 **Particles**
 
-The Lemon engine has a built-in particle system; although basic it provides an easy-to-use template for 2D animated effects to be created. All particles use the PARTICLE object ID (13) and each different particle is defined simply by their animation number as defined in the currentAnimation variable. (E.g: animation 0 corresponds to the coin sparkle particle effect.) The amount of animation loops, framerate, animation direction and particle lifetime can all be defined when spawning a particle but have default values if left at 0. If additional effects such as movement are required, you should simply add the behaviour logic to the updateParticles function as you would in the updateObjects function. However, by default only one integer arg variable is available for free use.
+The Lemon engine has a built-in particle system; although basic it provides an easy-to-use template for 2D animated effects to be created. All particles use the PARTICLE object ID (13) and each different particle is defined simply by their animation number as defined in the currentAnimation variable. (E.g: animation 0 corresponds to the coin sparkle particle effect.) Its position, velocity, amount of animation loops, framerate, animation direction and particle lifetime can all be defined when spawning a particle but have default values if left at 0. For example, if particle lifetime is left at 0, the particle will default to deleting itself when it has run through all its loops. If additional effects such as movement are required, you should simply add the behaviour logic to the updateParticles function as you would in the updateObjects function. Although, by default only one integer arg variable is available for free use.
+
+```
+	// Arg1: particle sub tpe (SPARKLE)
+	// Arg2: # of times to loop (1)
+	// Arg3: Framerate (0) 						(eg. 0 or 1 for each frame, 3 for every 3 frames, etc.)
+	// Arg4: Particle maximum lifetime (0) 		(e.g: 0 will default to deleting as soon as loops finish)
+	// Arg5: Animation direction				(e.g: 0 or 1 for forward, -1 for backwards, 2 for forwards then reverse over and over, -2 for same but starts backwards)
+
+	AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1, 0, 0, 0);
+
+	MarkObjectForDeletion(currentObject);
+	player->coinCount++;
+	LemonPlaySound("Coin_Collect", "Objects", 4, 0.8);
+	// ...
+```
 
 To add a new particle, only three additions are required. (Other than the sprites added to the objects folder.)
 
 First, its identifier should be added to the ParticleType enum.
 
+```
+enum ParticleSubType {
+	EMPTY = 0,
+	SPARKLE = 1,
+	NEW_PARTICLE = 2,
+	UNDEFINED_PARTICLE
+};
+```
+
 Next, in the LoadParticleSprites function, you will add the sprites to be loaded for the particle here. The only restriction is that without edits the particle object only supports animating with sprites that are all next to each other in the sprite set. Ergo, you should load your frames one after another, in order.
+
+```
+
+int LoadParticleSprites(SpriteSet *newSet)
+{
+	// Sparkle 
+	loadObjectSprite("Sparkle1", newSet, SINGLE);
+	loadObjectSprite("Sparkle2", newSet, SINGLE);
+	loadObjectSprite("Sparkle3", newSet, SINGLE);
+	loadObjectSprite("Sparkle4", newSet, SINGLE);
+	loadObjectSprite("Sparkle5", newSet, SINGLE);
+	loadObjectSprite("Sparkle6", newSet, SINGLE);
+	loadObjectSprite("Sparkle7", newSet, SINGLE);
+
+	// New particle sprites
+	//.....
+
+
+	return 0;
+}
+```
 
 Finally, the first and last sprites for your particle to use should be defined in the LoopParticleAnimation function as a case in its switch statement.
 
+```
+int LoopParticleAnimation(Object *particle)
+{
+	int firstSprite = 1;
+	int lastSprite = 1;
+
+	// Add a new case whenever you make a new particle here
+	switch(particle->currentAnimation)
+	{
+		case SPARKLE:
+		lastSprite = 7;
+		break;
+
+		default:
+		break;
+	}
+	//....
+}
+```
 
 # Audio
 
