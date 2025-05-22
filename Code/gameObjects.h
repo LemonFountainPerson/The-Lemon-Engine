@@ -7,8 +7,23 @@
 #endif
 
 
+// Creates new instance of an object and puts at the end of the object list
+Object* AddObject(ObjectController *objController, int xPos, int yPos, int objectID, int arg1, int arg2, int arg3, int arg4, int arg5);
+
+
+// Helper function to set an object to a moving platform type 
+Object* DefineMovingPlatform(Object *inputObject, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer);
+
+
+Object* AddFlagObject(ObjectController *objectList, Flags flagID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5);
+
+
 // Attempts to create object sprite set if it does not already exist
-void createObjectSpriteSet(ObjectController *objController, int objectID);
+void CreateObjectSpriteSet(ObjectController *objController, int objectID);
+
+
+int LoadParticleSprites(SpriteSet *newSet);
+
 
 // Loads a new sprite to the sprite buffer in the object struct
 int switchObjectSprite(int spriteID, Object *inputObject, ObjectController *objectList);
@@ -17,19 +32,8 @@ int switchObjectSprite(int spriteID, Object *inputObject, ObjectController *obje
 int switchObjectSpriteName(char spriteName[], Object *inputObject, ObjectController *objectList);
 
 
-
+// Initialises a new empty object to the object list
 Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int objectID);
-
-
-// Creates new instance of an object and puts at the end of the object list
-Object* addObject(ObjectController *objController, int xPos, int yPos, int objectID, int arg1, int arg2, int arg3, int arg4, int arg5);
-
-
-// Helper function to set an object to a moving platform type 
-Object* defineMovingPlatform(Object *inputObject, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer);
-
-
-Object* addFlagObject(ObjectController *objectList, Flags flagID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5);
 
 
 // deletes an object from the object list based on pointer provided and shifts surrounding objecs to fill
@@ -75,6 +79,12 @@ int ChangeObjectYSizeBy(int change, Object *inputObject, PlayerData *player);
 // Run every fram to operate objects that can move or be interacted with, etc.
 FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTime);
 
+
+
+int UpdateParticle(Object *particle);
+
+
+int LoopParticleAnimation(Object *particle);
 
 
 int UpdateHorizontalPlatform(PlayerData *player, Object *platform, double deltaTime);

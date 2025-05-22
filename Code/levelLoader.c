@@ -47,24 +47,25 @@ int switchLevel(World *gameWorld, int level)
 
 int loadDefault(World *gameWorld)
 {
-	addObject(gameWorld->objectList, 2900, 110, 0, 1, 1, 0, 0, 0);
-	addObject(gameWorld->objectList, 2940, 110, 0, 1, 1, 0, 0, 0);
-	addObject(gameWorld->objectList, 2970, 110, 0, 1, 1, 0, 0, 0);
+	AddObject(gameWorld->objectList, 2900, 110, 0, 1, 1, 0, 0, 0);
+	AddObject(gameWorld->objectList, 2940, 110, 0, 1, 1, 0, 0, 0);
+	AddObject(gameWorld->objectList, 2970, 110, 0, 1, 1, 0, 0, 0);
 
-	addObject(gameWorld->objectList, 200, 100, 5, 1, 1, 0, 0, 0);
-	addObject(gameWorld->objectList, 300, 130, 5, 1, 1, 0, 0, 0);
-	addObject(gameWorld->objectList, 400, 160, 5, 1, 1, 0, 0, 0);
-	addObject(gameWorld->objectList, 450, 200, 5, 1, 1, 0, 0, 0);
+	AddObject(gameWorld->objectList, 200, 100, 5, 1, 1, 0, 0, 0);
+	AddObject(gameWorld->objectList, 300, 130, 5, 1, 1, 0, 0, 0);
+	AddObject(gameWorld->objectList, 400, 160, 5, 1, 1, 0, 0, 0);
+	AddObject(gameWorld->objectList, 450, 200, 5, 1, 1, 0, 0, 0);
 
-	addObject(gameWorld->objectList, 1800, 200, 7, 1800, 2800, 6, 90, 0);
-	addObject(gameWorld->objectList, 2600, 350, 7, 2600, 3600, 6, 60, 0);
-	addObject(gameWorld->objectList, 8000, 128, 8, 176, 960, 6, 180, 0);
-	addObject(gameWorld->objectList, 5700, 128, 8, 176, 960, 6, 180, 0);
-	addObject(gameWorld->objectList, 3200, 100, 7, 3300, 4200, 6, 90, 0);
+	AddObject(gameWorld->objectList, 1800, 200, 7, 1800, 2800, 6, 90, 0);
+	AddObject(gameWorld->objectList, 2600, 350, 7, 2600, 3600, 6, 60, 0);
+	AddObject(gameWorld->objectList, 8000, 128, 8, 176, 960, 6, 180, 0);
+	AddObject(gameWorld->objectList, 5700, 128, 8, 176, 960, 6, 180, 0);
+	AddObject(gameWorld->objectList, 3200, 100, 7, 3300, 4200, 6, 90, 0);
 
-	addObject(gameWorld->objectList, 3200, 70, 9, 26, 0, 0, 0, 0);
+	AddObject(gameWorld->objectList, 3200, 70, 9, 26, 0, 0, 0, 0);
 
 	switchBackGroundSprite(0, 0, gameWorld);
+
 
 	return 0;
 }
@@ -290,6 +291,9 @@ int loadLevel(World *gameWorld, int level)
 
 	fclose(fPtr);
 
+	// Create a default particle object to initilise its sprite set to avoid lag during gameplay 
+	AddObject(gameWorld->objectList, PARTICLE, 0, 0, SPARKLE, 0, 0, 0, 0);
+
 	return 0;
 }
 
@@ -328,7 +332,7 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 			return returnMsg;
 		}
 	
-		addFlagObject(gameWorld->objectList, BACKGROUND_SET_TRIGGER, args[2], args[3], args[0], args[1], 0, 0, 0);
+		AddFlagObject(gameWorld->objectList, BACKGROUND_SET_TRIGGER, args[2], args[3], args[0], args[1], 0, 0, 0);
 
 		return 0;
 	}
@@ -390,7 +394,7 @@ int loadObject(World *gameWorld, FILE *fPtr)
 	}
 
 
-	addObject(gameWorld->objectList, coreArgs[0], coreArgs[1], coreArgs[2], args[0], args[1], args[2], args[3], args[4]);	
+	AddObject(gameWorld->objectList, coreArgs[0], coreArgs[1], coreArgs[2], args[0], args[1], args[2], args[3], args[4]);	
 
 	return 0;
 }
@@ -414,7 +418,7 @@ int loadObjectOffset(World *gameWorld, FILE *fPtr, int xOffset, int yOffset)
 		return -1;
 	}
 
-	addObject(gameWorld->objectList, coreArgs[0], coreArgs[1] + xOffset, coreArgs[2] + yOffset, args[0], args[1], args[2], args[3], args[4]);	
+	AddObject(gameWorld->objectList, coreArgs[0], coreArgs[1] + xOffset, coreArgs[2] + yOffset, args[0], args[1], args[2], args[3], args[4]);	
 
 	return 0;
 }

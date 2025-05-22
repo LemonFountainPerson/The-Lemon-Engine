@@ -1,255 +1,8 @@
-         #include "gameObjects.h"
+#include "gameObjects.h"
 
 
-void deleteAllObjects(ObjectController *objectList)
-{
-	if (objectList == NULL )
-	{
-		return;
-	}
-	
-	Object *currentObject;
-  	currentObject = objectList->firstObject;
 
-	while (currentObject != NULL)
-	{
-		deleteObject(objectList, &currentObject);
-	}
-	
-	objectList->objectCount = 0;
-	objectList->firstObject = NULL;
-	objectList->lastObject = NULL;
-
-	return;
-}
-
-
-void createObjectSpriteSet(ObjectController *objectList, int objectID)
-{
-	if (objectList == NULL)
-	{
-		return;
-	}
-
-	// Check for pre-existing spriteset
-	SpriteSet *currentSetPtr;
-	currentSetPtr = objectList->startSpriteSetPtr;
-
-	int i = 1;
-
-	if (currentSetPtr != NULL)
-	{
-		while(currentSetPtr->nextSet != NULL && currentSetPtr->setID != objectID)
-		{
-			currentSetPtr = currentSetPtr->nextSet;
-			i++;
-		}
-
-		if (currentSetPtr->setID == objectID)
-		{
-			return;
-		}
-	}
-
-	// If no sprite set is present, allocate and create one
-	SpriteSet *newSet = malloc(sizeof(SpriteSet));
-
-	if (newSet == NULL)
-	{
-		printf("Failed to allocate memory for new sprite set.\n");
-		fflush(stdout);
-		return;
-	}
-
-	if (currentSetPtr == NULL && i == 1)
-	{
-		objectList->startSpriteSetPtr = newSet;
-	}
-	else
-	{
-		currentSetPtr->nextSet = newSet;
-	}
-
-	newSet->prevSet = currentSetPtr;
-	newSet->nextSet = NULL;
-	newSet->firstSprite = NULL;
-	newSet->lastSprite = NULL;
-	newSet->setID = objectID;
-	newSet->spriteCount = 0;
-	objectList->spriteSetCount = i + 1;
-
-
-	// Fill sprite set with sprites
-	switch (objectID)
-	{
-		case SPARKLE_PARTICLE:
-			break;
-
-		case RIGHT_SLOPE:
-		case LEFT_SLOPE:
-		{
-			loadObjectSprite("Grass_Angle_Small", newSet, 1);
-			loadObjectSprite("Grass_Angle_Medium", newSet, 1);
-			loadObjectSprite("Grass_Angle_Large", newSet, 1);
-		} break;
-
-		case SPRING:
-			loadObjectSprite("Spring", newSet, 0);
-			break;
-
-		case SOLID_BLOCK:
-			loadObjectSprite("Grass_Block", newSet, 0);
-			break;
-
-		default:
-		{
-			loadObjectSprite("OBJ_Missing", newSet, 0);
-		} break;
-	}
-
-	return;
-}
-
-
-int switchObjectSprite(int spriteID, Object *inputObject, ObjectController *objectList)
-{
-	// Find correct sprite set
-	SpriteSet *currentSet;
-	currentSet = objectList->startSpriteSetPtr;
-
-	if (currentSet == NULL)
-	{
-		printf("No sprite sets found\n");
-		fflush(stdout);
-		return -1;
-	}
-
-	while (currentSet->setID != inputObject->objectID && currentSet->nextSet != NULL)
-	{
-		currentSet = currentSet->nextSet;
-	}
-
-	if (currentSet->setID != inputObject->objectID)
-	{
-		printf("Missing sprite set for object %d\n", inputObject->objectID);
-		fflush(stdout);
-		return -1;
-	}
-
-	if (currentSet->spriteCount < 1 || currentSet->firstSprite == NULL)
-	{
-		printf("Sprite set does not contain sprites for object %d\n", inputObject->objectID);
-		fflush(stdout);
-		currentSet->spriteCount = 0;
-		return -1;
-	}
-
-
-	// Find correct sprite from sprite set
-	Sprite *currentSprite;
-	int i;
-
-	if (spriteID > currentSet->spriteCount >> 1)
-	{
-		currentSprite = currentSet->lastSprite;
-		i = currentSet->spriteCount;
-
-		while (i > 0 && currentSprite != NULL && currentSprite->spriteID != spriteID)
-		{
-			currentSprite = currentSprite->prevSprite;
-			i--;
-		}
-
-	}
-	else
-	{
-		currentSprite = currentSet->firstSprite;
-		i = 1;
-
-		while (i < currentSet->spriteCount && currentSprite != NULL && currentSprite->spriteID != spriteID)
-		{
-			currentSprite = currentSprite->nextSprite;
-			i++;
-		}
-
-	}
-
-	if (currentSprite == NULL || currentSprite->spriteID != spriteID)
-	{
-		printf("Could not find sprite %d for object %d\n", spriteID, inputObject->objectID);
-		fflush(stdout);
-		return -1;
-	}
-
-	inputObject->spriteBuffer = currentSprite;
-	inputObject->currentSprite = spriteID;
-
-	return 0;
-}
-
-
-int switchObjectSpriteName(char spriteName[], Object *inputObject, ObjectController *objectList)
-{
-	// Find correct sprite set
-	SpriteSet *currentSet;
-	currentSet = objectList->startSpriteSetPtr;
-
-	if (currentSet == NULL)
-	{
-		printf("No sprite sets found\n");
-		fflush(stdout);
-		return -1;
-	}
-
-	while (currentSet->setID != inputObject->objectID && currentSet->nextSet != NULL)
-	{
-		currentSet = currentSet->nextSet;
-	}
-
-	if (currentSet->setID != inputObject->objectID)
-	{
-		printf("Missing sprite set for object %d\n", inputObject->objectID);
-		fflush(stdout);
-		return -1;
-	}
-
-	if (currentSet->spriteCount < 1 || currentSet->firstSprite == NULL)
-	{
-		printf("Sprite set does not contain sprites for object %d\n", inputObject->objectID);
-		fflush(stdout);
-		currentSet->spriteCount = 0;
-		return -1;
-	}
-
-
-	// Find correct sprite from sprite set
-	Sprite *currentSpritePtr;
-	currentSpritePtr = currentSet->lastSprite;
-	
-	int i = currentSet->spriteCount;
-
-	while (i > 0 && currentSpritePtr != NULL && strcmp(currentSpritePtr->spriteName, spriteName) != 0)
-	{
-		currentSpritePtr = currentSpritePtr->prevSprite;
-		i--;
-	}
-
-	
-	if (currentSpritePtr == NULL || strcmp(currentSpritePtr->spriteName, spriteName) != 0)
-	{
-		printf("Could not find sprite %s for object %d\n", spriteName, inputObject->objectID);
-		fflush(stdout);
-		return -1;
-	}
-
-	inputObject->spriteBuffer = currentSpritePtr;
-	inputObject->currentSprite = i + 1;
-
-	return 0;
-}
-
-
-Object* addObject(ObjectController *objectList, int objectID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5)
+Object* AddObject(ObjectController *objectList, int objectID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5)
 {
 	if (objectID >= UNDEFINED_OBJECT || objectID < LEVEL_FLAG_OBJ)
 	{
@@ -280,8 +33,8 @@ Object* addObject(ObjectController *objectList, int objectID, int xPos, int yPos
 	newObject->layer = MIDDLEGROUND;
 	
 
-	createObjectSpriteSet(objectList, objectID);
-	switchObjectSprite(1, newObject, objectList);
+	CreateObjectSpriteSet(objectList, objectID);
+	
 
 
 	// Set Object parameters
@@ -406,11 +159,25 @@ Object* addObject(ObjectController *objectList, int objectID, int xPos, int yPos
 
 		case MOVING_PLATFORM_VER:
 		case MOVING_PLATFORM_HOR:
-			defineMovingPlatform(newObject, objectID, xPos, yPos, arg1, arg2, arg3, arg4);
+			DefineMovingPlatform(newObject, objectID, xPos, yPos, arg1, arg2, arg3, arg4);
 			break;
 
-		case SPARKLE_PARTICLE:
+
+		case PARTICLE:
+		// Do not modify! (Unless you wish to alter rendermode)
 			newObject->layer = PARTICLES;
+			newObject->currentAnimation = arg1;
+			newObject->arg2 = arg3;
+			newObject->arg3 = arg4;
+			newObject->arg4 = arg5;
+			newObject->objectRenderMode = SINGLE;
+
+			// Assign particle sprite
+			newObject->arg1 = 1;
+			LoopParticleAnimation(newObject);
+
+			// Set repeat count after function call as it may decrement arg1
+			newObject->arg1 = arg2;
 			break;
 
 		default:
@@ -423,8 +190,392 @@ Object* addObject(ObjectController *objectList, int objectID, int xPos, int yPos
 	
 	printf("\nCreated object type: %d;\n\n", objectID);
 
+	if (objectID == PARTICLE)
+	{
+		switchObjectSprite(1, newObject, objectList);
+		printf("%d\n", newObject->currentSprite);
+	}
+
+
 
 	return newObject;
+}
+
+
+int LoadParticleSprites(SpriteSet *newSet)
+{
+	// Sparkle 
+	loadObjectSprite("Sparkle1", newSet, SINGLE);
+	loadObjectSprite("Sparkle2", newSet, SINGLE);
+	loadObjectSprite("Sparkle3", newSet, SINGLE);
+	loadObjectSprite("Sparkle4", newSet, SINGLE);
+	loadObjectSprite("Sparkle5", newSet, SINGLE);
+	loadObjectSprite("Sparkle6", newSet, SINGLE);
+	loadObjectSprite("Sparkle7", newSet, SINGLE);
+
+	return 0;
+}
+
+
+
+Object* DefineMovingPlatform(Object *inputObject, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer)
+{
+	if (inputObject == NULL)
+	{
+		return NULL;
+	}
+
+	// Default settings
+	inputObject->layer = BACKGROUND;
+	inputObject->ySize = Y_TILESCALE;
+	inputObject->xSize = X_TILESCALE * 3;
+	inputObject->arg1 = bound1;
+	inputObject->arg2 = bound2;
+
+	if (abs(inputObject->arg3) > 16)
+	{
+		inputObject->arg3 = 16;
+	}
+	else
+	{
+		inputObject->arg3 = abs(speed);
+	}
+	
+	inputObject->arg4 = 1;
+	inputObject->arg5 = abs(timer);
+	inputObject->solid = 1;
+
+
+	switch (objectID)
+	{
+
+	default:
+		break;
+	}
+
+	return inputObject;
+}
+
+
+Object* AddFlagObject(ObjectController *objectList, Flags flagID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5)
+{
+	Object *newObject;
+	newObject = createNewObject(objectList, xPos, yPos, LEVEL_FLAG_OBJ);
+
+	if (newObject == NULL)
+	{
+		return NULL;
+	}
+
+	// Default settings
+	newObject->objectRenderMode = DO_NOT_RENDER;
+	newObject->ySize = 0;
+	newObject->xSize = 0;
+	newObject->arg1 = arg1;
+	newObject->arg2 = arg2;
+	newObject->arg3 = arg3;
+	newObject->arg4 = arg4;
+	newObject->arg5 = arg5;
+	newObject->currentSprite = 0;
+	newObject->spriteBuffer = NULL;
+	newObject->solid = 0;
+	newObject->layer = LEVELFLAGS;
+
+	printf("\nCreated object flag %d;\n\n", flagID);
+
+	// Set Flag parameters
+	switch (flagID)
+	{
+
+	default:
+		break;
+	}
+
+	newObject->xPosRight = newObject->xPos + newObject->xSize;
+	newObject->yPosTop = newObject->xPos + newObject->xSize;
+
+	SetDrawPriorityToFront(objectList, newObject);
+	// Counter intuitively, by setting draw priority to front, the flag is placed at the end of the object list
+	// This is to help with efficiency somewhat as most searches begin from the start of the list as opposed to the end;
+	// Flag objects should never be directly accessed/affected by an object unless you are designing a special circumstance
+
+	return newObject;
+}
+
+
+
+void CreateObjectSpriteSet(ObjectController *objectList, int objectID)
+{
+	if (objectList == NULL)
+	{
+		return;
+	}
+
+	// Check for pre-existing spriteset
+	SpriteSet *currentSetPtr;
+	currentSetPtr = objectList->startSpriteSetPtr;
+
+	int i = 1;
+
+	if (currentSetPtr != NULL)
+	{
+		while(currentSetPtr->nextSet != NULL && currentSetPtr->setID != objectID)
+		{
+			currentSetPtr = currentSetPtr->nextSet;
+			i++;
+		}
+
+		if (currentSetPtr->setID == objectID)
+		{
+			return;
+		}
+	}
+
+	// If no sprite set is present, allocate and create one
+	SpriteSet *newSet = malloc(sizeof(SpriteSet));
+
+	if (newSet == NULL)
+	{
+		printf("Failed to allocate memory for new sprite set.\n");
+		fflush(stdout);
+		return;
+	}
+
+	if (currentSetPtr == NULL && i == 1)
+	{
+		objectList->startSpriteSetPtr = newSet;
+	}
+	else
+	{
+		currentSetPtr->nextSet = newSet;
+	}
+
+	newSet->prevSet = currentSetPtr;
+	newSet->nextSet = NULL;
+	newSet->firstSprite = NULL;
+	newSet->lastSprite = NULL;
+	newSet->setID = objectID;
+	newSet->spriteCount = 0;
+	objectList->spriteSetCount = i + 1;
+
+
+	// Fill sprite set with sprites
+	switch (objectID)
+	{
+		case PARTICLE:
+		{
+			LoadParticleSprites(newSet);
+		} break;
+
+		case RIGHT_SLOPE:
+		case LEFT_SLOPE:
+		{
+			loadObjectSprite("Grass_Angle_Small", newSet, SCALE);
+			loadObjectSprite("Grass_Angle_Medium", newSet, SCALE);
+			loadObjectSprite("Grass_Angle_Large", newSet, SCALE);
+		} break;
+
+		case SPRING:
+			loadObjectSprite("Spring", newSet, TILE);
+			break;
+
+		case SOLID_BLOCK:
+			loadObjectSprite("Grass_Block", newSet, TILE);
+			break;
+
+		default:
+		{
+			loadObjectSprite("OBJ_Missing", newSet, TILE);
+		} break;
+	}
+
+	return;
+}
+
+
+void deleteAllObjects(ObjectController *objectList)
+{
+	if (objectList == NULL )
+	{
+		return;
+	}
+	
+	Object *currentObject;
+  	currentObject = objectList->firstObject;
+
+	while (currentObject != NULL)
+	{
+		deleteObject(objectList, &currentObject);
+	}
+	
+	objectList->objectCount = 0;
+	objectList->firstObject = NULL;
+	objectList->lastObject = NULL;
+
+	return;
+}
+
+
+int switchObjectSprite(int spriteID, Object *inputObject, ObjectController *objectList)
+{
+	if (inputObject == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (inputObject->spriteBuffer != NULL && inputObject->spriteBuffer->spriteID == spriteID)
+	{
+		inputObject->currentSprite = spriteID;
+		return EXECUTION_UNNECESSARY;
+	}
+
+
+	// Find correct sprite set
+	SpriteSet *currentSet;
+	currentSet = objectList->startSpriteSetPtr;
+
+	if (currentSet == NULL)
+	{
+		printf("No sprite sets found\n");
+		fflush(stdout);
+		return -1;
+	}
+
+	while (currentSet->setID != inputObject->objectID && currentSet->nextSet != NULL)
+	{
+		currentSet = currentSet->nextSet;
+	}
+
+	if (currentSet->setID != inputObject->objectID)
+	{
+		printf("Missing sprite set for object %d\n", inputObject->objectID);
+		fflush(stdout);
+		return -1;
+	}
+
+	if (currentSet->spriteCount < 1 || currentSet->firstSprite == NULL)
+	{
+		printf("Sprite set does not contain sprites for object %d\n", inputObject->objectID);
+		fflush(stdout);
+		currentSet->spriteCount = 0;
+		return -1;
+	}
+
+	if (spriteID > currentSet->spriteCount || spriteID < 1)
+	{
+		printf("Invalid spriteID (%d) for set %d\n", spriteID, currentSet->setID);
+		fflush(stdout);
+		return INVALID_DATA;
+	}
+
+
+	// Find correct sprite from sprite set
+	Sprite *currentSprite;
+	int i;
+
+	if (spriteID > currentSet->spriteCount >> 1)
+	{
+		currentSprite = currentSet->lastSprite;
+		i = currentSet->spriteCount;
+
+		while (i > 0 && currentSprite != NULL && currentSprite->spriteID != spriteID)
+		{
+			currentSprite = currentSprite->prevSprite;
+			i--;
+		}
+
+	}
+	else
+	{
+		currentSprite = currentSet->firstSprite;
+		i = 1;
+
+		while (i < currentSet->spriteCount && currentSprite != NULL && currentSprite->spriteID != spriteID)
+		{
+			currentSprite = currentSprite->nextSprite;
+			i++;
+		}
+
+	}
+
+	if (currentSprite == NULL || currentSprite->spriteID != spriteID)
+	{
+		printf("Could not find sprite %d for object %d\n", spriteID, inputObject->objectID);
+		fflush(stdout);
+		return -1;
+	}
+
+	inputObject->spriteBuffer = currentSprite;
+	inputObject->currentSprite = spriteID;
+
+	if (inputObject->objectID == PARTICLE)
+	{
+		printf("input: %d\n", inputObject->currentSprite);
+	}
+		
+
+	return 0;
+}
+
+
+int switchObjectSpriteName(char spriteName[], Object *inputObject, ObjectController *objectList)
+{
+	// Find correct sprite set
+	SpriteSet *currentSet;
+	currentSet = objectList->startSpriteSetPtr;
+
+	if (currentSet == NULL)
+	{
+		printf("No sprite sets found\n");
+		fflush(stdout);
+		return -1;
+	}
+
+	while (currentSet->setID != inputObject->objectID && currentSet->nextSet != NULL)
+	{
+		currentSet = currentSet->nextSet;
+	}
+
+	if (currentSet->setID != inputObject->objectID)
+	{
+		printf("Missing sprite set for object %d\n", inputObject->objectID);
+		fflush(stdout);
+		return -1;
+	}
+
+	if (currentSet->spriteCount < 1 || currentSet->firstSprite == NULL)
+	{
+		printf("Sprite set does not contain sprites for object %d\n", inputObject->objectID);
+		fflush(stdout);
+		currentSet->spriteCount = 0;
+		return -1;
+	}
+
+
+	// Find correct sprite from sprite set
+	Sprite *currentSpritePtr;
+	currentSpritePtr = currentSet->lastSprite;
+	
+	int i = currentSet->spriteCount;
+
+	while (i > 0 && currentSpritePtr != NULL && strcmp(currentSpritePtr->spriteName, spriteName) != 0)
+	{
+		currentSpritePtr = currentSpritePtr->prevSprite;
+		i--;
+	}
+
+	
+	if (currentSpritePtr == NULL || strcmp(currentSpritePtr->spriteName, spriteName) != 0)
+	{
+		printf("Could not find sprite %s for object %d\n", spriteName, inputObject->objectID);
+		fflush(stdout);
+		return -1;
+	}
+
+	inputObject->spriteBuffer = currentSpritePtr;
+	inputObject->currentSprite = i;
+
+	return 0;
 }
 
 
@@ -479,91 +630,6 @@ Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int ob
 	newObject->spriteBuffer = NULL;
 	newObject->xFlip = 1;
 	newObject->yFlip = 1;
-
-	return newObject;
-}
-
-
-Object* defineMovingPlatform(Object *inputObject, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer)
-{
-	if (inputObject == NULL)
-	{
-		return NULL;
-	}
-
-	// Default settings
-	inputObject->layer = BACKGROUND;
-	inputObject->ySize = Y_TILESCALE;
-	inputObject->xSize = X_TILESCALE * 3;
-	inputObject->arg1 = bound1;
-	inputObject->arg2 = bound2;
-
-	if (abs(inputObject->arg3) > 16)
-	{
-		inputObject->arg3 = 16;
-	}
-	else
-	{
-		inputObject->arg3 = abs(speed);
-	}
-	
-	inputObject->arg4 = 1;
-	inputObject->arg5 = abs(timer);
-	inputObject->solid = 1;
-
-
-	switch (objectID)
-	{
-
-	default:
-		break;
-	}
-
-	return inputObject;
-}
-
-
-Object* addFlagObject(ObjectController *objectList, Flags flagID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5)
-{
-	Object *newObject;
-	newObject = createNewObject(objectList, xPos, yPos, LEVEL_FLAG_OBJ);
-
-	if (newObject == NULL)
-	{
-		return NULL;
-	}
-
-	// Default settings
-	newObject->objectRenderMode = DO_NOT_RENDER;
-	newObject->ySize = 0;
-	newObject->xSize = 0;
-	newObject->arg1 = arg1;
-	newObject->arg2 = arg2;
-	newObject->arg3 = arg3;
-	newObject->arg4 = arg4;
-	newObject->arg5 = arg5;
-	newObject->currentSprite = 0;
-	newObject->spriteBuffer = NULL;
-	newObject->solid = 0;
-	newObject->layer = LEVELFLAGS;
-
-	printf("\nCreated object flag %d;\n\n", flagID);
-
-	// Set Flag parameters
-	switch (flagID)
-	{
-
-	default:
-		break;
-	}
-
-	newObject->xPosRight = newObject->xPos + newObject->xSize;
-	newObject->yPosTop = newObject->xPos + newObject->xSize;
-
-	SetDrawPriorityToFront(objectList, newObject);
-	// Counter intuitively, by setting draw priority to front, the flag is placed at the end of the object list
-	// This is to help with efficiency somewhat as most searches begin from the start of the list as opposed to the end;
-	// Flag objects should never be directly accessed/affected by an object unless you are designing a special circumstance
 
 	return newObject;
 }
@@ -625,6 +691,8 @@ int MarkObjectForDeletion(Object *inputObject)
 
 	inputObject->animationTick = inputObject->objectID;
 	inputObject->objectID = TO_BE_DELETED;
+
+	printf("Deleting Object %d...\n", inputObject->animationTick);
 
 	return 0;
 }
@@ -826,13 +894,14 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 
 	while(currentObject != NULL && i > 0)
 	{
-		int ObjYPos = currentObject->yPos;
-		int ObjYPos2 = currentObject->yPos + currentObject->ySize;
-		int ObjXPos = currentObject->xPos;
-		int ObjXPos2 = currentObject->xPos + currentObject->xSize;
 
 		switch (currentObject->objectID)
 		{
+			case PARTICLE:
+				UpdateParticle(currentObject);
+				break;
+
+
 			case MOVING_PLATFORM_HOR:
 			{
 				UpdateHorizontalPlatform(player, currentObject, deltaTime);
@@ -847,8 +916,15 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 
 			case COIN:
 			{
+				// temp
+				double ObjYPos = currentObject->yPos;
+				double ObjYPos2 = currentObject->yPos + currentObject->ySize;
+				double ObjXPos = currentObject->xPos;
+				double ObjXPos2 = currentObject->xPos + currentObject->xSize;
+
 				if (overlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
 				{
+					AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1, 0, 0, 0);
 					MarkObjectForDeletion(currentObject);
 					player->coinCount++;
 					LemonPlaySound("Coin_Collect", "Objects", 4, 0.8);
@@ -859,6 +935,12 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 
 			case SPRING:
 			{
+				// temp
+				double ObjYPos = currentObject->yPos;
+				double ObjYPos2 = currentObject->yPos + currentObject->ySize;
+				double ObjXPos = currentObject->xPos;
+				double ObjXPos2 = currentObject->xPos + currentObject->xSize;
+
 				if (currentObject->arg5 < 1 && player->yVelocity < -1.0 && overlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
 				{
 					player->yVelocity = (double)currentObject->arg1;
@@ -905,25 +987,125 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 		}
 
 
+		i--;
+		
+		if (currentObject->objectID == TO_BE_DELETED)
+		{
+			// If object has been deleted, pointer will be incremented and so the rest of the iteration is skipped
+			deleteObject(objectList, &currentObject);
+			continue;
+		}
+		
 		// Move object
 		moveObjectX(currentObject, player, deltaTime);
 
 		moveObjectY(currentObject, player, deltaTime);
 		
-		
-		if (currentObject->objectID == TO_BE_DELETED)
-		{
-			deleteObject(objectList, &currentObject);
-		}
-		else
-		{
-			currentObject = currentObject->nextObject;
-		}
+		// Assign Sprite
+		switchObjectSprite(currentObject->currentSprite, currentObject, objectList);
 
-		i--;
+		currentObject = currentObject->nextObject;
+		
 	}
 
 	return LEMON_SUCCESS;
+}
+
+
+int UpdateParticle(Object *particle)
+{
+	// currentAnimation: which particle animation to play
+	// arg1: number of times to repeat animation
+	// arg2: How many ticks before a frame change
+	// arg3: particle max lifetime	(0 to simply default to deleting as soon as repeat count has been reached)
+	// arg4: Direction to move through sprites  (-1 for backwards, 0 or more for forwards)
+
+	if (particle == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (particle->arg2 < 1 || particle->arg2 > 999)
+	{
+		particle->arg2 = 3;
+	}
+
+
+	// Increment Tick
+	particle->animationTick++;
+
+	if (particle->animationTick > 9999 || particle->animationTick < 0)
+	{
+		particle->animationTick = 0;
+	}
+
+	// Animate if on correct tick
+	if (particle->arg1 > 0 && particle->animationTick % particle->arg2 == 0)
+	{
+		if (particle->arg4 < 0)
+		{
+			particle->currentSprite--;
+		}
+		else{
+			particle->currentSprite++;
+		}
+		
+		LoopParticleAnimation(particle);
+	}
+
+	// If repeat count is reached or animationTick exceeds maximum lifetime, mark for deletion
+	if (particle->arg3 < 1 && particle->arg1 < 1)
+	{
+		MarkObjectForDeletion(particle);
+	}
+
+	if (particle->arg3 > 0 && particle->animationTick > particle->arg3)
+	{
+		MarkObjectForDeletion(particle);
+	}
+
+	return 0;
+}
+
+
+int LoopParticleAnimation(Object *particle)
+{
+	int firstSprite = 1;
+	int lastSprite = 1;
+
+	// Add a new case whenever you make a new particle here
+	switch(particle->currentAnimation)
+	{
+		case SPARKLE:
+		lastSprite = 7;
+		break;
+
+		default:
+		break;
+	}
+
+
+	if (particle->currentSprite > lastSprite || particle->currentSprite < firstSprite)
+	{
+		particle->arg1--;
+
+		if ( particle->arg1 < 1)
+		{
+			return 0;
+		}
+
+		if (particle->arg4 < 0)
+		{
+			particle->currentSprite = lastSprite;
+		}
+		else
+		{
+			particle->currentSprite = firstSprite;
+		}
+	}
+
+
+	return 0;
 }
 
 

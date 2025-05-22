@@ -85,7 +85,7 @@ enum objectType {
 	GATE_SWITCH_TIMED = 10,
 	VERTICAL_GATE = 11,
 	HORIZONTAL_GATE = 12,
-	SPARKLE_PARTICLE = 13,
+	PARTICLE = 13,
 	UNDEFINED_OBJECT
 };
 
@@ -127,6 +127,13 @@ enum Flags {
 	BACKGROUND_SET = 0,
 	BACKGROUND_SET_TRIGGER = 1,
 	TRIGGER_CUTSCENE = 2
+};
+
+
+enum ParticleSubType {
+	EMPTY = 0,
+	SPARKLE = 1,
+	UNDEFINED
 };
 
 
@@ -315,6 +322,7 @@ typedef enum LemonKeys LemonKeys;
 typedef enum Layer Layer;
 typedef enum RenderMode RenderMode;
 typedef enum Flags Flags;
+typedef enum ParticleSubType ParticleSubType;
 typedef enum GateSwitch GateSwitch;
 
 
