@@ -75,8 +75,6 @@ int switchBackGroundSprite(int spriteID, int desiredSetID, World *gameWorld)
 		return -1;
 	}
 
-	printf("Could not find sprite %d for Background set %d width: %d name: %s\n", spriteID, desiredSetID, currentSprite->width, currentSprite->spriteName);
-
 	gameWorld->bgSpriteBuffer = currentSprite;
 
 	return 0;

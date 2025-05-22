@@ -133,7 +133,7 @@ enum Flags {
 enum ParticleSubType {
 	EMPTY = 0,
 	SPARKLE = 1,
-	UNDEFINED
+	UNDEFINED_PARTICLE
 };
 
 

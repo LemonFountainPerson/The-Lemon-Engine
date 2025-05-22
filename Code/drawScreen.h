@@ -57,29 +57,20 @@ int renderSprite_RLDU_TileMode(uint32_t screen[], int screenWidth, unsigned char
 
 
 
-int renderSprite_LRUD_ScaleMode(uint32_t screen[], int screenWidth, int screenHeight, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject, double xScale, double yScale);
+int renderSprite_LRUD_ScaleMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject);
 
 
-int renderSprite_RLUD_ScaleMode(uint32_t screen[], int screenWidth, int screenHeight, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject, double xScale, double yScale);
+int renderSprite_RLUD_ScaleMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject);
 
 
-int renderSprite_LRDU_ScaleMode(uint32_t screen[], int screenWidth, int screenHeight, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject, double xScale, double yScale);
+int renderSprite_LRDU_ScaleMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject);
 
 
-int renderSprite_RLDU_ScaleMode(uint32_t screen[], int screenWidth, int screenHeight, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject, double xScale, double yScale);
+int renderSprite_RLDU_ScaleMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject);
 
 
 
-int renderSprite_LRUD_ScaleMode_Slow(uint32_t screen[], int screenWidth, int screenHeight, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject, double xScale, double yScale);
-
-
-int renderSprite_RLUD_ScaleMode_Slow(uint32_t screen[], int screenWidth, int screenHeight, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject, double xScale, double yScale);
-
-
-int renderSprite_LRDU_ScaleMode_Slow(uint32_t screen[], int screenWidth, int screenHeight, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject, double xScale, double yScale);
-
-
-int renderSprite_RLDU_ScaleMode_Slow(uint32_t screen[], int screenWidth, int screenHeight, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject, double xScale, double yScale);
+int renderSprite_LRUD_ScaleMode_Slow(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject);
 
 
 

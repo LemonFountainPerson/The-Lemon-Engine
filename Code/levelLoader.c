@@ -235,21 +235,33 @@ int loadLevel(World *gameWorld, int level)
 
 
 	// Read version number
-	fread(charBuffer, sizeof(char), 2, fPtr);
-	charBuffer[2] = 0;
+	fread(charBuffer, sizeof(char), 5, fPtr);
+	charBuffer[5] = 0;
 
-	if (strcmp(charBuffer, "V1") != 0)
+	if (strcmp(charBuffer, "V0.04") != 0)
 	{
 		printf("Level %d load failed: Incompatible version number!\n");
 		return -1;
 	}
+
+
+	// Read data type
+	fread(charBuffer, sizeof(char), 10, fPtr);
+	charBuffer[10] = 0;
+
+	if (strcmp(charBuffer, "-LEVELDATA") != 0)
+	{
+		printf("Level %d load failed: This file does not contain level data!\n");
+		return -1;
+	}
+
 
 	int endOfFile = 0;
 	int i = 0;
 
 	while (endOfFile == 0 && i < 8000)
 	{
-		fread(charBuffer, sizeof(char), 4, fPtr);
+		getNextArg(fPtr, charBuffer, 4);
 		charBuffer[4] = 0;
 
 		if (strcmp(charBuffer, "////") != 0)
@@ -465,8 +477,11 @@ int getNextArg(FILE *fPtr, char buffer[], int max)
 	{
 		fread(buffer, sizeof(char), 1, fPtr);
 	
-		i++;
-	} while (buffer[0] == '_' && i < max);
+		if (buffer[0] > 32)
+		{
+			i++;
+		}
+	} while ((buffer[0] < 33 || buffer[0] == '_') && i < max);
 
 
 	if (i > 3)

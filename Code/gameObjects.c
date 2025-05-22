@@ -202,6 +202,95 @@ Object* AddObject(ObjectController *objectList, int objectID, int xPos, int yPos
 }
 
 
+void CreateObjectSpriteSet(ObjectController *objectList, int objectID)
+{
+	if (objectList == NULL)
+	{
+		return;
+	}
+
+	// Check for pre-existing spriteset
+	SpriteSet *currentSetPtr;
+	currentSetPtr = objectList->startSpriteSetPtr;
+
+	int i = 1;
+
+	if (currentSetPtr != NULL)
+	{
+		while(currentSetPtr->nextSet != NULL && currentSetPtr->setID != objectID)
+		{
+			currentSetPtr = currentSetPtr->nextSet;
+			i++;
+		}
+
+		if (currentSetPtr->setID == objectID)
+		{
+			return;
+		}
+	}
+
+	// If no sprite set is present, allocate and create one
+	SpriteSet *newSet = malloc(sizeof(SpriteSet));
+
+	if (newSet == NULL)
+	{
+		printf("Failed to allocate memory for new sprite set.\n");
+		fflush(stdout);
+		return;
+	}
+
+	if (currentSetPtr == NULL && i == 1)
+	{
+		objectList->startSpriteSetPtr = newSet;
+	}
+	else
+	{
+		currentSetPtr->nextSet = newSet;
+	}
+
+	newSet->prevSet = currentSetPtr;
+	newSet->nextSet = NULL;
+	newSet->firstSprite = NULL;
+	newSet->lastSprite = NULL;
+	newSet->setID = objectID;
+	newSet->spriteCount = 0;
+	objectList->spriteSetCount = i + 1;
+
+
+	// Fill sprite set with sprites
+	switch (objectID)
+	{
+		case PARTICLE:
+		{
+			LoadParticleSprites(newSet);
+		} break;
+
+		case RIGHT_SLOPE:
+		case LEFT_SLOPE:
+		{
+			loadObjectSprite("Grass_Angle_Small", newSet, SCALE);
+			loadObjectSprite("Grass_Angle_Medium", newSet, SCALE);
+			loadObjectSprite("Grass_Angle_Large", newSet, SCALE);
+		} break;
+
+		case SPRING:
+			loadObjectSprite("Spring", newSet, TILE);
+			break;
+
+		case SOLID_BLOCK:
+			loadObjectSprite("Grass_Block", newSet, TILE_FAST);
+			break;
+
+		default:
+		{
+			loadObjectSprite("OBJ_Missing", newSet, TILE);
+		} break;
+	}
+
+	return;
+}
+
+
 int LoadParticleSprites(SpriteSet *newSet)
 {
 	// Sparkle 
@@ -300,96 +389,6 @@ Object* AddFlagObject(ObjectController *objectList, Flags flagID, int xPos, int 
 	// Flag objects should never be directly accessed/affected by an object unless you are designing a special circumstance
 
 	return newObject;
-}
-
-
-
-void CreateObjectSpriteSet(ObjectController *objectList, int objectID)
-{
-	if (objectList == NULL)
-	{
-		return;
-	}
-
-	// Check for pre-existing spriteset
-	SpriteSet *currentSetPtr;
-	currentSetPtr = objectList->startSpriteSetPtr;
-
-	int i = 1;
-
-	if (currentSetPtr != NULL)
-	{
-		while(currentSetPtr->nextSet != NULL && currentSetPtr->setID != objectID)
-		{
-			currentSetPtr = currentSetPtr->nextSet;
-			i++;
-		}
-
-		if (currentSetPtr->setID == objectID)
-		{
-			return;
-		}
-	}
-
-	// If no sprite set is present, allocate and create one
-	SpriteSet *newSet = malloc(sizeof(SpriteSet));
-
-	if (newSet == NULL)
-	{
-		printf("Failed to allocate memory for new sprite set.\n");
-		fflush(stdout);
-		return;
-	}
-
-	if (currentSetPtr == NULL && i == 1)
-	{
-		objectList->startSpriteSetPtr = newSet;
-	}
-	else
-	{
-		currentSetPtr->nextSet = newSet;
-	}
-
-	newSet->prevSet = currentSetPtr;
-	newSet->nextSet = NULL;
-	newSet->firstSprite = NULL;
-	newSet->lastSprite = NULL;
-	newSet->setID = objectID;
-	newSet->spriteCount = 0;
-	objectList->spriteSetCount = i + 1;
-
-
-	// Fill sprite set with sprites
-	switch (objectID)
-	{
-		case PARTICLE:
-		{
-			LoadParticleSprites(newSet);
-		} break;
-
-		case RIGHT_SLOPE:
-		case LEFT_SLOPE:
-		{
-			loadObjectSprite("Grass_Angle_Small", newSet, SCALE);
-			loadObjectSprite("Grass_Angle_Medium", newSet, SCALE);
-			loadObjectSprite("Grass_Angle_Large", newSet, SCALE);
-		} break;
-
-		case SPRING:
-			loadObjectSprite("Spring", newSet, TILE);
-			break;
-
-		case SOLID_BLOCK:
-			loadObjectSprite("Grass_Block", newSet, TILE);
-			break;
-
-		default:
-		{
-			loadObjectSprite("OBJ_Missing", newSet, TILE);
-		} break;
-	}
-
-	return;
 }
 
 
