@@ -384,7 +384,7 @@ The Lemon engine has a built-in particle system; although basic it provides an e
 
 	MarkObjectForDeletion(currentObject);
 	player->coinCount++;
-	LemonPlaySound("Coin_Collect", "Objects", 4, 0.8);
+	LemonPlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.8);
 	// ...
 ```
 
