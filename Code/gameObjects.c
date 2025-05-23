@@ -169,7 +169,8 @@ Object* AddObject(ObjectController *objectList, int objectID, int xPos, int yPos
 			newObject->currentAnimation = arg1;
 			newObject->arg2 = arg3;
 			newObject->arg3 = arg4;
-			newObject->arg4 = arg5;
+			newObject->arg4 = 0;
+			newObject->arg5 = 0;
 			newObject->objectRenderMode = SINGLE;
 
 			// Assign particle sprite
@@ -506,13 +507,7 @@ int switchObjectSprite(int spriteID, Object *inputObject, ObjectController *obje
 
 	inputObject->spriteBuffer = currentSprite;
 	inputObject->currentSprite = spriteID;
-
-	if (inputObject->objectID == PARTICLE)
-	{
-		printf("input: %d\n", inputObject->currentSprite);
-	}
 		
-
 	return 0;
 }
 
@@ -629,6 +624,7 @@ Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int ob
 	newObject->spriteBuffer = NULL;
 	newObject->xFlip = 1;
 	newObject->yFlip = 1;
+	newObject->State = DEFAULT;
 
 	return newObject;
 }
@@ -683,15 +679,12 @@ int MarkObjectForDeletion(Object *inputObject)
 		return MISSING_DATA;
 	}
 
-	if (inputObject->objectID == TO_BE_DELETED)
+	if (inputObject->State == TO_BE_DELETED)
 	{
 		return INVALID_DATA;
 	}
 
-	inputObject->animationTick = inputObject->objectID;
-	inputObject->objectID = TO_BE_DELETED;
-
-	printf("Deleting Object %d...\n", inputObject->animationTick);
+	inputObject->State = TO_BE_DELETED;
 
 	return 0;
 }
@@ -704,13 +697,12 @@ int UnmarkObjectForDeletion(Object *inputObject)
 		return MISSING_DATA;
 	}
 
-	if (inputObject->objectID != TO_BE_DELETED || inputObject->animationTick >= UNDEFINED_OBJECT ||  inputObject->animationTick <= TO_BE_DELETED)
+	if (inputObject->State != TO_BE_DELETED || inputObject->objectID >= UNDEFINED_OBJECT ||  inputObject->objectID < LEVEL_FLAG_OBJ)
 	{
 		return INVALID_DATA;
 	}
 
-	inputObject->objectID = inputObject->animationTick;
-	inputObject->animationTick = 0;
+	inputObject->State = DEFAULT;
 
 	return 0;
 }
@@ -865,7 +857,7 @@ void SetDrawPriorityToBack(ObjectController *objectList, Object *input)
 
 
 // Updates all objects in gameworld
-FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTime)
+FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 {
 	if (gameWorld == NULL)
 	{
@@ -893,6 +885,14 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 
 	while(currentObject != NULL && i > 0)
 	{
+		i--;
+
+		if (currentObject->State == PAUSE_BEHAVIOUR)
+		{
+			currentObject = currentObject->nextObject;
+			continue;
+		}
+
 
 		switch (currentObject->objectID)
 		{
@@ -903,13 +903,13 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 
 			case MOVING_PLATFORM_HOR:
 			{
-				UpdateHorizontalPlatform(player, currentObject, deltaTime);
+				UpdateHorizontalPlatform(player, currentObject);
 			} break;
 
 
 			case MOVING_PLATFORM_VER:
 			{
-				UpdateVerticalPlatform(player, currentObject, deltaTime);
+				UpdateVerticalPlatform(player, currentObject);
 			} break;
 
 
@@ -923,7 +923,7 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 
 				if (overlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
 				{
-					AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1, 0, 0, 0);
+					AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 9, 0, 0, 0);
 					MarkObjectForDeletion(currentObject);
 					player->coinCount++;
 					LemonPlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.8);
@@ -957,13 +957,13 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 
 			case VERTICAL_GATE:
 			{
-				UpdateVerticalGate(currentObject, objectList, deltaTime, player);
+				UpdateVerticalGate(currentObject, objectList, player);
 			} break;
 
 
 			case HORIZONTAL_GATE:
 			{
-				UpdateHorizontalGate(currentObject, objectList, deltaTime, player);
+				UpdateHorizontalGate(currentObject, objectList, player);
 			} break;
 
 
@@ -985,10 +985,7 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 			return MISSING_DATA;
 		}
 
-
-		i--;
-		
-		if (currentObject->objectID == TO_BE_DELETED)
+		if (currentObject->State == TO_BE_DELETED)
 		{
 			// If object has been deleted, pointer will be incremented and so the rest of the iteration is skipped
 			deleteObject(objectList, &currentObject);
@@ -996,9 +993,9 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTi
 		}
 		
 		// Move object
-		moveObjectX(currentObject, player, deltaTime);
+		moveObjectX(currentObject, player);
 
-		moveObjectY(currentObject, player, deltaTime);
+		moveObjectY(currentObject, player);
 		
 		// Assign Sprite
 		switchObjectSprite(currentObject->currentSprite, currentObject, objectList);
@@ -1017,7 +1014,6 @@ int UpdateParticle(Object *particle)
 	// arg1: number of times to repeat animation
 	// arg2: How many ticks before a frame change
 	// arg3: particle max lifetime	(0 to simply default to deleting as soon as repeat count has been reached)
-	// arg4: Direction to move through sprites  (-1 for backwards, 0 or more for forwards)
 
 	if (particle == NULL)
 	{
@@ -1033,22 +1029,14 @@ int UpdateParticle(Object *particle)
 	// Increment Tick
 	particle->animationTick++;
 
-	if (particle->animationTick > 9999 || particle->animationTick < 0)
+	if (particle->animationTick > 9999.0 || particle->animationTick < 0.0)
 	{
-		particle->animationTick = 0;
+		particle->animationTick = 0.0;
 	}
 
 	// Animate if on correct tick
 	if (particle->arg1 > 0 && particle->animationTick % particle->arg2 == 0)
 	{
-		if (particle->arg4 < 0)
-		{
-			particle->currentSprite--;
-		}
-		else{
-			particle->currentSprite++;
-		}
-		
 		LoopParticleAnimation(particle);
 	}
 
@@ -1071,6 +1059,7 @@ int LoopParticleAnimation(Object *particle)
 {
 	int firstSprite = 1;
 	int lastSprite = 1;
+	int animateType = 1;
 
 	// Add a new case whenever you make a new particle here
 	switch(particle->currentAnimation)
@@ -1083,36 +1072,127 @@ int LoopParticleAnimation(Object *particle)
 		break;
 	}
 
-
-	if (particle->currentSprite > lastSprite || particle->currentSprite < firstSprite)
+	if (lastSprite < firstSprite)
 	{
-		particle->arg1--;
-
-		if ( particle->arg1 < 1)
-		{
-			return 0;
-		}
-
-		if (particle->arg4 < 0)
-		{
-			particle->currentSprite = lastSprite;
-		}
-		else
-		{
-			particle->currentSprite = firstSprite;
-		}
-
-		if (particle->arg4 > 1)
-		{
-			particle->arg4 = -2;
-		}
-
-		if (particle->arg4 < -1)
-		{
-			particle->arg4 = 2;
-		}
+		return INVALID_DATA;
 	}
 
+	if (particle->arg2 < 1 || particle->arg2 > 999)
+	{
+		particle->arg2 = 3;
+	}
+
+
+	// Add a new case for specific animation sequences
+	switch (animateType)
+	{
+		case 2:
+		{
+			int onOddLoop = 1 - ( particle->animationTick / ((lastSprite - firstSprite + 1) * particle->arg2) ) % 2;
+
+			if (onOddLoop == 1)
+			{
+				particle->currentSprite++;
+			}
+			else
+			{
+				particle->currentSprite--;
+			}
+
+			if (particle->currentSprite > lastSprite || particle->currentSprite < firstSprite)
+			{
+				particle->arg1--;
+
+				if ( particle->arg1 < 1)
+				{
+					return 0;
+				}
+
+				if (onOddLoop == 1)
+				{
+					particle->currentSprite = lastSprite;
+				}
+				else
+				{
+					particle->currentSprite = firstSprite;
+				}
+			}
+
+		} break;
+
+
+		case -2:
+		{
+			int onOddLoop = 1 - ( particle->animationTick / ((lastSprite - firstSprite + 1) * particle->arg2) ) % 2;
+
+			if (onOddLoop == 1)
+			{
+				particle->currentSprite--;
+			}
+			else
+			{
+				particle->currentSprite++;
+			}
+
+
+			if (particle->currentSprite > lastSprite || particle->currentSprite < firstSprite)
+			{
+				particle->arg1--;
+
+				if ( particle->arg1 < 1)
+				{
+					return 0;
+				}
+
+				if (onOddLoop == 1)
+				{
+					particle->currentSprite = firstSprite;
+				}
+				else
+				{
+					particle->currentSprite = lastSprite;
+				}
+			}
+
+		} break;
+
+
+		case -1:
+		{
+			particle->currentSprite--;
+
+			if (particle->currentSprite > lastSprite || particle->currentSprite < firstSprite)
+			{
+				particle->arg1--;
+
+				if (particle->arg1 < 1)
+				{
+					return 0;
+				}
+
+				particle->currentSprite = lastSprite;
+			}
+
+		} break;
+
+		default:
+		{
+			particle->currentSprite++;
+
+			if (particle->currentSprite > lastSprite || particle->currentSprite < firstSprite)
+			{
+				particle->arg1--;
+
+				if (particle->arg1 < 1)
+				{
+					return 0;
+				}
+
+				particle->currentSprite = firstSprite;
+			}
+
+		} break;
+	}
 
 	return 0;
 }
@@ -1147,9 +1227,9 @@ int UpdateGateSwitch(PlayerData *player, Object *gateSwitch)
 
 	if (gateSwitch->arg5 > 0 && gateSwitch->arg3 == 1)
 	{
-		gateSwitch->animationTick--;
+		gateSwitch->animationTick -= deltaTime;
 
-		if (gateSwitch->animationTick < 1)
+		if (gateSwitch->animationTick < 1.0)
 		{
 			gateSwitch->arg3 = 0;
 			gateSwitch->animationTick = gateSwitch->arg5;
@@ -1160,7 +1240,7 @@ int UpdateGateSwitch(PlayerData *player, Object *gateSwitch)
 }
 
 
-int UpdateVerticalGate(Object *gate, ObjectController *objectList, double deltaTime, PlayerData *player)
+int UpdateVerticalGate(Object *gate, ObjectController *objectList, PlayerData *player)
 {
 	// arg1 = door ID
 	// arg2 = door open/close (0/1)
@@ -1271,7 +1351,7 @@ int UpdateVerticalGate(Object *gate, ObjectController *objectList, double deltaT
 }
 
 
-int UpdateHorizontalGate(Object *gate, ObjectController *objectList, double deltaTime, PlayerData *player)
+int UpdateHorizontalGate(Object *gate, ObjectController *objectList, PlayerData *player)
 {
 	// arg1 = door ID
 	// arg2 = door open/close (0/1)
@@ -1302,7 +1382,7 @@ int UpdateHorizontalGate(Object *gate, ObjectController *objectList, double delt
 			if (gate->arg2 == 1)
 			{
 				gate->currentAnimation = 1;
-				gate->animationTick = 0;
+				gate->animationTick = 0.0;
 				LemonPlaySound("GateOpen", "Objects", 4, 1.0);
 			}
 		
@@ -1436,7 +1516,7 @@ int gateControl(Object *gate, ObjectController *objectList)
 }
 
 
-int moveObjectX(Object *inputObject, PlayerData *player, double deltaTime)
+int moveObjectX(Object *inputObject, PlayerData *player)
 {
 	if (fabs(inputObject->xVel) < 0.1)
 	{
@@ -1521,7 +1601,7 @@ int moveObjectX(Object *inputObject, PlayerData *player, double deltaTime)
 
 
 
-int moveObjectY(Object *inputObject, PlayerData *player, double deltaTime)
+int moveObjectY(Object *inputObject, PlayerData *player)
 {
 	if (fabs(inputObject->yVel) < 0.1)
 	{
@@ -1600,7 +1680,7 @@ int moveObjectY(Object *inputObject, PlayerData *player, double deltaTime)
 }
 
 
-int UpdateHorizontalPlatform(PlayerData *player, Object *platform, double deltaTime)
+int UpdateHorizontalPlatform(PlayerData *player, Object *platform)
 {
 	double YPos = platform->yPos;
 	double YPos2 = platform->yPos + platform->ySize - 1;
@@ -1660,7 +1740,7 @@ int UpdateHorizontalPlatform(PlayerData *player, Object *platform, double deltaT
 
 
 
-int UpdateVerticalPlatform(PlayerData *player, Object *platform, double deltaTime)
+int UpdateVerticalPlatform(PlayerData *player, Object *platform)
 {
 	double YPos = platform->yPos;
 	double YPos2 = platform->yPos + platform->ySize - 1;

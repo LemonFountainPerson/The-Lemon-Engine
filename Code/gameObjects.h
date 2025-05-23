@@ -64,10 +64,10 @@ void SetDrawPriorityToFront(ObjectController *objController, Object *input);
 void SetDrawPriorityToBack(ObjectController *objController, Object *input);
 
 
-int moveObjectX(Object *inputObject, PlayerData *player, double deltaTime);
+int moveObjectX(Object *inputObject, PlayerData *player);
 
 
-int moveObjectY(Object *inputObject, PlayerData *player, double deltaTime);
+int moveObjectY(Object *inputObject, PlayerData *player);
 
 
 int ChangeObjectXSizeBy(int change, Object *inputObject, PlayerData *player);
@@ -77,7 +77,7 @@ int ChangeObjectYSizeBy(int change, Object *inputObject, PlayerData *player);
 
 
 // Run every fram to operate objects that can move or be interacted with, etc.
-FunctionResult updateObjects(World *gameWorld, int keyboard[256], double deltaTime);
+FunctionResult updateObjects(World *gameWorld, int keyboard[256]);
 
 
 
@@ -87,19 +87,19 @@ int UpdateParticle(Object *particle);
 int LoopParticleAnimation(Object *particle);
 
 
-int UpdateHorizontalPlatform(PlayerData *player, Object *platform, double deltaTime);
+int UpdateHorizontalPlatform(PlayerData *player, Object *platform);
 
 
-int UpdateVerticalPlatform(PlayerData *player, Object *platform, double deltaTime);
+int UpdateVerticalPlatform(PlayerData *player, Object *platform);
 
 
 int UpdateGateSwitch(PlayerData *player, Object *gateSwitch);
 
 
-int UpdateVerticalGate(Object *door, ObjectController *objectList, double deltaTime, PlayerData *player);
+int UpdateVerticalGate(Object *door, ObjectController *objectList, PlayerData *player);
 
 
-int UpdateHorizontalGate(Object *gate, ObjectController *objectList, double deltaTime, PlayerData *player);
+int UpdateHorizontalGate(Object *gate, ObjectController *objectList, PlayerData *player);
 
 
 int gateControl(Object *gate, ObjectController *objectList);

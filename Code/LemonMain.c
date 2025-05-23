@@ -38,7 +38,6 @@ int RunLemonEngine(void)
     int keyboard[256] = {0};
 
 	clock_t gameTick = clock();
-    double deltaTime = (double)clock();
     clock_t lastTick = clock();
     clock_t lastSecond = clock();
 	int frames = 0;
@@ -97,11 +96,11 @@ int RunLemonEngine(void)
 
 
 		// Player control
-		updatePlayer(player, GameWorld, keyboard, deltaTime);
+		updatePlayer(player, GameWorld, keyboard);
 
 
 		// World updates
-		updateObjects(GameWorld, keyboard, deltaTime);
+		updateObjects(GameWorld, keyboard);
 
 		worldCameraControl(frame.width, frame.height, player, GameWorld);
 

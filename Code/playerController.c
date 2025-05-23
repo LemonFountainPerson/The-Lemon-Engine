@@ -76,7 +76,7 @@ PlayerData* initialisePlayer(World *gameWorld)
 }
 
 
-FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256], double deltaTime)
+FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256])
 {
 	if (player == NULL || gameWorld->objectList == NULL)
 	{
@@ -163,11 +163,11 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 	{
 		if (fabs(player->PhysicsXVelocity) > 0.1)
 		{
-			player->xVelocity *= 0.82;
+			player->xVelocity *= 0.81;
 		}
 		else
 		{
-			player->xVelocity *= 0.88;
+			player->xVelocity *= 0.87;
 		}
 	}
 
@@ -221,9 +221,9 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 
 	// collision detection
 
-	MovePlayerX(player, gameWorld, deltaTime);
+	MovePlayerX(player, gameWorld);
 
-	MovePlayerY(player, gameWorld, deltaTime);
+	MovePlayerY(player, gameWorld);
 	
 
 	player->xPosRight = player->xPos + PLAYERWIDTH - 1;
@@ -302,7 +302,7 @@ int playerJump(PlayerData *player, int hAxis, int vAxis)
 }
 
 
-int MovePlayerX(PlayerData *player, World *gameWorld, double deltaTime)
+int MovePlayerX(PlayerData *player, World *gameWorld)
 {
 	double prevYPos = player->yPos;
 	double prevXPos = player->xPos;
@@ -450,7 +450,7 @@ int ApplyXPhysics(PlayerData *player, Object *inputObject)
 
 
 
-int MovePlayerY(PlayerData *player, World *gameWorld, double deltaTime)
+int MovePlayerY(PlayerData *player, World *gameWorld)
 {
 	double prevYPos = player->yPos;
 	double prevXPos = player->xPos;
@@ -953,151 +953,3 @@ int switchPlayerSpriteName(char spriteName[MAX_LEN], int spriteSet, PlayerData *
 	return 0;
 }
 
-
-// Depreciated tile-based collision - unlikely to be reimplemented
-//int getTileAtPosition(World *gameWorld, int x, int y)
-//{
-//	int gridX, gridY = 0;
-//
-//	gridX = floor(x / X_TILESCALE);
-//	gridY = floor(y / Y_TILESCALE);
-//
-//	if (y < 0 || x < 0)
-//	{
-//		return 0;
-//	}
-//
-//	return gameWorld->levelData[gridX][gridY];
-//}
-//
-//
-//int tileCollision(PlayerData *player, World *gameWorld, double dx, double dy)
-//{
-//
-//	// Feet - 0
-//	fixCollisionAtPoint(player, gameWorld, player->xPos + PLAYERWIDTH, player->yPos, dx, dy, 0);
-//	fixCollisionAtPoint(player, gameWorld, player->xPos, player->yPos, dx, dy, 0);
-//
-//
-//
-//	// Middle - 1
-//	if (PLAYERHEIGHT > Y_TILESCALE)
-//	{
-//		fixCollisionAtPoint(player, gameWorld, player->xPos, player->yPos + (PLAYERHEIGHT >> 1), dx, dy, 1);
-//		fixCollisionAtPoint(player, gameWorld, player->xPos + PLAYERWIDTH, player->yPos + (PLAYERHEIGHT >> 1), dx, dy, 1);
-//	}
-//
-//
-//	// Head - 2
-//	fixCollisionAtPoint(player, gameWorld, player->xPos, (player->yPos + PLAYERHEIGHT - 1), dx, dy, 2);
-//	fixCollisionAtPoint(player, gameWorld, (player->xPos + PLAYERWIDTH), (player->yPos + PLAYERHEIGHT - 1), dx, dy, 2);
-//
-//	return 0;
-//}
-//
-//
-//int fixCollisionAtPoint(PlayerData *player, World *gameWorld, int x, int y, double dx, double dy, int part)
-//{
-//	int tileID = getTileAtPosition(gameWorld, x, y);
-//
-//
-//	if (tileID == 0)
-//	{
-//		if (part == 0 && player->jumpProgress < 99)
-//		{
-//			player->jumpProgress += 1;
-//		}
-//
-//		return 0;
-//	}
-//
-//	int shape = gameWorld->tileShape[tileID];
-//
-//	int modX = modulo(x, X_TILESCALE);
-//	int modY = modulo(y, Y_TILESCALE);
-//	int baseX = X_TILESCALE;
-//	int baseY = Y_TILESCALE;
-//
-//	switch (shape)
-//	{
-//		case '=':
-//			if (part != 0 || dy > 0.2)
-//			{
-//				return 0;
-//			}
-//
-//			break;
-//
-//		case '_':
-//			baseY = baseY / 2 + 1;
-//
-//			if (modY >= baseY)
-//			{
-//				return 0;
-//			}
-//
-//			break;
-//
-//
-//		case '/':
-//			if (modY - modX > 0)
-//			{
-//				return 0;
-//			}
-//
-//			baseY -= (X_TILESCALE - modX);
-//
-//			if (dx > 0.5)
-//			{
-//				modX -= (modY + 1);
-//			}
-//
-//			break;
-//
-//		case 92:
-//			if ((Y_TILESCALE - modY) - modX > 0)
-//			{
-//				return 0;
-//			}
-//
-//			baseY -= modX;
-//
-//			break;
-//
-//		default:
-//			break;
-//	}
-//
-//	if (dx > 0.5)
-//	{
-//		player->xPos += -modX - 1;
-//		player->xVel = 0.0;
-//	}
-//
-//	if (dx < -0.5)
-//	{
-//		player->xPos += (baseX - modX);
-//		player->xVel = 0.0;
-//	}
-//
-//
-//	if (dy > 0.2)
-//	{
-//		player->yPos += -modY - 1;
-//		player->yVel = 0.0;
-//		player->jumpProgress = 99;
-//	}
-//
-//	if (dy < -0.2)
-//	{
-//		player->yPos += (baseY - modY);
-//		player->yVel = 0.0;
-//
-//		if (part == 0)
-//		{
-//			player->jumpProgress = 0;
-//		}
-//	}
-//
-//	return 0;
-//}

@@ -10,7 +10,7 @@ PlayerData* initialisePlayer(World *gameWorld);
 
 
 // Main player update script
-FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256], double deltaTime);
+FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256]);
 
 
 int playerJump(PlayerData *player, int hAxis, int vAxis);
@@ -20,13 +20,13 @@ int setSprite(PlayerData *player);
 
 
 
-int MovePlayerX(PlayerData *player, World *gameWorld, double deltaTime);
+int MovePlayerX(PlayerData *player, World *gameWorld);
 
 
 int ApplyXPhysics(PlayerData *player, Object *inputObject);
 
 
-int MovePlayerY(PlayerData *player, World *gameWorld, double deltaTime);
+int MovePlayerY(PlayerData *player, World *gameWorld);
 
 
 int ApplyYPhysics(PlayerData *player, Object *inputObject);

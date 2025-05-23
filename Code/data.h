@@ -71,7 +71,6 @@ enum ChannelNames {
 
 
 enum objectType {
-	TO_BE_DELETED = -1,
 	LEVEL_FLAG_OBJ = 0,
 	SOLID_BLOCK = 1,
 	RIGHT_SLOPE = 2,
@@ -130,6 +129,14 @@ enum Flags {
 };
 
 
+enum ObjectState {
+		TO_BE_DELETED = -1,
+		DEFAULT = 0,
+		PAUSE_BEHAVIOUR = 1,
+		UNDEFINED_STATE
+};
+
+
 enum ParticleSubType {
 	EMPTY = 0,
 	SPARKLE = 1,
@@ -182,15 +189,7 @@ struct object
 	struct object *nextObject;
 	struct object *prevObject;
 	int objectID;
-
-	struct sprite *spriteBuffer;
-	int currentSprite;
-	int xFlip;
-	int yFlip;
-
-	enum RenderMode objectRenderMode;
-
-	enum Layer layer;
+	enum ObjectState State;
 
 	double xPos;
 	double yPos;
@@ -202,8 +201,17 @@ struct object
 	double yVel;
 	int solid;
 
+	enum Layer layer;
+
 	int currentAnimation;
 	int animationTick;
+
+	struct sprite *spriteBuffer;
+	int currentSprite;
+	int xFlip;
+	int yFlip;
+
+	enum RenderMode objectRenderMode;
 
 	// Multi-purpose args
 	int arg1;
@@ -329,6 +337,8 @@ typedef enum GateSwitch GateSwitch;
 static SoundInstance AllSounds[CHANNEL_COUNT];
 
 static int gameRunning = 1;
+
+static double deltaTime = 1.0;
 
 
 
