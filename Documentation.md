@@ -57,23 +57,15 @@ The GameWorld may be passed in to various functions to perform game actions, alt
 ```
 struct playerData
 {
+	// Do not modify these variables to prevent game logic breaking
 	double xPos;
-	double xPosRight;
 	double yPos;
+	double xPosRight;
 	double yPosTop;
 	double yVelocity;
 	double xVelocity;
 	double maxYVel;
 	double maxXVel;
-
-	int inAir;
-	int jumpHeld;
-	int jumpProgress;
-	int crouch;
-
-	double PhysicsXVelocity;
-	double PhysicsYVelocity;
-	double direction;
 
 	int xFlip;
 	int currentSprite;
@@ -83,6 +75,16 @@ struct playerData
 	struct spriteSet *spriteSetPtr;
 
 	enum Layer playerLayer;
+
+	// These variables can be freely modified according to your modified player controller
+	double PhysicsXVelocity;
+	double PhysicsYVelocity;
+	double direction;
+
+	int inAir;
+	int jumpHeld;
+	int jumpProgress;
+	int crouch;
 
 	int coinCount;
 };
@@ -104,9 +106,9 @@ Most functions in the engine at the higher levels will perform checks to insure 
 **Game Loop**
 
 The main structure of the game loop is as follows: 
-First, updatePlayer is ran to take user input and operate the player. 
+First, updateObjects is run to update every object in the GameWorld. 
 
-Next, updateObjects is run to update every object in the GameWorld. 
+Next, updatePlayer is ran to take user input and operate the player. 
 After these two functions all game logic has been performed. Any further functionality should go here after these functions (such as menu control, other self-implemented object types, etc.)
 
 Next, worldCameraControl is called to move the GameWorld's camera according to the state of the GameWorld. (i.e: following the player) The seperation of the camera and the player means the camera is completely independent of the player and can be moved independently if you wish. For convinience, it's recommended to do this from the worldCameraControl function.
