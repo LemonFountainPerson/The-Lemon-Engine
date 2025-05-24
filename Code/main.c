@@ -17,7 +17,6 @@ int main(void)
 
 
 
-// cd C:\Users\usern\Documents\C Projects\Lemon Engine
 // git add Code Executables
 
 

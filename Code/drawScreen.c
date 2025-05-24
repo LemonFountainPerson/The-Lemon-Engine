@@ -461,7 +461,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 	int yOffset2 = yOffset + currentObject->ySize;
 
 	
-	// Make sure the sprite position is valid on screen to avoid a crash related to assuming the position is valid
+	// Make sure the sprite position is valid on screen to avoid a crash related to assuming the position is valid 
 	if (xOffset >= screenWidth || currentObject->xSize + xOffset < 0 || yOffset >= screenHeight || currentObject->ySize + yOffset < 0)
 	{
 		return INVALID_DATA;
