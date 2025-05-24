@@ -366,19 +366,18 @@ Currently 5 multi-purpose integer args are provided in each object, however this
 
 The updatePlayer function is run before the updateObjects function, which will result in some difficulty when trying to perform interactions from the player to the objects - this was chosen deliberately to make custom behaviour less reliant on the player controller which is designed to be able to be swapped out with minimal changes. This does mean that some interactions do have to be specially handled by objects such as movement matching with moving platforms, enemy attacks hitting the player, etc. This is relatively easy to do as the update objects function provides the pointer to the player via the GameWorld struct.
 
-Objects can be directly deleted from update objects function, but this requires extra logic handling so that an object in the list does not get skipped for evaluation that frame. The delete object function works by deleting the object you provide the pointer to, and will change the given pointer to point to the next item in the object list. Because of these complications, a helper function called "MarkObjectForDeletion" is preferable as it can used at any point in the program's execution safely and will provide additional checks for you to ensure the object can be deleted without error. When an object is marked for deletion, its object type is set to (TO_BE_DELETED), and at the end of its iteration in the update objects function it will be deleted. The actual object's ID will be saved in the animationTick variable, so if you wish to undo the mark before its deletion you may use "UnmarkObjectForDeletion" to reverse this and preserve the object, although as a consequence the objects animation tick will be reset to 0.
+Objects can be directly deleted from update objects function, but this requires extra logic handling so that an object in the list does not get skipped for evaluation that frame. The delete object function works by deleting the object you provide the pointer to, and will change the given pointer to point to the next item in the object list. Because of these complications, a helper function called "MarkObjectForDeletion" is preferable as it can used at any point in the program's execution safely and will provide additional checks for you to ensure the object can be deleted without error. When an object is marked for deletion, its state is set to (TO_BE_DELETED), and at the end of its iteration in the update objects function it will be deleted. If you wish to undo the mark before its actual deletion you may use "UnmarkObjectForDeletion" to reverse this and preserve the object, although as a consequence the objects state will be reset to DEFAULT, and you may lose some data. (Such as if an object is in a unique state, this data will be lost when marked for deletion, which may cause logic errors.)
 
 
 **Particles**
 
-The Lemon engine has a built-in particle system; although basic it provides an easy-to-use template for 2D animated effects to be created. All particles use the PARTICLE object ID (13) and each different particle is defined simply by their animation number as defined in the currentAnimation variable. (E.g: animation 0 corresponds to the coin sparkle particle effect.) Its position, velocity, amount of animation loops, framerate, animation direction and particle lifetime can all be defined when spawning a particle but have default values if left at 0. For example, if particle lifetime is left at 0, the particle will default to deleting itself when it has run through all its loops. If additional effects such as movement are required, you should simply add the behaviour logic to the updateParticles function as you would in the updateObjects function. Although, by default only one integer arg variable is available for free use.
+The Lemon engine has a built-in particle system; although basic it provides an easy-to-use template for 2D animated effects to be created. All particles use the PARTICLE object ID (13) and each different particle is defined simply by their animation number as defined in the currentAnimation variable. (E.g: animation 0 corresponds to the coin sparkle particle effect.) Its position, velocity, amount of animation loops, framerate, animation direction and particle lifetime can all be defined when spawning a particle but have default values if left at 0. For example, if particle lifetime is left at 0, the particle will default to deleting itself when it has run through all its loops. If additional effects such as movement are required, you should simply add the behaviour logic to the updateParticles function as you would in the updateObjects function. Although, by default only two integer arg variables are available for free use.
 
 ```
-	// Arg1: particle sub tpe (SPARKLE)
+	// Arg1: particle sub type (SPARKLE)
 	// Arg2: # of times to loop (1)
 	// Arg3: Framerate (0) 					(eg. 0 or 1 for each frame, 3 for every 3 frames, etc.)
 	// Arg4: Particle maximum lifetime (0) 			(e.g: 0 will default to deleting as soon as loops finish)
-	// Arg5: Animation direction				(e.g: 0 or 1 for forward, -1 for backwards, 2 for forwards then reverse over and over, -2 for same but starts backwards)
 
 	AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1, 0, 0, 0);
 
@@ -388,7 +387,7 @@ The Lemon engine has a built-in particle system; although basic it provides an e
 	// ...
 ```
 
-To add a new particle, only three additions are required. (Other than the sprites added to the objects folder.)
+To add a new particle, only three or four additions are required. (Other than the sprites added to the objects folder.)
 
 First, its identifier should be added to the ParticleType enum.
 
@@ -424,13 +423,14 @@ int LoadParticleSprites(SpriteSet *newSet)
 }
 ```
 
-Finally, the first and last sprites for your particle to use should be defined in the LoopParticleAnimation function as a case in its switch statement.
+Finally, the first and last sprites for your particle to use should be defined in the LoopParticleAnimation function as a case in its switch statement. In addition, the animateType variable can be modified to specify a type of animation the particle will use. (0/1 for forwards then loop, -1 for backwards then loop, etc.)
 
 ```
 int LoopParticleAnimation(Object *particle)
 {
 	int firstSprite = 1;
 	int lastSprite = 1;
+	int animateType = 1;
 
 	// Add a new case whenever you make a new particle here
 	switch(particle->currentAnimation)
@@ -443,6 +443,48 @@ int LoopParticleAnimation(Object *particle)
 		break;
 	}
 	//....
+}
+```
+
+An optional step is to define your own animateType in the subsequent switch statement. If done so, keep in mind that the particle's arg1 variable is how many loops are remaining to be performed, and so whenever a "loop" of your new animation type occurs, this variable should be decremented.
+
+```
+// Add a new case for specific animation sequences
+switch (animateType)
+{
+	case 2:
+	{
+		// ...
+	} break;
+
+
+	case -2:
+	{
+		// ...
+	} break;
+
+
+	case -1:
+	{
+		// ...
+	} break;
+
+	case 3:
+	// New animation type!
+	break;
+
+	default:
+	{
+		particle->currentSprite++;
+
+		if (particle->currentSprite > lastSprite || particle->currentSprite < firstSprite)
+		{
+			particle->arg1--;
+
+			particle->currentSprite = firstSprite;
+		}
+
+	} break;
 }
 ```
 
