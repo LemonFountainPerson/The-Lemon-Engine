@@ -149,9 +149,6 @@ Object* AddObject(ObjectController *objectList, int objectID, int xPos, int yPos
 			{
 				newObject->arg2 = CHAIN_SWITCH;
 			}
-
-			printf("ARG2 SET: %d\n", newObject->arg2);
-
 			newObject->arg5 = abs(arg2);
 			newObject->solid = 0;
 			newObject->animationTick = abs(arg2);
@@ -190,14 +187,7 @@ Object* AddObject(ObjectController *objectList, int objectID, int xPos, int yPos
 	newObject->yPosTop = newObject->xPos + newObject->xSize;
 
 	
-	printf("\nCreated object type: %d;\n\n", objectID);
-
-	if (objectID == PARTICLE)
-	{
-		switchObjectSprite(1, newObject, objectList);
-		printf("%d\n", newObject->currentSprite);
-	}
-
+	//printf("\nCreated object type: %d;\n\n", objectID);
 
 
 	return newObject;

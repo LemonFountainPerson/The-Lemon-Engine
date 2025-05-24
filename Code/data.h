@@ -24,6 +24,8 @@
 #define X_TILESCALE 32
 
 #define MAX_OBJECTS 128
+#define MAX_PARTICLES 64
+#define MAX_HUD_ELEMENTS 64
 
 #define PLAYERHEIGHT 50
 #define PLAYERWIDTH 32
@@ -268,6 +270,8 @@ struct world
 {
 	struct objectController *objectList;
 	int drawnObjects;
+	int drawnParticles;
+	int drawnHudElements;
 
 	struct playerData *Player;
 
@@ -288,12 +292,12 @@ struct world
 	int drawSprites;
 	int drawBackGround;
 	int drawPlayer;
+	int drawHud;
+	int drawParticles;
+	int drawObjects;
 	int playBgMusic;
 
 	int GamePaused;
-
-	//int levelData[GRID_WIDTH][GRID_HEIGHT];
-	//char tileShape[100];
 };
 
 

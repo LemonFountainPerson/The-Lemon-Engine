@@ -392,11 +392,15 @@ World* initialiseGame(PlayerData *player)
 	gameWorld->cameraY = 120;
 	gameWorld->level = 0;
 	gameWorld->drawnObjects = 0;
+	gameWorld->drawnParticles = 0;
+	gameWorld->drawnHudElements = 0;
 
 	gameWorld->drawHitboxes = 0;
 	gameWorld->drawSprites = 1;
 	gameWorld->drawPlayer = 1;
 	gameWorld->drawBackGround = 1;
+	gameWorld->drawParticles = 1;
+	gameWorld->drawHud = 0;
 
 	gameWorld->bgParallax = 0.1;
 	gameWorld->bgTileVertically = 1;

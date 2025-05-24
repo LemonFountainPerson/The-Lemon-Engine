@@ -311,17 +311,13 @@ int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int
 		return MISSING_DATA;
 	}
 
-	if (gameWorld->drawnObjects > MAX_OBJECTS || currentObject->layer != drawLayer)
+	if (currentObject->layer != drawLayer)
 	{
 		return ACTION_DISABLED;
 	}
-
 	
 	// Sprite
 	renderObjectSprite(screen, width, height, gameWorld, currentObject);
-
-	gameWorld->drawnObjects++;
-
 
 	if (gameWorld->drawHitboxes == 0)
 	{
@@ -467,6 +463,38 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 		return INVALID_DATA;
 	}
 
+
+	switch(currentObject->layer)
+	{
+
+	case HUD:
+		if (gameWorld->drawHud == 0 || gameWorld->drawnHudElements >= MAX_HUD_ELEMENTS)
+		{
+			return ACTION_DISABLED;
+		}
+
+		gameWorld->drawnHudElements++;
+		break;
+
+	case PARTICLES:
+		if (gameWorld->drawParticles == 0 || gameWorld->drawnParticles >= MAX_PARTICLES)
+		{
+			return ACTION_DISABLED;
+		}
+
+		gameWorld->drawnParticles++;
+		break;
+
+	default:
+		if (gameWorld->drawObjects == 0 || gameWorld->drawnObjects >= MAX_OBJECTS)
+		{
+			return ACTION_DISABLED;
+		}
+
+		gameWorld->drawnObjects++;
+		break;
+	}
+	
 
 	int xDraw2, xDraw, yDraw2, yDraw;
 
@@ -1401,12 +1429,14 @@ int modulo(int x, int N)
 
 int cleanRenderer(World *gameWorld, uint32_t screen[], int width, int height)
 {
-	memset(screen, 0x55, sizeof(uint32_t) * width * height);
+	memset(screen, 0x00, sizeof(uint32_t) * width * height);
 
 
 	if (gameWorld != NULL)
 	{
 		gameWorld->drawnObjects = 0;
+		gameWorld->drawnParticles = 0;
+		gameWorld->drawnHudElements = 0;
 	}
 
 	return 0;
