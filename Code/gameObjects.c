@@ -52,6 +52,7 @@ Object* AddObject(ObjectController *objectList, int objectID, int xPos, int yPos
 
 		case RIGHT_SLOPE:
 		//Angle: Y = (X * ySize/xSize)
+		//Angle: X = (Y / (ySize/xSize))
 			newObject->xSize = arg1;
 			newObject->ySize = arg2;
 			newObject->solid = 2;
@@ -921,9 +922,9 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 				double ObjXPos = currentObject->xPos;
 				double ObjXPos2 = currentObject->xPos + currentObject->xSize;
 
-				if (overlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
+				if (boxOverlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
 				{
-					AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 9, 0, 0, 0);
+					AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1, 0, 0, 0);
 					MarkObjectForDeletion(currentObject);
 					player->coinCount++;
 					LemonPlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.8);
@@ -940,7 +941,7 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 				double ObjXPos = currentObject->xPos;
 				double ObjXPos2 = currentObject->xPos + currentObject->xSize;
 
-				if (currentObject->arg5 < 1 && player->yVelocity < -1.0 && overlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
+				if (currentObject->arg5 < 1 && player->yVelocity < -1.0 && boxOverlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
 				{
 					player->yVelocity = (double)currentObject->arg1;
 					LemonPlaySound("Spring", "Objects", 4, 1.0);
@@ -1103,11 +1104,6 @@ int LoopParticleAnimation(Object *particle)
 			{
 				particle->arg1--;
 
-				if ( particle->arg1 < 1)
-				{
-					return 0;
-				}
-
 				if (onOddLoop == 1)
 				{
 					particle->currentSprite = lastSprite;
@@ -1139,11 +1135,6 @@ int LoopParticleAnimation(Object *particle)
 			{
 				particle->arg1--;
 
-				if ( particle->arg1 < 1)
-				{
-					return 0;
-				}
-
 				if (onOddLoop == 1)
 				{
 					particle->currentSprite = firstSprite;
@@ -1165,11 +1156,6 @@ int LoopParticleAnimation(Object *particle)
 			{
 				particle->arg1--;
 
-				if (particle->arg1 < 1)
-				{
-					return 0;
-				}
-
 				particle->currentSprite = lastSprite;
 			}
 
@@ -1182,11 +1168,6 @@ int LoopParticleAnimation(Object *particle)
 			if (particle->currentSprite > lastSprite || particle->currentSprite < firstSprite)
 			{
 				particle->arg1--;
-
-				if (particle->arg1 < 1)
-				{
-					return 0;
-				}
 
 				particle->currentSprite = firstSprite;
 			}
@@ -1211,7 +1192,7 @@ int UpdateGateSwitch(PlayerData *player, Object *gateSwitch)
 	int ObjYPos = gateSwitch->yPos;
 	int ObjYPos2 = gateSwitch->yPos + gateSwitch->ySize - 1;
 
-	if (overlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
+	if (boxOverlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
 	{
 		if (gateSwitch->arg4 == 0)
 		{
@@ -1287,7 +1268,7 @@ int UpdateVerticalGate(Object *gate, ObjectController *objectList, PlayerData *p
 			}
 
 
-			if (overlapsPlayer(player, gate->xPos, gate->xPos + gate->xSize, gate->yPos + (gate->yVel * deltaTime), gate->yPos + gate->ySize + (gate->yVel * deltaTime)) == 1)
+			if (boxOverlapsPlayer(player, gate->xPos, gate->xPos + gate->xSize, gate->yPos + (gate->yVel * deltaTime), gate->yPos + gate->ySize + (gate->yVel * deltaTime)) == 1)
 			{
 				gate->yVel = 0.0;
 			}
@@ -1329,7 +1310,7 @@ int UpdateVerticalGate(Object *gate, ObjectController *objectList, PlayerData *p
 			}
 
 
-			if (overlapsPlayer(player, gate->xPos, gate->xPos + gate->xSize, gate->yPos + (gate->yVel * deltaTime), gate->yPos + gate->ySize + (gate->yVel * deltaTime)) == 1)
+			if (boxOverlapsPlayer(player, gate->xPos, gate->xPos + gate->xSize, gate->yPos + (gate->yVel * deltaTime), gate->yPos + gate->ySize + (gate->yVel * deltaTime)) == 1)
 			{
 				gate->yVel = 0.0;
 			}
@@ -1398,7 +1379,7 @@ int UpdateHorizontalGate(Object *gate, ObjectController *objectList, PlayerData 
 			}
 
 
-			if (overlapsPlayer(player, gate->xPos + (gate->xVel * deltaTime), gate->xPos + gate->xSize + (gate->xVel * deltaTime), gate->yPos, gate->yPos + gate->ySize) == 1)
+			if (boxOverlapsPlayer(player, gate->xPos + (gate->xVel * deltaTime), gate->xPos + gate->xSize + (gate->xVel * deltaTime), gate->yPos, gate->yPos + gate->ySize) == 1)
 			{
 				gate->xVel = 0.0;
 			}
@@ -1440,7 +1421,7 @@ int UpdateHorizontalGate(Object *gate, ObjectController *objectList, PlayerData 
 			}
 
 
-			if (overlapsPlayer(player, gate->xPos + (gate->xVel * deltaTime), gate->xPos + gate->xSize + (gate->xVel * deltaTime), gate->yPos, gate->yPos + gate->ySize) == 1)
+			if (boxOverlapsPlayer(player, gate->xPos + (gate->xVel * deltaTime), gate->xPos + gate->xSize + (gate->xVel * deltaTime), gate->yPos, gate->yPos + gate->ySize) == 1)
 			{
 				gate->xVel = 0.0;
 			}
@@ -1538,20 +1519,27 @@ int moveObjectX(Object *inputObject, PlayerData *player)
 	}
 
 	double ObjXPos = inputObject->xPos;
-	double ObjXPosRight = inputObject->xPos + inputObject->xSize;
+	double ObjXPosRight = inputObject->xPosRight;
 	double ObjYPos = inputObject->yPos;
 	double ObjYPosTop = inputObject->yPos + inputObject->ySize;
 
-	double offset = 0 * inputObject->xVel/fabs(inputObject->xVel);
 
-
-	int result = overlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop) || overlapsPlayer(player, prevObjXPos - offset, prevObjXPosRight - offset, ObjYPos, ObjYPosTop);
-
+	int result = 0;
 
 	switch(inputObject->solid * result)
 	{
+		case 2:
+			ObjXPos = ObjYPos / ((double)inputObject->ySize/(double)inputObject->xSize);
+			result = rightSlopeOverlapsPlayer(player, inputObject);
+			break;
+
+		case 3:
+			ObjXPosRight = inputObject->xSize - ( ObjYPos / ((double)inputObject->ySize/(double)inputObject->xSize) );
+			result = leftSlopeOverlapsPlayer(player, inputObject);
+			break;
+
 		case 1:
-			result = 1;
+			result = boxOverlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
 			break;
 
 		default:
@@ -1576,7 +1564,7 @@ int moveObjectX(Object *inputObject, PlayerData *player)
 	}
 
 	
-	result = player->inAir == 0 && (overlapsPlayerFeet(player, prevObjXPos, prevObjXPosRight, ObjYPos, ObjYPosTop + 2.0) == 1 && player->yVelocity < 1.0);
+	result = (boxOverlapsPlayerFeet(player, prevObjXPos, prevObjXPosRight, ObjYPos, ObjYPosTop + 2.0) == 1 && player->yVelocity < 1.0);
 
 	switch(inputObject->solid * result)
 	{
@@ -1624,18 +1612,25 @@ int moveObjectY(Object *inputObject, PlayerData *player)
 	double ObjXPos = inputObject->xPos;
 	double ObjXPosRight = inputObject->xPos + inputObject->xSize;
 	double ObjYPos = inputObject->yPos;
-	double ObjYPosTop = inputObject->yPos + inputObject->ySize;
-
-	double offset = 0 * inputObject->yVel/fabs(inputObject->yVel);
+	double ObjYPosTop = inputObject->yPosTop;
 
 
-	int result = overlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop) || overlapsPlayer(player, ObjXPos, ObjXPosRight, prevObjYPos - offset, prevObjYPosTop - offset);
-	
+	int result = 0;
 
 	switch(inputObject->solid * result)
 	{
+		case 2:
+			ObjYPosTop = ((player->xPos + PLAYERWIDTH - inputObject->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize));
+			result = rightSlopeOverlapsPlayer(player, inputObject);
+			break;
+
+		case 3:
+			ObjYPosTop = ((inputObject->xSize - (player->xPos - inputObject->xPos)) * ((double)inputObject->ySize/(double)inputObject->xSize));
+			result = leftSlopeOverlapsPlayer(player, inputObject);
+			break;
+
 		case 1:
-			result = 1;
+			result = boxOverlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
 			break;
 
 		default:
@@ -1654,10 +1649,12 @@ int moveObjectY(Object *inputObject, PlayerData *player)
 			player->yPos = ObjYPosTop;
 		}
 
+		ApplyYPhysics(player, inputObject);
+
 		return 0;
 	}
 	
-	result = (overlapsPlayerFeet(player, ObjXPos, ObjXPosRight, prevObjYPos, prevObjYPosTop + 2.0 ) == 1 && player->yVelocity < 1.0);
+	result = (boxOverlapsPlayerFeet(player, ObjXPos, ObjXPosRight, prevObjYPos, prevObjYPosTop + 2.0 ) == 1 && player->yVelocity < 1.0);
 
 	switch(inputObject->solid * result)
 	{
@@ -1797,17 +1794,49 @@ int UpdateVerticalPlatform(PlayerData *player, Object *platform)
 }
 
 
-int overlapsPlayer(PlayerData *player, double X1, double X2, double Y1, double Y2)
+int boxOverlapsPlayer(PlayerData *player, double X1, double X2, double Y1, double Y2)
 {
 	return !(player->xPos >= X2 || (player->xPos + PLAYERWIDTH) <= X1 || player->yPos >= Y2 || (player->yPos + PLAYERHEIGHT) <= Y1);
 }
 
 
-int overlapsPlayerFeet(PlayerData *player, double X1, double X2, double Y1, double Y2)
+int boxOverlapsPlayerFeet(PlayerData *player, double X1, double X2, double Y1, double Y2)
 {
-	double projectedYPos = player->yPos - 8.0;
+	return !(player->xPos >= X2 || (player->xPos + PLAYERWIDTH) <= X1 || (player->yPos - 8) >= Y2 || (player->yPos + 8) <= Y1);
+}
 
-	return !(player->xPos >= X2 || (player->xPos + PLAYERWIDTH) <= X1 || projectedYPos >= Y2 || (projectedYPos + 16) <= Y1);
+
+int rightSlopeOverlapsPlayer(PlayerData *player, Object *inputObject)
+{
+	return 0;
+
+	double slopeFloor = ((player->xPos + PLAYERWIDTH - inputObject->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize));
+
+	if (slopeFloor > inputObject->ySize)
+	{
+		slopeFloor = inputObject->ySize;
+	}
+
+	double relativePlayerPos = player->yPos - inputObject->yPos;
+
+	return !(relativePlayerPos >= slopeFloor || relativePlayerPos < 0 || player->xPos >= (inputObject->xPos + inputObject->xSize - 1) || (player->xPos + PLAYERWIDTH) < inputObject->xPos);
+}
+
+
+int leftSlopeOverlapsPlayer(PlayerData *player, Object *inputObject)
+{
+	return 0;
+
+	double slopeFloor = ((inputObject->xSize - (player->xPos - inputObject->xPos)) * ((double)inputObject->ySize/(double)inputObject->xSize));
+
+	if (slopeFloor > inputObject->ySize)
+	{
+		slopeFloor = inputObject->ySize;
+	}
+
+	double relativePlayerPos = player->yPos - inputObject->yPos;
+
+	return !(relativePlayerPos >= slopeFloor || relativePlayerPos < 0 || player->xPos >= (inputObject->xPos + inputObject->xSize - 1) || (player->xPos + PLAYERWIDTH) < inputObject->xPos);
 }
 
 
@@ -2002,13 +2031,11 @@ int ChangeObjectXSizeBy(int change, Object *inputObject, PlayerData *player)
 	switch(inputObject->solid)
 	{
 		case 2:
-			ObjYPosTop = (ObjXPosRight - player->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize);
-			result = overlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
+			result = rightSlopeOverlapsPlayer(player, inputObject);
 			break;
 
 		case 3:
-			ObjYPosTop = (player->xPosRight - ObjXPos) * ((double)inputObject->ySize/(double)inputObject->xSize);
-			result = overlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
+			result = leftSlopeOverlapsPlayer(player, inputObject);
 			break;
 
 		case 0:
@@ -2016,7 +2043,7 @@ int ChangeObjectXSizeBy(int change, Object *inputObject, PlayerData *player)
 			break;
 
 		default:
-			result = overlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
+			result = boxOverlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
 			break;
 	}
 
@@ -2064,13 +2091,11 @@ int ChangeObjectYSizeBy(int change, Object *inputObject, PlayerData *player)
 	switch(inputObject->solid)
 	{
 		case 2:
-			ObjYPosTop = (ObjXPosRight - player->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize);
-			result = overlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
+			result = rightSlopeOverlapsPlayer(player, inputObject);
 			break;
 
 		case 3:
-			ObjYPosTop = (player->xPosRight - ObjXPos) * ((double)inputObject->ySize/(double)inputObject->xSize);
-			result = overlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
+			result = leftSlopeOverlapsPlayer(player, inputObject);
 			break;
 
 		case 0:
@@ -2078,7 +2103,7 @@ int ChangeObjectYSizeBy(int change, Object *inputObject, PlayerData *player)
 			break;
 
 		default:
-			result = overlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
+			result = boxOverlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
 			break;
 	}
 

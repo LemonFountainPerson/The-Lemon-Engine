@@ -108,10 +108,16 @@ int gateControl(Object *gate, ObjectController *objectList);
 
 
 // Check for overlap with player
-int overlapsPlayer(PlayerData *player, double X1, double X2, double Y1, double Y2);
+int boxOverlapsPlayer(PlayerData *player, double X1, double X2, double Y1, double Y2);
 
 
-int overlapsPlayerFeet(PlayerData *player, double X1, double X2, double Y1, double Y2);
+int boxOverlapsPlayerFeet(PlayerData *player, double X1, double X2, double Y1, double Y2);
+
+
+int rightSlopeOverlapsPlayer(PlayerData *player, Object *inputObject);
+
+
+int leftSlopeOverlapsPlayer(PlayerData *player, Object *inputObject);
 
 
 // Checks for object overlap with a specific object ID

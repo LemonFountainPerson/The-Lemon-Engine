@@ -145,53 +145,40 @@ int worldCameraControl(int width, int height, PlayerData *player, World *gameWor
 }
 
 
-int getTileAtCamera(int levelData[][GRID_HEIGHT], char tileShape[], int x, int y)
-{
-	int Y = y - 22;
-	int X = x - 10;
-
-	if (Y < 0 || X < 0)
-	{
-		return 0;
-	}
-
-	int gridX, gridY = 0;
-	gridX = floor(X/ X_TILESCALE);
-	gridY = floor(Y/ Y_TILESCALE);
-
-
-	if (gridY < 0 || gridX < 0)
-	{
-		return 0;
-	}
-
-	int ans = levelData[gridX][gridY];
-
-	if (tileShape[ans] == '_' && (Y % Y_TILESCALE) > (Y_TILESCALE >> 1))
-	{
-		return 0;
-	}
-
-	if (tileShape[ans] == '/' && ((Y % Y_TILESCALE) - (X % X_TILESCALE) > 0))
-	{
-		return 0;
-	}
-
-	return ans;
-}
-
-
-int validScreenPos(int x, int y)
-{
-	if (y >= 0 && y < V_RESOLUTION && x >= 0 && x < H_RESOLUTION)
-	{
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
-}
+//int getTileAtCamera(int levelData[][GRID_HEIGHT], char tileShape[], int x, int y)
+//{
+//	int Y = y - 22;
+//	int X = x - 10;
+//
+//	if (Y < 0 || X < 0)
+//	{
+//		return 0;
+//	}
+//
+//	int gridX, gridY = 0;
+//	gridX = floor(X/ X_TILESCALE);
+//	gridY = floor(Y/ Y_TILESCALE);
+//
+//
+//	if (gridY < 0 || gridX < 0)
+//	{
+//		return 0;
+//	}
+//
+//	int ans = levelData[gridX][gridY];
+//
+//	if (tileShape[ans] == '_' && (Y % Y_TILESCALE) > (Y_TILESCALE >> 1))
+//	{
+//		return 0;
+//	}
+//
+//	if (tileShape[ans] == '/' && ((Y % Y_TILESCALE) - (X % X_TILESCALE) > 0))
+//	{
+//		return 0;
+//	}
+//
+//	return ans;
+//}
 
 
 //int drawTiles(uint32_t screen[], int width, int height, World *gameWorld)
@@ -282,9 +269,6 @@ int validScreenPos(int x, int y)
 
 int drawObjects(Layer drawLayer, uint32_t screen[], int width, int height, World *gameWorld)
 {
-	// WARNING! This function is really messy and not easy to read: All variations of rendering has its own copy of the
-	// main render loop, even extremely similar ones. This was done to squeeze out performance (at the expense of a bit of memory)
-	// As such, readability was sacrificed somewhat. Continue at your own risk!
 	if (gameWorld == NULL || gameWorld->objectList == NULL)
 	{
 		return MISSING_DATA;
@@ -428,6 +412,10 @@ int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int
 
 int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, World *gameWorld, Object *currentObject)
 {
+	// WARNING! This function is really messy and not easy to read: All variations of rendering has its own copy of the
+	// main render loop, even extremely similar ones. This was done to squeeze out performance (at the expense of a bit of memory)
+	// As such, readability was sacrificed somewhat. Continue at your own risk!
+
 	// 	RenderMode 0: Tile Mapping											(Sprite will tile across entire bounding box of object)
 	// 	RenderMode 1: Tile Scaling											(Sprite will be scaled to fit entire box of object)
 	//	RenderMode 2: Tile Mapping/Scaling on X/Y axis						(Sprite tiles on X axis, scales on Y axis) WIP
@@ -916,7 +904,6 @@ int renderSprite_LRUD_ScaleMode(uint32_t screen[], int screenWidth, unsigned cha
 				pixelx++;
 			}
 
-
 			intPixelx = (int)pixelx - 1;
 
 			if ((uint32_t)data[((intPixelY << 2) * spriteWidth) + (intPixelx << 2) + 3] > 0x00)
@@ -945,19 +932,6 @@ int renderSprite_LRUD_ScaleMode(uint32_t screen[], int screenWidth, unsigned cha
 			}
 
 			pixelx++;
-		}
-
-		// Fill in up to # - 1 pixels at right side of screen
-		for (; k < xDraw2; k++)
-		{
-			intPixelx = (int)pixelx;
-
-			if ((uint32_t)data[((intPixelY << 2) * spriteWidth) + (intPixelx << 2) + 3] > 0x00)
-			{
-				memcpy(screen + (i * screenWidth) + (int)k, data + ((intPixelY << 2) * spriteWidth) + (intPixelx << 2), sizeOfPixel);
-			}
-
-			pixelx += xScale;
 		}
 
 		pixely -= yScale;
@@ -1061,19 +1035,6 @@ int renderSprite_RLUD_ScaleMode(uint32_t screen[], int screenWidth, unsigned cha
 			pixelx--;
 		}
 
-		// Fill in up to # - 1 pixels at right side of screen
-		for (; k < xDraw2; k++)
-		{
-			intPixelx = (int)pixelx;
-
-			if ((uint32_t)data[((intPixelY << 2) * spriteWidth) + (intPixelx << 2) + 3] > 0x00)
-			{
-				memcpy(screen + (i * screenWidth) + (int)k, data + ((intPixelY << 2) * spriteWidth) + (intPixelx << 2), sizeOfPixel);
-			}
-
-			pixelx -= xScale;
-		}
-
 		pixely -= yScale;
 	}
 
@@ -1139,19 +1100,6 @@ int renderSprite_LRDU_ScaleMode(uint32_t screen[], int screenWidth, unsigned cha
 			pixelx++;
 		}
 
-		// Fill in up to # - 1 pixels at right side of screen
-		for (; k < xDraw2; k++)
-		{
-			intPixelx = (int)pixelx;
-
-			if ((uint32_t)data[((intPixelY << 2) * spriteWidth) + (intPixelx << 2) + 3] > 0x00)
-			{
-				memcpy(screen + (i * screenWidth) + (int)k, data + ((intPixelY << 2) * spriteWidth) + (intPixelx << 2), sizeOfPixel);
-			}
-
-			pixelx += xScale;
-		}
-
 		pixely += yScale;
 	}
 
@@ -1215,19 +1163,6 @@ int renderSprite_RLDU_ScaleMode(uint32_t screen[], int screenWidth, unsigned cha
 			}
 
 			pixelx--;
-		}
-
-		// Fill in up to # - 1 pixels at right side of screen
-		for (; k < xDraw2; k++)
-		{
-			intPixelx = (int)pixelx;
-
-			if ((uint32_t)data[((intPixelY << 2) * spriteWidth) + (intPixelx << 2) + 3] > 0x00)
-			{
-				memcpy(screen + (i * screenWidth) + (int)k, data + ((intPixelY << 2) * spriteWidth) + (intPixelx << 2), sizeOfPixel);
-			}
-
-			pixelx -= xScale;
 		}
 
 		pixely += yScale;

@@ -5,11 +5,6 @@
 #endif
 
 
-void insertHLine(int level[GRID_WIDTH][GRID_HEIGHT], int i, int j, int itemID, int length);
-
-void insertVLine(int level[GRID_WIDTH][GRID_HEIGHT], int i, int j, int itemID, int length);
-
-
 int loadDefault(World *gameWorld);
 
 int loadLevel(World *gameWorld, int level);

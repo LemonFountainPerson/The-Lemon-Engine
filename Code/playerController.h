@@ -2,6 +2,7 @@
 #include "data.h"
 #include "soundProcessor.h"
 #include "spriteLoader.h"
+#include "gameObjects.h"
 #endif
 
 
@@ -33,18 +34,6 @@ int ApplyYPhysics(PlayerData *player, Object *inputObject);
 
 
 Object* OverlappingObject(PlayerData *player, World *gameWorld);
-
-
-int overlapsBox(PlayerData *player, double X1, double X2, double Y1, double Y2);
-
-
-int overlapsRightSlope(PlayerData *player, Object *inputObject, double slope);
-
-
-int overlapsLeftSlope(PlayerData *player, Object *inputObject, double slope);
-
-
-int overlapsBoxAtFeet(PlayerData *player, double X1, double X2, double Y1, double Y2);
 
 
 

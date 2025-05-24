@@ -1,38 +1,6 @@
 #include "levelLoader.h"
 
 
-void insertHLine(int level[GRID_WIDTH][GRID_HEIGHT], int i, int j, int itemID, int length)
-{
-	if (i < 0 || j < 0|| i >= GRID_WIDTH || j >= GRID_HEIGHT)
-	{
-		return;
-	}
-
-	for (int k = 0; k < length && k + i < GRID_WIDTH; k++)
-	{
-		level[i + k][j] = itemID;
-	}
-
-	return;
-}
-
-
-void insertVLine(int level[GRID_WIDTH][GRID_HEIGHT], int i, int j, int itemID, int length)
-{
-	if (i < 0 || j < 0 || i >= GRID_WIDTH || j >= GRID_HEIGHT)
-	{
-		return;
-	}
-
-	for (int k = 0; k < length && j + k < GRID_HEIGHT; k++)
-	{
-		level[i][j + k] = itemID;
-	}
-
-	return;
-}
-
-
 int switchLevel(World *gameWorld, int level)
 {
 	deleteAllObjects(gameWorld->objectList);

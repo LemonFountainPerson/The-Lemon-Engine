@@ -650,7 +650,7 @@ Object* OverlappingObject(PlayerData *player, World *gameWorld)
 		objXRight = objX + currentObject->xSize;
 		objYTop = objY + currentObject->ySize;
 
-		int result = overlapsBox(player, objX, objXRight, objY, objYTop);
+		int result = boxOverlapsPlayer(player, objX, objXRight, objY, objYTop);
 
 
 		if (result == 0 || currentObject->layer > FOREGROUND)
@@ -663,9 +663,7 @@ Object* OverlappingObject(PlayerData *player, World *gameWorld)
 		{
 			case 2:
 			{
-				double slope = (double)currentObject->ySize/(double)currentObject->xSize;
-
-				if (overlapsRightSlope(player, currentObject, slope) == 1)
+				if (rightSlopeOverlapsPlayer(player, currentObject) == 1)
 				{
 					return currentObject;
 				}
@@ -673,9 +671,7 @@ Object* OverlappingObject(PlayerData *player, World *gameWorld)
 
 			case 3: 
 			{
-				double slope = (double)currentObject->ySize/(double)currentObject->xSize;
-
-				if (overlapsLeftSlope(player, currentObject, slope) == 1)
+				if (leftSlopeOverlapsPlayer(player, currentObject) == 1)
 				{
 					return currentObject;
 				}
@@ -683,7 +679,6 @@ Object* OverlappingObject(PlayerData *player, World *gameWorld)
 
 			case 1:
 				{
-
 					return currentObject;
 				}
 				break;
@@ -698,46 +693,6 @@ Object* OverlappingObject(PlayerData *player, World *gameWorld)
 	}
 
 	return NULL;
-}
-
-
-int overlapsBox(PlayerData *player, double X1, double X2, double Y1, double Y2)
-{
-	return !(player->xPos >= X2 || (player->xPos + PLAYERWIDTH) <= X1 || player->yPos >= Y2 || (player->yPos + PLAYERHEIGHT) <= Y1);
-}
-
-
-int overlapsRightSlope(PlayerData *player, Object *inputObject, double slope)
-{
-	return 0;
-	double slopeFloor = ((player->xPos + PLAYERWIDTH - inputObject->xPos) * slope);
-
-	if (slopeFloor > inputObject->ySize)
-	{
-		slopeFloor = inputObject->ySize;
-	}
-
-	return!((player->yPos - inputObject->yPos) >= slopeFloor);
-}
-
-
-int overlapsLeftSlope(PlayerData *player, Object *inputObject, double slope)
-{
-	return 0;
-	double slopeFloor = ((inputObject->xSize - (player->xPos - inputObject->xPos)) * slope);
-
-	if (slopeFloor > inputObject->ySize)
-	{
-		slopeFloor = inputObject->ySize;
-	}
-
-	return !((player->yPos - inputObject->yPos) >= slopeFloor);
-}
-
-
-int overlapsBoxAtFeet(PlayerData *player, double X1, double X2, double Y1, double Y2)
-{
-	return !(player->xPos >= X2 || (player->xPos + PLAYERWIDTH) <= X1 || (player->yPos - 8) >= Y2 || (player->yPos + 8) <= Y1);
 }
 
 
@@ -765,18 +720,18 @@ int checkIfGrounded(World *gameWorld, PlayerData *player)
 
 		player->yPos -= 2.0;
 
-		result = overlapsBoxAtFeet(player, objX, objX2, objY, objY2);
+		result = boxOverlapsPlayer(player, objX, objX2, objY, objY2);
 
 		switch (currentObject->solid * result)
 		{
 		case 2:
 			{
-				result = overlapsRightSlope(player, currentObject, (double)currentObject->ySize/(double)currentObject->xSize);
+				result = rightSlopeOverlapsPlayer(player, currentObject);
 			} break;
 
 		case 3:
 			{
-				result = overlapsLeftSlope(player, currentObject, (double)currentObject->ySize/(double)currentObject->xSize);
+				result = leftSlopeOverlapsPlayer(player, currentObject);
 			} break;
 
 		case 0:

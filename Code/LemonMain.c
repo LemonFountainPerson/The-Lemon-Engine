@@ -95,12 +95,13 @@ int RunLemonEngine(void)
 		deltaTime = 1.0;
 
 
+		// World updates
+		updateObjects(GameWorld, keyboard);
+
+
 		// Player control
 		updatePlayer(player, GameWorld, keyboard);
 
-
-		// World updates
-		updateObjects(GameWorld, keyboard);
 
 		worldCameraControl(frame.width, frame.height, player, GameWorld);
 
@@ -430,6 +431,9 @@ World* initialiseGame(PlayerData *player)
 	gameWorld->BackGrounds = NULL;
 
 	gameWorld->bgSpriteBuffer = NULL;
+
+	srand(0);
+
 
 	// Load backgrounds
 	loadBackGroundSprite("BG_Water", 1, 0, gameWorld);

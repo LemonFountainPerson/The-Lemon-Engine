@@ -19,14 +19,9 @@
 #define V_RESOLUTION 720
 #define H_RESOLUTION 1280
 
-#define GRID_HEIGHT 200
-#define GRID_WIDTH 600
-#define MAX_DATA 9000
-
 // Tiles Probably wont be re-implemented, but constants are useful for stylisation
 #define Y_TILESCALE 32
 #define X_TILESCALE 32
-#define TILE_COUNT 100
 
 #define MAX_OBJECTS 128
 
@@ -34,7 +29,6 @@
 #define PLAYERWIDTH 32
 
 #define MAX_LEN 80
-#define LEMON_ESCAPE 0
 
 #define IS_DEFINED 1
 #endif
@@ -236,6 +230,7 @@ struct objectController
 // Controls the player character
 struct playerData
 {
+	// Do not modify these variables to prevent game logic breaking
 	double xPos;
 	double yPos;
 	double xPosRight;
@@ -245,15 +240,6 @@ struct playerData
 	double maxYVel;
 	double maxXVel;
 
-	double PhysicsXVelocity;
-	double PhysicsYVelocity;
-	double direction;
-
-	int inAir;
-	int jumpHeld;
-	int jumpProgress;
-	int crouch;
-
 	int xFlip;
 	int currentSprite;
 	struct sprite *spriteBuffer;
@@ -262,6 +248,16 @@ struct playerData
 	struct spriteSet *spriteSetPtr;
 
 	enum Layer playerLayer;
+
+	// These variables can be freely modified according to your modified player controller
+	double PhysicsXVelocity;
+	double PhysicsYVelocity;
+	double direction;
+
+	int inAir;
+	int jumpHeld;
+	int jumpProgress;
+	int crouch;
 
 	int coinCount;
 };

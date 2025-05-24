@@ -126,12 +126,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		deltaTime = 1.0;
 
 
-		// Player control
-		updatePlayer(player, GameWorld, keyboard);
-
-
 		// World updates
 		updateObjects(GameWorld, keyboard);
+
+
+        // Player control
+		updatePlayer(player, GameWorld, keyboard);
+
 
 		worldCameraControl(frame.width, frame.height, player, GameWorld);
 
