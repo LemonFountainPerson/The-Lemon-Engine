@@ -10,6 +10,9 @@
 PlayerData* initialisePlayer(World *gameWorld);
 
 
+int ResetPlayer(PlayerData *Player);
+
+
 // Main player update script
 FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256]);
 

@@ -186,9 +186,10 @@ Object* AddObject(ObjectController *objectList, int objectID, int xPos, int yPos
 	newObject->xPosRight = newObject->xPos + newObject->xSize;
 	newObject->yPosTop = newObject->xPos + newObject->xSize;
 
-	
-	//printf("\nCreated object type: %d;\n\n", objectID);
-
+	if (GameState == LOADING)
+	{
+		printf("\nCreated object type: %d;\n\n", objectID);
+	}
 
 	return newObject;
 }
@@ -1516,7 +1517,7 @@ int moveObjectX(Object *inputObject, PlayerData *player)
 
 	int result = 0;
 
-	switch(inputObject->solid * result)
+	switch(inputObject->solid)
 	{
 		case 2:
 			ObjXPos = ObjYPos / ((double)inputObject->ySize/(double)inputObject->xSize);
@@ -1533,7 +1534,6 @@ int moveObjectX(Object *inputObject, PlayerData *player)
 			break;
 
 		default:
-			result = 0;
 			break;
 	}
 
@@ -1548,22 +1548,19 @@ int moveObjectX(Object *inputObject, PlayerData *player)
 			player->xPos = ObjXPosRight;
 		}
 
-		ApplyXPhysics(player, inputObject);
-
 		return 0;
 	}
 
-	
-	result = (boxOverlapsPlayerFeet(player, prevObjXPos, prevObjXPosRight, ObjYPos, ObjYPosTop + 2.0) == 1 && player->yVelocity < 1.0);
 
-	switch(inputObject->solid * result)
+	switch(inputObject->solid)
 	{
-		case 0:
-			result = 0;
+		case 4:
+		case 1:
+			result = (boxOverlapsPlayerFeet(player, prevObjXPos, prevObjXPosRight, ObjYPos, ObjYPosTop + 2.0) == 1 && player->yVelocity < 1.0);
 			break;
 
 		default:
-			result = 1;
+			result = 0;
 			break;
 	}
 
@@ -1607,7 +1604,7 @@ int moveObjectY(Object *inputObject, PlayerData *player)
 
 	int result = 0;
 
-	switch(inputObject->solid * result)
+	switch(inputObject->solid)
 	{
 		case 2:
 			ObjYPosTop = ((player->xPos + PLAYERWIDTH - inputObject->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize));
@@ -1619,12 +1616,15 @@ int moveObjectY(Object *inputObject, PlayerData *player)
 			result = leftSlopeOverlapsPlayer(player, inputObject);
 			break;
 
+		case 4:
+			result = boxOverlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop) && player->yVelocity < 0.0 && player->yPos > prevObjYPosTop - (inputObject->ySize >> 1);
+			break;
+
 		case 1:
 			result = boxOverlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
 			break;
 
 		default:
-			result = 0;
 			break;
 	}
 
@@ -1637,23 +1637,22 @@ int moveObjectY(Object *inputObject, PlayerData *player)
 		else
 		{
 			player->yPos = ObjYPosTop;
+			//printf("Did a thing: %lf : %lf    ", inputObject->yVel, player->yPos);
 		}
-
-		ApplyYPhysics(player, inputObject);
 
 		return 0;
 	}
-	
-	result = (boxOverlapsPlayerFeet(player, ObjXPos, ObjXPosRight, prevObjYPos, prevObjYPosTop + 2.0 ) == 1 && player->yVelocity < 1.0);
 
-	switch(inputObject->solid * result)
+
+	switch(inputObject->solid)
 	{
-		case 0:
-			result = 0;
+		case 4:
+		case 1:
+			result = (boxOverlapsPlayerFeet(player, ObjXPos, ObjXPosRight, prevObjYPos, prevObjYPosTop + 2.0 ) == 1 && player->yVelocity < 0.1);
 			break;
 
 		default:
-			result = 1;
+			result = 0;
 			break;
 	}
 
@@ -1786,7 +1785,7 @@ int UpdateVerticalPlatform(PlayerData *player, Object *platform)
 
 int boxOverlapsPlayer(PlayerData *player, double X1, double X2, double Y1, double Y2)
 {
-	return !(player->xPos >= X2 || (player->xPos + PLAYERWIDTH) <= X1 || player->yPos >= Y2 || (player->yPos + PLAYERHEIGHT) <= Y1);
+	return !(player->xPos >= X2 || (player->xPos + PLAYERWIDTH) <= X1 || (int)player->yPos >= (int)Y2 || (int)(player->yPos + PLAYERHEIGHT) <= (int)Y1);
 }
 
 

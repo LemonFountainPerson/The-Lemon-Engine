@@ -306,12 +306,12 @@ int drawObjects(Layer drawLayer, uint32_t screen[], int width, int height, World
 
 int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int width, int height, Layer drawLayer)
 {
-	if (currentObject == NULL || currentObject->objectRenderMode == DO_NOT_RENDER)
+	if (currentObject == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (currentObject->layer != drawLayer)
+	if (currentObject->layer != drawLayer || currentObject->objectRenderMode == DO_NOT_RENDER)
 	{
 		return ACTION_DISABLED;
 	}
@@ -522,125 +522,131 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 
 
 	// Render sprite to screen
-
-	if (currentRenderMode == TILE || currentRenderMode == SINGLE)
+	switch(currentRenderMode)
 	{
-		// No reflection
-		if (currentObject->xFlip == 1 && currentObject->yFlip == 1)
+		case SINGLE:
+		case TILE:
 		{
-			renderSprite_LRUD_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+			// No reflection
+			if (currentObject->xFlip == 1 && currentObject->yFlip == 1)
+			{
+				renderSprite_LRUD_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
-			return 0;
-		}
+				return 0;
+			}
 
-		// Left-Right reflection
-		if (currentObject->xFlip == -1 && currentObject->yFlip == 1)
+			// Left-Right reflection
+			if (currentObject->xFlip == -1 && currentObject->yFlip == 1)
+			{
+				renderSprite_RLUD_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+
+				return 0;
+			}
+
+			// Up-Down reflection
+			if (currentObject->xFlip == 1 && currentObject->yFlip == -1)
+			{
+				renderSprite_LRDU_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+
+				return 0;
+			}
+
+			// Up-Down and Left-Right reflection
+			if (currentObject->xFlip == -1 && currentObject->yFlip == -1)
+			{
+				renderSprite_RLDU_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+
+				return 0;
+			}
+
+			return INVALID_DATA;
+
+		} break;
+
+
+		case SCALE:
 		{
-			renderSprite_RLUD_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
-
-			return 0;
-		}
-
-		// Up-Down reflection
-		if (currentObject->xFlip == 1 && currentObject->yFlip == -1)
-		{
-			renderSprite_LRDU_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
-
-			return 0;
-		}
-
-		// Up-Down and Left-Right reflection
-		if (currentObject->xFlip == -1 && currentObject->yFlip == -1)
-		{
-			renderSprite_RLDU_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
-
-			return 0;
-		}
-
-		return INVALID_DATA;
-	}
+			double xScale = (double)spriteWidth/(double)currentObject->xSize;
+			double yScale = (double)spriteHeight/(double)currentObject->ySize;
 
 
-	if (currentRenderMode == SCALE)
-	{
-		double xScale = (double)spriteWidth/(double)currentObject->xSize;
-		double yScale = (double)spriteHeight/(double)currentObject->ySize;
+			// No reflection
+			if (currentObject->xFlip == 1 && currentObject->yFlip == 1)
+			{
+				renderSprite_LRUD_ScaleMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
 
+				return 0;
+			}
 
-		// No reflection
-		if (currentObject->xFlip == 1 && currentObject->yFlip == 1)
-		{
-			renderSprite_LRUD_ScaleMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
+			// Left-Right reflection
+			if (currentObject->xFlip == -1 && currentObject->yFlip == 1)
+			{
+				renderSprite_RLUD_ScaleMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
 
-			return 0;
-		}
+				return 0;
+			}
 
-		// Left-Right reflection
-		if (currentObject->xFlip == -1 && currentObject->yFlip == 1)
-		{
-			renderSprite_RLUD_ScaleMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
+			// Up-Down reflection
+			if (currentObject->xFlip == 1 && currentObject->yFlip == -1)
+			{
+				renderSprite_LRDU_ScaleMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
 
-			return 0;
-		}
+				return 0;
+			}
 
-		// Up-Down reflection
-		if (currentObject->xFlip == 1 && currentObject->yFlip == -1)
-		{
-			renderSprite_LRDU_ScaleMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
+			// Up-Down and Left-Right reflection
+			if (currentObject->xFlip == -1 && currentObject->yFlip == -1)
+			{
+				renderSprite_RLDU_ScaleMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
 
-			return 0;
-		}
+				return 0;
+			}
 
-		// Up-Down and Left-Right reflection
-		if (currentObject->xFlip == -1 && currentObject->yFlip == -1)
-		{
-			renderSprite_RLDU_ScaleMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
+			return INVALID_DATA;
 
-			return 0;
-		}
-
-		return INVALID_DATA;
-	}
+		} break;
 
 
 		
-	if (currentRenderMode == TILE_FAST)
-	{
-		// No reflection
-		if (currentObject->xFlip == 1 && currentObject->yFlip == 1)
+		case TILE_FAST:
 		{
-			renderSprite_LRUD_TileFastMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+			// No reflection
+			if (currentObject->xFlip == 1 && currentObject->yFlip == 1)
+			{
+				renderSprite_LRUD_TileFastMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
-			return 0;
-		}
+				return 0;
+			}
 
-		// Left-Right reflection
-		if (currentObject->xFlip == -1 && currentObject->yFlip == 1)
-		{
-			renderSprite_RLUD_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+			// Left-Right reflection
+			if (currentObject->xFlip == -1 && currentObject->yFlip == 1)
+			{
+				renderSprite_RLUD_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
-			return 0;
-		}
+				return 0;
+			}
 
-		// Up-Down reflection
-		if (currentObject->xFlip == 1 && currentObject->yFlip == -1)
-		{
-			renderSprite_LRDU_TileFastMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+			// Up-Down reflection
+			if (currentObject->xFlip == 1 && currentObject->yFlip == -1)
+			{
+				renderSprite_LRDU_TileFastMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
-			return 0;
-		}
+				return 0;
+			}
 
-		// Up-Down and Left-Right reflection
-		if (currentObject->xFlip == -1 && currentObject->yFlip == -1)
-		{
-			renderSprite_RLDU_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+			// Up-Down and Left-Right reflection
+			if (currentObject->xFlip == -1 && currentObject->yFlip == -1)
+			{
+				renderSprite_RLDU_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
-			return 0;
-		}
+				return 0;
+			}
 
-		return INVALID_DATA;
+			return INVALID_DATA;
+
+		} break;
+
 	}
-
 
 
 	return 0;
@@ -914,6 +920,7 @@ int renderSprite_LRUD_ScaleMode(uint32_t screen[], int screenWidth, unsigned cha
 
 	double pixely = (currentObject->ySize - 1 - (yDraw - yOffset)) * yScale;
 
+	uint32_t hexValue;
 
 	for (int i = yDraw; i < yDraw2; i++)
 	{

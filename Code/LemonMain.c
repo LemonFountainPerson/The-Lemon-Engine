@@ -391,10 +391,10 @@ World* initialiseGame(PlayerData *player)
 	gameWorld->cameraX = 0;
 	gameWorld->cameraY = 120;
 	gameWorld->level = 0;
+
 	gameWorld->drawnObjects = 0;
 	gameWorld->drawnParticles = 0;
 	gameWorld->drawnHudElements = 0;
-
 	gameWorld->drawHitboxes = 0;
 	gameWorld->drawSprites = 1;
 	gameWorld->drawPlayer = 1;
@@ -445,6 +445,7 @@ World* initialiseGame(PlayerData *player)
 
 	switchBackGroundSprite(1, 1, gameWorld);
 
+	GameState = EMPTY_GAME;
 
 	printf("Initialised World\n");
 	fflush(stdout);
@@ -517,18 +518,30 @@ void clearGameData(World *gameWorld, PlayerData *player)
 		return;
 	}
 
-	currentSprite = player->spriteSetPtr->firstSprite;
+	currentSet = player->spriteSetPtr;
+	prevSet = NULL;
 
-	while (currentSprite != NULL)
+	while (currentSet != NULL)
 	{
-		deleteSprite(player->spriteSetPtr, &currentSprite);
-	}
+		currentSprite = currentSet->firstSprite;
+		prevSet = currentSet;
 
-	free(player->spriteSetPtr);
+		while (currentSprite != NULL)
+		{
+			deleteSprite(currentSet, &currentSprite);
+		}
+		
+		currentSet = currentSet->nextSet;
+		
+		free(prevSet);
+	}
 
 	free(player);
 
 	player = NULL;
+	gameWorld->Player = NULL;
+
+	GameState = EMPTY_GAME;
 
 	return;
 }

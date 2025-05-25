@@ -3,11 +3,15 @@
 
 int switchLevel(World *gameWorld, int level)
 {
+	GameState = LOADING;
+
 	deleteAllObjects(gameWorld->objectList);
 
 	loadLevel(gameWorld, level);
 
 	gameWorld->level = level;
+
+	GameState = GAMEPLAY;
 
 	return 0;
 }
@@ -183,6 +187,8 @@ int saveLevel(World *gameWorld)
 
 int loadLevel(World *gameWorld, int level)
 {
+	GameState = LOADING;
+
 	FILE *fPtr;
 
 	char charBuffer[MAX_LEN + 4] = "Level0Data.txt";
@@ -196,6 +202,7 @@ int loadLevel(World *gameWorld, int level)
 	if (fPtr == NULL)
 	{
 		printf("Level %d not found.\n", level);
+		GameState = GAMEPLAY;
 		return -1;
 	}
 
@@ -209,6 +216,7 @@ int loadLevel(World *gameWorld, int level)
 	if (strcmp(charBuffer, "V0.04") != 0)
 	{
 		printf("Level %d load failed: Incompatible version number!\n");
+		GameState = GAMEPLAY;
 		return -1;
 	}
 
@@ -220,9 +228,15 @@ int loadLevel(World *gameWorld, int level)
 	if (strcmp(charBuffer, "-LEVELDATA") != 0)
 	{
 		printf("Level %d load failed: This file does not contain level data!\n");
+		GameState = GAMEPLAY;
 		return -1;
 	}
 
+
+	if (gameWorld->Player != NULL)
+	{
+		ResetPlayer(gameWorld->Player);
+	}
 
 	int endOfFile = 0;
 	int i = 0;
@@ -235,6 +249,7 @@ int loadLevel(World *gameWorld, int level)
 		if (strcmp(charBuffer, "////") != 0)
 		{
 			printf("Level %d load failed: Data formatted incorrectly! %c %c %c %c\n", level, charBuffer[0], charBuffer[1], charBuffer[2], charBuffer[3]);
+			clearCurrentlyLoadedLevelData(gameWorld);
 			return -1;
 		}
 
@@ -261,6 +276,7 @@ int loadLevel(World *gameWorld, int level)
 		else
 		{
 			printf("Unrecognised data!\n");
+			clearCurrentlyLoadedLevelData(gameWorld);
 			return -1;
 		}
 		
@@ -273,6 +289,24 @@ int loadLevel(World *gameWorld, int level)
 
 	// Create a default particle object to initilise its sprite set to avoid lag during gameplay 
 	AddObject(gameWorld->objectList, PARTICLE, 0, 0, SPARKLE, 0, 0, 0, 0);
+
+	GameState = GAMEPLAY;
+
+	return 0;
+}
+
+
+int clearCurrentlyLoadedLevelData(World *gameWorld)
+{
+	if (gameWorld == NULL || gameWorld->objectList == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	deleteAllObjects(gameWorld->objectList);
+
+	gameWorld->level = 0;
+	GameState = IN_MENU;
 
 	return 0;
 }

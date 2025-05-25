@@ -24,7 +24,7 @@
 #define X_TILESCALE 32
 
 #define MAX_OBJECTS 128
-#define MAX_PARTICLES 64
+#define MAX_PARTICLES 50
 #define MAX_HUD_ELEMENTS 64
 
 #define PLAYERHEIGHT 50
@@ -57,6 +57,15 @@ enum LemonKeys {
 };
 
 
+enum lemonGameState {
+	EMPTY_GAME = 0,
+	LOADING = 1,
+	GAMEPLAY = 2,
+	CUTSCENE = 3,
+	IN_MENU = 4,
+	UNDEFINED_GAME_STATE
+};
+
 enum ChannelNames {
 	MUSIC_CHANNEL = 0,
 	PLAYER_SFX = 4,
@@ -85,13 +94,7 @@ enum objectType {
 };
 
 
-// Layer 0: Background												
-// Layer 1: In front of background, behind player, particle effects		
-// Layer 2: In front of Player, background, objects in layer 0			
-// Layer 3: In front of layer 0 and 1, background, Player				->	used for particles 
-// Layer 4: In front of everything										->	used for Hud elements
 //  Order of object list determines layering of individual objects within layers
-
 enum Layer {
 	LEVELFLAGS = -1,
 	BACKGROUND = 0,
@@ -126,15 +129,15 @@ enum Flags {
 
 
 enum ObjectState {
-		TO_BE_DELETED = -1,
-		DEFAULT = 0,
-		PAUSE_BEHAVIOUR = 1,
-		UNDEFINED_STATE
+	TO_BE_DELETED = -1,
+	DEFAULT = 0,
+	PAUSE_BEHAVIOUR = 1,
+	UNDEFINED_STATE
 };
 
 
 enum ParticleSubType {
-	EMPTY = 0,
+	EMPTY_PARTICLE = 0,
 	SPARKLE = 1,
 	UNDEFINED_PARTICLE
 };
@@ -325,6 +328,7 @@ typedef struct objectController ObjectController;
 typedef struct object Object;
 typedef struct world World;
 
+typedef enum lemonGameState LemonGameState;
 typedef enum FunctionResult FunctionResult;
 typedef enum LemonKeys LemonKeys;
 typedef enum Layer Layer;
@@ -339,6 +343,8 @@ static SoundInstance AllSounds[CHANNEL_COUNT];
 static int gameRunning = 1;
 
 static double deltaTime = 1.0;
+
+static LemonGameState GameState = EMPTY_GAME;
 
 
 

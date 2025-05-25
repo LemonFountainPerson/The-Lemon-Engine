@@ -2,12 +2,15 @@
 #include "data.h"
 #include "gameObjects.h"
 #include "spriteLoader.h"
+#include "playerController.h"
 #endif
 
 
 int loadDefault(World *gameWorld);
 
 int loadLevel(World *gameWorld, int level);
+
+int clearCurrentlyLoadedLevelData(World *gameWorld);
 
 int switchLevel(World *gameWorld, int level);
 

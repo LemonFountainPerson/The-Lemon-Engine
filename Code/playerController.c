@@ -76,6 +76,31 @@ PlayerData* initialisePlayer(World *gameWorld)
 }
 
 
+int ResetPlayer(PlayerData *Player)
+{
+	if (Player == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	Player->xPos = 64.0;
+	Player->yPos = 96.0;
+	Player->xVelocity = 0.0;
+	Player->yVelocity = 0.0;
+	Player->PhysicsXVelocity = 0.0;
+	Player->PhysicsYVelocity = 0.0;
+	
+	switchPlayerSprite(2, 1, Player);
+
+	Player->jumpProgress = 0;
+	Player->inAir = 0;
+	Player->jumpHeld = 0;
+
+
+	return 0;
+}
+
+
 FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256])
 {
 	if (player == NULL || gameWorld->objectList == NULL)
@@ -87,7 +112,6 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 	{
 		return ACTION_DISABLED;
 	}
-
 
 	int hAxis = 0;
 	int vAxis = 0;
@@ -309,7 +333,6 @@ int MovePlayerX(PlayerData *player, World *gameWorld)
 
 	player->xPos += (player->xVelocity * deltaTime);
 
-
 	Object *currentObject;
 	currentObject = gameWorld->objectList->firstObject;
 
@@ -369,7 +392,12 @@ int MovePlayerX(PlayerData *player, World *gameWorld)
 			} break;
 
 
-			case 1:
+			case 4:
+			case 0:
+				break;
+
+
+			default:
 			{
 				if (prevXPos < prevObjXCenter)
 				{
@@ -381,10 +409,6 @@ int MovePlayerX(PlayerData *player, World *gameWorld)
 				}
 
 			} break;
-
-
-			default:
-				break;
 		}
 
 
@@ -482,6 +506,10 @@ int MovePlayerY(PlayerData *player, World *gameWorld)
 			return 0;
 		}
 
+		if (currentObject->objectID == MOVING_PLATFORM_VER)
+		{
+			printf("ON Y\n");
+		}
 
 		objX = currentObject->xPos;
 		objY = currentObject->yPos;
@@ -559,7 +587,11 @@ int MovePlayerY(PlayerData *player, World *gameWorld)
 			} break;
 
 
-			case 1:
+			case 0:
+				break;
+
+
+			default:
 			{
 				if (prevYPos < prevObjYCenter)
 				{
@@ -574,9 +606,6 @@ int MovePlayerY(PlayerData *player, World *gameWorld)
 
 			} break;
 
-
-			default:
-				break;
 		}
 
 		ApplyYPhysics(player, currentObject);
@@ -677,13 +706,13 @@ Object* OverlappingObject(PlayerData *player, World *gameWorld)
 				}
 			} break;
 
-			case 1:
-				{
-					return currentObject;
-				}
+			case 0:
 				break;
 			
 			default:
+				{
+					return currentObject;
+				}
 				break;
 		}
 
@@ -720,9 +749,7 @@ int checkIfGrounded(World *gameWorld, PlayerData *player)
 
 		player->yPos -= 2.0;
 
-		result = boxOverlapsPlayer(player, objX, objX2, objY, objY2);
-
-		switch (currentObject->solid * result)
+		switch (currentObject->solid)
 		{
 		case 2:
 			{
@@ -735,10 +762,13 @@ int checkIfGrounded(World *gameWorld, PlayerData *player)
 			} break;
 
 		case 0:
-			{
-				result = 0;
-				break;
-			}
+			result = 0;
+			break;
+			
+
+		default:
+			result = boxOverlapsPlayer(player, objX, objX2, objY, objY2);	
+			break;
 		}
 
 		player->yPos += 2.0;
