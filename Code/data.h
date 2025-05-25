@@ -113,11 +113,12 @@ enum RenderMode {
 	DO_NOT_RENDER = -2,
 	DEFAULT_TO_SPRITE = -1,
 	TILE = 0,
-	SCALE = 1,
-	TILE_SCALE = 2,
-	SCALE_TILE = 3,
-	SINGLE = 4,
-	TILE_FAST = 5
+	TILE_FAST = 1,
+	SCALE = 2,
+	TILE_SCALE = 3,
+	SCALE_TILE = 4,
+	SINGLE = 5,
+	SINGLE_FULL_ALPHA = 6
 };
 
 

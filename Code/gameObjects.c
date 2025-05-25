@@ -169,7 +169,7 @@ Object* AddObject(ObjectController *objectList, int objectID, int xPos, int yPos
 			newObject->arg3 = arg4;
 			newObject->arg4 = 0;
 			newObject->arg5 = 0;
-			newObject->objectRenderMode = SINGLE;
+			newObject->objectRenderMode = SINGLE_FULL_ALPHA;
 
 			// Assign particle sprite
 			newObject->arg1 = 1;
@@ -267,6 +267,7 @@ void CreateObjectSpriteSet(ObjectController *objectList, int objectID)
 		} break;
 
 		case SPRING:
+			loadObjectSprite("alphatest", newSet, SINGLE);
 			loadObjectSprite("Spring", newSet, TILE);
 			break;
 
@@ -287,13 +288,13 @@ void CreateObjectSpriteSet(ObjectController *objectList, int objectID)
 int LoadParticleSprites(SpriteSet *newSet)
 {
 	// Sparkle 
-	loadObjectSprite("Sparkle1", newSet, SINGLE);
-	loadObjectSprite("Sparkle2", newSet, SINGLE);
-	loadObjectSprite("Sparkle3", newSet, SINGLE);
-	loadObjectSprite("Sparkle4", newSet, SINGLE);
-	loadObjectSprite("Sparkle5", newSet, SINGLE);
-	loadObjectSprite("Sparkle6", newSet, SINGLE);
-	loadObjectSprite("Sparkle7", newSet, SINGLE);
+	loadObjectSprite("Sparkle1", newSet, SINGLE_FULL_ALPHA);
+	loadObjectSprite("Sparkle2", newSet, SINGLE_FULL_ALPHA);
+	loadObjectSprite("Sparkle3", newSet, SINGLE_FULL_ALPHA);
+	loadObjectSprite("Sparkle4", newSet, SINGLE_FULL_ALPHA);
+	loadObjectSprite("Sparkle5", newSet, SINGLE_FULL_ALPHA);
+	loadObjectSprite("Sparkle6", newSet, SINGLE_FULL_ALPHA);
+	loadObjectSprite("Sparkle7", newSet, SINGLE_FULL_ALPHA);
 
 	return 0;
 }
@@ -915,7 +916,7 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 
 				if (boxOverlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
 				{
-					AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1, 0, 0, 0);
+					AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1000, 0, 0, 0);
 					MarkObjectForDeletion(currentObject);
 					player->coinCount++;
 					LemonPlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.8);
@@ -1637,7 +1638,6 @@ int moveObjectY(Object *inputObject, PlayerData *player)
 		else
 		{
 			player->yPos = ObjYPosTop;
-			//printf("Did a thing: %lf : %lf    ", inputObject->yVel, player->yPos);
 		}
 
 		return 0;
@@ -1785,7 +1785,7 @@ int UpdateVerticalPlatform(PlayerData *player, Object *platform)
 
 int boxOverlapsPlayer(PlayerData *player, double X1, double X2, double Y1, double Y2)
 {
-	return !(player->xPos >= X2 || (player->xPos + PLAYERWIDTH) <= X1 || (int)player->yPos >= (int)Y2 || (int)(player->yPos + PLAYERHEIGHT) <= (int)Y1);
+	return !((int)player->xPos >= (int)X2 || (int)(player->xPos + PLAYERWIDTH) <= (int)X1 || player->yPos >= Y2 || (player->yPos + PLAYERHEIGHT) <= Y1);
 }
 
 
@@ -1797,8 +1797,6 @@ int boxOverlapsPlayerFeet(PlayerData *player, double X1, double X2, double Y1, d
 
 int rightSlopeOverlapsPlayer(PlayerData *player, Object *inputObject)
 {
-	return 0;
-
 	double slopeFloor = ((player->xPos + PLAYERWIDTH - inputObject->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize));
 
 	if (slopeFloor > inputObject->ySize)
@@ -1808,7 +1806,7 @@ int rightSlopeOverlapsPlayer(PlayerData *player, Object *inputObject)
 
 	double relativePlayerPos = player->yPos - inputObject->yPos;
 
-	return !(relativePlayerPos >= slopeFloor || relativePlayerPos < 0 || player->xPos >= (inputObject->xPos + inputObject->xSize - 1) || (player->xPos + PLAYERWIDTH) < inputObject->xPos);
+	return !(relativePlayerPos >= slopeFloor || relativePlayerPos < 0 || (int)player->xPos >= (int)(inputObject->xPos + inputObject->xSize) || (int)(player->xPos + PLAYERWIDTH) <= (int)inputObject->xPos);
 }
 
 
@@ -1825,7 +1823,7 @@ int leftSlopeOverlapsPlayer(PlayerData *player, Object *inputObject)
 
 	double relativePlayerPos = player->yPos - inputObject->yPos;
 
-	return !(relativePlayerPos >= slopeFloor || relativePlayerPos < 0 || player->xPos >= (inputObject->xPos + inputObject->xSize - 1) || (player->xPos + PLAYERWIDTH) < inputObject->xPos);
+	return !(relativePlayerPos >= slopeFloor || relativePlayerPos < 0 || (int)player->xPos >=  (int)(inputObject->xPos + inputObject->xSize) || (int)(player->xPos + PLAYERWIDTH) < (int)inputObject->xPos);
 }
 
 

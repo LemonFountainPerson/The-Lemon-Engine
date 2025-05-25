@@ -372,7 +372,7 @@ int MovePlayerX(PlayerData *player, World *gameWorld)
 			{
 				double slope = ((double)currentObject->ySize/(double)currentObject->xSize);
 
-				if (prevXPos >= prevObjXCenter)
+				if (prevXPos >= objXRight)
 				{
 					player->xPos = objXRight;
 				}		
@@ -384,7 +384,7 @@ int MovePlayerX(PlayerData *player, World *gameWorld)
 			{
 				double slope = ((double)currentObject->ySize/(double)currentObject->xSize);
 
-				if (prevXPos < prevObjXCenter)
+				if (prevXPos < objX)
 				{
 					player->xPos = objX - PLAYERWIDTH;
 				}

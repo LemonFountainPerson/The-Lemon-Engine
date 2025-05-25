@@ -455,12 +455,42 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 	int yOffset = currentObject->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
 	int xOffset2 = xOffset + currentObject->xSize;
 	int yOffset2 = yOffset + currentObject->ySize;
-
 	
-	// Make sure the sprite position is valid on screen to avoid a crash related to assuming the position is valid 
-	if (xOffset >= screenWidth || currentObject->xSize + xOffset < 0 || yOffset >= screenHeight || currentObject->ySize + yOffset < 0)
+
+	int xDraw2, xDraw, yDraw2, yDraw;
+
+	// Set draw locations on screen
+	if (currentRenderMode == SINGLE || currentRenderMode == SINGLE_FULL_ALPHA)
 	{
-		return INVALID_DATA;
+		// Find center of object and then center sprite on that point
+		int centerX = (xOffset2 + xOffset) >> 1;
+		int centerY = (yOffset2 + yOffset) >> 1;
+		xOffset = centerX - (spriteWidth >> 1);
+		yOffset = centerY - (spriteWidth >> 1);
+
+		xDraw = correct(centerX - (spriteWidth >> 1), 0, screenWidth - 1);
+		yDraw = correct(centerY - (spriteHeight >> 1), 0, screenHeight - 1);
+		xDraw2 = correct(centerX + (spriteWidth >> 1), 0, screenWidth - 1);
+		yDraw2 = correct(centerY + (spriteHeight >> 1), 0, screenHeight - 1);
+
+		// Make sure the sprite position is valid on screen to avoid a crash related to assuming the position is valid 
+		if (xOffset >= screenWidth || spriteWidth + xOffset < 0 || yOffset >= screenHeight || spriteHeight + yOffset < 0)
+		{
+			return INVALID_DATA;
+		}
+	}
+	else
+	{
+		xDraw = correct(xOffset, 0, screenWidth - 1);
+		yDraw = correct(yOffset, 0, screenHeight - 1);
+		xDraw2 = correct(currentObject->xSize + xOffset, 0, screenWidth - 1);
+		yDraw2 = correct(currentObject->ySize + yOffset, 0, screenHeight - 1);
+
+		// Make sure the sprite position is valid on screen to avoid a crash related to assuming the position is valid 
+		if (xOffset >= screenWidth || currentObject->xSize + xOffset < 0 || yOffset >= screenHeight || currentObject->ySize + yOffset < 0)
+		{
+			return INVALID_DATA;
+		}
 	}
 
 
@@ -494,31 +524,6 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 		gameWorld->drawnObjects++;
 		break;
 	}
-	
-
-	int xDraw2, xDraw, yDraw2, yDraw;
-
-	// Set draw locations on screen
-	if (currentRenderMode == SINGLE)
-	{
-		// Find center of object and then center sprite on that point
-		int centerX = (xOffset2 + xOffset) >> 1;
-		int centerY = (yOffset2 + yOffset) >> 1;
-		xOffset = centerX - (spriteWidth >> 1);
-		yOffset = centerY - (spriteWidth >> 1);
-
-		xDraw = correct(centerX - (spriteWidth >> 1), 0, screenWidth - 1);
-		yDraw = correct(centerY - (spriteWidth >> 1), 0, screenHeight - 1);
-		xDraw2 = correct(centerX + (spriteWidth >> 1), 0, screenWidth - 1);
-		yDraw2 = correct(centerY + (spriteHeight >> 1), 0, screenHeight - 1);
-	}
-	else
-	{
-		xDraw = correct(xOffset, 0, screenWidth - 1);
-		yDraw = correct(yOffset, 0, screenHeight - 1);
-		xDraw2 = correct(currentObject->xSize + xOffset, 0, screenWidth - 1);
-		yDraw2 = correct(currentObject->ySize + yOffset, 0, screenHeight - 1);
-	}
 
 
 	// Render sprite to screen
@@ -530,7 +535,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			// No reflection
 			if (currentObject->xFlip == 1 && currentObject->yFlip == 1)
 			{
-				renderSprite_LRUD_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+				renderSprite_LRUD_Tile(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
 				return 0;
 			}
@@ -538,7 +543,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			// Left-Right reflection
 			if (currentObject->xFlip == -1 && currentObject->yFlip == 1)
 			{
-				renderSprite_RLUD_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+				renderSprite_RLUD_Tile(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
 				return 0;
 			}
@@ -546,7 +551,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			// Up-Down reflection
 			if (currentObject->xFlip == 1 && currentObject->yFlip == -1)
 			{
-				renderSprite_LRDU_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+				renderSprite_LRDU_Tile(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
 				return 0;
 			}
@@ -554,7 +559,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			// Up-Down and Left-Right reflection
 			if (currentObject->xFlip == -1 && currentObject->yFlip == -1)
 			{
-				renderSprite_RLDU_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+				renderSprite_RLDU_Tile(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
 				return 0;
 			}
@@ -573,7 +578,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			// No reflection
 			if (currentObject->xFlip == 1 && currentObject->yFlip == 1)
 			{
-				renderSprite_LRUD_ScaleMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
+				renderSprite_LRUD_Scale(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
 
 				return 0;
 			}
@@ -581,7 +586,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			// Left-Right reflection
 			if (currentObject->xFlip == -1 && currentObject->yFlip == 1)
 			{
-				renderSprite_RLUD_ScaleMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
+				renderSprite_RLUD_Scale(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
 
 				return 0;
 			}
@@ -589,7 +594,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			// Up-Down reflection
 			if (currentObject->xFlip == 1 && currentObject->yFlip == -1)
 			{
-				renderSprite_LRDU_ScaleMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
+				renderSprite_LRDU_Scale(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
 
 				return 0;
 			}
@@ -597,7 +602,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			// Up-Down and Left-Right reflection
 			if (currentObject->xFlip == -1 && currentObject->yFlip == -1)
 			{
-				renderSprite_RLDU_ScaleMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
+				renderSprite_RLDU_Scale(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset, currentObject);
 
 				return 0;
 			}
@@ -613,7 +618,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			// No reflection
 			if (currentObject->xFlip == 1 && currentObject->yFlip == 1)
 			{
-				renderSprite_LRUD_TileFastMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+				renderSprite_LRUD_TileFast(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
 				return 0;
 			}
@@ -621,7 +626,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			// Left-Right reflection
 			if (currentObject->xFlip == -1 && currentObject->yFlip == 1)
 			{
-				renderSprite_RLUD_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+				renderSprite_RLUD_Tile(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
 				return 0;
 			}
@@ -629,7 +634,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			// Up-Down reflection
 			if (currentObject->xFlip == 1 && currentObject->yFlip == -1)
 			{
-				renderSprite_LRDU_TileFastMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+				renderSprite_LRDU_TileFast(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
 				return 0;
 			}
@@ -637,12 +642,19 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 			// Up-Down and Left-Right reflection
 			if (currentObject->xFlip == -1 && currentObject->yFlip == -1)
 			{
-				renderSprite_RLDU_TileMode(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
+				renderSprite_RLDU_Tile(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
 				return 0;
 			}
 
 			return INVALID_DATA;
+
+		} break;
+
+
+		case SINGLE_FULL_ALPHA:
+		{
+			renderSprite_LRUD_FullAlpha(screen, screenWidth, data, spriteWidth, spriteHeight, xDraw, xDraw2, yDraw, yDraw2, xOffset, yOffset);
 
 		} break;
 
@@ -653,9 +665,71 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 }
 
 
+int renderSprite_LRUD_FullAlpha(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
+{
+	size_t sizeOfPixel = sizeof(uint32_t);
 
-// renders sprite in tile mode (Render mode 0) with no reflections
-int renderSprite_LRUD_TileMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
+	uint32_t hexValue;
+
+	// set pixel x to difference between real xPos and first xPos on screen to obtain correct starting pixel
+	// If difference is large enough, pixelx may be larger than width of sprite,
+	// and cannot be less than 0 because then xDraw < xOffset meaning left edge is to the right of right side of screen
+
+	// Start render loop
+	int pixely = spriteHeight - 1 - ((yDraw - yOffset) % spriteHeight);
+
+
+	for (int j = yDraw; j < yDraw2; j++)
+	{
+		int pixelx = ((xDraw - xOffset) % spriteWidth);
+
+		for (int i = xDraw; i < xDraw2; i++)
+		{
+			hexValue = data[(((int)pixely << 2) * spriteWidth) + ((int)pixelx << 2) + 3] << 24 | 
+						data[(((int)pixely << 2) * spriteWidth) + ((int)pixelx << 2) + 2] << 16 | 
+						data[(((int)pixely << 2) * spriteWidth) + ((int)pixelx << 2) + 1] << 8 | 
+						data[(((int)pixely << 2) * spriteWidth) + ((int)pixelx << 2) ];
+
+			screen[(j * screenWidth) + i] = blendPixel(screen[(j * screenWidth) + i], hexValue);
+
+			pixelx++;
+
+			if (pixelx > spriteWidth - 1)
+			{
+				pixelx = 0;
+			}
+		}
+
+		pixely--;
+
+		if (pixely < 0)
+		{
+			pixely = spriteHeight - 1;
+		}
+
+	}
+
+
+	return 0;
+}
+
+
+uint32_t blendPixel(uint32_t screenPixel, uint32_t inputPixel)
+{
+	float alpha = ((inputPixel & 0xFF000000) >> 24 ) / 255.0;
+
+	uint8_t red = (( ((screenPixel & 0x00FF0000) >> 16) * (1.0 - alpha)) + (((inputPixel & 0x00FF0000) >> 16) * alpha));; 
+
+	uint8_t blue = (( ((screenPixel & 0x0000FF00) >> 8) * (1.0 - alpha)) + (((inputPixel & 0x0000FF00) >> 8) * alpha));; 
+
+	uint8_t green = (( ((screenPixel & 0x000000FF)) * (1.0 - alpha)) + ((inputPixel & 0x000000FF) * alpha));; 
+
+	return (0x00 | red << 16 | blue << 8 | green);
+}
+
+
+// renders sprite in tile mode (Render mode 0) with no reflections  
+int renderSprite_LRUD_Tile(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
 {
 	size_t sizeOfPixel = sizeof(uint32_t);
 
@@ -724,7 +798,7 @@ int renderSprite_LRUD_TileMode(uint32_t screen[], int screenWidth, unsigned char
 
 
 // renders sprite in tile mode (Render mode 0) with Left/Right reflections
-int renderSprite_RLUD_TileMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
+int renderSprite_RLUD_Tile(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
 {
 	int sizeOfPixel = sizeof(uint32_t);
 
@@ -786,7 +860,7 @@ int renderSprite_RLUD_TileMode(uint32_t screen[], int screenWidth, unsigned char
 
 
 // renders sprite in tile mode (Render mode 0) with Up/Down reflections
-int renderSprite_LRDU_TileMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
+int renderSprite_LRDU_Tile(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
 {
 	int sizeOfPixel = sizeof(uint32_t);
 
@@ -848,7 +922,7 @@ int renderSprite_LRDU_TileMode(uint32_t screen[], int screenWidth, unsigned char
 
 
 // renders sprite in tile mode (Render mode 0) with Left/Right and Up/Down reflections
-int renderSprite_RLDU_TileMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
+int renderSprite_RLDU_Tile(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
 {
 	int sizeOfPixel = sizeof(uint32_t);
 
@@ -910,7 +984,7 @@ int renderSprite_RLDU_TileMode(uint32_t screen[], int screenWidth, unsigned char
 
 
 
-int renderSprite_LRUD_ScaleMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject)
+int renderSprite_LRUD_Scale(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject)
 {
 	int sizeOfPixel = sizeof(uint32_t);
 
@@ -976,7 +1050,7 @@ int renderSprite_LRUD_ScaleMode(uint32_t screen[], int screenWidth, unsigned cha
 }
 
 
-int renderSprite_LRUD_ScaleMode_Slow(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject)
+int renderSprite_LRUD_Scale_Slow(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject)
 {
 	int sizeOfPixel = sizeof(uint32_t);
 
@@ -1012,7 +1086,7 @@ int renderSprite_LRUD_ScaleMode_Slow(uint32_t screen[], int screenWidth, unsigne
 }
 
 
-int renderSprite_RLUD_ScaleMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject)
+int renderSprite_RLUD_Scale(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject)
 {
 	int sizeOfPixel = sizeof(uint32_t);
 
@@ -1077,7 +1151,7 @@ int renderSprite_RLUD_ScaleMode(uint32_t screen[], int screenWidth, unsigned cha
 }
 
 
-int renderSprite_LRDU_ScaleMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject)
+int renderSprite_LRDU_Scale(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject)
 {
 	int sizeOfPixel = sizeof(uint32_t);
 
@@ -1142,7 +1216,7 @@ int renderSprite_LRDU_ScaleMode(uint32_t screen[], int screenWidth, unsigned cha
 }
 
 
-int renderSprite_RLDU_ScaleMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject)
+int renderSprite_RLDU_Scale(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, Object *currentObject)
 {
 	int sizeOfPixel = sizeof(uint32_t);
 
@@ -1208,7 +1282,7 @@ int renderSprite_RLDU_ScaleMode(uint32_t screen[], int screenWidth, unsigned cha
 
 
 // renders sprite in tile mode (Render mode 5) with no reflections
-int renderSprite_LRUD_TileFastMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
+int renderSprite_LRUD_TileFast(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
 {
 	size_t sizeOfPixel = sizeof(uint32_t);
 
@@ -1251,7 +1325,7 @@ int renderSprite_LRUD_TileFastMode(uint32_t screen[], int screenWidth, unsigned 
 
 
 // renders sprite in tile mode (Render mode 5) with Up/Down reflection
-int renderSprite_LRDU_TileFastMode(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
+int renderSprite_LRDU_TileFast(uint32_t screen[], int screenWidth, unsigned char *data, int spriteWidth, int spriteHeight, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
 {
 	size_t sizeOfPixel = sizeof(uint32_t);
 
