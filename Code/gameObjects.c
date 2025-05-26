@@ -169,7 +169,6 @@ Object* AddObject(ObjectController *objectList, int objectID, int xPos, int yPos
 			newObject->arg3 = arg4;
 			newObject->arg4 = 0;
 			newObject->arg5 = 0;
-			newObject->objectRenderMode = SINGLE_FULL_ALPHA;
 
 			// Assign particle sprite
 			newObject->arg1 = 1;
@@ -288,13 +287,13 @@ void CreateObjectSpriteSet(ObjectController *objectList, int objectID)
 int LoadParticleSprites(SpriteSet *newSet)
 {
 	// Sparkle 
-	loadObjectSprite("Sparkle1", newSet, SINGLE_FULL_ALPHA);
-	loadObjectSprite("Sparkle2", newSet, SINGLE_FULL_ALPHA);
-	loadObjectSprite("Sparkle3", newSet, SINGLE_FULL_ALPHA);
-	loadObjectSprite("Sparkle4", newSet, SINGLE_FULL_ALPHA);
-	loadObjectSprite("Sparkle5", newSet, SINGLE_FULL_ALPHA);
-	loadObjectSprite("Sparkle6", newSet, SINGLE_FULL_ALPHA);
-	loadObjectSprite("Sparkle7", newSet, SINGLE_FULL_ALPHA);
+	loadObjectSprite("Sparkle1", newSet, SINGLE);
+	loadObjectSprite("Sparkle2", newSet, SINGLE);
+	loadObjectSprite("Sparkle3", newSet, SINGLE);
+	loadObjectSprite("Sparkle4", newSet, SINGLE);
+	loadObjectSprite("Sparkle5", newSet, SINGLE);
+	loadObjectSprite("Sparkle6", newSet, SINGLE);
+	loadObjectSprite("Sparkle7", newSet, SINGLE);
 
 	return 0;
 }
@@ -862,8 +861,6 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 		return ACTION_DISABLED;
 	}
 
-
-	PlayerData *player = gameWorld->Player;
 	ObjectController *objectList = gameWorld->objectList;
 
 	if (objectList == NULL || objectList->firstObject == NULL)
@@ -887,96 +884,14 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 		}
 
 
-		switch (currentObject->objectID)
-		{
-			case PARTICLE:
-				UpdateParticle(currentObject);
-				break;
-
-
-			case MOVING_PLATFORM_HOR:
-			{
-				UpdateHorizontalPlatform(player, currentObject);
-			} break;
-
-
-			case MOVING_PLATFORM_VER:
-			{
-				UpdateVerticalPlatform(player, currentObject);
-			} break;
-
-
-			case COIN:
-			{
-				// temp
-				double ObjYPos = currentObject->yPos;
-				double ObjYPos2 = currentObject->yPos + currentObject->ySize;
-				double ObjXPos = currentObject->xPos;
-				double ObjXPos2 = currentObject->xPos + currentObject->xSize;
-
-				if (boxOverlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
-				{
-					AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1000, 0, 0, 0);
-					MarkObjectForDeletion(currentObject);
-					player->coinCount++;
-					LemonPlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.8);
-				}
-
-			} break;
-
-
-			case SPRING:
-			{
-				// temp
-				double ObjYPos = currentObject->yPos;
-				double ObjYPos2 = currentObject->yPos + currentObject->ySize;
-				double ObjXPos = currentObject->xPos;
-				double ObjXPos2 = currentObject->xPos + currentObject->xSize;
-
-				if (currentObject->arg5 < 1 && player->yVelocity < -1.0 && boxOverlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
-				{
-					player->yVelocity = (double)currentObject->arg1;
-					LemonPlaySound("Spring", "Objects", 4, 1.0);
-					currentObject->arg5 = 20;
-				}
-
-				if (currentObject->arg5 > 0)
-				{
-					currentObject->arg5--;
-				}
-
-			} break;
-
-
-			case VERTICAL_GATE:
-			{
-				UpdateVerticalGate(currentObject, objectList, player);
-			} break;
-
-
-			case HORIZONTAL_GATE:
-			{
-				UpdateHorizontalGate(currentObject, objectList, player);
-			} break;
-
-
-			case GATE_SWITCH_TIMED:
-			case GATE_SWITCH:
-			{
-				UpdateGateSwitch(player, currentObject);
-				currentObject->yPos = 64 + (32 * currentObject->arg3);
-			} break;
-
-
-			default:
-				break;
-		}
+		ObjectBehaviour(gameWorld, currentObject);
 
 
 		if (currentObject == NULL)
 		{
 			return MISSING_DATA;
 		}
+
 
 		if (currentObject->State == TO_BE_DELETED)
 		{
@@ -986,9 +901,9 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 		}
 		
 		// Move object
-		moveObjectX(currentObject, player);
+		moveObjectX(currentObject, gameWorld->Player);
 
-		moveObjectY(currentObject, player);
+		moveObjectY(currentObject, gameWorld->Player);
 		
 		// Assign Sprite
 		switchObjectSprite(currentObject->currentSprite, currentObject, objectList);
@@ -1001,7 +916,107 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 }
 
 
-int UpdateParticle(Object *particle)
+int ObjectBehaviour(World *gameWorld, Object *inputObject)
+{
+	if (gameWorld == NULL || gameWorld->objectList == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	PlayerData *player = gameWorld->Player;
+
+
+	switch (inputObject->objectID)
+	{
+		case PARTICLE:
+			UpdateParticle(gameWorld, inputObject);
+			break;
+
+
+		case MOVING_PLATFORM_HOR:
+		{
+			UpdateHorizontalPlatform(player, inputObject);
+		} break;
+
+
+		case MOVING_PLATFORM_VER:
+		{
+			UpdateVerticalPlatform(player, inputObject);
+		} break;
+
+
+		case COIN:
+		{
+			// temp
+			double ObjYPos = inputObject->yPos;
+			double ObjYPos2 = inputObject->yPos + inputObject->ySize;
+			double ObjXPos = inputObject->xPos;
+			double ObjXPos2 = inputObject->xPos + inputObject->xSize;
+
+			if (boxOverlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
+			{
+				AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1000, 0, 0, 0);
+				MarkObjectForDeletion(inputObject);
+				player->coinCount++;
+				LemonPlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.8);
+			}
+
+		} break;
+
+
+		case SPRING:
+		{
+			// temp
+			double ObjYPos = inputObject->yPos;
+			double ObjYPos2 = inputObject->yPos + inputObject->ySize;
+			double ObjXPos = inputObject->xPos;
+			double ObjXPos2 = inputObject->xPos + inputObject->xSize;
+
+			if (inputObject->arg5 < 1 && player->yVelocity < -1.0 && boxOverlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
+			{
+				player->yVelocity = (double)inputObject->arg1;
+				LemonPlaySound("Spring", "Objects", 4, 1.0);
+				inputObject->arg5 = 20;
+			}
+
+			if (inputObject->arg5 > 0)
+			{
+				inputObject->arg5--;
+			}
+
+		} break;
+
+
+		case VERTICAL_GATE:
+		{
+			UpdateVerticalGate(inputObject, gameWorld->objectList, player);
+		} break;
+
+
+		case HORIZONTAL_GATE:
+		{
+			UpdateHorizontalGate(inputObject, gameWorld->objectList, player);
+		} break;
+
+
+		case GATE_SWITCH_TIMED:
+		case GATE_SWITCH:
+		{
+			UpdateGateSwitch(player, inputObject);
+			inputObject->yPos = 64 + (32 * inputObject->arg3);
+		} break;
+
+
+		default:
+			break;
+		}
+
+
+	return 0;
+}
+
+
+int UpdateParticle(World *GameWorld, Object *particle)
 {
 	// currentAnimation: which particle animation to play
 	// arg1: number of times to repeat animation
@@ -1019,19 +1034,19 @@ int UpdateParticle(Object *particle)
 	}
 
 
-	// Increment Tick
+	// Animation
 	particle->animationTick++;
 
-	if (particle->animationTick > 9999.0 || particle->animationTick < 0.0)
+	if (particle->animationTick > 9999 || particle->animationTick < 0)
 	{
-		particle->animationTick = 0.0;
+		particle->animationTick = 0;
 	}
 
-	// Animate if on correct tick
-	if (particle->arg1 > 0 && particle->animationTick % particle->arg2 == 0)
-	{
-		LoopParticleAnimation(particle);
-	}
+	LoopParticleAnimation(particle);
+
+
+	customParticleBehaviour(GameWorld, particle);
+
 
 	// If repeat count is reached or animationTick exceeds maximum lifetime, mark for deletion
 	if (particle->arg3 < 1 && particle->arg1 < 1)
@@ -1048,8 +1063,27 @@ int UpdateParticle(Object *particle)
 }
 
 
+int customParticleBehaviour(World *GameWorld, Object *particle)
+{
+	// Custom behaviour
+	switch(particle->currentAnimation)
+	{
+		default:
+		break;
+	}
+
+	return 0;
+}
+
+
 int LoopParticleAnimation(Object *particle)
 {
+	if (particle->arg1 < 1 || particle->animationTick % particle->arg2 != 0)
+	{
+		return EXECUTION_UNNECESSARY;
+	
+	}
+
 	int firstSprite = 1;
 	int lastSprite = 1;
 	int animateType = 1;
@@ -1262,7 +1296,7 @@ int UpdateVerticalGate(Object *gate, ObjectController *objectList, PlayerData *p
 
 			if (boxOverlapsPlayer(player, gate->xPos, gate->xPos + gate->xSize, gate->yPos + (gate->yVel * deltaTime), gate->yPos + gate->ySize + (gate->yVel * deltaTime)) == 1)
 			{
-				gate->yVel = 0.0;
+				//gate->yVel = 0.0;
 			}
 
 

@@ -25,9 +25,11 @@ TO DO:
 
 (In order of importance)
 
+- Fix moving platforms on y axis...again....
 - Fix slope collision - NEW SYSTEM!!!!
 - Add decoding/encoding function for txt -> lem files
-- Add modifiable offsets to rendermode 4 sprites/objects?
 - Design HUD/menu system (??)
+- Add text box like rpg games
+- Add cutscene manager
 
 *\

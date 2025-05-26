@@ -80,8 +80,14 @@ int ChangeObjectYSizeBy(int change, Object *inputObject, PlayerData *player);
 FunctionResult updateObjects(World *gameWorld, int keyboard[256]);
 
 
+int ObjectBehaviour(World *gameWorld, Object *inputObject);
 
-int UpdateParticle(Object *particle);
+
+
+int UpdateParticle(World *GameWorld, Object *particle);
+
+
+int customParticleBehaviour(World *GameWorld, Object *particle);
 
 
 int LoopParticleAnimation(Object *particle);
