@@ -292,10 +292,9 @@ void DebugControls(World *GameWorld, PlayerData *player, int keyboard[256], Obje
 	if (keyboard['Y'] && clickY == 0)
 	{
 		//clearGameData(gameWorld, player);
-		//deleteObject(gameWorld->objectList, &gameWorld->objectList->startPtr);
+		deleteAllObjects(GameWorld->objectList);
 		//switchLevel(gameWorld, 1);
-    	testObject->layer = (testObject->layer + 1) % 4;
-		SetDrawPriorityToBack(GameWorld->objectList, testObject);
+
 		clickY = 1;
 	}
 

@@ -58,6 +58,7 @@ int InitSound(const char *pathPtr, SoundInstance *SoundChannel, double volume)
 		return -1;
 	}
 
+
 	SDL_AudioSpec spec;
 
 	if (!SDL_LoadWAV(pathPtr, &spec, &SoundChannel->wav_data, &SoundChannel->wav_data_len))

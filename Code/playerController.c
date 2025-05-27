@@ -187,11 +187,11 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 	{
 		if (fabs(player->PhysicsXVelocity) > 0.1)
 		{
-			player->xVelocity *= 0.81;
+			player->xVelocity *= 0.8;
 		}
 		else
 		{
-			player->xVelocity *= 0.87;
+			player->xVelocity *= 0.83;
 		}
 	}
 
@@ -676,10 +676,9 @@ Object* OverlappingObject(PlayerData *player, World *gameWorld)
 		objXRight = objX + currentObject->xSize;
 		objYTop = objY + currentObject->ySize;
 
-		int result = boxOverlapsPlayer(player, objX, objXRight, objY, objYTop);
+		int result = 0;
 
-
-		if (result == 0 || currentObject->layer > FOREGROUND)
+		if (currentObject->layer > FOREGROUND)
 		{
 			currentObject = currentObject->nextObject;
 			continue;
@@ -689,18 +688,12 @@ Object* OverlappingObject(PlayerData *player, World *gameWorld)
 		{
 			case 2:
 			{
-				if (rightSlopeOverlapsPlayer(player, currentObject) == 1)
-				{
-					return currentObject;
-				}
+				result = rightSlopeOverlapsPlayer(player, currentObject);
 			} break;
 
 			case 3: 
 			{
-				if (leftSlopeOverlapsPlayer(player, currentObject) == 1)
-				{
-					return currentObject;
-				}
+				result = leftSlopeOverlapsPlayer(player, currentObject);
 			} break;
 
 			case 0:
@@ -708,17 +701,18 @@ Object* OverlappingObject(PlayerData *player, World *gameWorld)
 			
 			default:
 			{
-				if (currentObject->objectID == VERTICAL_GATE)
-				{
-					printf("COLIDE: %lf %lf\n", player->yPos, objYTop );
-				}
-				return currentObject;
+				result = boxOverlapsPlayer(player, objX, objXRight, objY, objYTop);
 			} break;
 		}
 
 
-		currentObject = currentObject->nextObject;
+		if (result == 1)
+		{
+			return currentObject;
+		}
 
+		
+		currentObject = currentObject->nextObject;
 	}
 
 	return NULL;

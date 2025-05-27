@@ -111,7 +111,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	
     LemonPlaySound("StartUp", "Music", MUSIC_CHANNEL, 0.7);
 
-    StopAudioInChannel(0);
+    StopAudioInChannel(MUSIC_CHANNEL);
 
 
     // Game Loop

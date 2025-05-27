@@ -64,10 +64,10 @@ void SetDrawPriorityToFront(ObjectController *objController, Object *input);
 void SetDrawPriorityToBack(ObjectController *objController, Object *input);
 
 
-int checkPlayerCollisionWithObjectOnX(Object *inputObject, PlayerData *player);
+int ResolvePlayerToObjectCollisionX(Object *inputObject, PlayerData *player, double prevObjXPos, double prevObjXPosRight);
 
 
-int checkPlayerCollisionWithObjectOnY(Object *inputObject, PlayerData *player);
+int ResolvePlayerToObjectCollisionY(Object *inputObject, PlayerData *player, double prevObjYPos, double prevObjYPosTop);
 
 
 int moveObjectX(Object *inputObject, PlayerData *player);
