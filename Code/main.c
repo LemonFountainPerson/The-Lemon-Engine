@@ -25,7 +25,6 @@ TO DO:
 
 (In order of importance)
 
-- Fix moving platforms on y axis...again....
 - Fix slope collision - NEW SYSTEM!!!!
 - Add decoding/encoding function for txt -> lem files
 - Design HUD/menu system (??)
