@@ -2,8 +2,16 @@
 
 
 
-Object* AddObject(ObjectController *objectList, int objectID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5)
+Object* AddObject(World *gameWorld, int objectID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5)
 {
+	if (gameWorld == NULL || gameWorld->objectList == NULL)
+	{
+		return NULL;
+	}
+
+	ObjectController *objectList = gameWorld->objectList;
+
+
 	if (objectID >= UNDEFINED_OBJECT || objectID < LEVEL_FLAG_OBJ)
 	{
 		printf("This object is not defined! Type: %d\n", objectID);
@@ -185,7 +193,7 @@ Object* AddObject(ObjectController *objectList, int objectID, int xPos, int yPos
 	newObject->xPosRight = newObject->xPos + newObject->xSize;
 	newObject->yPosTop = newObject->xPos + newObject->xSize;
 
-	if (GameState == LOADING)
+	if (gameWorld->GameState == LOADING)
 	{
 		printf("\nCreated object type: %d;\n\n", objectID);
 	}
@@ -266,8 +274,7 @@ void CreateObjectSpriteSet(ObjectController *objectList, int objectID)
 		} break;
 
 		case SPRING:
-			loadObjectSprite("alphatest", newSet, SINGLE);
-			loadObjectSprite("Spring", newSet, TILE);
+			loadObjectSprite("Spring", newSet, SINGLE);
 			break;
 
 		case SOLID_BLOCK:
@@ -339,8 +346,15 @@ Object* DefineMovingPlatform(Object *inputObject, int objectID, int xPos, int yP
 }
 
 
-Object* AddFlagObject(ObjectController *objectList, Flags flagID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5)
+Object* AddFlagObject(World *gameWorld, Flags flagID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5)
 {
+	if (gameWorld == NULL || gameWorld->objectList == NULL)
+	{
+		return NULL;
+	}
+
+	ObjectController *objectList = gameWorld->objectList;
+
 	Object *newObject;
 	newObject = createNewObject(objectList, xPos, yPos, LEVEL_FLAG_OBJ);
 
@@ -856,7 +870,7 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 		return MISSING_DATA;
 	}
 
-	if (gameWorld->GamePaused > 0)
+	if (gameWorld->GamePaused > 0 || gameWorld->GameState != GAMEPLAY)
 	{
 		return ACTION_DISABLED;
 	}
@@ -955,7 +969,7 @@ int ObjectBehaviour(World *gameWorld, Object *inputObject)
 
 			if (boxOverlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
 			{
-				AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1000, 0, 0, 0);
+				AddObject(gameWorld, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1000, 0, 0, 0);
 				MarkObjectForDeletion(inputObject);
 				player->coinCount++;
 				LemonPlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.8);
@@ -975,7 +989,7 @@ int ObjectBehaviour(World *gameWorld, Object *inputObject)
 			if (inputObject->arg5 < 1 && player->yVelocity < -1.0 && boxOverlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
 			{
 				player->yVelocity = (double)inputObject->arg1;
-				LemonPlaySound("Spring", "Objects", 4, 1.0);
+				LemonPlaySound("Spring", "Objects", OBJECT_SFX, 1.0);
 				inputObject->arg5 = 20;
 			}
 
@@ -1028,11 +1042,6 @@ int UpdateParticle(World *GameWorld, Object *particle)
 		return MISSING_DATA;
 	}
 
-	if (particle->arg2 < 1 || particle->arg2 > 999)
-	{
-		particle->arg2 = 3;
-	}
-
 
 	// Animation
 	particle->animationTick++;
@@ -1078,6 +1087,11 @@ int customParticleBehaviour(World *GameWorld, Object *particle)
 
 int LoopParticleAnimation(Object *particle)
 {
+	if (particle->arg2 < 1 || particle->arg2 > 999)
+	{
+		particle->arg2 = 3;
+	}
+
 	if (particle->arg1 < 1 || particle->animationTick % particle->arg2 != 0)
 	{
 		return EXECUTION_UNNECESSARY;
@@ -1300,12 +1314,12 @@ int UpdateVerticalGate(Object *gate, ObjectController *objectList, PlayerData *p
 			}
 
 
-			if ( (speed < 0 && gate->yPos < closedPosition - gate->ySize) || (speed > 0 && gate->yPos > closedPosition + gate->ySize) )
+			if ( (speed < 0 && gate->yPos + (gate->yVel * deltaTime) < closedPosition - gate->ySize) || (speed > 0 && gate->yPos + (gate->yVel * deltaTime) > closedPosition + gate->ySize) )
 			{
 				gate->currentAnimation = 2;
 				gate->animationTick = 0;
 				gate->yVel = 0.0;
-				gate->yPos = closedPosition + (gate->ySize * (speed/abs(speed)));
+				SetObjectYPosition(gate, closedPosition + (gate->ySize * (speed/abs(speed))), player);
 			}
 
 		} break;
@@ -1523,183 +1537,6 @@ int gateControl(Object *gate, ObjectController *objectList)
 }
 
 
-int moveObjectX(Object *inputObject, PlayerData *player)
-{
-	if (fabs(inputObject->xVel) < 0.1)
-	{
-		inputObject->xVel = 0.0;
-		return EXECUTION_UNNECESSARY;
-	}
-
-
-	double prevObjXPos = inputObject->xPos;
-	double prevObjXPosRight = inputObject->xPos + inputObject->xSize;
-
-	inputObject->xPos += (inputObject->xVel * deltaTime);
-	inputObject->xPosRight = inputObject->xPos + inputObject->xSize;
-
-
-	if (player == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	double ObjXPos = inputObject->xPos;
-	double ObjXPosRight = inputObject->xPosRight;
-	double ObjYPos = inputObject->yPos;
-	double ObjYPosTop = inputObject->yPos + inputObject->ySize;
-
-
-	int result = 0;
-
-	switch(inputObject->solid)
-	{
-		case 2:
-			ObjXPos = ObjYPos / ((double)inputObject->ySize/(double)inputObject->xSize);
-			result = rightSlopeOverlapsPlayer(player, inputObject);
-			break;
-
-		case 3:
-			ObjXPosRight = inputObject->xSize - ( ObjYPos / ((double)inputObject->ySize/(double)inputObject->xSize) );
-			result = leftSlopeOverlapsPlayer(player, inputObject);
-			break;
-
-		case 1:
-			result = boxOverlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
-			break;
-
-		default:
-			break;
-	}
-
-	if (result == 1)
-	{
-		if (player->xPos < ((prevObjXPos + prevObjXPosRight) / 2.0) )
-		{
-			player->xPos = ObjXPos - PLAYERWIDTH;
-		}
-		else
-		{
-			player->xPos = ObjXPosRight;
-		}
-
-		return 0;
-	}
-
-
-	switch(inputObject->solid)
-	{
-		case 4:
-		case 1:
-			result = (boxOverlapsPlayerFeet(player, prevObjXPos, prevObjXPosRight, ObjYPos, ObjYPosTop + 2.0) == 1 && player->yVelocity < 1.0);
-			break;
-
-		default:
-			result = 0;
-			break;
-	}
-
-	if (result == 1)
-	{
-		int pixelDifference = (int)ObjXPos - (int)(ObjXPos - (inputObject->xVel * deltaTime));
-		player->xPos += pixelDifference;
-	}	
-
-
-	return 0;
-}
-
-
-
-int moveObjectY(Object *inputObject, PlayerData *player)
-{
-	if (fabs(inputObject->yVel) < 0.1)
-	{
-		inputObject->yVel = 0.0;
-		return EXECUTION_UNNECESSARY;
-	}
-
-	double prevObjYPos = inputObject->yPos;
-	double prevObjYPosTop = inputObject->yPos + inputObject->ySize;
-
-	inputObject->yPos += (inputObject->yVel * deltaTime);
-	inputObject->yPosTop = inputObject->yPos + inputObject->ySize;
-
-
-	if (player == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	double ObjXPos = inputObject->xPos;
-	double ObjXPosRight = inputObject->xPos + inputObject->xSize;
-	double ObjYPos = inputObject->yPos;
-	double ObjYPosTop = inputObject->yPosTop;
-
-
-	int result = 0;
-
-	switch(inputObject->solid)
-	{
-		case 2:
-			ObjYPosTop = ((player->xPos + PLAYERWIDTH - inputObject->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize));
-			result = rightSlopeOverlapsPlayer(player, inputObject);
-			break;
-
-		case 3:
-			ObjYPosTop = ((inputObject->xSize - (player->xPos - inputObject->xPos)) * ((double)inputObject->ySize/(double)inputObject->xSize));
-			result = leftSlopeOverlapsPlayer(player, inputObject);
-			break;
-
-		case 4:
-			result = boxOverlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop) && player->yVelocity < 0.0 && player->yPos > prevObjYPosTop - (inputObject->ySize >> 1);
-			break;
-
-		case 1:
-			result = boxOverlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
-			break;
-
-		default:
-			break;
-	}
-
-	if (result == 1)
-	{
-		if (player->yPos < ((prevObjYPos + prevObjYPosTop) / 2.0) )
-		{
-			player->yPos = ObjYPos - PLAYERHEIGHT;
-		}
-		else
-		{
-			player->yPos = ObjYPosTop;
-		}
-
-		return 0;
-	}
-
-
-	switch(inputObject->solid)
-	{
-		case 4:
-		case 1:
-			result = (boxOverlapsPlayerFeet(player, ObjXPos, ObjXPosRight, prevObjYPos, prevObjYPosTop + 2.0 ) == 1 && player->yVelocity < 0.1);
-			break;
-
-		default:
-			result = 0;
-			break;
-	}
-
-	if (result == 1)
-	{
-		int pixelDifference = (int)ObjYPos - (int)(ObjYPos - (inputObject->yVel * deltaTime));
-		player->yPos += pixelDifference;
-	}	
-
-	return 0;
-}
-
-
 int UpdateHorizontalPlatform(PlayerData *player, Object *platform)
 {
 	double YPos = platform->yPos;
@@ -1819,7 +1656,7 @@ int UpdateVerticalPlatform(PlayerData *player, Object *platform)
 
 int boxOverlapsPlayer(PlayerData *player, double X1, double X2, double Y1, double Y2)
 {
-	return !((int)player->xPos >= (int)X2 || (int)(player->xPos + PLAYERWIDTH) <= (int)X1 || player->yPos >= Y2 || (player->yPos + PLAYERHEIGHT) <= Y1);
+	return !((int)player->xPos >= (int)X2 || (int)(player->xPos + PLAYERWIDTH) <= (int)X1 || (int)player->yPos >= (int)Y2 || (int)(player->yPos + PLAYERHEIGHT) <= (int)Y1);
 }
 
 
@@ -1831,6 +1668,8 @@ int boxOverlapsPlayerFeet(PlayerData *player, double X1, double X2, double Y1, d
 
 int rightSlopeOverlapsPlayer(PlayerData *player, Object *inputObject)
 {
+	return 0;
+
 	double slopeFloor = ((player->xPos + PLAYERWIDTH - inputObject->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize));
 
 	if (slopeFloor > inputObject->ySize)
@@ -2020,6 +1859,258 @@ int OverlapsObject(Object *inputObject, Object *otherObject)
 	{
 		return 1;
 	}
+
+	return 0;
+}
+
+
+int moveObjectX(Object *inputObject, PlayerData *player)
+{
+	if (fabs(inputObject->xVel) < 0.1)
+	{
+		inputObject->xVel = 0.0;
+		return EXECUTION_UNNECESSARY;
+	}
+
+
+	double prevObjXPos = inputObject->xPos;
+	double prevObjXPosRight = inputObject->xPos + inputObject->xSize;
+
+	inputObject->xPos += (inputObject->xVel * deltaTime);
+	inputObject->xPosRight = inputObject->xPos + inputObject->xSize;
+
+
+	if (player == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	double ObjXPos = inputObject->xPos;
+	double ObjXPosRight = inputObject->xPosRight;
+	double ObjYPos = inputObject->yPos;
+	double ObjYPosTop = inputObject->yPos + inputObject->ySize;
+
+
+	int result = 0;
+
+	switch(inputObject->solid)
+	{
+		case 2:
+			ObjXPos = ObjYPos / ((double)inputObject->ySize/(double)inputObject->xSize);
+			result = rightSlopeOverlapsPlayer(player, inputObject);
+			break;
+
+		case 3:
+			ObjXPosRight = inputObject->xSize - ( ObjYPos / ((double)inputObject->ySize/(double)inputObject->xSize) );
+			result = leftSlopeOverlapsPlayer(player, inputObject);
+			break;
+
+		case 1:
+			result = boxOverlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
+			break;
+
+		default:
+			break;
+	}
+
+	if (result == 1)
+	{
+		if (player->xPos < ((prevObjXPos + prevObjXPosRight) / 2.0) )
+		{
+			player->xPos = ObjXPos - PLAYERWIDTH;
+		}
+		else
+		{
+			player->xPos = ObjXPosRight;
+		}
+
+		return 0;
+	}
+
+
+	switch(inputObject->solid)
+	{
+		case 4:
+		case 1:
+			result = (boxOverlapsPlayerFeet(player, prevObjXPos, prevObjXPosRight, ObjYPos, ObjYPosTop + 2.0) == 1 && player->yVelocity < 1.0);
+			break;
+
+		default:
+			result = 0;
+			break;
+	}
+
+	if (result == 1)
+	{
+		int pixelDifference = (int)ObjXPos - (int)(ObjXPos - (inputObject->xVel * deltaTime));
+		player->xPos += pixelDifference;
+	}	
+
+
+	return 0;
+}
+
+
+
+int moveObjectY(Object *inputObject, PlayerData *player)
+{
+	if (fabs(inputObject->yVel) < 0.1)
+	{
+		inputObject->yVel = 0.0;
+	}
+
+	double prevObjYPos = inputObject->yPos;
+	double prevObjYPosTop = inputObject->yPos + inputObject->ySize;
+
+	inputObject->yPos += (inputObject->yVel * deltaTime);
+	inputObject->yPosTop = inputObject->yPos + inputObject->ySize;
+
+
+	if (player == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	double ObjXPos = inputObject->xPos;
+	double ObjXPosRight = inputObject->xPos + inputObject->xSize;
+	double ObjYPos = inputObject->yPos;
+	double ObjYPosTop = inputObject->yPosTop;
+
+
+	int result = 0;
+
+	switch(inputObject->solid)
+	{
+		case 2:
+			ObjYPosTop = ((player->xPos + PLAYERWIDTH - inputObject->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize));
+			result = rightSlopeOverlapsPlayer(player, inputObject);
+			break;
+
+		case 3:
+			ObjYPosTop = ((inputObject->xSize - (player->xPos - inputObject->xPos)) * ((double)inputObject->ySize/(double)inputObject->xSize));
+			result = leftSlopeOverlapsPlayer(player, inputObject);
+			break;
+
+		case 4:
+			result = boxOverlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop) && player->yVelocity < 0.0 && player->yPos > prevObjYPosTop - (inputObject->ySize >> 1);
+			break;
+
+		case 1:
+			result = boxOverlapsPlayer(player, ObjXPos, ObjXPosRight, ObjYPos, ObjYPosTop);
+			break;
+
+		default:
+			break;
+	}
+
+	if (result == 1)
+	{
+		if (player->yPos < ((prevObjYPos + prevObjYPosTop) / 2.0) )
+		{
+			player->yPos = ObjYPos - PLAYERHEIGHT;
+		}
+		else
+		{
+			player->yPos = ObjYPosTop; 
+		}
+
+		return 0;
+	}
+
+	return 0;
+
+	switch(inputObject->solid)
+	{
+		case 4:
+		case 1:
+			result = (boxOverlapsPlayerFeet(player, ObjXPos, ObjXPosRight, prevObjYPos, prevObjYPosTop + 2.0 ) == 1 && player->yVelocity < 0.1);
+			break;
+
+		default:
+			result = 0;
+			break;
+	}
+
+	if (result == 1)
+	{
+		int pixelDifference = (int)ObjYPos - (int)(ObjYPos - (inputObject->yVel * deltaTime));
+		player->yPos += pixelDifference;
+	}	
+
+	return 0;
+}
+
+
+int checkPlayerCollisionWithObjectOnX(Object *inputObject, PlayerData *player)
+{
+
+
+	return 0;
+}
+
+
+int checkPlayerCollisionWithObjectOnY(Object *inputObject, PlayerData *player)
+{
+
+
+	return 0;
+}
+
+
+//Method for setting an object's position to avoid incorrect collision with player
+int SetObjectYPosition(Object *inputObject, double newYPos, PlayerData *Player)
+{
+	if (inputObject == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (fabs(inputObject->yPos - newYPos) < 0.1)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+
+	double prevObjYPos = inputObject->yPos;
+	double prevObjYPosTop = inputObject->yPos + inputObject->ySize;
+
+	inputObject->yPos = newYPos;
+
+	if (Player == NULL || inputObject->solid == 0)
+	{
+		return MISSING_DATA;
+	}
+
+
+
+	return 0;
+}
+
+
+int SetObjectXPosition(Object *inputObject, double newXPos, PlayerData *Player)
+{
+	if (inputObject == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (fabs(inputObject->xPos - newXPos) < 0.1)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+
+	double prevObjYPos = inputObject->xPos;
+	double prevObjXPosTop = inputObject->xPos + inputObject->xSize;
+
+	inputObject->xPos = newXPos;
+
+	if (Player == NULL || inputObject->solid == 0)
+	{
+		return MISSING_DATA;
+	}
+
+
 
 	return 0;
 }

@@ -307,6 +307,7 @@ struct world
 	int playBgMusic;
 
 	int GamePaused;
+	enum lemonGameState GameState;
 };
 
 
@@ -350,7 +351,6 @@ static int gameRunning = 1;
 
 static double deltaTime = 1.0;
 
-static LemonGameState GameState = EMPTY_GAME;
 
 
 

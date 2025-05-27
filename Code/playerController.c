@@ -108,7 +108,7 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 		return MISSING_DATA;
 	}
 
-	if (gameWorld->GamePaused > 0)
+	if (gameWorld->GamePaused > 0 || gameWorld->GameState != GAMEPLAY)
 	{
 		return ACTION_DISABLED;
 	}
@@ -333,6 +333,7 @@ int MovePlayerX(PlayerData *player, World *gameWorld)
 
 	player->xPos += (player->xVelocity * deltaTime);
 
+
 	Object *currentObject;
 	currentObject = gameWorld->objectList->firstObject;
 
@@ -506,10 +507,6 @@ int MovePlayerY(PlayerData *player, World *gameWorld)
 			return 0;
 		}
 
-		if (currentObject->objectID == MOVING_PLATFORM_VER)
-		{
-			printf("ON Y\n");
-		}
 
 		objX = currentObject->xPos;
 		objY = currentObject->yPos;
@@ -710,10 +707,13 @@ Object* OverlappingObject(PlayerData *player, World *gameWorld)
 				break;
 			
 			default:
+			{
+				if (currentObject->objectID == VERTICAL_GATE)
 				{
-					return currentObject;
+					printf("COLIDE: %lf %lf\n", player->yPos, objYTop );
 				}
-				break;
+				return currentObject;
+			} break;
 		}
 
 

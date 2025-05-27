@@ -445,7 +445,7 @@ World* initialiseGame(PlayerData *player)
 
 	switchBackGroundSprite(1, 1, gameWorld);
 
-	GameState = EMPTY_GAME;
+	gameWorld->GameState = EMPTY_GAME;
 
 	printf("Initialised World\n");
 	fflush(stdout);
@@ -541,7 +541,7 @@ void clearGameData(World *gameWorld, PlayerData *player)
 	player = NULL;
 	gameWorld->Player = NULL;
 
-	GameState = EMPTY_GAME;
+	gameWorld->GameState = EMPTY_GAME;
 
 	return;
 }

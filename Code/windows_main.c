@@ -105,6 +105,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // test data
 	loadLevel(GameWorld, 1);
 
+
 	Object *testObject = GameWorld->objectList->lastObject;
 
 	
@@ -112,10 +113,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     StopAudioInChannel(0);
 
+
     // Game Loop
     while(gameRunning == 1)
     {
-    	// Window messages
+        // Window messages
         while(PeekMessage(&Msg, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&Msg); }
 
 
@@ -148,7 +150,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		
 		drawObjects(FOREGROUND, frame.screen, frame.width, frame.height, GameWorld);
 		
-		drawObjects(PARTICLES, frame.screen, frame.width, frame.height, GameWorld);
+	    drawObjects(PARTICLES, frame.screen, frame.width, frame.height, GameWorld);
 
         drawObjects(HUD, frame.screen, frame.width, frame.height, GameWorld);
 
@@ -158,35 +160,35 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         UpdateWindow(handle);
 
 
-		// Process sound
-		IterateAudio();
+	    // Process sound
+	    IterateAudio();
        
 
-		// Framerate control
-		if (keyboard['T'] == 0)
-		{
-    		frameRate(60, gameTick);
-		}
+	    // Framerate control
+	    if (keyboard['T'] == 0)
+	    {
+    	    frameRate(60, gameTick);
+	    }
 
-		if (((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) > 0.99)
-		{
-   			printf("%d at %lf\n", windowsFrames, ((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) );
-   			windowsFrames = 0;
-   			lastSecond = clock();
-		}
-		else
-		{
-   			windowsFrames++;
-		}
+	    if (((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) > 0.99)
+	    {
+   		    printf("%d at %lf\n", windowsFrames, ((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) );
+   		    windowsFrames = 0;
+   		    lastSecond = clock();
+	    }
+	    else
+	    {
+   		    windowsFrames++;
+	    }
 
 
-		// Debug Controls
+	    // Debug Controls
         DebugControls(GameWorld, player, keyboard, testObject);
 
         if (keyboard[LMN_ESCAPE] == 1)
-		{
+	    {
     	    gameRunning = 0;
-		}
+	    }
 		
     }
 

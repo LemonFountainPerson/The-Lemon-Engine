@@ -3,7 +3,7 @@
 
 int switchLevel(World *gameWorld, int level)
 {
-	GameState = LOADING;
+	gameWorld->GameState = LOADING;
 
 	deleteAllObjects(gameWorld->objectList);
 
@@ -11,7 +11,7 @@ int switchLevel(World *gameWorld, int level)
 
 	gameWorld->level = level;
 
-	GameState = GAMEPLAY;
+	gameWorld->GameState = GAMEPLAY;
 
 	return 0;
 }
@@ -19,22 +19,22 @@ int switchLevel(World *gameWorld, int level)
 
 int loadDefault(World *gameWorld)
 {
-	AddObject(gameWorld->objectList, 2900, 110, 0, 1, 1, 0, 0, 0);
-	AddObject(gameWorld->objectList, 2940, 110, 0, 1, 1, 0, 0, 0);
-	AddObject(gameWorld->objectList, 2970, 110, 0, 1, 1, 0, 0, 0);
+	AddObject(gameWorld, 2900, 110, 0, 1, 1, 0, 0, 0);
+	AddObject(gameWorld, 2940, 110, 0, 1, 1, 0, 0, 0);
+	AddObject(gameWorld, 2970, 110, 0, 1, 1, 0, 0, 0);
 
-	AddObject(gameWorld->objectList, 200, 100, 5, 1, 1, 0, 0, 0);
-	AddObject(gameWorld->objectList, 300, 130, 5, 1, 1, 0, 0, 0);
-	AddObject(gameWorld->objectList, 400, 160, 5, 1, 1, 0, 0, 0);
-	AddObject(gameWorld->objectList, 450, 200, 5, 1, 1, 0, 0, 0);
+	AddObject(gameWorld, 200, 100, 5, 1, 1, 0, 0, 0);
+	AddObject(gameWorld, 300, 130, 5, 1, 1, 0, 0, 0);
+	AddObject(gameWorld, 400, 160, 5, 1, 1, 0, 0, 0);
+	AddObject(gameWorld, 450, 200, 5, 1, 1, 0, 0, 0);
 
-	AddObject(gameWorld->objectList, 1800, 200, 7, 1800, 2800, 6, 90, 0);
-	AddObject(gameWorld->objectList, 2600, 350, 7, 2600, 3600, 6, 60, 0);
-	AddObject(gameWorld->objectList, 8000, 128, 8, 176, 960, 6, 180, 0);
-	AddObject(gameWorld->objectList, 5700, 128, 8, 176, 960, 6, 180, 0);
-	AddObject(gameWorld->objectList, 3200, 100, 7, 3300, 4200, 6, 90, 0);
+	AddObject(gameWorld, 1800, 200, 7, 1800, 2800, 6, 90, 0);
+	AddObject(gameWorld, 2600, 350, 7, 2600, 3600, 6, 60, 0);
+	AddObject(gameWorld, 8000, 128, 8, 176, 960, 6, 180, 0);
+	AddObject(gameWorld, 5700, 128, 8, 176, 960, 6, 180, 0);
+	AddObject(gameWorld, 3200, 100, 7, 3300, 4200, 6, 90, 0);
 
-	AddObject(gameWorld->objectList, 3200, 70, 9, 26, 0, 0, 0, 0);
+	AddObject(gameWorld, 3200, 70, 9, 26, 0, 0, 0, 0);
 
 	switchBackGroundSprite(0, 0, gameWorld);
 
@@ -187,7 +187,7 @@ int saveLevel(World *gameWorld)
 
 int loadLevel(World *gameWorld, int level)
 {
-	GameState = LOADING;
+	gameWorld->GameState = LOADING;
 
 	FILE *fPtr;
 
@@ -202,7 +202,7 @@ int loadLevel(World *gameWorld, int level)
 	if (fPtr == NULL)
 	{
 		printf("Level %d not found.\n", level);
-		GameState = GAMEPLAY;
+		gameWorld->GameState = GAMEPLAY;
 		return -1;
 	}
 
@@ -216,7 +216,8 @@ int loadLevel(World *gameWorld, int level)
 	if (strcmp(charBuffer, "V0.04") != 0)
 	{
 		printf("Level %d load failed: Incompatible version number!\n");
-		GameState = GAMEPLAY;
+		fclose(fPtr);
+		gameWorld->GameState = GAMEPLAY;
 		return -1;
 	}
 
@@ -228,7 +229,8 @@ int loadLevel(World *gameWorld, int level)
 	if (strcmp(charBuffer, "-LEVELDATA") != 0)
 	{
 		printf("Level %d load failed: This file does not contain level data!\n");
-		GameState = GAMEPLAY;
+		fclose(fPtr);
+		gameWorld->GameState = GAMEPLAY;
 		return -1;
 	}
 
@@ -241,6 +243,7 @@ int loadLevel(World *gameWorld, int level)
 	int endOfFile = 0;
 	int i = 0;
 
+
 	while (endOfFile == 0 && i < 8000)
 	{
 		getNextArg(fPtr, charBuffer, 4);
@@ -250,6 +253,7 @@ int loadLevel(World *gameWorld, int level)
 		{
 			printf("Level %d load failed: Data formatted incorrectly! %c %c %c %c\n", level, charBuffer[0], charBuffer[1], charBuffer[2], charBuffer[3]);
 			clearCurrentlyLoadedLevelData(gameWorld);
+			fclose(fPtr);
 			return -1;
 		}
 
@@ -277,6 +281,7 @@ int loadLevel(World *gameWorld, int level)
 		{
 			printf("Unrecognised data!\n");
 			clearCurrentlyLoadedLevelData(gameWorld);
+			fclose(fPtr);
 			return -1;
 		}
 		
@@ -287,10 +292,11 @@ int loadLevel(World *gameWorld, int level)
 
 	fclose(fPtr);
 
-	// Create a default particle object to initilise its sprite set to avoid lag during gameplay 
-	AddObject(gameWorld->objectList, PARTICLE, 0, 0, SPARKLE, 0, 0, 0, 0);
 
-	GameState = GAMEPLAY;
+	// Create a default particle object to initilise its sprite set to avoid lag during gameplay 
+	//AddObject(gameWorld->objectList, PARTICLE, 0, 0, SPARKLE, 0, 0, 0, 0);
+
+	gameWorld->GameState = GAMEPLAY;
 
 	return 0;
 }
@@ -306,7 +312,7 @@ int clearCurrentlyLoadedLevelData(World *gameWorld)
 	deleteAllObjects(gameWorld->objectList);
 
 	gameWorld->level = 0;
-	GameState = IN_MENU;
+	gameWorld->GameState = IN_MENU;
 
 	return 0;
 }
@@ -346,7 +352,7 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 			return returnMsg;
 		}
 	
-		AddFlagObject(gameWorld->objectList, BACKGROUND_SET_TRIGGER, args[2], args[3], args[0], args[1], 0, 0, 0);
+		AddFlagObject(gameWorld, BACKGROUND_SET_TRIGGER, args[2], args[3], args[0], args[1], 0, 0, 0);
 
 		return 0;
 	}
@@ -408,7 +414,7 @@ int loadObject(World *gameWorld, FILE *fPtr)
 	}
 
 
-	AddObject(gameWorld->objectList, coreArgs[0], coreArgs[1], coreArgs[2], args[0], args[1], args[2], args[3], args[4]);	
+	AddObject(gameWorld, coreArgs[0], coreArgs[1], coreArgs[2], args[0], args[1], args[2], args[3], args[4]);	
 
 	return 0;
 }
@@ -432,7 +438,7 @@ int loadObjectOffset(World *gameWorld, FILE *fPtr, int xOffset, int yOffset)
 		return -1;
 	}
 
-	AddObject(gameWorld->objectList, coreArgs[0], coreArgs[1] + xOffset, coreArgs[2] + yOffset, args[0], args[1], args[2], args[3], args[4]);	
+	AddObject(gameWorld, coreArgs[0], coreArgs[1] + xOffset, coreArgs[2] + yOffset, args[0], args[1], args[2], args[3], args[4]);	
 
 	return 0;
 }

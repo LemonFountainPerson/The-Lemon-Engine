@@ -8,14 +8,14 @@
 
 
 // Creates new instance of an object and puts at the end of the object list
-Object* AddObject(ObjectController *objController, int xPos, int yPos, int objectID, int arg1, int arg2, int arg3, int arg4, int arg5);
+Object* AddObject(World *gameWorld, int xPos, int yPos, int objectID, int arg1, int arg2, int arg3, int arg4, int arg5);
 
 
 // Helper function to set an object to a moving platform type 
 Object* DefineMovingPlatform(Object *inputObject, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer);
 
 
-Object* AddFlagObject(ObjectController *objectList, Flags flagID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5);
+Object* AddFlagObject(World *gameWorld, Flags flagID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5);
 
 
 // Attempts to create object sprite set if it does not already exist
@@ -64,10 +64,22 @@ void SetDrawPriorityToFront(ObjectController *objController, Object *input);
 void SetDrawPriorityToBack(ObjectController *objController, Object *input);
 
 
+int checkPlayerCollisionWithObjectOnX(Object *inputObject, PlayerData *player);
+
+
+int checkPlayerCollisionWithObjectOnY(Object *inputObject, PlayerData *player);
+
+
 int moveObjectX(Object *inputObject, PlayerData *player);
 
 
 int moveObjectY(Object *inputObject, PlayerData *player);
+
+
+int SetObjectXPosition(Object *inputObject, double newXPos, PlayerData *Player);
+
+
+int SetObjectYPosition(Object *inputObject, double newYPos, PlayerData *Player);
 
 
 int ChangeObjectXSizeBy(int change, Object *inputObject, PlayerData *player);
