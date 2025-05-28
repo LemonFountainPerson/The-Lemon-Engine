@@ -1308,7 +1308,7 @@ int UpdateVerticalGate(Object *gate, ObjectController *objectList, PlayerData *p
 			}
 
 
-			if (boxOverlapsPlayer(player, gate->xPos, gate->xPos + gate->xSize, gate->yPos + (gate->yVel * deltaTime), gate->yPos + gate->ySize + (gate->yVel * deltaTime)) == 1)
+			if (boxOverlapsPlayer(player, gate->xPos, gate->xPos + gate->xSize, gate->yPos, gate->yPos + gate->ySize + (gate->yVel * deltaTime) + 8.0) == 1)
 			{
 				gate->yVel = 0.0;
 			}
@@ -2008,7 +2008,7 @@ int moveObjectX(Object *inputObject, PlayerData *player)
 	{
 		case 4:
 		case 1:
-			result = (boxOverlapsPlayerFeet(player, prevObjXPos, prevObjXPosRight, inputObject->yPos, inputObject->yPos + inputObject->ySize + 2.0) == 1 && player->yVelocity < 1.0);
+			result = (boxOverlapsPlayerFeet(player, prevObjXPos, prevObjXPosRight, inputObject->yPos, inputObject->yPos + inputObject->ySize + 2.0) == 1 && player->inAir == 0 && player->yVelocity < 0.1);
 			break;
 
 		default:
@@ -2060,7 +2060,7 @@ int moveObjectY(Object *inputObject, PlayerData *player)
 	{
 		case 4:
 		case 1:
-			result = (boxOverlapsPlayerFeet(player, inputObject->xPos, inputObject->xPos + inputObject->xSize, prevObjYPos, prevObjYPosTop + 2.0 ) == 1 && player->yVelocity < 0.1);
+			result = (boxOverlapsPlayerFeet(player, inputObject->xPos, inputObject->xPos + inputObject->xSize, prevObjYPos, prevObjYPosTop + 2.0 ) == 1 && player->inAir == 0 && player->yVelocity < 0.1);
 			break;
 
 		default:

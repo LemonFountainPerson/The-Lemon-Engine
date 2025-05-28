@@ -116,18 +116,6 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 	int hAxis = 0;
 	int vAxis = 0;
 	int jump = 0;
-	int onGround = checkIfGrounded(gameWorld, player);
-
-
-	if (onGround == 0 && player->inAir < 100)
-	{
-		player->inAir++;
-	}
-
-	if (onGround > 0)
-	{
-		player->inAir = 0;
-	}
 
 
 	// Player input
@@ -140,13 +128,13 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 
 	vAxis = (keyboard[LMN_UP] || keyboard['E']) - (keyboard[LMN_DOWN] || keyboard['S']);
 
-	if (vAxis < 0 && onGround > 0)
+	if (vAxis < 0 && player->inAir == 0)
 	{
 		player->crouch = 1;
 		player->yVelocity -= 1.0;
 	}
 
-	if (vAxis > -1 && onGround > 0)
+	if (vAxis > -1 && player->inAir == 0)
 	{
 		player->crouch = 0;
 	}
@@ -185,14 +173,7 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 	// Movement velocity acceleration/decceleration
 	if (hAxis == 0)
 	{
-		if (fabs(player->PhysicsXVelocity) > 0.1)
-		{
-			player->xVelocity *= 0.8;
-		}
-		else
-		{
-			player->xVelocity *= 0.83;
-		}
+		player->xVelocity *= 0.81;
 	}
 
 	if (player->inAir > 0)
@@ -250,8 +231,22 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 	MovePlayerY(player, gameWorld);
 	
 
-	player->xPosRight = player->xPos + PLAYERWIDTH - 1;
-	player->yPosTop = player->yPos + PLAYERHEIGHT - 1;
+	player->xPosRight = player->xPos + PLAYERWIDTH;
+	player->yPosTop = player->yPos + PLAYERHEIGHT;
+
+
+	int onGround = checkIfGrounded(gameWorld, player);
+
+	if (onGround == 0 && player->inAir < 100)
+	{
+		player->inAir++;
+	}
+
+	if (onGround > 0)
+	{
+		player->inAir = 0;
+	}
+
 
 	setSprite(player);
 
@@ -310,8 +305,6 @@ int playerJump(PlayerData *player, int hAxis, int vAxis)
 
 	if (player->jumpHeld == 0)
 	{
-		player->inAir = 1;
-
 		LemonPlaySound("Jump", "Player", PLAYER_SFX, 1.0);
 				
 		if (hAxis != 0)
