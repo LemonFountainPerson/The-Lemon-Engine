@@ -43,57 +43,6 @@ int loadDefault(World *gameWorld)
 }
 
 
-int convertTxtToLem(char FileName[MAX_LEN], FILE *txtPtr)
-{
-	char newFileName[MAX_LEN + 4];
-	strcpy(newFileName, FileName);
-	strcat(newFileName, ".lem");
-
-	FILE *newLemFile;
-	newLemFile= fopen(newFileName, "wb");
-
-	if (newLemFile == NULL)
-	{
-		printf("Couldn't open file (%s)! \n", newFileName);
-		return -1;
-	}
-	printf("Couldn't open file (%s)! \n", newFileName);
-
-
-	fclose(newLemFile);
-
-	return 0;
-}
-
-
-int convertLemToTxt(char fileName[MAX_LEN + 4], FILE *lemPtr)
-{
-	int fileExt;
-	for (int i = 0; i < MAX_LEN - 1; i++)
-	{
-		if (fileName[i] == '.')
-		{
-			fileExt = i;
-			i = MAX_LEN;
-		}
-	}
-
-	if (fileName[fileExt] != '.')
-	{
-		return INVALID_DATA;
-	}
-
-	if (fileName[fileExt + 1] != 'l' || fileName[fileExt + 2] != 'e' || fileName[fileExt + 3] != 'm' || fileName[fileExt + 4] != 0)
-	{
-		return INVALID_DATA;
-	}
-
-
-	return 0;
-}
-
-
-
 int saveLevel(World *gameWorld)
 {
 	// BROKEN
@@ -185,13 +134,150 @@ int saveLevel(World *gameWorld)
 }
 
 
+int lemon_Modulo(int x, int N)
+{
+	if (N < 1)
+	{
+		return 0;
+	}
+
+	return ((x % N) + N) % N;
+}
+
+
+FILE* convertTxtToLem(char FileName[MAX_LEN], FILE *txtPtr)
+{
+	if (txtPtr == NULL)
+	{
+		return NULL;
+	}
+
+	fseek(txtPtr, 0, SEEK_SET);
+
+	char newFileName[MAX_LEN + 4];
+	strcpy(newFileName, FileName);
+	strcat(newFileName, ".lem");
+
+	FILE *newLemFile;
+	newLemFile = fopen(newFileName, "wb");
+
+	if (newLemFile == NULL)
+	{
+		printf("Couldn't open file (%s)! \n", newFileName);
+		return NULL;
+	}
+
+
+	int i = 0;
+	char currentBlock[8] = {0};
+
+	while(i < 800000 && feof(txtPtr) == 0)
+	{
+		fread(currentBlock, sizeof(char), 2, txtPtr);
+
+		if (feof(txtPtr))
+		{
+			i = 9999;
+			continue;
+		}
+
+
+		int offset = (i + 256) % ENCRYPT_OFFSET;
+
+		currentBlock[0] = lemon_Modulo(currentBlock[0] + offset, 128);	// 100, 4
+		currentBlock[1] = lemon_Modulo(currentBlock[1] - offset, 128);
+
+		printf("Decoded: %d %d %d %c %c \n\n", i, currentBlock[0], currentBlock[1], currentBlock[0], currentBlock[1]);
+
+		fwrite(currentBlock, sizeof(char), 2, newLemFile);
+
+		i++;
+	}
+
+	fclose(newLemFile);
+
+	return txtPtr;
+}
+
+
+FILE* convertLemToTxt(char fileName[MAX_LEN + 4], FILE *lemPtr)
+{
+	if (lemPtr == NULL)
+	{
+		return NULL;
+	}
+
+	fseek(lemPtr, 0, SEEK_SET);
+
+	int fileExt;
+	for (int i = 0; i < MAX_LEN - 1; i++)
+	{
+		if (fileName[i] == '.')
+		{
+			fileExt = i;
+			i = MAX_LEN;
+		}
+	}
+
+	if (fileName[fileExt] != '.')
+	{
+		return NULL;
+	}
+
+	if (fileName[fileExt + 1] != 'l' || fileName[fileExt + 2] != 'e' || fileName[fileExt + 3] != 'm' || fileName[fileExt + 4] != 0)
+	{
+		return NULL;
+	}
+
+
+	FILE *newTextFile;
+
+	newTextFile = fopen(fileName, "wb");
+
+	if (newTextFile == NULL)
+	{
+		return NULL;
+	}
+
+
+	int i = 0;
+	char currentBlock[8] = {0};
+
+	while(i < 800000 && feof(lemPtr) == 0)
+	{
+		fread(currentBlock, sizeof(char), 2, lemPtr);
+
+		if (feof(lemPtr))
+		{
+			i = 9999;
+			continue;
+		}
+
+		int offset = (i + 256) % ENCRYPT_OFFSET;
+
+		currentBlock[0] = lemon_Modulo(currentBlock[0] - offset, 128);   
+		currentBlock[1] = lemon_Modulo(currentBlock[1] + offset, 128);
+
+		//printf("0 and 1: %d %d %c %c \n\n", currentBlock[0], currentBlock[1], currentBlock[0], currentBlock[1]);
+
+		fwrite(currentBlock, sizeof(char), 2, newTextFile);
+
+		i++;
+	}
+
+	fclose(lemPtr);
+
+	return newTextFile;
+}
+
+
 int loadLevel(World *gameWorld, int level)
 {
 	gameWorld->GameState = LOADING;
 
 	FILE *fPtr;
 
-	char charBuffer[MAX_LEN + 4] = "Level0Data.txt";
+	char charBuffer[MAX_LEN + 4] = "Level0Data.lem";
 	charBuffer[5] = level + 48;
 
 	char path[96] = "LemonData/LevelData/";
@@ -201,12 +287,31 @@ int loadLevel(World *gameWorld, int level)
 
 	if (fPtr == NULL)
 	{
-		printf("Level %d not found.\n", level);
-		gameWorld->GameState = GAMEPLAY;
-		return -1;
-	}
+		strcpy(charBuffer, "Level0Data.txt");
+		charBuffer[5] = level + 48;
 
-	convertLemToTxt(charBuffer, fPtr);
+		strcpy(path, "LemonData/LevelData/");
+		strcat(path, charBuffer);
+
+		fPtr = fopen(path, "rb");
+
+		if (fPtr == NULL)
+		{
+			printf("Level %d not found.\n", level);
+			gameWorld->GameState = GAMEPLAY;
+			return -1;
+		}
+	}
+	else
+	{
+		fPtr = convertLemToTxt(charBuffer, fPtr);
+
+		if (fPtr == NULL)
+		{
+			printf("Could not convert Lem to txt!\n");
+			return ERROR;
+		}
+	}
 
 
 	// Read version number
@@ -215,7 +320,7 @@ int loadLevel(World *gameWorld, int level)
 
 	if (strcmp(charBuffer, "V0.04") != 0)
 	{
-		printf("Level %d load failed: Incompatible version number!\n");
+		printf("Level %d load failed: Incompatible version number! %s\n", charBuffer);
 		fclose(fPtr);
 		gameWorld->GameState = GAMEPLAY;
 		return -1;
@@ -290,11 +395,16 @@ int loadLevel(World *gameWorld, int level)
 	}
 
 
+	strcpy(charBuffer, "Level0Data");
+	charBuffer[5] = level + 48;
+	charBuffer[10] = 0;
+	//convertTxtToLem(charBuffer, fPtr);
+
 	fclose(fPtr);
 
 
 	// Create a default particle object to initilise its sprite set to avoid lag during gameplay 
-	//AddObject(gameWorld->objectList, PARTICLE, 0, 0, SPARKLE, 0, 0, 0, 0);
+	AddObject(gameWorld, PARTICLE, 0, 0, SPARKLE, 0, 0, 0, 0);
 
 	gameWorld->GameState = GAMEPLAY;
 

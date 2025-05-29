@@ -31,6 +31,7 @@
 #define PLAYERWIDTH 32
 
 #define MAX_LEN 80
+#define ENCRYPT_OFFSET 600
 
 #define IS_DEFINED 1
 #endif

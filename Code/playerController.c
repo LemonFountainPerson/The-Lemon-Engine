@@ -307,9 +307,9 @@ int playerJump(PlayerData *player, int hAxis, int vAxis)
 	{
 		LemonPlaySound("Jump", "Player", PLAYER_SFX, 1.0);
 				
-		if (hAxis != 0)
+		if (hAxis == player->xVelocity/fabs(player->xVelocity) && fabs(player->PhysicsXVelocity) < fabs(player->xVelocity))
 		{
-			player->PhysicsXVelocity = 0.0;
+			player->xVelocity += player->PhysicsXVelocity;
 		}
 	}
 
@@ -782,10 +782,6 @@ int checkIfGrounded(World *gameWorld, PlayerData *player)
 
 	player->direction = 1.5707963268;
 
-	if (player->inAir == 0 && fabs(player->xVelocity) > 0.1)
-	{
-		player->PhysicsXVelocity = 0.0;
-	}
 
 	return 0;
 

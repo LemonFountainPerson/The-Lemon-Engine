@@ -26,9 +26,9 @@ TO DO:
 (In order of importance)
 
 - Fix slope collision - NEW SYSTEM!!!!
+- Design HUD/menu system 
 - Add decoding/encoding function for txt -> lem files
-- Design HUD/menu system (??)
-- Add text box like rpg games
+- Add text box like rpg maker
 - Add cutscene manager
 
 *\

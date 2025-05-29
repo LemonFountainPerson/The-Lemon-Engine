@@ -16,9 +16,11 @@ int switchLevel(World *gameWorld, int level);
 
 int saveLevel(World *gameWorld);
 
-int convertTxtToLem(char FileName[MAX_LEN], FILE *txtPtr);
+int lemon_Modulo(int x, int N);
 
-int convertLemToTxt(char fileName[MAX_LEN + 4], FILE *lemPtr);
+FILE* convertTxtToLem(char FileName[MAX_LEN], FILE *txtPtr);
+
+FILE* convertLemToTxt(char fileName[MAX_LEN + 4], FILE *lemPtr);
 
 
 int loadObject(World *gameWorld, FILE *fPtr);

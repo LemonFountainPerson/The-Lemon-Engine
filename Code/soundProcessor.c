@@ -98,7 +98,7 @@ int InitSound(const char *pathPtr, SoundInstance *SoundChannel, double volume)
 
 	SDL_PutAudioStreamData(SoundChannel->stream, audioBuffer, (int)SoundChannel->wav_data_len);
 	
-	SDL_free(audioBuffer);
+	free(audioBuffer);
 
 	return 0;
 }
