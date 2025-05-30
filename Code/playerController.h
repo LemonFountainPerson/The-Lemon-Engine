@@ -40,7 +40,7 @@ Object* OverlappingObject(PlayerData *player, World *gameWorld);
 
 
 
-int collideType(PlayerData *player, World *gameWorld, int objectID);
+int HandleGroundSlopeCollision(PlayerData *Player, Object *inputObject, double slopeFloor);
 
 
 int checkIfGrounded(World *gameWorld, PlayerData *player);

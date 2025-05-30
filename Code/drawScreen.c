@@ -87,8 +87,8 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 	// Correct Offsets
 	xDraw = correct(xOffset, 0, width - 1);
 	yDraw = correct(yOffset, 0, height - 1);
-	xDraw2 = correct(PLAYERWIDTH + xOffset, 0, width - 1);
-	yDraw2 = correct(PLAYERHEIGHT + yOffset, 0, height - 1);
+	xDraw2 = correct(player->xSize + xOffset, 0, width - 1);
+	yDraw2 = correct(player->ySize + yOffset, 0, height - 1);
 
 	// Player Hitbox
 	if (gameWorld->drawHitboxes == 0)

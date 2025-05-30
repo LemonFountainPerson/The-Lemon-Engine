@@ -1654,21 +1654,19 @@ int UpdateVerticalPlatform(PlayerData *player, Object *platform)
 
 int boxOverlapsPlayer(PlayerData *player, double X1, double X2, double Y1, double Y2)
 {
-	return !((int)player->xPos >= (int)X2 || (int)(player->xPos + PLAYERWIDTH) <= (int)X1 || (int)player->yPos >= (int)Y2 || (int)(player->yPos + PLAYERHEIGHT) <= (int)Y1);
+	return !((int)player->xPos >= (int)X2 || (int)(player->xPos + player->xSize) <= (int)X1 || (int)player->yPos >= (int)Y2 || (int)(player->yPos + player->ySize) <= (int)Y1);
 }
 
 
 int boxOverlapsPlayerFeet(PlayerData *player, double X1, double X2, double Y1, double Y2)
 {
-	return !(player->xPos >= X2 || (player->xPos + PLAYERWIDTH) <= X1 || (player->yPos - 8) >= Y2 || (player->yPos + 8) <= Y1);
+	return !(player->xPos >= X2 || (player->xPos + player->xSize) <= X1 || (player->yPos - 8) >= Y2 || (player->yPos + 8) <= Y1);
 }
 
 
 int rightSlopeOverlapsPlayer(PlayerData *player, Object *inputObject)
 {
-	return 0;
-
-	double slopeFloor = ((player->xPos + PLAYERWIDTH - inputObject->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize));
+	double slopeFloor = ((player->xPos + player->xSize - inputObject->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize));
 
 	if (slopeFloor > inputObject->ySize)
 	{
@@ -1677,14 +1675,12 @@ int rightSlopeOverlapsPlayer(PlayerData *player, Object *inputObject)
 
 	double relativePlayerPos = player->yPos - inputObject->yPos;
 
-	return !(relativePlayerPos >= slopeFloor || relativePlayerPos < 0 || (int)player->xPos >= (int)(inputObject->xPos + inputObject->xSize) || (int)(player->xPos + PLAYERWIDTH) <= (int)inputObject->xPos);
+	return !(relativePlayerPos >= slopeFloor || relativePlayerPos < 0 || (int)player->xPos >= (int)(inputObject->xPos + inputObject->xSize) || (int)(player->xPos + player->xSize) <= (int)inputObject->xPos);
 }
 
 
 int leftSlopeOverlapsPlayer(PlayerData *player, Object *inputObject)
 {
-	return 0;
-
 	double slopeFloor = ((inputObject->xSize - (player->xPos - inputObject->xPos)) * ((double)inputObject->ySize/(double)inputObject->xSize));
 
 	if (slopeFloor > inputObject->ySize)
@@ -1694,7 +1690,7 @@ int leftSlopeOverlapsPlayer(PlayerData *player, Object *inputObject)
 
 	double relativePlayerPos = player->yPos - inputObject->yPos;
 
-	return !(relativePlayerPos >= slopeFloor || relativePlayerPos < 0 || (int)player->xPos >=  (int)(inputObject->xPos + inputObject->xSize) || (int)(player->xPos + PLAYERWIDTH) < (int)inputObject->xPos);
+	return !(relativePlayerPos >= slopeFloor || relativePlayerPos < 0 || (int)player->xPos >= (int)(inputObject->xPos + inputObject->xSize) || (int)(player->xPos + player->xSize) <= (int)inputObject->xPos);
 }
 
 
@@ -1902,7 +1898,7 @@ int ResolvePlayerToObjectCollisionX(Object *inputObject, PlayerData *player, dou
 	{
 		if (player->xPos < ((prevXPosBuffer + prevXPosRightBuffer) / 2.0) )
 		{
-			player->xPos = ObjXPos - PLAYERWIDTH;
+			player->xPos = ObjXPos - player->xSize;
 		}
 		else
 		{
@@ -1932,7 +1928,7 @@ int ResolvePlayerToObjectCollisionY(Object *inputObject, PlayerData *player, dou
 	switch(inputObject->solid)
 	{
 		case 2:
-			ObjYPosTop = ((player->xPos + PLAYERWIDTH - inputObject->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize));
+			ObjYPosTop = ((player->xPos + player->xSize - inputObject->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize));
 			prevYPosTopBuffer = prevObjYPos;
 			result = rightSlopeOverlapsPlayer(player, inputObject);
 			break;
@@ -1960,7 +1956,7 @@ int ResolvePlayerToObjectCollisionY(Object *inputObject, PlayerData *player, dou
 	{
 		if (player->yPos < ((prevYPosBuffer + prevYPosTopBuffer) / 2.0) )
 		{
-			player->yPos = ObjYPos - PLAYERHEIGHT;
+			player->yPos = ObjYPos - player->ySize;
 		}
 		else
 		{

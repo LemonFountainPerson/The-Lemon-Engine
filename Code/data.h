@@ -252,6 +252,9 @@ struct playerData
 	double maxYVel;
 	double maxXVel;
 
+	int xSize;
+	int ySize;
+
 	int xFlip;
 	int currentSprite;
 	struct sprite *spriteBuffer;

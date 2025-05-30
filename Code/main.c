@@ -25,7 +25,7 @@ TO DO:
 
 (In order of importance)
 
-- Fix slope collision - NEW SYSTEM!!!!
+- Fix memory leak issue with sdl allocating new memory for every new sound played
 - Design HUD/menu system 
 - Add decoding/encoding function for txt -> lem files
 - Add text box like rpg maker

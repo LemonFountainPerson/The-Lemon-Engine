@@ -364,7 +364,7 @@ void DebugControls(World *GameWorld, PlayerData *player, int keyboard[256], Obje
 		click0 = 0;
 	}
 
-	if (displayPlayerData == 1)
+	if (displayPlayerData == 1 && GameWorld->GamePaused == 0)
 	{
     	printf("Player: X: %.2lf Y: %.2lf xVel: %lf yVel: %lf Direction: %lf\n", player->xPos, player->yPos, player->xVelocity, player->yVelocity, player->direction);
 	}
