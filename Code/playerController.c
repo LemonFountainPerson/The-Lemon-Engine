@@ -323,37 +323,57 @@ int playerJump(PlayerData *player, int hAxis, int vAxis)
 }
 
 
-int HandleGroundSlopeCollision(PlayerData *Player, Object *inputObject, double slopeFloor)
+int HandleGroundSlopeCollision(World *GameWorld, Object *inputObject, double slope)
 {
+	if (GameWorld->Player == NULL || inputObject == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	PlayerData *Player = GameWorld->Player;
+
 	Object *objectCheck = NULL;
 	int i = 0;
-	player->xPos = prevXPos;
 
-	while (objectCheck == NULL && i < (int)fabs(player->xVelocity * deltaTime))
+
+	while (objectCheck == NULL && i < (int)fabs(Player->xVelocity * deltaTime))
 	{
-		player->xPos += player->xVelocity/fabs(player->xVelocity);
+		Player->xPos += Player->xVelocity/fabs(Player->xVelocity);
 		i++;
 
 		int slopeClimb = 0;
-		while (rightSlopeOverlapsPlayer(player, currentObject) == 1 && slopeClimb < 6)
+		while (rightSlopeOverlapsPlayer(Player, inputObject) == 1 && slopeClimb < 6)
 		{
-			player->yPos++;
+			Player->yPos++;
 			slopeClimb++;
 		}
 
-		objectCheck = OverlappingObject(player, gameWorld);
+		objectCheck = OverlappingObject(Player, GameWorld);
 	}
 
 	if (objectCheck != NULL)
 	{
-		player->xPos -= player->xVelocity/fabs(player->xVelocity);
+		Player->xPos -= Player->xVelocity/fabs(Player->xVelocity);
 
-		if (slopeFloor > currentObject->ySize)
+		double slopeFloor;
+
+		switch(inputObject->solid)
 		{
-			slopeFloor = currentObject->ySize;
+			case 3:
+			slopeFloor = (inputObject->xSize - (Player->xPos - inputObject->xPos)) * slope;
+			break;
+
+			default:
+			slopeFloor = (Player->xPos + Player->xSize - inputObject->xPos) * slope;
+			break;
 		}
 
-		player->yPos = slopeFloor + objY;
+		if (slopeFloor > inputObject->ySize)
+		{
+			slopeFloor = inputObject->ySize;
+		}
+
+		Player->yPos = slopeFloor + inputObject->yPos;
 	}	
 
 	return 0;
@@ -420,7 +440,42 @@ int MovePlayerX(PlayerData *player, World *gameWorld)
 				}
 				else
 				{
-					HandleGroundSlopeCollision(player, currentObject, (player->xPos + player->xSize - objX) * slope);
+					player->xPos = prevXPos;
+					
+					Object *objectCheck = NULL;
+					int i = 0;
+
+
+					while (objectCheck == NULL && i < round(fabs(player->xVelocity * deltaTime)) )
+					{
+						player->xPos += player->xVelocity/fabs(player->xVelocity) * sin(player->direction);
+						i++;
+
+						int slopeClimb = 0;
+						while (rightSlopeOverlapsPlayer(player, currentObject) == 1 && slopeClimb < 5)
+						{
+							player->yPos += player->xVelocity/fabs(player->xVelocity);
+							slopeClimb++;
+						}
+
+						objectCheck = OverlappingObject(player, gameWorld);
+					}
+
+					if (objectCheck != NULL)
+					{
+						player->xPos -= player->xVelocity/fabs(player->xVelocity) * sin(player->direction);
+
+						double slopeFloor = (player->xPos + player->xSize - currentObject->xPos) * slope;
+
+						if (slopeFloor > currentObject->ySize)
+						{
+							slopeFloor = currentObject->ySize;
+						}
+
+						player->yPos = slopeFloor + currentObject->yPos;
+
+						player->xVelocity = 0.0;
+					}	
 				}
 
 
@@ -438,7 +493,42 @@ int MovePlayerX(PlayerData *player, World *gameWorld)
 				}
 				else
 				{
-					HandleGroundSlopeCollision(player, currentObject,(currentObject->xSize - (player->xPos - objX)) * slope);
+					player->xPos = prevXPos;
+					
+					Object *objectCheck = NULL;
+					int i = 0;
+
+
+					while (objectCheck == NULL && i < round(fabs(player->xVelocity * deltaTime)) )
+					{
+						player->xPos += player->xVelocity/fabs(player->xVelocity) * sin(player->direction);
+						i++;
+
+						int slopeClimb = 0;
+						while (leftSlopeOverlapsPlayer(player, currentObject) == 1 && slopeClimb < 5)
+						{
+							player->yPos -= player->xVelocity/fabs(player->xVelocity) * sin(player->direction);
+							slopeClimb++;
+						}
+
+						objectCheck = OverlappingObject(player, gameWorld);
+					}
+
+					if (objectCheck != NULL)
+					{
+						player->xPos -= player->xVelocity/fabs(player->xVelocity) * sin(player->direction);
+
+						double slopeFloor = (currentObject->xSize - (player->xPos - currentObject->xPos)) * slope;
+
+						if (slopeFloor > currentObject->ySize)
+						{
+							slopeFloor = currentObject->ySize;
+						}
+
+						player->yPos = slopeFloor + currentObject->yPos;
+
+						player->xVelocity = 0.0;
+					}	
 				}
 
 			} break;
