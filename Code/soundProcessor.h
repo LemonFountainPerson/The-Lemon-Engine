@@ -9,7 +9,7 @@ int InitSound(const char *pathPtr, int channel, double volume);
 
 int IterateAudio(void);
 
-int deleteSoundInstance(SoundInstance **inputSound);
+int deleteSoundInstance(SoundInstance *inputSound);
 
 int initialiseAudio(void);
 

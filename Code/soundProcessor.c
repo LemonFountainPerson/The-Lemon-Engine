@@ -69,7 +69,7 @@ int InitSound(const char *pathPtr, int channel, double volume)
 			if (k > MAX_SOUNDS_PER_CHANNEL)
 			{
 				printf("Out of space (%d sounds) for new sound instance in channel (%d)\n", k, channel);
-				deleteSoundInstance(&newSound);
+				deleteSoundInstance(newSound);
 				return ACTION_DISABLED;
 			}
 		}
@@ -96,7 +96,7 @@ int InitSound(const char *pathPtr, int channel, double volume)
 	if (!SDL_LoadWAV(pathPtr, &spec, &newSound->wav_data, &newSound->wav_data_len))
 	{
 		printf("Couldn't load audio file (%s)\n", SDL_GetError());
-		deleteSoundInstance(&newSound);
+		deleteSoundInstance(newSound);
 		return MISSING_DATA;
 	}
 
@@ -107,7 +107,7 @@ int InitSound(const char *pathPtr, int channel, double volume)
 	if (newSound->stream == NULL)
 	{
 		printf("Couldn't create audio stream %d (%s)\n", audio_device, SDL_GetError());
-		deleteSoundInstance(&newSound);
+		deleteSoundInstance(newSound);
 		return LEMON_ERROR;
 	}
 
@@ -115,7 +115,7 @@ int InitSound(const char *pathPtr, int channel, double volume)
 	if (SDL_BindAudioStream(audio_device, newSound->stream) == 0)
 	{
 		printf("Couldn't bind audio stream (%s)\n", SDL_GetError());
-		deleteSoundInstance(&newSound);
+		deleteSoundInstance(newSound);
 		return LEMON_ERROR;
 	}
 
@@ -125,14 +125,14 @@ int InitSound(const char *pathPtr, int channel, double volume)
 	if (audioBuffer == NULL)
 	{
 		printf("Couldn't allocate audio buffer (%s)\n", SDL_GetError());
-		deleteSoundInstance(&newSound);
+		deleteSoundInstance(newSound);
 		return LEMON_ERROR;
 	}
 
 	SDL_MixAudio(audioBuffer, newSound->wav_data, spec.format, newSound->wav_data_len, volume);
 
 
-	SDL_PutAudioStreamData(newSound->stream, audioBuffer, (int)newSound->wav_data_len);
+	//SDL_PutAudioStreamData(newSound->stream, audioBuffer, (int)newSound->wav_data_len);
 	
 
 	SDL_free(audioBuffer);
@@ -151,6 +151,8 @@ int IterateAudio(void)
 		SoundInstance *currentSound;
 		currentSound = SoundChannels[i];
 
+		int k = 0;
+
 		while (currentSound != NULL)
 		{
 			int streamResult = SDL_GetAudioStreamQueued(currentSound->stream);
@@ -160,14 +162,20 @@ int IterateAudio(void)
 				SDL_PutAudioStreamData(currentSound->stream, currentSound->wav_data, (int)currentSound->wav_data_len);
 			}
 
-			if (i != LOOP_CHANNEL && streamResult <= 1000)
+			if (i != LOOP_CHANNEL && streamResult <= 10)
 			{
-				deleteSoundInstance(&currentSound);
+				SoundInstance *deleteSound;
+				deleteSound = currentSound;
+				currentSound = currentSound->nextSound;
+				deleteSoundInstance(deleteSound);
 			}
 			else
 			{
 				currentSound = currentSound->nextSound;
 			}
+			
+
+			k++;
 			
 		}
 	}
@@ -177,22 +185,17 @@ int IterateAudio(void)
 }
 
 
-int deleteSoundInstance(SoundInstance **inputSound)
+int deleteSoundInstance(SoundInstance *inputSound)
 {
-	if (*inputSound == NULL || inputSound == NULL)
+	if (inputSound == NULL)
 	{
 		return INVALID_DATA;
 	}
 
-	SoundInstance *previousSound = (*inputSound)->prevSound;
-	SoundInstance *nextSound = (*inputSound)->nextSound;
+	SoundInstance *previousSound = inputSound->prevSound;
+	SoundInstance *nextSound = inputSound->nextSound;
 
 
-	SoundInstance *tempPtr;
-	tempPtr = (*inputSound);
-
-	*inputSound = nextSound;
-	
 	if (nextSound != NULL)
 	{
 		nextSound->prevSound = previousSound;
@@ -204,16 +207,18 @@ int deleteSoundInstance(SoundInstance **inputSound)
 	}
 	else
 	{
-		SoundChannels[tempPtr->channelID] = nextSound;
+		SoundChannels[inputSound->channelID] = nextSound;
 	}
 	
 
-	tempPtr->nextSound = NULL;
-	tempPtr->prevSound = NULL;
+	inputSound->nextSound = NULL;
+	inputSound->prevSound = NULL;
 
-	SDL_UnbindAudioStream(tempPtr->stream);
+	SDL_ClearAudioStream(inputSound->stream);
 
-	SDL_free(tempPtr);
+	SDL_free(inputSound->wav_data);
+
+	SDL_free(inputSound);
 
 	return 0;
 }
@@ -335,7 +340,10 @@ int CleanUpAudioData(void)
 		int k = 0;
 		while (SoundChannels[i] != NULL && k < MAX_SOUNDS_PER_CHANNEL)
 		{
-			deleteSoundInstance(&currentSound);
+			SoundInstance *deleteSound;
+			deleteSound = currentSound;
+			currentSound = currentSound->nextSound;
+			deleteSoundInstance(deleteSound);
 			k++;
 		}
 

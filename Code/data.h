@@ -14,7 +14,7 @@
 
 #include <SDL3/SDL.h>
 #define CHANNEL_COUNT 12
-#define MAX_SOUNDS_PER_CHANNEL 16
+#define MAX_SOUNDS_PER_CHANNEL 8
 
 #define V_RESOLUTION 720
 #define H_RESOLUTION 1280
@@ -69,10 +69,10 @@ enum lemonGameState {
 
 enum ChannelNames {
 	LOOP_CHANNEL = 0,
-	PLAYER_SFX = 4,
-	OBJECT_SFX = 6,
-	ENEMIES_SFX = 7,
-	SPEECH = 10
+	SPEECH = 1,
+	PLAYER_SFX = 2,
+	OBJECT_SFX = 3,
+	ENEMIES_SFX = 4,
 };
 
 
