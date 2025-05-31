@@ -63,7 +63,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         WS_EX_CLIENTEDGE,
         g_szClassName,
         "The Lemon Engine",
-        WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+        WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME | WS_VISIBLE,
         CW_USEDEFAULT, CW_USEDEFAULT, H_RESOLUTION, V_RESOLUTION,
         NULL, NULL, hInstance, NULL);
 
@@ -109,14 +109,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	Object *testObject = GameWorld->objectList->lastObject;
 
 	
-   // LemonPlaySound("StartUp", "Music", MUSIC_CHANNEL, 0.7);
+   //LemonPlaySound("StartUp", "Music", LOOP_CHANNEL, 0.7);
 
-    StopAudioInChannel(MUSIC_CHANNEL);
 
 
     // Game Loop
-    while(gameRunning == 1)
-    {
+   while(gameRunning == 1)
+   {
         // Window messages
         while(PeekMessage(&Msg, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&Msg); }
 

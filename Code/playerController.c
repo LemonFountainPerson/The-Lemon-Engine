@@ -130,7 +130,7 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 
 	vAxis = (keyboard[LMN_UP] || keyboard['E']) - (keyboard[LMN_DOWN] || keyboard['S']);
 
-	player->yPos += vAxis;
+	player->yVelocity += vAxis;
 
 	if (vAxis < 0 && player->inAir == 0)
 	{

@@ -69,8 +69,6 @@ int RunLemonEngine(void)
 	Object *testObject = GameWorld->objectList->lastObject;
 
 	
-    LemonPlaySound("StartUp", "Music", MUSIC_CHANNEL, 0.8);
-
     // Game Loop
     while(gameRunning == 1)
     {

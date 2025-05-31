@@ -36,13 +36,8 @@ int LemonPlaySound(char fileName[], char folderName[], int channel, double volum
 		return -1;
 	}
 
-	// This is to stop looping sounds playing over each other, as StopAudio only works on most recently made sound
-	if (channel < LOOP_CHANNELS)
-	{
-		StopAudioInChannel(channel);
-	}
 
-	InitSound(pathPtr, &AllSounds[channel], volume);
+	InitSound(pathPtr, channel, volume);
 
 	strcpy(lastPlayedSound, fileName);
 
@@ -50,55 +45,97 @@ int LemonPlaySound(char fileName[], char folderName[], int channel, double volum
 }
 
 
-int InitSound(const char *pathPtr, SoundInstance *SoundChannel, double volume)
+int InitSound(const char *pathPtr, int channel, double volume)
 {
-	if (SoundChannel == NULL)
+	SoundInstance* currentSound = SoundChannels[channel];
+
+	SoundInstance *newSound = malloc(sizeof(SoundInstance));
+
+	if (newSound == NULL)
 	{
-		printf("Failed to initialise Sound channel pointer.\n");
-		return -1;
+		printf("Failed to initialise new sound instance.\n");
+		return LEMON_ERROR;
 	}
+
+	if (currentSound != NULL)
+	{
+		int k = 0;
+
+		while (currentSound->nextSound != NULL)
+		{
+			currentSound = currentSound->nextSound;
+			k++;
+
+			if (k > MAX_SOUNDS_PER_CHANNEL)
+			{
+				printf("Out of space (%d sounds) for new sound instance in channel (%d)\n", k, channel);
+				deleteSoundInstance(&newSound);
+				return ACTION_DISABLED;
+			}
+		}
+
+		currentSound->nextSound = newSound;
+		newSound->prevSound = currentSound;
+
+	}
+	else
+	{
+		SoundChannels[channel] = newSound;
+		newSound->prevSound = NULL;
+	}
+	
+	newSound->nextSound = NULL;
+	newSound->channelID = channel;
+	newSound->wav_data = 0;
+	newSound->wav_data_len = 0;
+	newSound->stream = 0;
 
 
 	SDL_AudioSpec spec;
 
-	if (!SDL_LoadWAV(pathPtr, &spec, &SoundChannel->wav_data, &SoundChannel->wav_data_len))
+	if (!SDL_LoadWAV(pathPtr, &spec, &newSound->wav_data, &newSound->wav_data_len))
 	{
 		printf("Couldn't load audio file (%s)\n", SDL_GetError());
-		return -1;
+		deleteSoundInstance(&newSound);
+		return MISSING_DATA;
 	}
 
 
 	// Initialise an audio stream
-	SoundChannel->stream = SDL_CreateAudioStream(&spec, NULL);
+	newSound->stream = SDL_CreateAudioStream(&spec, NULL);
 
-	if (SoundChannel->stream == NULL)
+	if (newSound->stream == NULL)
 	{
 		printf("Couldn't create audio stream %d (%s)\n", audio_device, SDL_GetError());
-		return -1;
+		deleteSoundInstance(&newSound);
+		return LEMON_ERROR;
 	}
 
 
-	if (SDL_BindAudioStream(audio_device, SoundChannel->stream) == 0)
+	if (SDL_BindAudioStream(audio_device, newSound->stream) == 0)
 	{
 		printf("Couldn't bind audio stream (%s)\n", SDL_GetError());
-		return -1;
+		deleteSoundInstance(&newSound);
+		return LEMON_ERROR;
 	}
 
 
-	Uint8 *audioBuffer = (Uint8 *)calloc((int)SoundChannel->wav_data_len, 1);
+	Uint8 *audioBuffer = (Uint8 *)calloc((int)newSound->wav_data_len, 1);
 
 	if (audioBuffer == NULL)
 	{
 		printf("Couldn't allocate audio buffer (%s)\n", SDL_GetError());
-		return -1;
+		deleteSoundInstance(&newSound);
+		return LEMON_ERROR;
 	}
 
-	SDL_MixAudio(audioBuffer, SoundChannel->wav_data, spec.format, SoundChannel->wav_data_len, volume);
+	SDL_MixAudio(audioBuffer, newSound->wav_data, spec.format, newSound->wav_data_len, volume);
 
 
-	SDL_PutAudioStreamData(SoundChannel->stream, audioBuffer, (int)SoundChannel->wav_data_len);
+	SDL_PutAudioStreamData(newSound->stream, audioBuffer, (int)newSound->wav_data_len);
 	
-	free(audioBuffer);
+
+	SDL_free(audioBuffer);
 
 	return 0;
 }
@@ -108,20 +145,75 @@ int IterateAudio(void)
 {
 	lastPlayedSound[0] = 0;
 
-	int i = 0;
 
-	while (i < SDL_arraysize(AllSounds))
+	for (int i = 0; i < CHANNEL_COUNT; i++)
 	{
-		int streamResult = SDL_GetAudioStreamQueued(AllSounds[i].stream);
+		SoundInstance *currentSound;
+		currentSound = SoundChannels[i];
 
-		if (i < LOOP_CHANNELS && streamResult < ( (int)AllSounds[i].wav_data_len) )
-		{			
-			SDL_PutAudioStreamData(AllSounds[i].stream, AllSounds[i].wav_data, (int)AllSounds[i].wav_data_len);
+		while (currentSound != NULL)
+		{
+			int streamResult = SDL_GetAudioStreamQueued(currentSound->stream);
+
+			if (i == LOOP_CHANNEL && streamResult < ( (int)currentSound->wav_data_len) )
+			{			
+				SDL_PutAudioStreamData(currentSound->stream, currentSound->wav_data, (int)currentSound->wav_data_len);
+			}
+
+			if (i != LOOP_CHANNEL && streamResult <= 1000)
+			{
+				deleteSoundInstance(&currentSound);
+			}
+			else
+			{
+				currentSound = currentSound->nextSound;
+			}
+			
 		}
+	}
+	
 
-		i++;
+	return 0;
+}
+
+
+int deleteSoundInstance(SoundInstance **inputSound)
+{
+	if (*inputSound == NULL || inputSound == NULL)
+	{
+		return INVALID_DATA;
 	}
 
+	SoundInstance *previousSound = (*inputSound)->prevSound;
+	SoundInstance *nextSound = (*inputSound)->nextSound;
+
+
+	SoundInstance *tempPtr;
+	tempPtr = (*inputSound);
+
+	*inputSound = nextSound;
+	
+	if (nextSound != NULL)
+	{
+		nextSound->prevSound = previousSound;
+	}
+
+	if (previousSound != NULL)
+	{
+		previousSound->nextSound = nextSound;
+	}
+	else
+	{
+		SoundChannels[tempPtr->channelID] = nextSound;
+	}
+	
+
+	tempPtr->nextSound = NULL;
+	tempPtr->prevSound = NULL;
+
+	SDL_UnbindAudioStream(tempPtr->stream);
+
+	SDL_free(tempPtr);
 
 	return 0;
 }
@@ -129,8 +221,16 @@ int IterateAudio(void)
 
 int StopAudioInChannel(int channel)
 {
-	SDL_UnbindAudioStream(AllSounds[channel].stream);
+	SoundInstance *currentSound;
+	currentSound = SoundChannels[channel];
 
+	while (currentSound != NULL)
+	{
+		SDL_UnbindAudioStream(currentSound->stream);
+
+		currentSound = currentSound->nextSound;
+	}
+	
 	return 0;
 }
 
@@ -139,7 +239,15 @@ int PauseAllAudio(void)
 {
 	for (int i = 0; i < CHANNEL_COUNT; i++)
 	{
-		SDL_PauseAudioStreamDevice(AllSounds[i].stream);
+		SoundInstance *currentSound;
+		currentSound = SoundChannels[i];
+
+		while (currentSound != NULL)
+		{
+			SDL_PauseAudioStreamDevice(currentSound->stream);
+
+			currentSound = currentSound->nextSound;
+		}
 	}
 	
 	return 0;
@@ -150,7 +258,15 @@ int ResumeAllAudio(void)
 {
 	for (int i = 0; i < CHANNEL_COUNT; i++)
 	{
-		SDL_ResumeAudioStreamDevice(AllSounds[i].stream);
+		SoundInstance *currentSound;
+		currentSound = SoundChannels[i];
+
+		while (currentSound != NULL)
+		{
+			SDL_ResumeAudioStreamDevice(currentSound->stream);
+
+			currentSound = currentSound->nextSound;
+		}
 	}
 	
 	return 0;
@@ -159,16 +275,32 @@ int ResumeAllAudio(void)
 
 int PauseChannel(int channel)
 {
-	SDL_PauseAudioStreamDevice(AllSounds[channel].stream);
-	
+	SoundInstance *currentSound;
+	currentSound = SoundChannels[channel];
+
+	while (currentSound != NULL)
+	{
+		SDL_PauseAudioStreamDevice(currentSound->stream);
+
+		currentSound = currentSound->nextSound;
+	}
+
 	return 0;
 }
 
 
 int ResumeChannel(int channel)
 {
-	SDL_ResumeAudioStreamDevice(AllSounds[channel].stream);
-	
+	SoundInstance *currentSound;
+	currentSound = SoundChannels[channel];
+
+	while (currentSound != NULL)
+	{
+		SDL_ResumeAudioStreamDevice(currentSound->stream);
+
+		currentSound = currentSound->nextSound;
+	}
+
 	return 0;
 }
 
@@ -183,6 +315,11 @@ int initialiseAudio(void)
 		return -1;
 	}
 
+	for (int i = 0; i < CHANNEL_COUNT; i++) 
+	{
+        SoundChannels[i] = NULL;
+    }
+
 	return 0;
 }
 
@@ -190,15 +327,21 @@ int initialiseAudio(void)
 int CleanUpAudioData(void)
 {
 	// Close Audio devices
-	for (int i = 0; i < SDL_arraysize(AllSounds); i++) 
+	for (int i = 0; i < CHANNEL_COUNT; i++) 
 	{
-        if (AllSounds[i].stream) 
-		{
-            SDL_DestroyAudioStream(AllSounds[i].stream);
-        }
+		SoundInstance *currentSound;
+		currentSound = SoundChannels[i];
 
-        SDL_free(AllSounds[i].wav_data);
+		int k = 0;
+		while (SoundChannels[i] != NULL && k < MAX_SOUNDS_PER_CHANNEL)
+		{
+			deleteSoundInstance(&currentSound);
+			k++;
+		}
+
     }
+
+	SDL_CloseAudioDevice(audio_device);
 
 	return 0;
 }

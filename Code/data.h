@@ -14,7 +14,7 @@
 
 #include <SDL3/SDL.h>
 #define CHANNEL_COUNT 12
-#define LOOP_CHANNELS 4
+#define MAX_SOUNDS_PER_CHANNEL 16
 
 #define V_RESOLUTION 720
 #define H_RESOLUTION 1280
@@ -68,7 +68,7 @@ enum lemonGameState {
 };
 
 enum ChannelNames {
-	MUSIC_CHANNEL = 0,
+	LOOP_CHANNEL = 0,
 	PLAYER_SFX = 4,
 	OBJECT_SFX = 6,
 	ENEMIES_SFX = 7,
@@ -325,12 +325,17 @@ struct world
 };
 
 
-typedef struct
+struct soundInstance
 {
 	Uint8 *wav_data;
 	Uint32 wav_data_len;
 	SDL_AudioStream *stream;
-} SoundInstance;
+
+	int channelID;
+	struct soundInstance *nextSound;
+	struct soundInstance *prevSound;
+};
+
 
 typedef struct {
 	int width;
@@ -340,6 +345,7 @@ typedef struct {
 
 
 
+typedef struct soundInstance SoundInstance;
 typedef struct sprite Sprite;
 typedef struct spriteSet SpriteSet;
 typedef struct bgsprite BGSprite;
@@ -348,6 +354,7 @@ typedef struct playerData PlayerData;
 typedef struct objectController ObjectController;
 typedef struct object Object;
 typedef struct world World;
+
 
 typedef enum lemonGameState LemonGameState;
 typedef enum FunctionResult FunctionResult;
@@ -360,7 +367,7 @@ typedef enum GateSwitch GateSwitch;
 typedef enum solidType SolidType;
 
 
-static SoundInstance AllSounds[CHANNEL_COUNT];
+static SoundInstance* SoundChannels[CHANNEL_COUNT];
 
 static int gameRunning = 1;
 
