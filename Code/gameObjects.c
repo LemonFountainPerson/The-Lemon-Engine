@@ -913,7 +913,7 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 			deleteObject(objectList, &currentObject);
 			continue;
 		}
-		
+	
 		// Move object
 		moveObjectX(currentObject, gameWorld->Player);
 
@@ -1273,7 +1273,6 @@ int UpdateVerticalGate(Object *gate, ObjectController *objectList, PlayerData *p
 		return -1;
 	}
 
-
 	// Evaluate state of gate
 	gateControl(gate, objectList);
 
@@ -1286,7 +1285,7 @@ int UpdateVerticalGate(Object *gate, ObjectController *objectList, PlayerData *p
 	{
 		case 0:
 		{
-			gate->yPos = closedPosition;
+			SetObjectYPosition(gate, closedPosition, player);
 			gate->yVel = 0.0;
 
 			if (gate->arg2 == 1)
@@ -1326,7 +1325,7 @@ int UpdateVerticalGate(Object *gate, ObjectController *objectList, PlayerData *p
 
 		case 2:
 		{
-			gate->yPos = closedPosition + (gate->ySize * (speed/abs(speed)));
+			SetObjectYPosition(gate, closedPosition + (gate->ySize * (speed/abs(speed))), player);
 			gate->yVel = 0.0;
 
 			if (gate->arg2 == 0)
@@ -1365,7 +1364,6 @@ int UpdateVerticalGate(Object *gate, ObjectController *objectList, PlayerData *p
 		} break;
 	}
 
-
 	return 0;
 }
 
@@ -1395,8 +1393,8 @@ int UpdateHorizontalGate(Object *gate, ObjectController *objectList, PlayerData 
 	{
 		case 0:
 		{
-			gate->yPos = closedPosition;
-			gate->yVel = 0.0;
+			SetObjectXPosition(gate, closedPosition, player);
+			gate->xVel = 0.0;
 
 			if (gate->arg2 == 1)
 			{
@@ -1428,7 +1426,7 @@ int UpdateHorizontalGate(Object *gate, ObjectController *objectList, PlayerData 
 				gate->currentAnimation = 2;
 				gate->animationTick = 0;
 				gate->xVel = 0.0;
-				gate->xPos = closedPosition + (gate->ySize * (speed/abs(speed)));
+				SetObjectXPosition(gate, closedPosition + (gate->xSize * (speed/abs(speed))), player);
 			}
 
 		} break;
@@ -1436,7 +1434,7 @@ int UpdateHorizontalGate(Object *gate, ObjectController *objectList, PlayerData 
 
 		case 2:
 		{
-			gate->xPos = closedPosition + (gate->ySize * (speed/abs(speed)));
+			SetObjectXPosition(gate, closedPosition + (gate->xSize * (speed/abs(speed))), player);
 			gate->xVel = 0.0;
 
 			if (gate->arg2 == 0)
@@ -1470,7 +1468,7 @@ int UpdateHorizontalGate(Object *gate, ObjectController *objectList, PlayerData 
 				gate->currentAnimation = 0;
 				gate->animationTick = 0;
 				gate->xVel = 0.0;
-				gate->xPos = closedPosition;
+				SetObjectXPosition(gate, closedPosition, player);
 			}
 
 		} break;
@@ -1660,7 +1658,7 @@ int boxOverlapsPlayer(PlayerData *player, double X1, double X2, double Y1, doubl
 
 int boxOverlapsPlayerFeet(PlayerData *player, double X1, double X2, double Y1, double Y2)
 {
-	return !(player->xPos >= X2 || (player->xPos + player->xSize) <= X1 || (player->yPos - 8) >= Y2 || (player->yPos + 8) <= Y1);
+	return !((int)player->xPos >= X2 || (int)(player->xPos + player->xSize) <= X1 || (player->yPos - 2) >= Y2 || (player->yPos + 8) <= Y1);
 }
 
 
@@ -1691,6 +1689,77 @@ int leftSlopeOverlapsPlayer(PlayerData *player, Object *inputObject)
 	double relativePlayerPos = player->yPos - inputObject->yPos;
 
 	return !(relativePlayerPos >= slopeFloor || relativePlayerPos < 0 || (int)player->xPos >= (int)(inputObject->xPos + inputObject->xSize) || (int)(player->xPos + player->xSize) <= (int)inputObject->xPos);
+}
+
+
+// returns pointer of object overlapping, NULL if no object is detected
+Object* GetObjectOverlappingPlayer(PlayerData *player, World *gameWorld)
+{
+	Object *currentObject;
+	currentObject = gameWorld->objectList->firstObject;
+
+	if (currentObject == NULL)
+	{
+		return NULL;
+	}
+
+	double objX, objXRight, objY, objYTop;
+
+	while (currentObject != NULL)
+	{
+		int result = 0;
+
+		if (currentObject->layer > FOREGROUND)
+		{
+			currentObject = currentObject->nextObject;
+			continue;
+		}
+
+		result = CheckObjectOverlapsPlayer(player, currentObject);
+
+
+		if (result == 1)
+		{
+			return currentObject;
+		}
+
+		currentObject = currentObject->nextObject;
+	}
+
+	return NULL;
+}
+
+
+int CheckObjectOverlapsPlayer(PlayerData *Player, Object *inputObject)
+{
+	double objX = inputObject->xPos;
+	double objY = inputObject->yPos;
+	double objXRight = objX + inputObject->xSize;
+	double objYTop = objY + inputObject->ySize;
+
+	switch(inputObject->solid)
+	{
+		case 2:
+		{
+			return rightSlopeOverlapsPlayer(Player, inputObject);
+		} break;
+
+		case 3: 
+		{
+			return leftSlopeOverlapsPlayer(Player, inputObject);
+		} break;
+
+		case 0:
+			return 0;
+			break;
+			
+		default:
+		{
+			return boxOverlapsPlayer(Player, objX, objXRight, objY, objYTop);
+		} break;
+	}
+
+	return ERROR;
 }
 
 
@@ -1791,8 +1860,11 @@ int OverlapsObjectAllSolids(ObjectController *objectList, Object *inputObject)
 int OverlapsObject(Object *inputObject, Object *otherObject)
 {
 	int xOverlap, yOverlap;
+
+	int inputXLeft = inputObject->xPos;
 	int inputXRight = inputObject->xPos + inputObject->xSize;
 	int inputYTop = inputObject->yPos + inputObject->ySize;
+
 	int otherXRight = otherObject->xPos + otherObject->xSize;
 	int otherYTop = otherObject->yPos + otherObject->ySize;
 
@@ -1804,9 +1876,9 @@ int OverlapsObject(Object *inputObject, Object *otherObject)
 		{
 			double inputSlope = ((double)inputObject->ySize/(double)inputObject->xSize);
 			
-			if ((otherXRight - inputObject->xPos) * inputSlope < inputObject->ySize)
+			if ((otherXRight - inputXLeft) * inputSlope < inputObject->ySize)
 			{
-				inputYTop = ((otherXRight - inputObject->xPos) * inputSlope) + inputObject->yPos;
+				inputYTop = ((otherXRight - inputXLeft) * inputSlope) + inputObject->yPos;
 			}
 		} break;
 
@@ -1832,19 +1904,19 @@ int OverlapsObject(Object *inputObject, Object *otherObject)
 		case 2:
 		slope = ((double)otherObject->ySize/(double)otherObject->xSize);
 
-		xOverlap = !(inputObject->xPos >= otherXRight || (inputXRight) <= otherObject->xPos);
+		xOverlap = !(inputXLeft >= otherXRight || (inputXRight) <= otherObject->xPos);
 		yOverlap = !((inputObject->yPos - otherObject->yPos) >= ((inputXRight - otherObject->xPos) * slope) || inputObject->yPos >= otherYTop || inputYTop <= otherObject->yPos);
 		break;
 
 		case 3:
 		slope = ((double)otherObject->ySize/(double)otherObject->xSize);
 
-		xOverlap = !(inputObject->xPos >= otherXRight || (inputXRight) <= otherObject->xPos);
-		yOverlap = !(((inputObject->yPos - otherObject->yPos) <= ((otherXRight - inputObject->xPos) * slope)) || inputObject->yPos > otherYTop || inputYTop < otherObject->yPos);
+		xOverlap = !(inputXLeft >= otherXRight || (inputXRight) <= otherObject->xPos);
+		yOverlap = !(((inputObject->yPos - otherObject->yPos) <= ((otherXRight - inputXLeft) * slope)) || inputObject->yPos > otherYTop || inputYTop < otherObject->yPos);
 		break;
 
 		default:
-		xOverlap = !(inputObject->xPos >= otherXRight || inputXRight <= otherObject->xPos);
+		xOverlap = !(inputXLeft >= otherXRight || inputXRight <= otherObject->xPos);
 		yOverlap = !(inputObject->yPos >= otherYTop || inputYTop <= otherObject->yPos);
 		break;
 	}
@@ -1874,13 +1946,13 @@ int ResolvePlayerToObjectCollisionX(Object *inputObject, PlayerData *player, dou
 	switch(inputObject->solid)
 	{
 		case 2:
-			ObjXPos = ObjYPos / ((double)inputObject->ySize/(double)inputObject->xSize);
+			ObjXPos = (ObjYPos / ((double)inputObject->ySize/(double)inputObject->xSize)) + ObjXPos;
 			prevXPosBuffer = prevObjXPosRight;
 			result = rightSlopeOverlapsPlayer(player, inputObject);
 			break;
 
 		case 3:
-			ObjXPosRight = inputObject->xSize - ( ObjYPos / ((double)inputObject->ySize/(double)inputObject->xSize) );
+			ObjXPosRight = ( inputObject->xSize - (ObjYPos / ((double)inputObject->ySize/(double)inputObject->xSize)) ) + ObjXPos;
 			prevXPosRightBuffer = prevObjXPos;
 			result = leftSlopeOverlapsPlayer(player, inputObject);
 			break;
@@ -1928,13 +2000,13 @@ int ResolvePlayerToObjectCollisionY(Object *inputObject, PlayerData *player, dou
 	switch(inputObject->solid)
 	{
 		case 2:
-			ObjYPosTop = ((player->xPos + player->xSize - inputObject->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize));
+			ObjYPosTop = ( ((player->xPos + player->xSize - inputObject->xPos) * ((double)inputObject->ySize/(double)inputObject->xSize)) ) + ObjYPos;
 			prevYPosTopBuffer = prevObjYPos;
 			result = rightSlopeOverlapsPlayer(player, inputObject);
 			break;
 
 		case 3:
-			ObjYPosTop = ((inputObject->xSize - (player->xPos - inputObject->xPos)) * ((double)inputObject->ySize/(double)inputObject->xSize));
+			ObjYPosTop = ( ((inputObject->xSize - (player->xPos - inputObject->xPos)) * ((double)inputObject->ySize/(double)inputObject->xSize)) ) + ObjYPos;
 			prevYPosTopBuffer = prevObjYPos;
 			result = leftSlopeOverlapsPlayer(player, inputObject);
 			break;
@@ -2000,17 +2072,14 @@ int moveObjectX(Object *inputObject, PlayerData *player)
 	}
 
 
-	switch(inputObject->solid)
-	{
-		case 4:
-		case 1:
-			result = (boxOverlapsPlayerFeet(player, prevObjXPos, prevObjXPosRight, inputObject->yPos, inputObject->yPos + inputObject->ySize + 2.0) == 1 && player->inAir == 0 && player->yVelocity < 0.1);
-			break;
+	int prevYSize = player->ySize;
+	player->ySize = 8;
+	player->yPos -= 2.0;
 
-		default:
-			result = 0;
-			break;
-	}
+	result = CheckObjectOverlapsPlayer(player, inputObject);
+
+	player->ySize = prevYSize;
+	player->yPos += 2.0;
 
 	if (result == 1)
 	{
@@ -2044,31 +2113,30 @@ int moveObjectY(Object *inputObject, PlayerData *player)
 		return MISSING_DATA;
 	}
 
+
 	int result = ResolvePlayerToObjectCollisionY(inputObject, player, prevObjYPos, prevObjYPosTop);
+
 
 	if (result == 1)
 	{
 		return 0;
 	}
 
+	int prevYSize = player->ySize;
+	player->ySize = 8;
+	player->yPos -= 2.0;
 
-	switch(inputObject->solid)
-	{
-		case 4:
-		case 1:
-			result = (boxOverlapsPlayerFeet(player, inputObject->xPos, inputObject->xPos + inputObject->xSize, prevObjYPos, prevObjYPosTop + 2.0 ) == 1 && player->inAir == 0 && player->yVelocity < 0.1);
-			break;
+	result = CheckObjectOverlapsPlayer(player, inputObject);
 
-		default:
-			result = 0;
-			break;
-	}
+	player->ySize = prevYSize;
+	player->yPos += 2.0;
 
 	if (result == 1)
 	{
 		int pixelDifference = (int)inputObject->yPos - (int)(inputObject->yPos - (inputObject->yVel * deltaTime));
 		player->yPos += pixelDifference;
 	}	
+
 
 	return 0;
 }

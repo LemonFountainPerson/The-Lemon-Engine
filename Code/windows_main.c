@@ -109,7 +109,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	Object *testObject = GameWorld->objectList->lastObject;
 
 	
-    LemonPlaySound("StartUp", "Music", MUSIC_CHANNEL, 0.7);
+   // LemonPlaySound("StartUp", "Music", MUSIC_CHANNEL, 0.7);
 
     StopAudioInChannel(MUSIC_CHANNEL);
 
@@ -172,7 +172,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	    if (((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) > 0.99)
 	    {
-   		    printf("%d at %lf\n", windowsFrames, ((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) );
+            //printf("%d at %lf\n", windowsFrames, ((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) );
    		    windowsFrames = 0;
    		    lastSecond = clock();
 	    }

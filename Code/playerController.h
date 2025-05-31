@@ -36,12 +36,6 @@ int MovePlayerY(PlayerData *player, World *gameWorld);
 int ApplyYPhysics(PlayerData *player, Object *inputObject);
 
 
-Object* OverlappingObject(PlayerData *player, World *gameWorld);
-
-
-
-int HandleGroundSlopeCollision(World *GameWorld, Object *inputObject, double slopeFloor);
-
 
 int checkIfGrounded(World *gameWorld, PlayerData *player);
 

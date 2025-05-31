@@ -126,6 +126,12 @@ int gateControl(Object *gate, ObjectController *objectList);
 
 
 // Check for overlap with player
+Object* GetObjectOverlappingPlayer(PlayerData *player, World *gameWorld);
+
+
+int CheckObjectOverlapsPlayer(PlayerData *Player, Object *inputObject);
+
+
 int boxOverlapsPlayer(PlayerData *player, double X1, double X2, double Y1, double Y2);
 
 

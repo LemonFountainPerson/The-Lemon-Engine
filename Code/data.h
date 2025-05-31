@@ -76,6 +76,16 @@ enum ChannelNames {
 };
 
 
+enum solidType {
+	UNSOLID = 0,
+	SOLID = 1,
+	FLAT_SLOPE_LR = 2,
+	FLAT_SLOPE_RL = 3,
+	JUMP_THROUGH = 4,
+	UNDEFINED_SOLID
+};
+
+
 enum objectType {
 	LEVEL_FLAG_OBJ = 0,
 	SOLID_BLOCK = 1,
@@ -347,6 +357,7 @@ typedef enum RenderMode RenderMode;
 typedef enum Flags Flags;
 typedef enum ParticleSubType ParticleSubType;
 typedef enum GateSwitch GateSwitch;
+typedef enum solidType SolidType;
 
 
 static SoundInstance AllSounds[CHANNEL_COUNT];
