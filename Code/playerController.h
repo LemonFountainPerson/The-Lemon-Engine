@@ -24,13 +24,13 @@ int setSprite(PlayerData *player);
 
 
 
-int MovePlayerX(PlayerData *player, World *gameWorld);
+int MovePlayerX(PlayerData *player, World *GameWorld);
 
 
 int ApplyXPhysics(PlayerData *player, Object *inputObject);
 
 
-int MovePlayerY(PlayerData *player, World *gameWorld);
+int MovePlayerY(PlayerData *player, World *GameWorld);
 
 
 int ApplyYPhysics(PlayerData *player, Object *inputObject);
@@ -39,8 +39,6 @@ int ApplyYPhysics(PlayerData *player, Object *inputObject);
 
 int checkIfGrounded(World *gameWorld, PlayerData *player);
 
-
-int assignDirection(PlayerData *player, Object *currentObject);
 
 
 int switchPlayerSprite(int spriteID, int spriteSet, PlayerData *player);

@@ -1,7 +1,7 @@
 #include "LemonMain.h"
 
 
-
+ 
 int main(void)
 {
 	runLemonEngine();
@@ -25,7 +25,6 @@ TO DO:.
 
 (In order of importance)
 
-- Fix memory leak issue with sdl allocating new memory for every new sound played
 - Design HUD/menu system 
 - Add decoding/encoding function for txt -> lem files
 - Add text box like rpg maker

@@ -106,11 +106,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	loadLevel(GameWorld, 1);
 
 
-	Object *testObject = GameWorld->objectList->lastObject;
+	Object *testObject = GameWorld->objectList->firstObject;
+
+    while(testObject->ObjectID != VERTICAL_GATE)
+    {
+        testObject = testObject->nextObject;
+    }
 
 	
    //LemonPlaySound("StartUp", "Music", LOOP_CHANNEL, 0.7);
-
 
 
     // Game Loop
@@ -171,7 +175,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	    if (((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) > 0.99)
 	    {
-            //printf("%d at %lf\n", windowsFrames, ((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) );
+            if (GameWorld->GamePaused == 0)
+            {
+                printf("%d at %lf\n", windowsFrames, ((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) );
+            }
+           
    		    windowsFrames = 0;
    		    lastSecond = clock();
 	    }

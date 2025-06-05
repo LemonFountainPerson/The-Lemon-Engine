@@ -11,6 +11,10 @@
 Object* AddObject(World *gameWorld, int xPos, int yPos, int objectID, int arg1, int arg2, int arg3, int arg4, int arg5);
 
 
+// Initialises a new empty object to the object list
+Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int objectID);
+
+
 // Helper function to set an object to a moving platform type 
 Object* DefineMovingPlatform(Object *inputObject, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer);
 
@@ -30,10 +34,6 @@ int switchObjectSprite(int spriteID, Object *inputObject, ObjectController *obje
 
 
 int switchObjectSpriteName(char spriteName[], Object *inputObject, ObjectController *objectList);
-
-
-// Initialises a new empty object to the object list
-Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int objectID);
 
 
 // deletes an object from the object list based on pointer provided and shifts surrounding objecs to fill
@@ -64,6 +64,7 @@ void SetDrawPriorityToFront(ObjectController *objController, Object *input);
 void SetDrawPriorityToBack(ObjectController *objController, Object *input);
 
 
+
 int ResolvePlayerToObjectCollisionX(Object *inputObject, PlayerData *player, double prevObjXPos, double prevObjXPosRight);
 
 
@@ -86,6 +87,10 @@ int ChangeObjectXSizeBy(int change, Object *inputObject, PlayerData *player);
 
 
 int ChangeObjectYSizeBy(int change, Object *inputObject, PlayerData *player);
+
+
+int GetPathToBox(Object *inputObject, PhysicsRect *target);
+
 
 
 // Run every fram to operate objects that can move or be interacted with, etc.
@@ -125,23 +130,25 @@ int gateControl(Object *gate, ObjectController *objectList);
 
 
 
-// Check for overlap with player
-Object* GetObjectOverlappingPlayer(PlayerData *player, World *gameWorld);
+
+int CheckBoxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox);
 
 
-int CheckObjectOverlapsPlayer(PlayerData *Player, Object *inputObject);
+Object* GetObjectOverlappingBox(PhysicsRect *inputBox, World *gameWorld);
 
 
-int boxOverlapsPlayer(PlayerData *player, double X1, double X2, double Y1, double Y2);
+int boxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox);
 
 
-int boxOverlapsPlayerFeet(PlayerData *player, double X1, double X2, double Y1, double Y2);
+int boxOverlapsBoxBottom(PhysicsRect *inputBox, PhysicsRect *compareBox);
 
 
-int rightSlopeOverlapsPlayer(PlayerData *player, Object *inputObject);
+int ClimbFlatSlope(PhysicsRect *inputBox, PhysicsRect *compareBox, World *GameWorld);
 
 
-int leftSlopeOverlapsPlayer(PlayerData *player, Object *inputObject);
+
+
+int assignDirection(PhysicsRect *inputBox, Object *currentObject);
 
 
 // Checks for object overlap with a specific object ID

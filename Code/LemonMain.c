@@ -125,6 +125,8 @@ int RunLemonEngine(void)
 		IterateAudio();
        
 
+		DebugControls(GameWorld, player, keyboard, testObject);
+
 		// Framerate control
     	frameRate(60, gameTick);
 
@@ -140,8 +142,6 @@ int RunLemonEngine(void)
    			frames++;
 		}
 
-
-		DebugControls(GameWorld, player, keyboard, testObject);
 
 		if (keyboard[LMN_ESCAPE] == 1)
 		{
@@ -289,9 +289,9 @@ void DebugControls(World *GameWorld, PlayerData *player, int keyboard[256], Obje
 
 	if (keyboard['Y'] && clickY == 0)
 	{
-		//clearGameData(gameWorld, player);
-		deleteAllObjects(GameWorld->objectList);
-		//switchLevel(gameWorld, 1);
+		//clearGameData(GameWorld, player);
+		//deleteAllObjects(GameWorld->objectList);
+		switchLevel(GameWorld, 1);
 
 		clickY = 1;
 	}
@@ -364,7 +364,7 @@ void DebugControls(World *GameWorld, PlayerData *player, int keyboard[256], Obje
 
 	if (displayPlayerData == 1 && GameWorld->GamePaused == 0)
 	{
-    	printf("Player: X: %.2lf Y: %.2lf xVel: %lf yVel: %lf Direction: %lf\n", player->xPos, player->yPos, player->xVelocity, player->yVelocity, player->direction);
+    	printf("Player: X: %.2lf Y: %.2lf xVel: %lf yVel: %lf Direction: %lf\n\n", player->PlayerBox->xPos, player->PlayerBox->yPos, player->PlayerBox->xVelocity, player->PlayerBox->yVelocity, player->PlayerBox->direction);
 	}
 
     return;

@@ -27,11 +27,14 @@
 #define MAX_PARTICLES 64
 #define MAX_HUD_ELEMENTS 64
 
+#define RADIAN_90 1.5707963268
 #define PLAYERHEIGHT 50
 #define PLAYERWIDTH 32
 
 #define MAX_LEN 80
 #define ENCRYPT_OFFSET 600
+
+#define LEMON_VERSION "V0.04"
 
 #define IS_DEFINED 1
 #endif
@@ -82,6 +85,7 @@ enum solidType {
 	FLAT_SLOPE_LR = 2,
 	FLAT_SLOPE_RL = 3,
 	JUMP_THROUGH = 4,
+	TEST = 5,
 	UNDEFINED_SOLID
 };
 
@@ -199,23 +203,34 @@ struct spriteSet
 };
 
 
+struct physicsRect
+{
+	double xPos;
+	double yPos;
+	double xPosRight;
+	double yPosTop;
+
+	int xSize;
+	int ySize;
+
+	double yVelocity;
+	double xVelocity;
+
+	enum solidType solid;
+
+	double direction;
+};
+
+
 // Objects are memory-allocated instances of interactable items (tiles, enemies, etc.)
 struct object
 {
 	struct object *nextObject;
 	struct object *prevObject;
-	int objectID;
+	int ObjectID;
 	enum ObjectState State;
 
-	double xPos;
-	double yPos;
-	double xPosRight;
-	double yPosTop;
-	int xSize;
-	int ySize;
-	double xVel;
-	double yVel;
-	int solid;
+	struct physicsRect *ObjectBox;
 
 	enum Layer layer;
 
@@ -235,6 +250,7 @@ struct object
 	int arg3;
 	int arg4;
 	int arg5;
+	int argArray[16];
 };
 
 // Memory allocated struct that contains pointers to objects and object count
@@ -252,24 +268,13 @@ struct objectController
 // Controls the player character
 struct playerData
 {
-	// Do not modify these variables to prevent game logic breaking
-	double xPos;
-	double yPos;
-	double xPosRight;
-	double yPosTop;
-	double yVelocity;
-	double xVelocity;
+	struct physicsRect *PlayerBox;
 	double maxYVel;
 	double maxXVel;
-
-	int xSize;
-	int ySize;
 
 	int xFlip;
 	int currentSprite;
 	struct sprite *spriteBuffer;
-
-	int spriteCount;
 	struct spriteSet *spriteSetPtr;
 
 	enum Layer playerLayer;
@@ -277,7 +282,6 @@ struct playerData
 	// These variables can be freely modified according to your modified player controller
 	double PhysicsXVelocity;
 	double PhysicsYVelocity;
-	double direction;
 
 	int inAir;
 	int jumpHeld;
@@ -351,6 +355,7 @@ typedef struct spriteSet SpriteSet;
 typedef struct bgsprite BGSprite;
 typedef struct bgSpriteSet BGSpriteSet;
 typedef struct playerData PlayerData;
+typedef struct physicsRect PhysicsRect;
 typedef struct objectController ObjectController;
 typedef struct object Object;
 typedef struct world World;

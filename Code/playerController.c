@@ -12,21 +12,32 @@ PlayerData* initialisePlayer(World *gameWorld)
 		return NULL;
 	}
 
+	player->PlayerBox = malloc(sizeof(PhysicsRect));
+
+	if (player->PlayerBox == NULL)
+	{
+		printf("Error: Could not allocate space for player Physics Box.\n");
+		fflush(stdout);
+		return NULL;
+	}
+
 	if (gameWorld != NULL)
 	{
 		gameWorld->Player = player;
 	}
 
 	// Player set-up
-	player->xPos = 100.0;
-	player->yPos = 100.0;
-	player->xSize = PLAYERWIDTH;
-	player->ySize = PLAYERHEIGHT;
-	player->xPosRight = 100 + PLAYERWIDTH;
-	player->yPosTop = 100 + PLAYERHEIGHT;
-	player->yVelocity = 0.0;
-	player->xVelocity = 0.0;
-	player->direction = 90.0;
+	player->PlayerBox->xPos = 100.0;
+	player->PlayerBox->yPos = 100.0;
+	player->PlayerBox->xSize = PLAYERWIDTH;
+	player->PlayerBox->ySize = PLAYERHEIGHT;
+	player->PlayerBox->xPosRight = 100 + PLAYERWIDTH;
+	player->PlayerBox->yPosTop = 100 + PLAYERHEIGHT;
+	player->PlayerBox->yVelocity = 0.0;
+	player->PlayerBox->xVelocity = 0.0;
+	player->PlayerBox->solid = SOLID;
+	player->PlayerBox->direction = RADIAN_90;
+
 	player->maxXVel = 15.0;
 	player->maxYVel = 32.0;
 	player->PhysicsXVelocity = 0.0;
@@ -38,7 +49,6 @@ PlayerData* initialisePlayer(World *gameWorld)
 	player->crouch = 0;
 	player->coinCount = 0;
 	player->xFlip = 1;
-	player->spriteCount = 0;
 	player->currentSprite = 2;
 	player->playerLayer = MIDDLEGROUND;
 
@@ -66,11 +76,8 @@ PlayerData* initialisePlayer(World *gameWorld)
 	loadPlayerSprite("Idle_R.png", 1, 4, player);
 	loadPlayerSprite("Spin_R.png", 1, 4, player);
 
-	if (player->spriteCount > 0)
-	{
-		printf("Initialised Player with %d sprite(s) of size %d\n", player->spriteCount, player->spriteSetPtr->spriteCount);
-		fflush(stdout);
-	}
+	printf("Initialised Player with %d sprite(s)\n", player->spriteSetPtr->spriteCount);
+	fflush(stdout);
 
 	switchPlayerSprite(player->currentSprite, 1, player);
 
@@ -85,10 +92,10 @@ int ResetPlayer(PlayerData *Player)
 		return MISSING_DATA;
 	}
 
-	Player->xPos = 64.0;
-	Player->yPos = 96.0;
-	Player->xVelocity = 0.0;
-	Player->yVelocity = 0.0;
+	Player->PlayerBox->xPos = 64.0;
+	Player->PlayerBox->yPos = 96.0;
+	Player->PlayerBox->xVelocity = 0.0;
+	Player->PlayerBox->yVelocity = 0.0;
 	Player->PhysicsXVelocity = 0.0;
 	Player->PhysicsYVelocity = 0.0;
 	
@@ -130,12 +137,12 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 
 	vAxis = (keyboard[LMN_UP] || keyboard['E']) - (keyboard[LMN_DOWN] || keyboard['S']);
 
-	player->yVelocity += vAxis;
+	player->PlayerBox->yVelocity += vAxis;
 
 	if (vAxis < 0 && player->inAir == 0)
 	{
 		player->crouch = 1;
-		player->yVelocity -= 1.0;
+		player->PlayerBox->yVelocity -= 1.0;
 	}
 
 	if (vAxis > -1 && player->inAir == 0)
@@ -146,7 +153,7 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 
 	if (keyboard['M'] == 1)
 	{
-		player->yVelocity = 16.0;
+		player->PlayerBox->yVelocity = 16.0;
 	}
 
 	if (keyboard['C'] || keyboard[LMN_SPACE] || keyboard['W'])
@@ -159,18 +166,18 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 	}
 
 
-	player->yPos += 2.0;
-	int againstCeiling = (GetObjectOverlappingPlayer(player, gameWorld) != NULL);
-	player->yPos -= 2.0;
+	player->PlayerBox->yPos += 2.0;
+	int againstCeiling = (GetObjectOverlappingBox(player->PlayerBox, gameWorld) != NULL);
+	player->PlayerBox->yPos -= 2.0;
 
-	if (againstCeiling == 0 && jump == 1 && ((player->inAir < 10 && player->jumpHeld == 0) || (player->yVelocity > 12.0 && player->jumpProgress > 0) ))
+	if (againstCeiling == 0 && jump == 1 && ((player->inAir < 10 && player->jumpHeld == 0) || (player->PlayerBox->yVelocity > 12.0 && player->jumpProgress > 0) ))
 	{
 		playerJump(player, hAxis, vAxis);
 	}
 
-	if (player->jumpProgress < 10 && jump == 0 && player->yVelocity > 12.0 && player->jumpProgress > 0)
+	if (player->jumpProgress < 10 && jump == 0 && player->PlayerBox->yVelocity > 12.0 && player->jumpProgress > 0)
 	{
-		player->yVelocity = 12.0 * deltaTime;
+		player->PlayerBox->yVelocity = 12.0 * deltaTime;
 
 		player->jumpProgress = 99;
 	}
@@ -179,13 +186,13 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 	// Movement velocity acceleration/decceleration
 	if (hAxis == 0)
 	{
-		player->xVelocity *= 0.8;
+		player->PlayerBox->xVelocity *= 0.8;
 	}
 
 	if (player->inAir > 0)
 	{
-		player->xVelocity += hAxis * 0.75 * deltaTime;
-		player->xVelocity *= 0.951;
+		player->PlayerBox->xVelocity += hAxis * 0.75 * deltaTime;
+		player->PlayerBox->xVelocity *= 0.951;
 
 		if (hAxis != 0)
 		{
@@ -194,39 +201,39 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 
 		if (fabs(player->PhysicsXVelocity) > 0.1)
 		{
-			player->xVelocity = player->PhysicsXVelocity;
+			player->PlayerBox->xVelocity = player->PhysicsXVelocity;
 		}
 	}
 	else
 	{
-		player->xVelocity += hAxis * 1.0 * deltaTime;
-		player->xVelocity *= 0.935;
+		player->PlayerBox->xVelocity += hAxis * 1.0 * deltaTime;
+		player->PlayerBox->xVelocity *= 0.935;
 	}
 
 
-	if (fabs(player->xVelocity) < 0.1)
+	if (fabs(player->PlayerBox->xVelocity) < 0.1)
 	{
-		player->xVelocity = 0.0;
+		player->PlayerBox->xVelocity = 0.0;
 	}
 
 
-	if (fabs(player->yVelocity) < 0.1)
+	if (fabs(player->PlayerBox->yVelocity) < 0.1)
 	{
-		player->yVelocity = 0.0;
+		player->PlayerBox->yVelocity = 0.0;
 	}
 
 
 	// Gravity
-	player->yVelocity += (gameWorld->Gravity * deltaTime);
+	player->PlayerBox->yVelocity += (gameWorld->Gravity * deltaTime);
 
-	if (fabs(player->xVelocity) > player->maxXVel)
+	if (fabs(player->PlayerBox->xVelocity) > player->maxXVel)
 	{
-		player->xVelocity = (player->xVelocity/fabs(player->xVelocity)) * (player->maxXVel);
+		player->PlayerBox->xVelocity = (player->PlayerBox->xVelocity/fabs(player->PlayerBox->xVelocity)) * (player->maxXVel);
 	}
 
-	if (fabs(player->yVelocity) > player->maxYVel)
+	if (fabs(player->PlayerBox->yVelocity) > player->maxYVel)
 	{
-		player->yVelocity = (player->yVelocity/fabs(player->yVelocity)) * (player->maxYVel);
+		player->PlayerBox->yVelocity = (player->PlayerBox->yVelocity/fabs(player->PlayerBox->yVelocity)) * (player->maxYVel);
 	}
 
 
@@ -237,8 +244,8 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 	
 
 
-	player->xPosRight = player->xPos + player->xSize;
-	player->yPosTop = player->yPos + player->ySize;
+	player->PlayerBox->xPosRight = player->PlayerBox->xPos + player->PlayerBox->xSize;
+	player->PlayerBox->yPosTop = player->PlayerBox->yPos + player->PlayerBox->ySize;
 
 
 	int onGround = checkIfGrounded(gameWorld, player);
@@ -256,16 +263,16 @@ FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[2
 
 	setSprite(player);
 
-	if (player->yPos < -60.0 || player->yPos > 60000.0)
+	if (player->PlayerBox->yPos < -60.0 || player->PlayerBox->yPos > 60000.0)
 	{
-		player->yPos = 150.0;
-		player->yVelocity = 10.0;
+		player->PlayerBox->yPos = 150.0;
+		player->PlayerBox->yVelocity = 10.0;
 	}
 
-	if (player->xPos < 0.0)
+	if (player->PlayerBox->xPos < 0.0)
 	{
-		player->xPos = 0.0;
-		player->xVelocity = 0.0;
+		player->PlayerBox->xPos = 0.0;
+		player->PlayerBox->xVelocity = 0.0;
 	}
 
 	return 0;
@@ -311,15 +318,15 @@ int playerJump(PlayerData *player, int hAxis, int vAxis)
 		return 0;
 	}
 
-	player->yVelocity = 16.0;
+	player->PlayerBox->yVelocity = 16.0;
 
 	if (player->jumpHeld == 0)
 	{
 		LemonPlaySound("Jump", "Player", PLAYER_SFX, 1.0);
 				
-		if (hAxis == player->xVelocity/fabs(player->xVelocity) && fabs(player->PhysicsXVelocity) < fabs(player->xVelocity))
+		if (hAxis == player->PlayerBox->xVelocity/fabs(player->PlayerBox->xVelocity) && fabs(player->PhysicsXVelocity) < fabs(player->PlayerBox->xVelocity))
 		{
-			player->xVelocity += player->PhysicsXVelocity;
+			player->PlayerBox->xVelocity += player->PhysicsXVelocity;
 		}
 	}
 
@@ -329,156 +336,98 @@ int playerJump(PlayerData *player, int hAxis, int vAxis)
 }
 
 
-int MovePlayerX(PlayerData *player, World *gameWorld)
+int MovePlayerX(PlayerData *player, World *GameWorld)
 {
-	double prevXPos = player->xPos;
+	if (fabs(player->PlayerBox->xVelocity) < 0.1)
+	{
+		return 0;
+	}
 
-	player->xPos += (player->xVelocity * deltaTime);
+	PhysicsRect *PlayerBox = player->PlayerBox;
+	double prevXPos = PlayerBox->xPos;
+
+	PlayerBox->xPos += (PlayerBox->xVelocity * deltaTime);
 
 
 	Object *currentObject;
-	currentObject = gameWorld->objectList->firstObject;
+	currentObject = GameWorld->objectList->firstObject;
 
-	if (currentObject == NULL)
-	{
-		return 0;
-	}
 
-	double objX, objY, objXRight, objYTop, prevObjXCenter;
 	int count = 0;
-	int result = 0;
-
-
-	currentObject = GetObjectOverlappingPlayer(player, gameWorld);
-
-	if (currentObject == NULL)
-	{
-		return 0;
-	}
-
 
 	while (currentObject != NULL && count < 16)
 	{
+		currentObject = GetObjectOverlappingBox(player->PlayerBox, GameWorld);
+
 		count++;
 
-		objX = currentObject->xPos;
-		objY = currentObject->yPos;
-		objXRight = objX + currentObject->xSize;
-		objYTop = objY + currentObject->ySize;
-		prevObjXCenter = ((objX + objXRight) / 2.0) - (currentObject->xVel * deltaTime);
+		if (currentObject == NULL)
+		{
+			return 0;
+		}
+
+		int slopeClimb = 0;
+		while (CheckBoxOverlapsBox(PlayerBox, currentObject->ObjectBox) == 1 && slopeClimb < 8)
+		{
+			PlayerBox->yPos++;
+			slopeClimb++;
+		}
+
+		if (GetObjectOverlappingBox(player->PlayerBox, GameWorld) == NULL)
+		{
+			continue;
+		}
+
+		PlayerBox->yPos -= slopeClimb;
 
 
-		switch(currentObject->solid)
+		double objX = currentObject->ObjectBox->xPos;
+		double objY = currentObject->ObjectBox->yPos;
+		double objXRight = objX + currentObject->ObjectBox->xSize;
+		double objYTop = objY + currentObject->ObjectBox->ySize;
+		double prevObjXCenter = ((objX + objXRight) / 2.0) - (currentObject->ObjectBox->xVelocity * deltaTime);
+
+
+		switch(currentObject->ObjectBox->solid)
 		{
 			// Y = X * (ySize/xSize)
-			case 2:
+			case FLAT_SLOPE_LR:
 			{
-				double slope = ((double)currentObject->ySize/(double)currentObject->xSize);
-				int prevObjXRight = objXRight - (currentObject->xVel * deltaTime);
+				int prevObjXRight = objXRight - (currentObject->ObjectBox->xVelocity * deltaTime);
 
-			
 				if ((int)prevXPos >= prevObjXRight)
 				{
-					player->xPos = objXRight;
+					PlayerBox->xPos = objXRight;
 				}
 				else
 				{
-					player->xPos = prevXPos;
-					
-					Object *objectCheck = NULL;
-					int i = 0;
-
-
-					while (objectCheck == NULL && i < round(fabs(player->xVelocity * deltaTime)) )
-					{
-						player->xPos += player->xVelocity/fabs(player->xVelocity) * sin(player->direction);
-						i++;
-
-						int slopeClimb = 0;
-						while (rightSlopeOverlapsPlayer(player, currentObject) == 1 && slopeClimb < 6)
-						{
-							player->yPos += player->xVelocity/fabs(player->xVelocity);
-							slopeClimb++;
-						}
-
-						objectCheck = GetObjectOverlappingPlayer(player, gameWorld);
-					}
-
-					if (objectCheck != NULL)
-					{
-						player->xPos -= player->xVelocity/fabs(player->xVelocity) * sin(player->direction);
-
-						double slopeFloor = (player->xPos + player->xSize - currentObject->xPos) * slope;
-
-						if (slopeFloor > currentObject->ySize)
-						{
-							slopeFloor = currentObject->ySize;
-						}
-
-						player->yPos = slopeFloor + currentObject->yPos;
-
-						player->xVelocity = 0.0;
-					}	
+					PlayerBox->xPos = prevXPos;
+					ClimbFlatSlope(PlayerBox, currentObject->ObjectBox, GameWorld);
 				}
 
 
 			} break;
 
 			// Y = (xSize - X) * (ySize/xSize)
-			case 3:
+			case FLAT_SLOPE_RL:
 			{
-				double slope = ((double)currentObject->ySize/(double)currentObject->xSize);
-				int prevObjX = objX - (currentObject->xVel * deltaTime);
+				int prevObjX = objX - (currentObject->ObjectBox->xVelocity * deltaTime);
 
-				if ((int)prevXPos + player->xSize <= prevObjX)
+				if ((int)prevXPos + PlayerBox->xSize <= prevObjX)
 				{
-					player->xPos = objX - player->xSize;
+					PlayerBox->xPos = objX - PlayerBox->xSize;
 				}
 				else
 				{
-					player->xPos = prevXPos;
-					
-					Object *objectCheck = NULL;
-					int i = 0;
-
-
-					while (objectCheck == NULL && i < round(fabs(player->xVelocity * deltaTime)) )
-					{
-						player->xPos += player->xVelocity/fabs(player->xVelocity) * sin(player->direction);
-						i++;
-
-						int slopeClimb = 0;
-						while (leftSlopeOverlapsPlayer(player, currentObject) == 1 && slopeClimb < 6)
-						{
-							player->yPos -= player->xVelocity/fabs(player->xVelocity) * sin(player->direction);
-							slopeClimb++;
-						}
-
-						objectCheck = GetObjectOverlappingPlayer(player, gameWorld);
-					}
-
-					if (objectCheck != NULL)
-					{
-						player->xPos -= player->xVelocity/fabs(player->xVelocity) * sin(player->direction);
-
-						double slopeFloor = (currentObject->xSize - (player->xPos - currentObject->xPos)) * slope;
-
-						if (slopeFloor > currentObject->ySize)
-						{
-							slopeFloor = currentObject->ySize;
-						}
-
-						player->yPos = slopeFloor + currentObject->yPos;
-
-						player->xVelocity = 0.0;
-					}	
+					PlayerBox->xPos = prevXPos;
+					ClimbFlatSlope(PlayerBox, currentObject->ObjectBox, GameWorld);
 				}
 
 			} break;
 
 
-			case 4:
-			case 0:
+			case JUMP_THROUGH:
+			case UNSOLID:
 				break;
 
 
@@ -486,20 +435,17 @@ int MovePlayerX(PlayerData *player, World *gameWorld)
 			{
 				if (prevXPos < prevObjXCenter)
 				{
-					player->xPos = objX - player->xSize;
+					PlayerBox->xPos = objX - PlayerBox->xSize;
 				}
 				else
 				{
-					player->xPos = objXRight;
+					PlayerBox->xPos = objXRight;
 				}
 			} break;
 		}
 
 
 		ApplyXPhysics(player, currentObject);
-
-		currentObject = GetObjectOverlappingPlayer(player, gameWorld);
-
 	}
 
 
@@ -514,41 +460,41 @@ int ApplyXPhysics(PlayerData *player, Object *inputObject)
 		return 0;
 	}
 
-	if (player->xVelocity > 0.0)
+	if (player->PlayerBox->xVelocity > 0.0)
 	{
-		if (inputObject->xVel > 0.1)
+		if (inputObject->ObjectBox->xVelocity > 0.1)
 		{
-			player->xVelocity = inputObject->xVel;
+			player->PlayerBox->xVelocity = inputObject->ObjectBox->xVelocity;
 		}
 		else
 		{
-			if (inputObject->solid == 2)
+			if (inputObject->ObjectBox->solid == 2)
 			{
 				return 0;
 			}
 
 			player->PhysicsXVelocity = 0.0;
-			player->xVelocity = 0.0;
+			player->PlayerBox->xVelocity = 0.0;
 		}
 
 		return 0;
 	}
 
-	if (player->xVelocity < 0.0)
+	if (player->PlayerBox->xVelocity < 0.0)
 	{
-		if (inputObject->xVel < -0.1)
+		if (inputObject->ObjectBox->xVelocity < -0.1)
 		{
-			player->xVelocity = inputObject->xVel;
+			player->PlayerBox->xVelocity = inputObject->ObjectBox->xVelocity;
 		}
 		else
 		{		
-			if (inputObject->solid == 3)
+			if (inputObject->ObjectBox->solid == 3)
 			{
 				return 0;
 			}
 
 			player->PhysicsXVelocity = 0.0;
-			player->xVelocity = 0.0;
+			player->PlayerBox->xVelocity = 0.0;
 		}
 
 		return 0;
@@ -560,30 +506,30 @@ int ApplyXPhysics(PlayerData *player, Object *inputObject)
 
 
 
-int MovePlayerY(PlayerData *player, World *gameWorld)
+int MovePlayerY(PlayerData *player, World *GameWorld)
 {
-	double prevYPos = player->yPos;
-	double prevXPos = player->xPos;
+	PhysicsRect *PlayerBox = player->PlayerBox;
 
-	player->yPos += player->yVelocity * deltaTime;
+	double prevYPos = PlayerBox->yPos;
+
+	PlayerBox->yPos += PlayerBox->yVelocity * deltaTime;
 	
 	
 	Object *currentObject;
-	currentObject = gameWorld->objectList->firstObject;
+	currentObject = GameWorld->objectList->firstObject;
 
 	if (currentObject == NULL)
 	{
 		return 0;
 	}
 
-	double objX, objY, objXRight, objYTop, prevObjYCenter;
+
 	int count = 0;
 	int result = 0;
 
-
 	while (currentObject != NULL && count < 16)
 	{
-		currentObject = GetObjectOverlappingPlayer(player, gameWorld);
+		currentObject = GetObjectOverlappingBox(PlayerBox, GameWorld);
 
 		count++;
 
@@ -593,38 +539,38 @@ int MovePlayerY(PlayerData *player, World *gameWorld)
 		}
 
 
-		objX = currentObject->xPos;
-		objY = currentObject->yPos;
-		objXRight = objX + currentObject->xSize;
-		objYTop = objY + currentObject->ySize;
-		prevObjYCenter = ((objY + objYTop) / 2.0) - (currentObject->yVel * deltaTime);
+		double objX = currentObject->ObjectBox->xPos;
+		double objY = currentObject->ObjectBox->yPos;
+		double objXRight = objX + currentObject->ObjectBox->xSize;
+		double objYTop = objY + currentObject->ObjectBox->ySize;
+		double prevObjYCenter = ((objY + objYTop) / 2.0) - (currentObject->ObjectBox->yVelocity * deltaTime);
 
-		switch(currentObject->solid)
+		switch(currentObject->ObjectBox->solid)
 		{
 			// Y = X * (ySize/xSize)
-			case 2:
+			case FLAT_SLOPE_LR:
 			{
-				int prevObjY = objY - (currentObject->yVel * deltaTime);
+				int prevObjY = objY - (currentObject->ObjectBox->yVelocity * deltaTime);
 
-				if ((int)prevYPos + player->ySize <= prevObjY)
+				if ((int)prevYPos + PlayerBox->ySize <= prevObjY)
 				{
-					player->yPos = (objY - player->ySize);
+					PlayerBox->yPos = (objY - PlayerBox->ySize);
 					player->jumpProgress = 100;
 				}
 				else
 				{
 					// If player is halfway off edge, floor of slope continues to be calculated as Y = X * slope
 					// So here it is reset to the expected maximum if it over
-					double slope = ((double)currentObject->ySize/(double)currentObject->xSize);
+					double slope = ((double)currentObject->ObjectBox->ySize/(double)currentObject->ObjectBox->xSize);
 
-					double slopeFloor = ((player->xPos + player->xSize - objX) * slope);
+					double slopeFloor = ((PlayerBox->xPos + PlayerBox->xSize - objX) * slope);
 
-					if (slopeFloor > currentObject->ySize)
+					if (slopeFloor > currentObject->ObjectBox->ySize)
 					{
-						slopeFloor = currentObject->ySize;
+						slopeFloor = currentObject->ObjectBox->ySize;
 					}
 
-					player->yPos = slopeFloor + objY;
+					PlayerBox->yPos = slopeFloor + objY;
 
 					player->jumpProgress = 0;
 				}		
@@ -632,29 +578,29 @@ int MovePlayerY(PlayerData *player, World *gameWorld)
 			} break;
 
 			// Y = (xSize - X) * (ySize/xSize)
-			case 3:
+			case FLAT_SLOPE_RL:
 			{
-				int prevObjY = objY - (currentObject->yVel * deltaTime);
+				int prevObjY = objY - (currentObject->ObjectBox->yVelocity * deltaTime);
 
-				if ((int)prevYPos + player->ySize <= prevObjY)
+				if ((int)prevYPos + PlayerBox->ySize <= prevObjY)
 				{
-					player->yPos = (objY - player->ySize);
+					PlayerBox->yPos = (objY - PlayerBox->ySize);
 					player->jumpProgress = 100;
 				}
 				else
 				{
 					// If player is halfway off edge, floor of slope continues to be calculated as Y = xSize - X * slope
 					// So here it is reset to the expected maximum if it over
-					double slope = ((double)currentObject->ySize/(double)currentObject->xSize);
+					double slope = ((double)currentObject->ObjectBox->ySize/(double)currentObject->ObjectBox->xSize);
 
-					double slopeFloor = ((currentObject->xSize - (player->xPos - objX)) * slope);
+					double slopeFloor = ((currentObject->ObjectBox->xSize - (PlayerBox->xPos - objX)) * slope);
 
-					if (slopeFloor > currentObject->ySize)
+					if (slopeFloor > currentObject->ObjectBox->ySize)
 					{
-						slopeFloor = currentObject->ySize;
+						slopeFloor = currentObject->ObjectBox->ySize;
 					}
 
-					player->yPos = slopeFloor + objY;
+					PlayerBox->yPos = slopeFloor + objY;
 
 					player->jumpProgress = 0;
 				}
@@ -662,18 +608,18 @@ int MovePlayerY(PlayerData *player, World *gameWorld)
 			} break;
 
 
-			case 4:
+			case JUMP_THROUGH:
 			{
-				if (player->yVelocity < 0.1 && prevYPos >= prevObjYCenter && player->crouch < 1)
+				if (PlayerBox->yVelocity < 0.1 && prevYPos >= prevObjYCenter && player->crouch < 1)
 				{
-					player->yPos = objYTop;
+					PlayerBox->yPos = objYTop;
 					player->jumpProgress = 0;
 				}
 
 			} break;
 
 
-			case 0:
+			case UNSOLID:
 				break;
 
 
@@ -681,12 +627,12 @@ int MovePlayerY(PlayerData *player, World *gameWorld)
 			{
 				if (prevYPos < prevObjYCenter)
 				{
-					player->yPos = objY - player->ySize;
+					PlayerBox->yPos = objY - PlayerBox->ySize;
 					player->jumpProgress = 100;
 				}
 				else
 				{
-					player->yPos = objYTop;
+					PlayerBox->yPos = objYTop;
 					player->jumpProgress = 0;
 				}
 
@@ -709,31 +655,31 @@ int ApplyYPhysics(PlayerData *player, Object *inputObject)
 		return 0;
 	}
 
-	if (player->yVelocity > 0.0)
+	if (player->PlayerBox->yVelocity > 0.0)
 	{
-		if (inputObject->yVel > 0.0)
+		if (inputObject->ObjectBox->yVelocity > 0.0)
 		{
-			player->yVelocity = inputObject->yVel;
+			player->PlayerBox->yVelocity = inputObject->ObjectBox->yVelocity;
 		}
 		else
 		{
 			player->PhysicsYVelocity = 0.0;
-			player->yVelocity = 0.0;
+			player->PlayerBox->yVelocity = 0.0;
 		}
 
 		return 0;
 	}
 
-	if (player->yVelocity < 0.0)
+	if (player->PlayerBox->yVelocity < 0.0)
 	{
-		if (inputObject->yVel < 0.0)
+		if (inputObject->ObjectBox->yVelocity < 0.0)
 		{
-			player->yVelocity = inputObject->yVel;
+			player->PlayerBox->yVelocity = inputObject->ObjectBox->yVelocity;
 		}
 		else
 		{			
 			player->PhysicsYVelocity = 0.0;
-			player->yVelocity = 0.0;
+			player->PlayerBox->yVelocity = 0.0;
 		}
 
 		return 0;
@@ -751,63 +697,34 @@ int checkIfGrounded(World *gameWorld, PlayerData *player)
 	int i = 0;
 	int result = 0;
 
-	int prevYSize = player->ySize;
-	player->ySize = 8;
-	player->yPos -= 2.0;
+	int prevYSize = player->PlayerBox->ySize;
+	player->PlayerBox->ySize = 8;
+	player->PlayerBox->yPos -= 2.0;
 
-	detectedObject = GetObjectOverlappingPlayer(player, gameWorld);
+	detectedObject = GetObjectOverlappingBox(player->PlayerBox, gameWorld);
 
-	player->yPos += 2.0;
-	player->ySize = prevYSize;
+	player->PlayerBox->yPos += 2.0;
+	player->PlayerBox->ySize = prevYSize;
 
 
 	if (detectedObject == NULL)
 	{
-		player->direction = 1.5707963268;
+		player->PlayerBox->direction = RADIAN_90;
 
 		return 0;
 	}
 
 	if (player->inAir > 0 && fabs(player->PhysicsXVelocity) > 0.1)
 	{
-		player->xVelocity = 0.0;
+		player->PlayerBox->xVelocity = 0.0;
 	}
 
-	player->PhysicsXVelocity = detectedObject->xVel;
-	player->PhysicsYVelocity = detectedObject->yVel;
+	player->PhysicsXVelocity = detectedObject->ObjectBox->xVelocity;
+	player->PhysicsYVelocity = detectedObject->ObjectBox->yVelocity;
 
-	assignDirection(player, detectedObject);
+	assignDirection(player->PlayerBox, detectedObject);
 
 	return 1;
-}
-
-
-int assignDirection(PlayerData *player, Object *currentObject)
-{
-	if (currentObject == NULL)
-	{
-		player->direction = 1.5707963268;
-		return 0;
-	}
-
-	double slope = (double)currentObject->ySize/(double)currentObject->xSize;
-
-	switch (currentObject->solid)
-	{
-			case 2:
-				player->direction = (1.5707963268 - atan(slope));
-				break;
-
-			case 3:
-				player->direction = (1.5707963268 + atan(slope));
-				break;
-
-			default:
-				player->direction = 1.5707963268;
-				break;
-	}
-
-	return 0;
 }
 
 

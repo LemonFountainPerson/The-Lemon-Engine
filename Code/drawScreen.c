@@ -20,8 +20,8 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 	player = gameWorld->Player;
 
 	// Find offsets of player relative to center of screen/camera
-	int xOffset = player->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-	int yOffset = player->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+	int xOffset = player->PlayerBox->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
+	int yOffset = player->PlayerBox->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
 
 
 	// Load correct sprite
@@ -87,8 +87,8 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 	// Correct Offsets
 	xDraw = correct(xOffset, 0, width - 1);
 	yDraw = correct(yOffset, 0, height - 1);
-	xDraw2 = correct(player->xSize + xOffset, 0, width - 1);
-	yDraw2 = correct(player->ySize + yOffset, 0, height - 1);
+	xDraw2 = correct(player->PlayerBox->xSize + xOffset, 0, width - 1);
+	yDraw2 = correct(player->PlayerBox->ySize + yOffset, 0, height - 1);
 
 	// Player Hitbox
 	if (gameWorld->drawHitboxes == 0)
@@ -116,10 +116,10 @@ int worldCameraControl(int width, int height, PlayerData *player, World *gameWor
 		return MISSING_DATA;
 	}
 
-	int xOffset = (int)player->xPos - gameWorld->cameraX;
-	int yOffset = (int)player->yPos - gameWorld->cameraY;
+	int xOffset = (int)player->PlayerBox->xPos - gameWorld->cameraX;
+	int yOffset = (int)player->PlayerBox->yPos - gameWorld->cameraY;
 
-	gameWorld->cameraX = player->xPos;
+	gameWorld->cameraX = player->PlayerBox->xPos;
 
 //	if ( (xOffset) >= (H_RESOLUTION * 0.1))
 //	{
@@ -133,12 +133,12 @@ int worldCameraControl(int width, int height, PlayerData *player, World *gameWor
 
 	if ( (yOffset) >= (V_RESOLUTION * 0.1))
 	{
-		gameWorld->cameraY = (int)player->yPos - (V_RESOLUTION * 0.1);
+		gameWorld->cameraY = (int)player->PlayerBox->yPos - (V_RESOLUTION * 0.1);
 	}
 
 	if (yOffset < (V_RESOLUTION * -0.2))
 	{
-		gameWorld->cameraY = (int)player->yPos + (V_RESOLUTION * 0.2);
+		gameWorld->cameraY = (int)player->PlayerBox->yPos + (V_RESOLUTION * 0.2);
 	}
 
 
@@ -203,22 +203,22 @@ int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int
 		return 0;
 	}
 
-	int tile = tileMap[currentObject->objectID % 32];
+	int tile = tileMap[currentObject->ObjectID % 32];
 
 	// Hitbox
-	switch (currentObject->solid)
+	switch (currentObject->ObjectBox->solid)
 	{
 		case 2:
 		{
 			// Correct Offsets
-			double ySize = currentObject->ySize;
-			double xSize = currentObject->xSize;
+			double ySize = currentObject->ObjectBox->ySize;
+			double xSize = currentObject->ObjectBox->xSize;
 
-			int xOffset = (int)currentObject->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-			int yOffset = (int)currentObject->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+			int xOffset = (int)currentObject->ObjectBox->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
+			int yOffset = (int)currentObject->ObjectBox->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
 			int xDraw = correct(xOffset, 0, width - 1);
 			int yDraw = correct(yOffset, 0, height - 1);
-			int xDraw2 = correct(xOffset + currentObject->xSize, 0, width - 1);
+			int xDraw2 = correct(xOffset + currentObject->ObjectBox->xSize, 0, width - 1);
 
 			for (int k = xDraw; k < xDraw2; k++)
 			{
@@ -233,14 +233,14 @@ int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int
 		case 3:
 		{
 			// Correct Offsets
-			double ySize = currentObject->ySize;
-			double xSize = currentObject->xSize;
+			double ySize = currentObject->ObjectBox->ySize;
+			double xSize = currentObject->ObjectBox->xSize;
 
-			int xOffset = (int)currentObject->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-			int yOffset = (int)currentObject->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+			int xOffset = (int)currentObject->ObjectBox->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
+			int yOffset = (int)currentObject->ObjectBox->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
 			int xDraw = correct(xOffset, 0, width - 1);
 			int yDraw = correct(yOffset, 0, height - 1);
-			int xDraw2 = correct(xOffset + currentObject->xSize, 0, width - 1);
+			int xDraw2 = correct(xOffset + currentObject->ObjectBox->xSize, 0, width - 1);
 
 			for (int k = xDraw; k < xDraw2; k++)
 			{
@@ -256,12 +256,12 @@ int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int
 		{
 
 			// Correct Offsets
-			int xOffset = (int)currentObject->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-			int yOffset = (int)currentObject->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+			int xOffset = (int)currentObject->ObjectBox->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
+			int yOffset = (int)currentObject->ObjectBox->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
 			int xDraw = correct(xOffset, 0, width - 1);
 			int yDraw = correct(yOffset, 0, height - 1);
-			int xDraw2 = correct(xOffset + currentObject->xSize, 0, width - 1);
-			int yDraw2 = correct(yOffset + currentObject->ySize, 0, height - 1);
+			int xDraw2 = correct(xOffset + currentObject->ObjectBox->xSize, 0, width - 1);
+			int yDraw2 = correct(yOffset + currentObject->ObjectBox->ySize, 0, height - 1);
 
 			for (int k = xDraw; k < xDraw2; k++)
 			{
@@ -319,10 +319,10 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 	}
 
 	// Locate object on screen
-	int xOffset = currentObject->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-	int yOffset = currentObject->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
-	int xOffset2 = xOffset + currentObject->xSize;
-	int yOffset2 = yOffset + currentObject->ySize;
+	int xOffset = currentObject->ObjectBox->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
+	int yOffset = currentObject->ObjectBox->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+	int xOffset2 = xOffset + currentObject->ObjectBox->xSize;
+	int yOffset2 = yOffset + currentObject->ObjectBox->ySize;
 	
 
 	int xDraw2, xDraw, yDraw2, yDraw, reflect;
@@ -351,11 +351,11 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 	{
 		xDraw = correct(xOffset, 0, screenWidth - 1);
 		yDraw = correct(yOffset, 0, screenHeight - 1);
-		xDraw2 = correct(currentObject->xSize + xOffset, 0, screenWidth - 1);
-		yDraw2 = correct(currentObject->ySize + yOffset, 0, screenHeight - 1);
+		xDraw2 = correct(currentObject->ObjectBox->xSize + xOffset, 0, screenWidth - 1);
+		yDraw2 = correct(currentObject->ObjectBox->ySize + yOffset, 0, screenHeight - 1);
 
 		// Make sure the sprite position is valid on screen to avoid a crash related to assuming the position is valid 
-		if (xOffset >= screenWidth || currentObject->xSize + xOffset < 0 || yOffset >= screenHeight || currentObject->ySize + yOffset < 0)
+		if (xOffset >= screenWidth || currentObject->ObjectBox->xSize + xOffset < 0 || yOffset >= screenHeight || currentObject->ObjectBox->ySize + yOffset < 0)
 		{
 			return INVALID_DATA;
 		}
@@ -707,21 +707,23 @@ int renderSprite_LRUD_Tile(uint32_t screen[], int screenWidth, Sprite *spritePtr
 	size_t sizeOfPixel = sizeof(uint32_t);
 
 	// Start render loop
-	int pixely =  spritePtr->height - 1 - ((yDraw - yOffset) % spritePtr->height);
+	int pixely = ((spritePtr->height - 1 - ((yDraw - yOffset) % spritePtr->height)) << 2) * spritePtr->width;
 
 
 	for (int j = yDraw; j < yDraw2; j++)
 	{
 		int pixelx = ((xDraw - xOffset) % spritePtr->width);
 		int i = xDraw;
+		unsigned int pixelOffset = pixely + (pixelx << 2);
 
 		if ((xOffset - i) % 2 != 0)
 		{
-			if ((uint32_t)spritePtr->spriteData[((pixely << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[pixelOffset + 3] > 0x00)
 			{
-				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + pixelOffset, sizeOfPixel);
 			}
 
+			pixelOffset += 4;
 			pixelx++;
 			i++;
 		}
@@ -729,34 +731,36 @@ int renderSprite_LRUD_Tile(uint32_t screen[], int screenWidth, Sprite *spritePtr
 
 		for (; i + 1 < xDraw2; i+=2)
 		{
-			if ((uint32_t)spritePtr->spriteData[((pixely << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[pixelOffset + 3] > 0x00)
 			{
-				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
-				memcpy(screen + (j * screenWidth) + i + 1, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + pixelOffset, sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i + 1, spritePtr->spriteData + pixelOffset, sizeOfPixel);
 			}
 
+			pixelOffset += 8;
 			pixelx += 2;
 
 			if (pixelx > spritePtr->width - 1)
 			{
 				pixelx = pixelx - spritePtr->width;
+				pixelOffset = pixely;
 			}
 		}
 
 
 		if (i < xDraw2)
 		{
-			if ((uint32_t)spritePtr->spriteData[((pixely << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[pixelOffset + 3] > 0x00)
 			{
-				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + pixelOffset, sizeOfPixel);
 			}
 		}
 
-		pixely--;
+		pixely -= spritePtr->width << 2;
 
 		if (pixely < 0)
 		{
-			pixely = spritePtr->height - 1;
+			pixely = ((spritePtr->height - 1) << 2) * spritePtr->width;
 		}
 
 	}
@@ -777,12 +781,13 @@ int renderSprite_RLUD_Tile(uint32_t screen[], int screenWidth, Sprite *spritePtr
 	{
 		int i = xDraw;
 		int pixelx = spritePtr->width - ((xDraw - xOffset) % spritePtr->width);
+		int pixelyOffset = ((pixely << 2) * spritePtr->width);
 
 		if ((xOffset - i) % 2 != 0)
 		{
-			if ((uint32_t)spritePtr->spriteData[((pixely << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[pixelyOffset + (pixelx << 2) + 3] > 0x00)
 			{
-				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + pixelyOffset + (pixelx << 2), sizeOfPixel);
 			}
 
 			pixelx--;
@@ -792,10 +797,10 @@ int renderSprite_RLUD_Tile(uint32_t screen[], int screenWidth, Sprite *spritePtr
 
 		for (; i + 1 < xDraw2; i += 2)
 		{
-			if ((uint32_t)spritePtr->spriteData[((pixely << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[pixelyOffset + (pixelx << 2) + 3] > 0x00)
 			{
-				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
-				memcpy(screen + (j * screenWidth) + i + 1, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + pixelyOffset + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i + 1, spritePtr->spriteData + pixelyOffset + (pixelx << 2), sizeOfPixel);
 			}
 
 			pixelx -= 2;
@@ -809,9 +814,9 @@ int renderSprite_RLUD_Tile(uint32_t screen[], int screenWidth, Sprite *spritePtr
 
 		if (i < xDraw2)
 		{
-			if ((uint32_t)spritePtr->spriteData[((pixely << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[pixelyOffset + (pixelx << 2) + 3] > 0x00)
 			{
-				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + pixelyOffset + (pixelx << 2), sizeOfPixel);
 			}
 		}
 
@@ -839,12 +844,13 @@ int renderSprite_LRDU_Tile(uint32_t screen[], int screenWidth, Sprite *spritePtr
 	{
 		int i = xDraw;
 		int pixelx = ((xDraw - xOffset) % spritePtr->width);
+		int pixelyOffset = ((pixely << 2) * spritePtr->width);
 
 		if ((xOffset - i) % 2 != 0)
 		{
-			if ((uint32_t)spritePtr->spriteData[((pixely << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[pixelyOffset + (pixelx << 2) + 3] > 0x00)
 			{
-				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + pixelyOffset + (pixelx << 2), sizeOfPixel);
 			}
 
 			pixelx++;
@@ -854,10 +860,10 @@ int renderSprite_LRDU_Tile(uint32_t screen[], int screenWidth, Sprite *spritePtr
 
 		for (; i + 1 < xDraw2; i += 2)
 		{
-			if ((uint32_t)spritePtr->spriteData[((pixely << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[pixelyOffset + (pixelx << 2) + 3] > 0x00)
 			{
-				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
-				memcpy(screen + (j * screenWidth) + i + 1, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + pixelyOffset + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i + 1, spritePtr->spriteData + pixelyOffset + (pixelx << 2), sizeOfPixel);
 			}
 
 			pixelx += 2;
@@ -871,9 +877,9 @@ int renderSprite_LRDU_Tile(uint32_t screen[], int screenWidth, Sprite *spritePtr
 
 		if (i < xDraw2)
 		{
-			if ((uint32_t)spritePtr->spriteData[((pixely << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[pixelyOffset + (pixelx << 2) + 3] > 0x00)
 			{
-				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + pixelyOffset + (pixelx << 2), sizeOfPixel);
 			}
 		}
 
@@ -901,12 +907,13 @@ int renderSprite_RLDU_Tile(uint32_t screen[], int screenWidth, Sprite *spritePtr
 	{
 		int i = xDraw;
 		int pixelx = spritePtr->width - ((xDraw - xOffset) % spritePtr->width);
+		int pixelyOffset = ((pixely << 2) * spritePtr->width);
 
 		if ((xOffset - i) % 2 != 0)
 		{
-			if ((uint32_t)spritePtr->spriteData[((pixely << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[pixelyOffset + (pixelx << 2) + 3] > 0x00)
 			{
-				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + pixelyOffset + (pixelx << 2), sizeOfPixel);
 			}
 
 			pixelx--;
@@ -916,10 +923,10 @@ int renderSprite_RLDU_Tile(uint32_t screen[], int screenWidth, Sprite *spritePtr
 
 		for (; i + 1 < xDraw2; i += 2)
 		{
-			if ((uint32_t)spritePtr->spriteData[((pixely << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[pixelyOffset + (pixelx << 2) + 3] > 0x00)
 			{
-				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
-				memcpy(screen + (j * screenWidth) + i + 1, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + pixelyOffset + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i + 1, spritePtr->spriteData + pixelyOffset + (pixelx << 2), sizeOfPixel);
 			}
 
 			pixelx -= 2;
@@ -933,9 +940,9 @@ int renderSprite_RLDU_Tile(uint32_t screen[], int screenWidth, Sprite *spritePtr
 
 		if (i < xDraw2)
 		{
-			if ((uint32_t)spritePtr->spriteData[((pixely << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[pixelyOffset + (pixelx << 2) + 3] > 0x00)
 			{
-				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+				memcpy(screen + (j * screenWidth) + i, spritePtr->spriteData + pixelyOffset + (pixelx << 2), sizeOfPixel);
 			}
 		}
 
@@ -966,21 +973,23 @@ int renderSprite_LRUD_TileFast(uint32_t screen[], int screenWidth, Sprite *sprit
 	for (int i = yDraw; i < yDraw2; i++)
 	{
 		int pixelx = ((xDraw - xOffset) % spritePtr->width);
+		int pixelYOffset = ((pixely << 2) * spritePtr->width);
 		int k = xDraw;
+
 
 		if (xDraw2 - xDraw > spritePtr->width)
 		{
-			memcpy(screen + (i * screenWidth) + k, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel * (spritePtr->width - pixelx));
+			memcpy(screen + (i * screenWidth) + k, spritePtr->spriteData + pixelYOffset + (pixelx << 2), sizeOfPixel * (spritePtr->width - pixelx));
 			k += (spritePtr->width - pixelx);
 
 
 			for (; k + spritePtr->width - 1 < xDraw2; k += spritePtr->width)
 			{
-				memcpy(screen + (i * screenWidth) + k, spritePtr->spriteData + ((pixely << 2) * spritePtr->width), spritePtr->width * sizeOfPixel);
+				memcpy(screen + (i * screenWidth) + k, spritePtr->spriteData + pixelYOffset, spritePtr->width * sizeOfPixel);
 			}
 		}
 
-		memcpy(screen + (i * screenWidth) + k, spritePtr->spriteData + ((pixely << 2) * spritePtr->width), ((xDraw2 - k) % spritePtr->width) * sizeOfPixel);
+		memcpy(screen + (i * screenWidth) + k, spritePtr->spriteData + pixelYOffset, ((xDraw2 - k) % spritePtr->width) * sizeOfPixel);
 
 		pixely--;
 
@@ -1009,21 +1018,22 @@ int renderSprite_LRDU_TileFast(uint32_t screen[], int screenWidth, Sprite *sprit
 	for (j = yDraw; j < yDraw2; j++)
 	{
 		int pixelx = ((xDraw - xOffset) % spritePtr->width);
+		int pixelYOffset = ((pixely << 2) * spritePtr->width);
 		int k = xDraw;
 
 		if (xDraw2 - xDraw > spritePtr->width)
 		{
-			memcpy(screen + (i * screenWidth) + k, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel * (spritePtr->width - pixelx));
+			memcpy(screen + (i * screenWidth) + k, spritePtr->spriteData + pixelYOffset + (pixelx << 2), sizeOfPixel * (spritePtr->width - pixelx));
 			k += (spritePtr->width - pixelx);
 
 
 			for (; k + spritePtr->width - 1 < xDraw2; k += spritePtr->width)
 			{
-				memcpy(screen + (i * screenWidth) + k, spritePtr->spriteData + ((pixely << 2) * spritePtr->width), spritePtr->width * sizeOfPixel);
+				memcpy(screen + (i * screenWidth) + k, spritePtr->spriteData + pixelYOffset, spritePtr->width * sizeOfPixel);
 			}
 		}
 
-		memcpy(screen + (i * screenWidth) + k, spritePtr->spriteData + ((pixely << 2) * spritePtr->width), ((xDraw2 - k) % spritePtr->width) * sizeOfPixel);
+		memcpy(screen + (i * screenWidth) + k, spritePtr->spriteData + pixelYOffset, ((xDraw2 - k) % spritePtr->width) * sizeOfPixel);
 
 		pixely++;
 
@@ -1043,19 +1053,18 @@ int renderSprite_LRUD_Scale(uint32_t screen[], int screenWidth, Sprite *spritePt
 {
 	int sizeOfPixel = sizeof(uint32_t);
 
-	double xScale = (double)spritePtr->width/(double)currentObject->xSize;
-	double yScale = (double)spritePtr->height/(double)currentObject->ySize;
-	double xScale2 = (double)currentObject->xSize / (double)spritePtr->width;
+	double xScale = (double)spritePtr->width/(double)currentObject->ObjectBox->xSize;
+	double yScale = (double)spritePtr->height/(double)currentObject->ObjectBox->ySize;
+	double xScale2 = (double)currentObject->ObjectBox->xSize / (double)spritePtr->width;
 
-	double pixely = (currentObject->ySize - 1 - (yDraw - yOffset)) * yScale;
+	double pixely = (currentObject->ObjectBox->ySize - 1 - (yDraw - yOffset)) * yScale;
 
-	uint32_t hexValue;
 
 	for (int i = yDraw; i < yDraw2; i++)
 	{
-		int pixelx = 0;
+		unsigned int pixelx = 0;
 
-		int intPixelY = (int)pixely;
+		int intPixelY = (((int)pixely << 2) * spritePtr->width);
 
 		double k = xOffset;
 
@@ -1069,11 +1078,11 @@ int renderSprite_LRUD_Scale(uint32_t screen[], int screenWidth, Sprite *spritePt
 
 			pixelx--;
 
-			if ((uint32_t)spritePtr->spriteData[((intPixelY << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] > 0x00)
 			{
 				for (int j = xDraw; j < xScale2; j++)
 				{
-					memcpy(screen + (i * screenWidth) + j, spritePtr->spriteData + ((intPixelY << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+					memcpy(screen + (i * screenWidth) + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
 				}
 				
 			}
@@ -1082,13 +1091,13 @@ int renderSprite_LRUD_Scale(uint32_t screen[], int screenWidth, Sprite *spritePt
 		}
 		
 
-		for (; k + xScale2 - 1.0 < (double)xDraw2; k += xScale2)
+		for (; (int)k < xDraw2 && pixelx < spritePtr->width; k += xScale2)
 		{
-			if ((uint32_t)spritePtr->spriteData[((intPixelY << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] > 0x00)
 			{
-				for (int j = 0; j < xScale2; j++)
+				for (int j = 0; j < xScale2 && (int)k + j < xDraw2; j++)
 				{
-					memcpy(screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + ((intPixelY << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+					memcpy(screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
 				}
 				
 			}
@@ -1107,16 +1116,15 @@ int renderSprite_LRUD_Scale_Slow(uint32_t screen[], int screenWidth, Sprite *spr
 {
 	int sizeOfPixel = sizeof(uint32_t);
 
-	double xScale = (double)spritePtr->width/(double)currentObject->xSize;
-	double yScale = (double)spritePtr->height/(double)currentObject->ySize;
+	double xScale = (double)spritePtr->width/(double)currentObject->ObjectBox->xSize;
+	double yScale = (double)spritePtr->height/(double)currentObject->ObjectBox->ySize;
 
-	uint32_t *hexValue;
 
-	double pixely = (currentObject->ySize - 1 - (yDraw - yOffset)) * yScale;
+	double pixely = (currentObject->ObjectBox->ySize - 1 - (yDraw - yOffset)) * yScale;
 
 	for (int i = yDraw; i < yDraw2; i++)
 	{
-		double pixelx = xScale * ((xDraw - xOffset) % currentObject->xSize);
+		double pixelx = xScale * ((xDraw - xOffset) % currentObject->ObjectBox->xSize);
 
 		for (int k = xDraw; k < xDraw2; k++)
 		{
@@ -1143,18 +1151,18 @@ int renderSprite_RLUD_Scale(uint32_t screen[], int screenWidth, Sprite *spritePt
 {
 	int sizeOfPixel = sizeof(uint32_t);
 
-	double xScale = (double)spritePtr->width/(double)currentObject->xSize;
-	double yScale = (double)spritePtr->height/(double)currentObject->ySize;
-	double xScale2 = (double)currentObject->xSize / (double)spritePtr->width;
+	double xScale = (double)spritePtr->width/(double)currentObject->ObjectBox->xSize;
+	double yScale = (double)spritePtr->height/(double)currentObject->ObjectBox->ySize;
+	double xScale2 = (double)currentObject->ObjectBox->xSize / (double)spritePtr->width;
 
-	double pixely = (currentObject->ySize - 1 - (yDraw - yOffset)) * yScale;
+	double pixely = (currentObject->ObjectBox->ySize - 1 - (yDraw - yOffset)) * yScale;
 
 
 	for (int i = yDraw; i < yDraw2; i++)
 	{
-		int pixelx = (int)((currentObject->xSize - 1) * xScale);
+		unsigned int pixelx = (int)((currentObject->ObjectBox->xSize - 1) * xScale);
 
-		int intPixelY = (int)pixely;
+		int intPixelY = (((int)pixely << 2) * spritePtr->width);
 
 		double k = xOffset;
 
@@ -1168,11 +1176,11 @@ int renderSprite_RLUD_Scale(uint32_t screen[], int screenWidth, Sprite *spritePt
 
 			pixelx++;
 
-			if ((uint32_t)spritePtr->spriteData[((intPixelY << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] > 0x00)
 			{
 				for (int j = xDraw; j < xScale2; j++)
 				{
-					memcpy(screen + (i * screenWidth) + j, spritePtr->spriteData + ((intPixelY << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+					memcpy(screen + (i * screenWidth) + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
 				}
 				
 			}
@@ -1181,14 +1189,13 @@ int renderSprite_RLUD_Scale(uint32_t screen[], int screenWidth, Sprite *spritePt
 		}
 		
 
-		for (; k + xScale2 - 1.0 < (double)xDraw2; k += xScale2)
+		for (; (int)k < xDraw2 && pixelx < spritePtr->width; k += xScale2)
 		{
-
-			if ((uint32_t)spritePtr->spriteData[((intPixelY << 2) * spritePtr->width) + (pixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] > 0x00)
 			{
-				for (int j = 0; j < xScale2; j++)
+				for (int j = 0; j < xScale2 && (int)k + j < xDraw2; j++)
 				{
-					memcpy(screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + ((intPixelY << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel);
+					memcpy(screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
 				}
 				
 			}
@@ -1207,19 +1214,17 @@ int renderSprite_LRDU_Scale(uint32_t screen[], int screenWidth, Sprite *spritePt
 {
 	int sizeOfPixel = sizeof(uint32_t);
 
-	double xScale = (double)spritePtr->width/(double)currentObject->xSize;
-	double yScale = (double)spritePtr->height/(double)currentObject->ySize;
-	double xScale2 = (double)currentObject->xSize / (double)spritePtr->width;
+	double xScale = (double)spritePtr->width/(double)currentObject->ObjectBox->xSize;
+	double yScale = (double)spritePtr->height/(double)currentObject->ObjectBox->ySize;
+	double xScale2 = (double)currentObject->ObjectBox->xSize / (double)spritePtr->width;
 
 	double pixely = (yDraw - yOffset) * yScale;
 
 
 	for (int i = yDraw; i < yDraw2; i++)
 	{
-		double pixelx = 0;
-
-		int intPixelY = (int)pixely;
-		int intPixelx = (int)pixelx;
+		int intPixelY = (((int)pixely << 2) * spritePtr->width);
+		unsigned int pixelx = 0;
 
 		double k = xOffset;
 
@@ -1231,29 +1236,28 @@ int renderSprite_LRDU_Scale(uint32_t screen[], int screenWidth, Sprite *spritePt
 				pixelx++;
 			}
 
-			intPixelx = (int)pixelx - 1;
+			pixelx--;
 
-			if ((uint32_t)spritePtr->spriteData[((intPixelY << 2) * spritePtr->width) + (intPixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] > 0x00)
 			{
 				for (int j = xDraw; j < xScale2; j++)
 				{
-					memcpy(screen + (i * screenWidth) + j, spritePtr->spriteData + ((intPixelY << 2) * spritePtr->width) + (intPixelx << 2), sizeOfPixel);
+					memcpy(screen + (i * screenWidth) + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
 				}
 				
 			}
+
+			pixelx++;
 		}
 		
 
-		// Memcopy # pixels at a time
-		for (; k + xScale2 - 1.0 < (double)xDraw2; k += xScale2)
+		for (; (int)k < xDraw2 && pixelx < spritePtr->width; k += xScale2)
 		{
-			intPixelx = (int)pixelx;
-
-			if ((uint32_t)spritePtr->spriteData[((intPixelY << 2) * spritePtr->width) + (intPixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] > 0x00)
 			{
-				for (int j = 0; j < xScale2; j++)
+				for (int j = 0; j < xScale2 && (int)k + j < xDraw2; j++)
 				{
-					memcpy(screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + ((intPixelY << 2) * spritePtr->width) + (intPixelx << 2), sizeOfPixel);
+					memcpy(screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
 				}
 				
 			}
@@ -1272,19 +1276,17 @@ int renderSprite_RLDU_Scale(uint32_t screen[], int screenWidth, Sprite *spritePt
 {
 	int sizeOfPixel = sizeof(uint32_t);
 
-	double xScale = (double)spritePtr->width/(double)currentObject->xSize;
-	double yScale = (double)spritePtr->height/(double)currentObject->ySize;
-	double xScale2 = (double)currentObject->xSize / (double)spritePtr->width;
+	double xScale = (double)spritePtr->width/(double)currentObject->ObjectBox->xSize;
+	double yScale = (double)spritePtr->height/(double)currentObject->ObjectBox->ySize;
+	double xScale2 = (double)currentObject->ObjectBox->xSize / (double)spritePtr->width;
 
 	double pixely = (yDraw - yOffset) * yScale;
 
 
 	for (int i = yDraw; i < yDraw2; i++)
 	{
-		double pixelx = currentObject->xSize - 1;
-
-		int intPixelY = (int)pixely;
-		int intPixelx = (int)pixelx;
+		int intPixelY = (((int)pixely << 2) * spritePtr->width);
+		unsigned int pixelx = currentObject->ObjectBox->xSize - 1;
 
 		double k = xOffset;
 
@@ -1296,29 +1298,28 @@ int renderSprite_RLDU_Scale(uint32_t screen[], int screenWidth, Sprite *spritePt
 				pixelx--;
 			}
 
-			intPixelx = (int)pixelx + 1;
+			pixelx++;
 
-			if ((uint32_t)spritePtr->spriteData[((intPixelY << 2) * spritePtr->width) + (intPixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] > 0x00)
 			{
 				for (int j = xDraw; j < xScale2; j++)
 				{
-					memcpy(screen + (i * screenWidth) + j, spritePtr->spriteData + ((intPixelY << 2) * spritePtr->width) + (intPixelx << 2), sizeOfPixel);
+					memcpy(screen + (i * screenWidth) + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
 				}
 				
 			}
+
+			pixelx--;
 		}
 		
 
-		// Memcopy # pixels at a time
-		for (; k + xScale2 - 1.0 < (double)xDraw2; k += xScale2)
+		for (; (int)k < xDraw2 && pixelx < spritePtr->width; k += xScale2)
 		{
-			intPixelx = (int)pixelx;
-
-			if ((uint32_t)spritePtr->spriteData[((intPixelY << 2) * spritePtr->width) + (intPixelx << 2) + 3] > 0x00)
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] > 0x00)
 			{
-				for (int j = 0; j < xScale2; j++)
+				for (int j = 0; j < xScale2 && (int)(j + k) < xDraw2; j++)
 				{
-					memcpy(screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + ((intPixelY << 2) * spritePtr->width) + (intPixelx << 2), sizeOfPixel);
+					memcpy(screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
 				}
 				
 			}

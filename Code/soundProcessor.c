@@ -132,7 +132,7 @@ int InitSound(const char *pathPtr, int channel, double volume)
 	SDL_MixAudio(audioBuffer, newSound->wav_data, spec.format, newSound->wav_data_len, volume);
 
 
-	//SDL_PutAudioStreamData(newSound->stream, audioBuffer, (int)newSound->wav_data_len);
+	SDL_PutAudioStreamData(newSound->stream, audioBuffer, (int)newSound->wav_data_len);
 	
 
 	SDL_free(audioBuffer);
@@ -214,7 +214,7 @@ int deleteSoundInstance(SoundInstance *inputSound)
 	inputSound->nextSound = NULL;
 	inputSound->prevSound = NULL;
 
-	SDL_ClearAudioStream(inputSound->stream);
+	SDL_DestroyAudioStream(inputSound->stream);
 
 	SDL_free(inputSound->wav_data);
 

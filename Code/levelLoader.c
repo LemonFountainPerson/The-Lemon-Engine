@@ -7,11 +7,17 @@ int switchLevel(World *gameWorld, int level)
 
 	deleteAllObjects(gameWorld->objectList);
 
-	loadLevel(gameWorld, level);
+	if (loadLevel(gameWorld, level) != LEMON_SUCCESS)
+	{
+		gameWorld->GameState = EMPTY_GAME;
+		return INVALID_DATA;
+	}
 
 	gameWorld->level = level;
 
 	gameWorld->GameState = GAMEPLAY;
+
+	ResetPlayer(gameWorld->Player);
 
 	return 0;
 }
@@ -69,7 +75,7 @@ int saveLevel(World *gameWorld)
 
 	while (currentObject != NULL)
 	{
-		switch(currentObject->objectID)
+		switch(currentObject->ObjectID)
 		{
 			case 7:
 			case 8:
@@ -83,35 +89,35 @@ int saveLevel(World *gameWorld)
 
 		fwrite("__", sizeof(char), 2, fPtr);
 
-		int size = convertIntToStr(buffer, currentObject->objectID);
+		int size = convertIntToStr(buffer, currentObject->ObjectID);
 
 		fwrite(buffer, sizeof(char), size, fPtr);
 
 		fwrite("__", sizeof(char), 2, fPtr);
 
-		size = convertIntToStr(buffer, currentObject->xPos);
+		size = convertIntToStr(buffer, currentObject->ObjectBox->xPos);
 
 		fwrite(buffer, sizeof(char), size, fPtr);
 
 		fwrite("__", sizeof(char), 2, fPtr);
 
-		size = convertIntToStr(buffer, currentObject->yPos);
+		size = convertIntToStr(buffer, currentObject->ObjectBox->yPos);
 
 		fwrite(buffer, sizeof(char), size, fPtr);
 
 		fwrite("__", sizeof(char), 2, fPtr);
 		
 
-		switch(currentObject->objectID)
+		switch(currentObject->ObjectID)
 		{
 			case 1:
-				size = convertIntToStr(buffer, (int)(currentObject->xSize/X_TILESCALE));
+				size = convertIntToStr(buffer, (int)(currentObject->ObjectBox->xSize/X_TILESCALE));
 
 				fwrite(buffer, sizeof(char), size, fPtr);
 
 				fwrite("__", sizeof(char), 2, fPtr);
 
-				size = convertIntToStr(buffer, (int)(currentObject->ySize/Y_TILESCALE));
+				size = convertIntToStr(buffer, (int)(currentObject->ObjectBox->ySize/Y_TILESCALE));
 
 				fwrite(buffer, sizeof(char), size, fPtr);
 				break;
@@ -299,7 +305,7 @@ int loadLevel(World *gameWorld, int level)
 		{
 			printf("Level %d not found.\n", level);
 			gameWorld->GameState = GAMEPLAY;
-			return -1;
+			return MISSING_DATA;
 		}
 	}
 	else
@@ -318,12 +324,12 @@ int loadLevel(World *gameWorld, int level)
 	fread(charBuffer, sizeof(char), 5, fPtr);
 	charBuffer[5] = 0;
 
-	if (strcmp(charBuffer, "V0.04") != 0)
+	if (strcmp(charBuffer, LEMON_VERSION) != 0)
 	{
 		printf("Level %d load failed: Incompatible version number! %s\n", charBuffer);
 		fclose(fPtr);
 		gameWorld->GameState = GAMEPLAY;
-		return -1;
+		return INVALID_DATA;
 	}
 
 
@@ -336,7 +342,7 @@ int loadLevel(World *gameWorld, int level)
 		printf("Level %d load failed: This file does not contain level data!\n");
 		fclose(fPtr);
 		gameWorld->GameState = GAMEPLAY;
-		return -1;
+		return INVALID_DATA;
 	}
 
 
@@ -359,7 +365,7 @@ int loadLevel(World *gameWorld, int level)
 			printf("Level %d load failed: Data formatted incorrectly! %c %c %c %c\n", level, charBuffer[0], charBuffer[1], charBuffer[2], charBuffer[3]);
 			clearCurrentlyLoadedLevelData(gameWorld);
 			fclose(fPtr);
-			return -1;
+			return INVALID_DATA;
 		}
 
 		fread(charBuffer, sizeof(char), 7, fPtr);
@@ -387,7 +393,7 @@ int loadLevel(World *gameWorld, int level)
 			printf("Unrecognised data!\n");
 			clearCurrentlyLoadedLevelData(gameWorld);
 			fclose(fPtr);
-			return -1;
+			return INVALID_DATA;
 		}
 		
 
@@ -408,7 +414,7 @@ int loadLevel(World *gameWorld, int level)
 
 	gameWorld->GameState = GAMEPLAY;
 
-	return 0;
+	return LEMON_SUCCESS;
 }
 
 
