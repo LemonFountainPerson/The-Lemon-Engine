@@ -5,7 +5,7 @@ int switchLevel(World *gameWorld, int level)
 {
 	gameWorld->GameState = LOADING;
 
-	deleteAllObjects(gameWorld->objectList);
+	deleteAllObjects(gameWorld->ObjectList);
 
 	if (loadLevel(gameWorld, level) != LEMON_SUCCESS)
 	{
@@ -69,7 +69,7 @@ int saveLevel(World *gameWorld)
 	fwrite("V1____", sizeof(char), 6, fPtr);
 
 	Object *currentObject;
-	currentObject = gameWorld->objectList->firstObject;
+	currentObject = gameWorld->ObjectList->firstObject;
 
 	char buffer[16] = {0};
 
@@ -420,12 +420,12 @@ int loadLevel(World *gameWorld, int level)
 
 int clearCurrentlyLoadedLevelData(World *gameWorld)
 {
-	if (gameWorld == NULL || gameWorld->objectList == NULL)
+	if (gameWorld == NULL || gameWorld->ObjectList == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	deleteAllObjects(gameWorld->objectList);
+	deleteAllObjects(gameWorld->ObjectList);
 
 	gameWorld->level = 0;
 	gameWorld->GameState = IN_MENU;

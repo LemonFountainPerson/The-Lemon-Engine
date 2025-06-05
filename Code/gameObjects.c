@@ -4,12 +4,12 @@
 
 Object* AddObject(World *gameWorld, int objectID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5)
 {
-	if (gameWorld == NULL || gameWorld->objectList == NULL)
+	if (gameWorld == NULL || gameWorld->ObjectList == NULL)
 	{
 		return NULL;
 	}
 
-	ObjectController *objectList = gameWorld->objectList;
+	ObjectController *ObjectList = gameWorld->ObjectList;
 
 
 	if (objectID >= UNDEFINED_OBJECT || objectID < LEVEL_FLAG_OBJ)
@@ -20,7 +20,7 @@ Object* AddObject(World *gameWorld, int objectID, int xPos, int yPos, int arg1, 
 
 
 	Object *newObject;
-	newObject = createNewObject(objectList, xPos, yPos, objectID);
+	newObject = createNewObject(ObjectList, xPos, yPos, objectID);
 
 	if (newObject == NULL)
 	{
@@ -42,7 +42,7 @@ Object* AddObject(World *gameWorld, int objectID, int xPos, int yPos, int arg1, 
 	newObject->arg5 = arg5;
 	
 
-	CreateObjectSpriteSet(objectList, objectID);
+	CreateObjectSpriteSet(ObjectList, objectID);
 	
 
 
@@ -68,11 +68,11 @@ Object* AddObject(World *gameWorld, int objectID, int xPos, int yPos, int arg1, 
 
 			if (arg1 + arg2 > 256)
 			{
-				switchObjectSprite(3, newObject, objectList);
+				switchObjectSprite(3, newObject, ObjectList);
 			}
 			else if (arg1 + arg2 > 128)
 			{
-				switchObjectSprite(2, newObject, objectList);
+				switchObjectSprite(2, newObject, ObjectList);
 			}
 			break;
 
@@ -87,11 +87,11 @@ Object* AddObject(World *gameWorld, int objectID, int xPos, int yPos, int arg1, 
 
 			if (arg1 + arg2 > 256)
 			{
-				switchObjectSprite(3, newObject, objectList);
+				switchObjectSprite(3, newObject, ObjectList);
 			}
 			else if (arg1 + arg2 > 128)
 			{
-				switchObjectSprite(2, newObject, objectList);
+				switchObjectSprite(2, newObject, ObjectList);
 			}
 			break;
 
@@ -189,6 +189,12 @@ Object* AddObject(World *gameWorld, int objectID, int xPos, int yPos, int arg1, 
 			newObject->arg1 = arg2;
 			break;
 
+		case UI_ELEMENT:
+			newObject->layer = FOREGROUND;
+			newObject->ObjectBox->solid = UNSOLID;
+			SetDrawPriorityToFront(ObjectList, newObject);
+			break;
+
 		default:
 			break;
 	}
@@ -205,10 +211,10 @@ Object* AddObject(World *gameWorld, int objectID, int xPos, int yPos, int arg1, 
 }
 
 
-Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int objectID)
+Object* createNewObject(ObjectController *ObjectList, int xPos, int yPos, int objectID)
 {
 	Object *currentObject;
-	currentObject = objectList->firstObject;
+	currentObject = ObjectList->firstObject;
 
 
 	Object *newObject = malloc(sizeof(Object));
@@ -236,7 +242,7 @@ Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int ob
 
 	if (currentObject != NULL)
 	{
-		while (currentObject->nextObject != NULL && i < objectList->objectCount)
+		while (currentObject->nextObject != NULL && i < ObjectList->objectCount)
 		{
 			currentObject = currentObject->nextObject;
 			i++;
@@ -246,13 +252,13 @@ Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int ob
 	}
 	else
 	{
-		objectList->firstObject = newObject;
+		ObjectList->firstObject = newObject;
 	}
 
-	objectList->lastObject = newObject;
+	ObjectList->lastObject = newObject;
 
 
-	objectList->objectCount = i + 1;
+	ObjectList->objectCount = i + 1;
 
 	newObject->nextObject = NULL;
 	newObject->prevObject = currentObject;
@@ -264,7 +270,7 @@ Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int ob
 	newObject->ObjectBox->yVelocity = 0.0;
 	newObject->ObjectBox->xVelocity = 0.0;
 	newObject->ObjectBox->direction = RADIAN_90;
-	newObject->ObjectBox->solid = UNDEFINED_SOLID;
+	newObject->ObjectBox->solid = SOLID;
 	newObject->ObjectBox->xSize = 0;
 	newObject->ObjectBox->ySize = 0;
 	memset(newObject->argArray, 0, sizeof(int) * 16);
@@ -273,6 +279,7 @@ Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int ob
 	newObject->currentAnimation = 0;
 	newObject->animationTick = 0;
 	newObject->spriteBuffer = NULL;
+	newObject->layer = MIDDLEGROUND;
 	newObject->xFlip = 1;
 	newObject->yFlip = 1;
 	newObject->State = DEFAULT;
@@ -281,16 +288,16 @@ Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int ob
 }
 
 
-void CreateObjectSpriteSet(ObjectController *objectList, int objectID)
+void CreateObjectSpriteSet(ObjectController *ObjectList, int objectID)
 {
-	if (objectList == NULL)
+	if (ObjectList == NULL)
 	{
 		return;
 	}
 
 	// Check for pre-existing spriteset
 	SpriteSet *currentSetPtr;
-	currentSetPtr = objectList->startSpriteSetPtr;
+	currentSetPtr = ObjectList->startSpriteSetPtr;
 
 	int i = 1;
 
@@ -320,7 +327,7 @@ void CreateObjectSpriteSet(ObjectController *objectList, int objectID)
 
 	if (currentSetPtr == NULL && i == 1)
 	{
-		objectList->startSpriteSetPtr = newSet;
+		ObjectList->startSpriteSetPtr = newSet;
 	}
 	else
 	{
@@ -333,7 +340,7 @@ void CreateObjectSpriteSet(ObjectController *objectList, int objectID)
 	newSet->lastSprite = NULL;
 	newSet->setID = objectID;
 	newSet->spriteCount = 0;
-	objectList->spriteSetCount = i + 1;
+	ObjectList->spriteSetCount = i + 1;
 
 
 	// Fill sprite set with sprites
@@ -427,15 +434,15 @@ Object* DefineMovingPlatform(Object *inputObject, int objectID, int xPos, int yP
 
 Object* AddFlagObject(World *gameWorld, Flags flagID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5)
 {
-	if (gameWorld == NULL || gameWorld->objectList == NULL)
+	if (gameWorld == NULL || gameWorld->ObjectList == NULL)
 	{
 		return NULL;
 	}
 
-	ObjectController *objectList = gameWorld->objectList;
+	ObjectController *ObjectList = gameWorld->ObjectList;
 
 	Object *newObject;
-	newObject = createNewObject(objectList, xPos, yPos, LEVEL_FLAG_OBJ);
+	newObject = createNewObject(ObjectList, xPos, yPos, LEVEL_FLAG_OBJ);
 
 	if (newObject == NULL)
 	{
@@ -469,7 +476,7 @@ Object* AddFlagObject(World *gameWorld, Flags flagID, int xPos, int yPos, int ar
 	newObject->ObjectBox->xPosRight = newObject->ObjectBox->xPos + newObject->ObjectBox->xSize;
 	newObject->ObjectBox->yPosTop = newObject->ObjectBox->xPos + newObject->ObjectBox->xSize;
 
-	SetDrawPriorityToFront(objectList, newObject);
+	SetDrawPriorityToFront(ObjectList, newObject);
 	// Counter intuitively, by setting draw priority to front, the flag is placed at the end of the object list
 	// This is to help with efficiency somewhat as most searches begin from the start of the list as opposed to the end;
 	// Flag objects should never be directly accessed/affected by an object unless you are designing a special circumstance
@@ -478,30 +485,30 @@ Object* AddFlagObject(World *gameWorld, Flags flagID, int xPos, int yPos, int ar
 }
 
 
-void deleteAllObjects(ObjectController *objectList)
+void deleteAllObjects(ObjectController *ObjectList)
 {
-	if (objectList == NULL )
+	if (ObjectList == NULL )
 	{
 		return;
 	}
 	
 	Object *currentObject;
-  	currentObject = objectList->firstObject;
+  	currentObject = ObjectList->firstObject;
 
 	while (currentObject != NULL)
 	{
-		deleteObject(objectList, &currentObject);
+		deleteObject(ObjectList, &currentObject);
 	}
 	
-	objectList->objectCount = 0;
-	objectList->firstObject = NULL;
-	objectList->lastObject = NULL;
+	ObjectList->objectCount = 0;
+	ObjectList->firstObject = NULL;
+	ObjectList->lastObject = NULL;
 
 	return;
 }
 
 
-int switchObjectSprite(int spriteID, Object *inputObject, ObjectController *objectList)
+int switchObjectSprite(int spriteID, Object *inputObject, ObjectController *ObjectList)
 {
 	if (inputObject == NULL)
 	{
@@ -517,7 +524,7 @@ int switchObjectSprite(int spriteID, Object *inputObject, ObjectController *obje
 
 	// Find correct sprite set
 	SpriteSet *currentSet;
-	currentSet = objectList->startSpriteSetPtr;
+	currentSet = ObjectList->startSpriteSetPtr;
 
 	if (currentSet == NULL)
 	{
@@ -597,11 +604,11 @@ int switchObjectSprite(int spriteID, Object *inputObject, ObjectController *obje
 }
 
 
-int switchObjectSpriteName(char spriteName[], Object *inputObject, ObjectController *objectList)
+int switchObjectSpriteName(char spriteName[], Object *inputObject, ObjectController *ObjectList)
 {
 	// Find correct sprite set
 	SpriteSet *currentSet;
-	currentSet = objectList->startSpriteSetPtr;
+	currentSet = ObjectList->startSpriteSetPtr;
 
 	if (currentSet == NULL)
 	{
@@ -658,7 +665,7 @@ int switchObjectSpriteName(char spriteName[], Object *inputObject, ObjectControl
 }
 
 
-void deleteObject(ObjectController *objectList, Object **input)
+void deleteObject(ObjectController *ObjectList, Object **input)
 {
 	Object *tempObject;
 	tempObject = *input;
@@ -680,7 +687,7 @@ void deleteObject(ObjectController *objectList, Object **input)
 	}
 	else
 	{
-		objectList->lastObject = prevObject;
+		ObjectList->lastObject = prevObject;
 	}
 
 	if (prevObject != NULL)
@@ -689,7 +696,7 @@ void deleteObject(ObjectController *objectList, Object **input)
 	}
 	else
 	{
-		objectList->firstObject = (*input);
+		ObjectList->firstObject = (*input);
 	}
 
 
@@ -736,7 +743,7 @@ int UnmarkObjectForDeletion(Object *inputObject)
 }
 
 
-void IncrementDrawPriority(ObjectController *objectList, Object *input)
+void IncrementDrawPriority(ObjectController *ObjectList, Object *input)
 {
 	Object *nextPtr;
 	nextPtr = input->nextObject;
@@ -751,7 +758,7 @@ void IncrementDrawPriority(ObjectController *objectList, Object *input)
 	
 	if (prevPtr == NULL)
 	{
-		objectList->firstObject = nextPtr;
+		ObjectList->firstObject = nextPtr;
 	}
 	else
 	{
@@ -765,14 +772,14 @@ void IncrementDrawPriority(ObjectController *objectList, Object *input)
 
 	if (input->nextObject == NULL)
 	{
-		objectList->lastObject = input;
+		ObjectList->lastObject = input;
 	}
 
 	return;
 }
 
 
-void DecrementDrawPriority(ObjectController *objectList, Object *input)
+void DecrementDrawPriority(ObjectController *ObjectList, Object *input)
 {
 	Object *nextPtr;
 	nextPtr = input->nextObject;
@@ -787,7 +794,7 @@ void DecrementDrawPriority(ObjectController *objectList, Object *input)
 	
 	if (nextPtr == NULL)
 	{
-		objectList->lastObject = prevPtr;
+		ObjectList->lastObject = prevPtr;
 	}
 	else
 	{
@@ -801,14 +808,14 @@ void DecrementDrawPriority(ObjectController *objectList, Object *input)
 
 	if (input->prevObject == NULL)
 	{
-		objectList->firstObject = input;
+		ObjectList->firstObject = input;
 	}
 
 	return;
 }
 
 
-void SetDrawPriorityToFront(ObjectController *objectList, Object *input)
+void SetDrawPriorityToFront(ObjectController *ObjectList, Object *input)
 {
 	Object *nextPtr;
 	nextPtr = input->nextObject;
@@ -826,27 +833,27 @@ void SetDrawPriorityToFront(ObjectController *objectList, Object *input)
 	
 	if (prevPtr == NULL)
 	{
-		objectList->firstObject = nextPtr;
+		ObjectList->firstObject = nextPtr;
 	}
 	else
 	{
 		prevPtr->nextObject = nextPtr;
 	}
 	
-	if (objectList->lastObject != NULL)
+	if (ObjectList->lastObject != NULL)
 	{
-		objectList->lastObject->nextObject = input;
+		ObjectList->lastObject->nextObject = input;
 	}
 
-	input->prevObject = objectList->lastObject;
-	objectList->lastObject = input;
+	input->prevObject = ObjectList->lastObject;
+	ObjectList->lastObject = input;
 	input->nextObject = NULL;
 
 	return;
 }
 
 
-void SetDrawPriorityToBack(ObjectController *objectList, Object *input)
+void SetDrawPriorityToBack(ObjectController *ObjectList, Object *input)
 {
 	Object *nextPtr;
 	nextPtr = input->nextObject;
@@ -864,20 +871,20 @@ void SetDrawPriorityToBack(ObjectController *objectList, Object *input)
 	
 	if (nextPtr == NULL)
 	{
-		objectList->lastObject = prevPtr;
+		ObjectList->lastObject = prevPtr;
 	}
 	else
 	{
 		nextPtr->prevObject = prevPtr;
 	}
 	
-	if (objectList->firstObject != NULL)
+	if (ObjectList->firstObject != NULL)
 	{
-		objectList->firstObject->prevObject = input;
+		ObjectList->firstObject->prevObject = input;
 	}
 
-	input->nextObject = objectList->firstObject;
-	objectList->firstObject = input;
+	input->nextObject = ObjectList->firstObject;
+	ObjectList->firstObject = input;
 	input->prevObject = NULL;
 
 	return;
@@ -897,17 +904,17 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 		return ACTION_DISABLED;
 	}
 
-	ObjectController *objectList = gameWorld->objectList;
+	ObjectController *ObjectList = gameWorld->ObjectList;
 
-	if (objectList == NULL || objectList->firstObject == NULL)
+	if (ObjectList == NULL || ObjectList->firstObject == NULL)
 	{
 		return MISSING_DATA;
 	}
 
 	Object *currentObject;
-	currentObject = objectList->firstObject;
+	currentObject = ObjectList->firstObject;
 
-	int i = objectList->objectCount;
+	int i = ObjectList->objectCount;
 
 	while(currentObject != NULL && i > 0)
 	{
@@ -932,7 +939,7 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 		if (currentObject->State == TO_BE_DELETED)
 		{
 			// If object has been deleted, pointer will be incremented and so the rest of the iteration is skipped
-			deleteObject(objectList, &currentObject);
+			deleteObject(ObjectList, &currentObject);
 			continue;
 		}
 	
@@ -942,7 +949,7 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 		moveObjectY(currentObject, gameWorld->Player);
 		
 		// Assign Sprite
-		switchObjectSprite(currentObject->currentSprite, currentObject, objectList);
+		switchObjectSprite(currentObject->currentSprite, currentObject, ObjectList);
 
 		currentObject = currentObject->nextObject;
 		
@@ -954,7 +961,7 @@ FunctionResult updateObjects(World *gameWorld, int keyboard[256])
 
 int ObjectBehaviour(World *gameWorld, Object *inputObject)
 {
-	if (gameWorld == NULL || gameWorld->objectList == NULL)
+	if (gameWorld == NULL || gameWorld->ObjectList == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -1013,13 +1020,13 @@ int ObjectBehaviour(World *gameWorld, Object *inputObject)
 
 		case VERTICAL_GATE:
 		{
-			UpdateVerticalGate(inputObject, gameWorld->objectList, player);
+			UpdateVerticalGate(inputObject, gameWorld->ObjectList, player);
 		} break;
 
 
 		case HORIZONTAL_GATE:
 		{
-			UpdateHorizontalGate(inputObject, gameWorld->objectList, player);
+			UpdateHorizontalGate(inputObject, gameWorld->ObjectList, player);
 		} break;
 
 
@@ -1267,20 +1274,20 @@ int UpdateGateSwitch(PlayerData *player, Object *gateSwitch)
 }
 
 
-int UpdateVerticalGate(Object *gate, ObjectController *objectList, PlayerData *player)
+int UpdateVerticalGate(Object *gate, ObjectController *ObjectList, PlayerData *player)
 {
 	// arg1 = door ID
 	// arg2 = door open/close (0/1)
 	// arg3 = closed gate y position 
 	// arg4 = speed
 	
-	if (objectList == NULL)
+	if (ObjectList == NULL)
 	{
 		return -1;
 	}
 
 	// Evaluate state of gate
-	gateControl(gate, objectList);
+	gateControl(gate, ObjectList);
 
 	int closedPosition = gate->arg3;
 	int speed = gate->arg4;
@@ -1383,7 +1390,7 @@ int UpdateVerticalGate(Object *gate, ObjectController *objectList, PlayerData *p
 }
 
 
-int UpdateHorizontalGate(Object *gate, ObjectController *objectList, PlayerData *player)
+int UpdateHorizontalGate(Object *gate, ObjectController *ObjectList, PlayerData *player)
 {
 
 
@@ -1392,10 +1399,10 @@ int UpdateHorizontalGate(Object *gate, ObjectController *objectList, PlayerData 
 }
 
 
-int gateControl(Object *gate, ObjectController *objectList)
+int gateControl(Object *gate, ObjectController *ObjectList)
 {
 	Object *currentObject;
-	currentObject = objectList->firstObject;
+	currentObject = ObjectList->firstObject;
 
 	if (gate == NULL || currentObject == NULL)
 	{
@@ -1580,7 +1587,7 @@ int boxOverlapsBoxBottom(PhysicsRect *inputBox, PhysicsRect *compareBox)
 Object* GetObjectOverlappingBox(PhysicsRect *inputBox, World *gameWorld)
 {
 	Object *currentObject;
-	currentObject = gameWorld->objectList->firstObject;
+	currentObject = gameWorld->ObjectList->firstObject;
 
 	if (currentObject == NULL)
 	{
@@ -1753,17 +1760,17 @@ int assignDirection(PhysicsRect *inputBox, Object *currentObject)
 }
 
 
-int OverlapsObjectType(ObjectController *objectList, int overlapObjectID, Object *inputObject)
+int OverlapsObjectType(ObjectController *ObjectList, int overlapObjectID, Object *inputObject)
 {
-	if (objectList == NULL || objectList->firstObject == NULL)
+	if (ObjectList == NULL || ObjectList->firstObject == NULL)
 	{
 		return -1;
 	}
 
 	Object *currentObject;
-	currentObject = objectList->firstObject;
+	currentObject = ObjectList->firstObject;
 
-	int i = objectList->objectCount;
+	int i = ObjectList->objectCount;
 
 	while(currentObject != NULL && i > 0)
 	{
@@ -1784,17 +1791,17 @@ int OverlapsObjectType(ObjectController *objectList, int overlapObjectID, Object
 }
 
 
-int OverlapsObjectSolid(ObjectController *objectList, int solidID, Object *inputObject)
+int OverlapsObjectSolid(ObjectController *ObjectList, int solidID, Object *inputObject)
 {
-	if (objectList == NULL || objectList->firstObject == NULL)
+	if (ObjectList == NULL || ObjectList->firstObject == NULL)
 	{
 		return -1;
 	}
 
 	Object *currentObject;
-	currentObject = objectList->firstObject;
+	currentObject = ObjectList->firstObject;
 
-	int i = objectList->objectCount;
+	int i = ObjectList->objectCount;
 
 	while(currentObject != NULL && i > 0)
 	{
@@ -1815,17 +1822,17 @@ int OverlapsObjectSolid(ObjectController *objectList, int solidID, Object *input
 }
 
 
-int OverlapsObjectAllSolids(ObjectController *objectList, Object *inputObject)
+int OverlapsObjectAllSolids(ObjectController *ObjectList, Object *inputObject)
 {
-	if (objectList == NULL || objectList->firstObject == NULL)
+	if (ObjectList == NULL || ObjectList->firstObject == NULL)
 	{
 		return -1;
 	}
 
 	Object *currentObject;
-	currentObject = objectList->firstObject;
+	currentObject = ObjectList->firstObject;
 
-	int i = objectList->objectCount;
+	int i = ObjectList->objectCount;
 
 	while(currentObject != NULL && i > 0)
 	{
@@ -2192,7 +2199,7 @@ int ClimbFlatSlope(PhysicsRect *inputBox, PhysicsRect *compareBox, World *GameWo
 
 	while (objectCheck == NULL && i < round(fabs(inputBox->xVelocity * deltaTime)) )
 	{
-		inputBox->xPos += orientation;
+		inputBox->xPos += orientation; 
 		i++;
 
 		int slopeClimb = 0;

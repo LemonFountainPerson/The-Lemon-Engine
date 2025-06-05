@@ -112,7 +112,7 @@ int ResetPlayer(PlayerData *Player)
 
 FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256])
 {
-	if (player == NULL || gameWorld->objectList == NULL)
+	if (player == NULL || gameWorld->ObjectList == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -350,7 +350,7 @@ int MovePlayerX(PlayerData *player, World *GameWorld)
 
 
 	Object *currentObject;
-	currentObject = GameWorld->objectList->firstObject;
+	currentObject = GameWorld->ObjectList->firstObject;
 
 
 	int count = 0;
@@ -516,7 +516,7 @@ int MovePlayerY(PlayerData *player, World *GameWorld)
 	
 	
 	Object *currentObject;
-	currentObject = GameWorld->objectList->firstObject;
+	currentObject = GameWorld->ObjectList->firstObject;
 
 	if (currentObject == NULL)
 	{
@@ -692,7 +692,7 @@ int ApplyYPhysics(PlayerData *player, Object *inputObject)
 int checkIfGrounded(World *gameWorld, PlayerData *player)
 {
 	Object *detectedObject;
-	detectedObject = gameWorld->objectList->firstObject;
+	detectedObject = gameWorld->ObjectList->firstObject;
 
 	int i = 0;
 	int result = 0;

@@ -106,7 +106,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	loadLevel(GameWorld, 1);
 
 
-	Object *testObject = GameWorld->objectList->firstObject;
+	Object *testObject = GameWorld->ObjectList->firstObject;
 
     while(testObject->ObjectID != VERTICAL_GATE)
     {
@@ -147,15 +147,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		renderBackGroundSprite(frame.screen, frame.width, frame.height, GameWorld);
 
-		drawObjects(BACKGROUND, frame.screen, frame.width, frame.height, GameWorld);
-
-        drawObjects(MIDDLEGROUND, frame.screen, frame.width, frame.height, GameWorld);
-		
-		drawObjects(FOREGROUND, frame.screen, frame.width, frame.height, GameWorld);
-		
-	    drawObjects(PARTICLES, frame.screen, frame.width, frame.height, GameWorld);
-
-        drawObjects(HUD, frame.screen, frame.width, frame.height, GameWorld);
+		drawObjects(frame.screen, frame.width, frame.height, GameWorld);
 
 
         // Force window to update frame

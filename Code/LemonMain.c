@@ -66,7 +66,7 @@ int RunLemonEngine(void)
     // test data
 	loadLevel(GameWorld, 1);
 
-	Object *testObject = GameWorld->objectList->lastObject;
+	Object *testObject = GameWorld->ObjectList->lastObject;
 
 	
     // Game Loop
@@ -109,14 +109,7 @@ int RunLemonEngine(void)
 
 		renderBackGroundSprite(frame.screen, frame.width, frame.height, GameWorld);
 
-		drawObjects(BACKGROUND, frame.screen, frame.width, frame.height, GameWorld);
-
-		drawObjects(MIDDLEGROUND, frame.screen, frame.width, frame.height, GameWorld);
-		
-		drawObjects(FOREGROUND, frame.screen, frame.width, frame.height, GameWorld);
-		
-		drawObjects(PARTICLES, frame.screen, frame.width, frame.height, GameWorld);
-
+		drawObjects(frame.screen, frame.width, frame.height, GameWorld);
 
 		PutScreenOnWindow(frame, Renderer, screenSurface, texture);
 		
@@ -290,7 +283,7 @@ void DebugControls(World *GameWorld, PlayerData *player, int keyboard[256], Obje
 	if (keyboard['Y'] && clickY == 0)
 	{
 		//clearGameData(GameWorld, player);
-		//deleteAllObjects(GameWorld->objectList);
+		//deleteAllObjects(GameWorld->ObjectList);
 		switchLevel(GameWorld, 1);
 
 		clickY = 1;
@@ -397,7 +390,7 @@ World* initialiseGame(PlayerData *player)
 	gameWorld->drawPlayer = 1;
 	gameWorld->drawBackGround = 1;
 	gameWorld->drawParticles = 1;
-	gameWorld->drawHud = 0;
+	gameWorld->drawHud = 1;
 
 	gameWorld->bgParallax = 0.1;
 	gameWorld->bgTileVertically = 1;
@@ -427,7 +420,7 @@ World* initialiseGame(PlayerData *player)
 	objController->spriteSetCount = 0;
 	objController->startSpriteSetPtr = NULL;
 
-	gameWorld->objectList = objController;
+	gameWorld->ObjectList = objController;
 
 	gameWorld->BackGrounds = NULL;
 
@@ -453,16 +446,16 @@ World* initialiseGame(PlayerData *player)
 
 void clearGameData(World *gameWorld, PlayerData *player)
 {
-	if (gameWorld == NULL || gameWorld->objectList == NULL)
+	if (gameWorld == NULL || gameWorld->ObjectList == NULL)
 	{
 		return;
 	}
 
-	deleteAllObjects(gameWorld->objectList);
+	deleteAllObjects(gameWorld->ObjectList);
 
 
 	SpriteSet *currentSet;
-	currentSet = gameWorld->objectList->startSpriteSetPtr;
+	currentSet = gameWorld->ObjectList->startSpriteSetPtr;
 
 	SpriteSet *prevSet;
 	prevSet = NULL;
@@ -485,7 +478,7 @@ void clearGameData(World *gameWorld, PlayerData *player)
 		free(prevSet);
 	}
 	
-	free(gameWorld->objectList);
+	free(gameWorld->ObjectList);
 	
 	currentSet = gameWorld->BackGrounds;
 	prevSet = NULL;
@@ -505,7 +498,7 @@ void clearGameData(World *gameWorld, PlayerData *player)
 		free(prevSet);
 	}
 
-	gameWorld->objectList = NULL;
+	gameWorld->ObjectList = NULL;
 	gameWorld->bgSpriteBuffer = NULL;
 	gameWorld->BackGrounds = NULL;
 

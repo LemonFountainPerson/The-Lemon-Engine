@@ -146,38 +146,37 @@ int worldCameraControl(int width, int height, PlayerData *player, World *gameWor
 }
 
 
-int drawObjects(Layer drawLayer, uint32_t screen[], int width, int height, World *gameWorld)
+int drawObjects(uint32_t screen[], int width, int height, World *gameWorld)
 {
-	if (gameWorld == NULL || gameWorld->objectList == NULL)
+	if (gameWorld == NULL || gameWorld->ObjectList == NULL)
 	{
 		return MISSING_DATA;
 	}
 
 	Object *currentObject;
-	currentObject = gameWorld->objectList->firstObject;
 
-	int i = gameWorld->objectList->objectCount;
-
-
-	while(currentObject != NULL && i > 0)
+	for (Layer drawLayer = BACKGROUND; drawLayer < UNDEFINED_LAYER; drawLayer++)
 	{
-		// Drawing routine - max objects on screen is defined as Macro
-		renderObject(gameWorld, currentObject, screen, width, height, drawLayer);
+		currentObject = gameWorld->ObjectList->firstObject;
+
+		int i = gameWorld->ObjectList->objectCount;
+
+
+		while(currentObject != NULL && i > 0)
+		{
+			// Drawing routine - max objects on screen is defined as Macro
+			renderObject(gameWorld, currentObject, screen, width, height, drawLayer);
 		
-		currentObject = currentObject->nextObject;
-		i--;
-	}
+			currentObject = currentObject->nextObject;
+			i--;
+		}
 
-	if (gameWorld->Player == NULL)
-	{
-		return -1;
-	}
 
-	if (gameWorld->Player->playerLayer == drawLayer)
-	{
-		drawPlayer(screen, width, height, gameWorld);
+		if (gameWorld->Player != NULL && gameWorld->Player->playerLayer == drawLayer)
+		{
+			drawPlayer(screen, width, height, gameWorld);
+		}
 	}
-	
 
 	return 0;
 }
@@ -320,7 +319,14 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 
 	// Locate object on screen
 	int xOffset = currentObject->ObjectBox->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-	int yOffset = currentObject->ObjectBox->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+	int	yOffset = currentObject->ObjectBox->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+
+	if (currentObject->ObjectID == UI_ELEMENT)
+	{
+		xOffset += gameWorld->cameraX;
+		yOffset += gameWorld->cameraY;
+	}
+
 	int xOffset2 = xOffset + currentObject->ObjectBox->xSize;
 	int yOffset2 = yOffset + currentObject->ObjectBox->ySize;
 	

@@ -61,62 +61,12 @@ enum LemonKeys {
 };
 
 
-enum lemonGameState {
-	EMPTY_GAME = 0,
-	LOADING = 1,
-	GAMEPLAY = 2,
-	CUTSCENE = 3,
-	IN_MENU = 4,
-	UNDEFINED_GAME_STATE
-};
-
 enum ChannelNames {
 	LOOP_CHANNEL = 0,
 	SPEECH = 1,
 	PLAYER_SFX = 2,
 	OBJECT_SFX = 3,
 	ENEMIES_SFX = 4,
-};
-
-
-enum solidType {
-	UNSOLID = 0,
-	SOLID = 1,
-	FLAT_SLOPE_LR = 2,
-	FLAT_SLOPE_RL = 3,
-	JUMP_THROUGH = 4,
-	TEST = 5,
-	UNDEFINED_SOLID
-};
-
-
-enum objectType {
-	LEVEL_FLAG_OBJ = 0,
-	SOLID_BLOCK = 1,
-	RIGHT_SLOPE = 2,
-	LEFT_SLOPE = 3,
-	JUMP_THRU = 4,
-	COIN = 5,
-	MOVING_PLATFORM_HOR = 6,
-	MOVING_PLATFORM_VER = 7,
-	SPRING = 8,
-	GATE_SWITCH = 9,
-	GATE_SWITCH_TIMED = 10,
-	VERTICAL_GATE = 11,
-	HORIZONTAL_GATE = 12,
-	PARTICLE = 13,
-	UNDEFINED_OBJECT
-};
-
-
-//  Order of object list determines layering of individual objects within layers
-enum Layer {
-	LEVELFLAGS = -1,
-	BACKGROUND = 0,
-	MIDDLEGROUND = 1,
-	FOREGROUND = 2,
-	PARTICLES = 3,
-	HUD = 4
 };
 
 
@@ -142,10 +92,64 @@ enum RenderMode {
 };
 
 
+enum lemonGameState {
+	EMPTY_GAME = 0,
+	LOADING = 1,
+	GAMEPLAY = 2,
+	CUTSCENE = 3,
+	IN_MENU = 4,
+	UNDEFINED_GAME_STATE
+};
+
+
+enum solidType {
+	UNSOLID = 0,
+	SOLID = 1,
+	FLAT_SLOPE_LR = 2,
+	FLAT_SLOPE_RL = 3,
+	JUMP_THROUGH = 4,
+	TEST = 5,
+	UNDEFINED_SOLID
+};
+
+
+enum objectType {
+	LEVEL_FLAG_OBJ = 0,
+	SOLID_BLOCK = 1,
+	RIGHT_SLOPE = 2,
+	LEFT_SLOPE = 3,
+	JUMP_THRU = 4,
+	UI_ELEMENT = 5,
+	PARTICLE = 6,
+	COIN = 7,
+	MOVING_PLATFORM_HOR = 8,
+	MOVING_PLATFORM_VER = 9,
+	SPRING = 10,
+	GATE_SWITCH = 11,
+	GATE_SWITCH_TIMED = 12,
+	VERTICAL_GATE = 13,
+	HORIZONTAL_GATE = 14,
+	UNDEFINED_OBJECT
+};
+
+
+//  Order of object list determines layering of individual objects within layers
+enum Layer {
+	LEVELFLAGS = -1,
+	BACKGROUND = 0,
+	MIDDLEGROUND = 1,
+	FOREGROUND = 2,
+	PARTICLES = 3,
+	HUD = 4,
+	UNDEFINED_LAYER
+};
+
+
 enum Flags {
 	BACKGROUND_SET = 0,
 	BACKGROUND_SET_TRIGGER = 1,
-	TRIGGER_CUTSCENE = 2
+	TRIGGER_CUTSCENE = 2,
+	UNDEFINED_FLAG
 };
 
 
@@ -171,6 +175,26 @@ enum GateSwitch {
 
 
 // Memory allocated structs of data
+
+struct soundInstance
+{
+	Uint8 *wav_data;
+	Uint32 wav_data_len;
+	SDL_AudioStream *stream;
+
+	int channelID;
+	struct soundInstance *nextSound;
+	struct soundInstance *prevSound;
+};
+
+
+struct renderFrame 
+{
+	int width;
+	int height;
+	uint32_t *screen;
+};
+
 
 // Regular Sprites (Objects, player, particles, etc.)
 struct sprite
@@ -295,7 +319,7 @@ struct playerData
 // Memory allocated struct that controls camera, holds the object list and level data
 struct world
 {
-	struct objectController *objectList;
+	struct objectController *ObjectList;
 	int drawnObjects;
 	int drawnParticles;
 	int drawnHudElements;
@@ -329,33 +353,13 @@ struct world
 };
 
 
-struct soundInstance
-{
-	Uint8 *wav_data;
-	Uint32 wav_data_len;
-	SDL_AudioStream *stream;
-
-	int channelID;
-	struct soundInstance *nextSound;
-	struct soundInstance *prevSound;
-};
-
-
-typedef struct {
-	int width;
-	int height;
-	uint32_t *screen;
-} RenderFrame;
-
-
 
 typedef struct soundInstance SoundInstance;
 typedef struct sprite Sprite;
 typedef struct spriteSet SpriteSet;
-typedef struct bgsprite BGSprite;
-typedef struct bgSpriteSet BGSpriteSet;
-typedef struct playerData PlayerData;
+typedef struct renderFrame RenderFrame;
 typedef struct physicsRect PhysicsRect;
+typedef struct playerData PlayerData;
 typedef struct objectController ObjectController;
 typedef struct object Object;
 typedef struct world World;

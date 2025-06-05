@@ -16,7 +16,7 @@ int cleanRenderer(World *gameWorld, uint32_t screen[], int width, int height);
 
 
 // Draws objects from gameWorld to screen array
-int drawObjects(Layer drawLayer, uint32_t screen[], int width, int height, World *gameWorld);
+int drawObjects(uint32_t screen[], int width, int height, World *gameWorld);
 
 
 int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int width, int height, Layer drawLayer);
