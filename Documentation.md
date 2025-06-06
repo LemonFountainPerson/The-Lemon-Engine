@@ -27,7 +27,7 @@ This is not yet 100% uniform across the entire codebase, but in general:
 
 -> Some functions will purposely abstract its process or take a more roundabout algorithm in order to facilitate eligability: the only exception to this are extremely perfomance-sensitive functions such as those used in rendering sprites.
 
-
+-> Any enums which define data categories that re expected to be expanded/added to contain an additional UNDEFINED_XXX value to denotes where the defined data ends. This means when checking for out of bounds data (at least in the > 0 direction) you may simply check if [data] < UNDEFINED_DATA.
 
 
 # Engine Initialisation
