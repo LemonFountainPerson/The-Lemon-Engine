@@ -148,7 +148,16 @@ First, updateObjects is run to update every object in the GameWorld.
 Next, updatePlayer is ran to take user input and operate the player. 
 After these two functions all game logic has been performed. Any further functionality should go here after these functions (such as menu control, other self-implemented object types, etc.)
 
-Next, worldCameraControl is called to move the GameWorld's camera according to the state of the GameWorld. (i.e: following the player) The seperation of the camera and the player means the camera is completely independent of the player and can be moved independently if you wish. For convinience, it's recommended to do this from the worldCameraControl function.
+Next, worldCameraControl is called to move the GameWorld's camera according to the state of the GameWorld. (i.e: following the player) The seperation of the camera and the player means the camera is completely independent of the player and can be moved independently if you wish. For convinience, it's recommended to do this from the worldCameraControl function. This can be controlled through the use of the CameraMode variable which holds a CameraState enum defining what the camera should be doing. (Following the player, staying in place, free roam, etc.)
+
+```
+enum cameraState {
+	FOLLOW_PLAYER = 0,
+	FREEZE_POSITION = 1,
+	FREE_ROAM = 2,
+	UNDEFINED_CAMERA_STATE
+};
+```
 
 **Rendering**
 
