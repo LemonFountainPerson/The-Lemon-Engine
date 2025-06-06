@@ -24,29 +24,40 @@ The overall engine works mostly of a single struct called the GameWorld. The Gam
 ```
 struct world
 {
-	struct objectController *objectList;
+	struct objectController *ObjectList;
 	int drawnObjects;
+	int drawnParticles;
+	int drawnHudElements;
 
 	struct playerData *Player;
 
 	struct spriteSet *BackGrounds;
 	struct sprite *bgSpriteBuffer;
 
-	double bgParallax;
-	int bgTileVertically;
+	float bgParallax;
 	int bgParallaxChunkSize;
 	double bgChunkParallax;
 
-	int cameraX;
-	int cameraY;
-	int level;
-	double Gravity;
+	int CameraX;
+	int CameraY;
+	int minCameraX;
+	int maxCameraX;
+	int minCameraY;
+	int maxCameraY;
+	enum cameraState CameraMode;
 
 	int drawHitboxes;
 	int drawSprites;
 	int drawBackGround;
 	int drawPlayer;
-	int playBgMusic;
+	int drawHud;
+	int drawParticles;
+	int drawObjects;
+
+	int level;
+	double Gravity;
+	int GamePaused;
+	enum lemonGameState GameState;
 };
 ```
 
@@ -57,21 +68,13 @@ The GameWorld may be passed in to various functions to perform game actions, alt
 ```
 struct playerData
 {
-	// Do not modify these variables to prevent game logic breaking
-	double xPos;
-	double yPos;
-	double xPosRight;
-	double yPosTop;
-	double yVelocity;
-	double xVelocity;
+	struct physicsRect *PlayerBox;
 	double maxYVel;
 	double maxXVel;
 
 	int xFlip;
 	int currentSprite;
 	struct sprite *spriteBuffer;
-
-	int spriteCount;
 	struct spriteSet *spriteSetPtr;
 
 	enum Layer playerLayer;
@@ -79,7 +82,6 @@ struct playerData
 	// These variables can be freely modified according to your modified player controller
 	double PhysicsXVelocity;
 	double PhysicsYVelocity;
-	double direction;
 
 	int inAir;
 	int jumpHeld;
