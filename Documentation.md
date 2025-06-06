@@ -15,6 +15,23 @@ Everything is subject to change.
 
 # Getting Started
 
+**Core design methodology**
+
+This is not yet 100% uniform across the entire codebase, but in general:
+
+-> Functions starting with a lowercase letter are intended to operate a core function for the engine and should not be changed unless the core functionality of the engine needs to be changed. Conversely, functions that start with a capital letter are intended to be modified or added to in order to facilitate your game.
+
+-> The FunctionResult enum defines a few simple exit conditions for functions to take - these can be used to clarify why a function is returning, primarily for debugging purposes.
+
+-> The playercontroller is intended to be able to be swapped out for a custom one, and should only require a PhysicsRect structure to be added in order to keep it compatible with other engine functions. Objects however, are not. All functions that use objects will assume it contains the variables that the engine defaults with. While data may be added to objects for custom function, no variable should be removed.
+
+-> Some functions will purposely abstract its process or take a more roundabout algorithm in order to facilitate eligability: the only exception to this are extremely perfomance-sensitive functions such as those used in rendering sprites.
+
+
+
+
+# Engine Initialisation
+
 The core of all data structures for the engine is contained within data.h. In it, all structs, enums and macros are defined, as well as including every other external/standard library the engine requires. Every file that comprises the engine includes this file, and it does so by checking if "IS_DEFINED" is defined to guard against redefinitions. The main of the engine is LemonMain.c, and should be the starting point of any actions performed in the engine. (NOTE: In the current version, a separate windows_main.c file is used as the main of the engine to replace the function "RunLemonEngine" conatined within LemonMain. This is done for stability reasons and in the future "RunLemonEngine" will used as the starting point.)
 
 The main of the engine is relatively simple, comprising 3 sections: engine initialisation of relevant structs, audio devices and the window, the main game loop, and engine quit functions with data cleanup.
@@ -147,14 +164,15 @@ After the RenderFrame's screen buffer has finished being rendered for the frame,
 
 Next, the iterateAudio function is called to handle audio events. SDL handles audio multi-threadedly so this function is mostly used to repeat sounds playing on looping channels, but can also be used to apply other sound modifications to the engine's audio. The LemonEngine uses SDL's BindAudioToStream function to effectively create a channel of audio that plays asyncroniously and can play multiple sounds at once. 
 
-However, the engine uses multiple channels for a few reasons: multiple sounds playing on a channel means that only the most recently played sound can be accessed via SDL such as for stopping audio or repeating it. There is no (easy) way to distinguish between sounds you would like to repeat and those you do not. It also helps with organisation to seperate different channels for different purposes, especially if problems arise. For these reasons and more, there are multiple channels created as defined by the CHANNEL_COUNT macro in data.h.
+However, the engine uses multiple channels oraganisation and for controlling whether to loop a sound. All channels are currently identical except for the LOOP_CHANNEL channel as defined in the ChannelNames enum. The only difference between these channels is that sounds played in most channels will only be played once, while those played in LOOP_CHANNEL will loop forever until manually stopped. 
 
-The LOOP_CHANNELS macro also defines how many of those channels are channels where only one sound is played at a time and looped. It defines the first (LOOP_CHANNELS) channels as being these such channels. For example, by default there are 12 total channels created, and 4 Loop-Channels. This means channels 0-3 comprise channels where sounds will repeat and only one at a time will play, while channels 4-11 are regular, not repeating channels.
+every sound is its own memory-allocated struct in a linked list attached to the SoundChannels array, essentially to represent each instance of a sound as its own "object". This means each sound can be modified individually, or on a channel-wise basis. However, a liomitation of this implementation is that there is a defined limit to the amount of sounds that can be played on a channel at one time, in order to conserve memory.
+
 For ease of operation, macros or enums can be defined to assist with organisation, such as defining "MUSIC_CHANNEL" as 0 to signify that channel 0 is reserved for music.
 
 **Frame Throttling**
 
-Next, the frame throttling functionality. The function frameRate is called with an integer to determine how much to delay to maintain the specified frames per second. Ideally, without this function the engine will run unencumbered at approximately 400-600 fps. (NOTE: while partially implemented, deltaTime calculations and the frameRate function are not 100% accurate and are currently being worked on for a future version. As such, this information and its functionality may be subject to change.)
+Next, the frame throttling functionality. The function frameRate is called with an integer to determine how much to delay to maintain the specified frames per second. Ideally, without this function the engine will run unencumbered at approximately 400-600 fps. DeltaTime is a static global variable meaning it is accessable from any file that includes data.h. (NOTE: while partially implemented, deltaTime calculations and the frameRate function are not 100% accurate and are currently being worked on for a future version. As such, this information and its functionality may be subject to change.)
 
 **Extra Stuff**
 
@@ -195,9 +213,9 @@ enum ObjectType {
 };
 ```
 
-Next, if you wish to assign custom attributes such as size, shape, collision type, multi-use args, etc. you should create a new case in the switch statement of your choice. If you are making a moving platform, you should put it in the addMovingPlatform function, if it is a level flag, you should put it in the addLevelFlag function, etc. If it is more generic than any of the defined presets, then simply add a slot to the addObject function.
+Next, if you wish to assign custom attributes such as size, shape, collision type, multi-use args, etc. you should create a new case in the switch statement of your choice. If you are making a moving platform, you should put it in the defineMovingPlatform function, if it is a level flag, you should put it in the addLevelFlag function, etc. If it is more generic than any of the defined presets, then simply add a slot to the addObject function. The object system is designed such that all objects can be spawned via the addObject function.
 ```
-void addObject(ObjectController *objectList, int xPos, int yPos, int objectID, int arg1, int arg2)
+void addObject(ObjectController *objectList, int xPos, int yPos, int objectID, int arg1, int arg2, int arg3, int arg4, int arg5)
 {
 	Object *newObject;
 	newObject = createNewObject(objectList, xPos, yPos, objectID);
@@ -232,7 +250,7 @@ void addObject(ObjectController *objectList, int xPos, int yPos, int objectID, i
 }
 ```
 
-Finally, the sprite set should be defined if it is not intended to be an invisible object. To do this, go to the createSpriteSet function in the same file, and enter a new case in its switch statement using the loadObjectSprite function to load each sprite you wish to uses for that object. The third argument of loadObjectSprite defines what RenderMode the sprite will use, 0 for tiled, 1 for scaled, 2 for X tiling and Y scaling, etc. (More on this in the Sprite section)
+Finally, the sprite set should be defined if it is not intended to be an invisible object. To do this, go to the createSpriteSet function in the same file, and enter a new case in its switch statement using the loadObjectSprite function to load each sprite you wish to uses for that object. The third argument of loadObjectSprite defines what RenderMode the sprite will use, 0/SINGLE, 3/TILE, 6/SCALE, etc. (More on this in the Sprite section)
 ```
 void createObjectSpriteSet(ObjectController *objectList, int objectID)
 {
@@ -245,15 +263,15 @@ void createObjectSpriteSet(ObjectController *objectList, int objectID)
         // ...
 
         case NEW_ITEM:
-            loadObjectSprite("Example_Tiled", newSet, 0);
-            loadObjectSprite("Example_Scaled", newSet, 1);
+            loadObjectSprite("Example_Tiled", newSet, TILE);
+            loadObjectSprite("Example_Scaled", newSet, SCALE);
             // etc.
             break;
 
 
         default:
         {
-            loadObjectSprite("Missing", newSet, 0);
+            loadObjectSprite("Missing", newSet, TILE);
         } break;
 	}
 
@@ -261,67 +279,63 @@ void createObjectSpriteSet(ObjectController *objectList, int objectID)
 }
 ```
 
-With this, the basic set-up of the object is complete! The final optional step is to add custom behaviour in the updateObjects function in the same file. This is done by making your own function that takes in at least the pointer to the object itself as an arguement, and can be used to create interactivity, animations, custom actions, etc. for that specific object.
+With this, the basic set-up of the object is complete! The final optional step is to add custom behaviour in the objectBehhaviour function in the same file. This is done by making your own function that takes in at least the pointer to the object itself as an arguement, and can be used to create interactivity, animations, custom actions, etc. for that specific object.
 ```
-void updateObjects(World *gameWorld, int keyboard[256], double deltaTime)
+void objectBehaviour(World *gameWorld, Object *inputObject)
 {
 	// ...
 
-	while(currentObject != NULL && i > 0)
+		
+	switch (currentObject->objectID)
 	{
-		//...
-        
-		switch (currentObject->objectID)
+		case MOVING_PLATFORM_HOR:
 		{
-			case MOVING_PLATFORM_HOR:
+			updateHorizontalPlatform(player, currentObject, deltaTime);
+		} break;
+
+
+		case MOVING_PLATFORM_VER:
+		{
+			updateVerticalPlatform(player, currentObject, deltaTime);
+		} break;
+
+
+		case COIN:
+		{
+			if (overlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
 			{
-				updateHorizontalPlatform(player, currentObject, deltaTime);
-			} break;
+				deleteObject(objectList, &currentObject);
+				deleteFlag++;
+				player->coinCount++;
+				LemonPlaySound("Coin_Collect", "Objects", 4, 0.8);
+			}
+
+		} break;
+
+		//...
 
 
-			case MOVING_PLATFORM_VER:
-			{
-				updateVerticalPlatform(player, currentObject, deltaTime);
-			} break;
+				case NEW_ITEM:
+					updateNewItem(currentObject, ...);
+					// Custom behaviour execution goes here!
+					break;
 
 
-			case COIN:
-			{
-				if (overlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
-				{
-					deleteObject(objectList, &currentObject);
-					deleteFlag++;
-					player->coinCount++;
-					LemonPlaySound("Coin_Collect", "Objects", 4, 0.8);
-				}
-
-			} break;
-
-			//...
-
-
-                    case NEW_ITEM:
-                        updateNewItem(currentObject, ...);
-                        // Custom behaviour execution goes here!
-                        break;
-
-
-			default:
-				break;
-		}
-
-
-		// ...
+		default:
+			break;
 	}
 
-	return;
+
+	// ...
+
+	return 0;
 }
 ```
 
 In order to load your object from a (.lem) file, 
 you would simply type "OBJECT-\_\_[Object ID]\_\_[X position]\_\_[Y position]\_\_[arg1]\_\_[arg2]\_\_////..." 
 
-For a moving platform, you would type "OBJMOV-\_\_[Object ID]\_\_...[bound1]\_\_[bound2]\_\_[speed]\_\_[timer]\_\_////..."
+For a moving platform, you would type "OBJECT-\_\_[Object ID]\_\_...[bound1]\_\_[bound2]\_\_[speed]\_\_[timer]\_\_////..."
 
 For a level flag, "LVFLAG-\_\_[Flag name]\_\_[args]..." The number of arguments changes depending on the flag name given.
 
@@ -552,16 +566,37 @@ struct sprite
 };
 ```
 
-The last thing of note is the RenderMode of the sprite. Currently in the engine there are 4 supported render modes, although 2 additional modes are planned for the future. The rendermode, clearly enough, changes how the image is rendered to the screen relative to the object, player, etc. By default, objects will use whatever sprite it's currently using to decide the render mode, although you have the option of overriding this with the objectRenderMode integer within the object struct, by setting it to a value higher than -1. This has the effect of forcing every sprite rendered for that specific object to be rendered using that mode.
+The last thing of note is the RenderMode of the sprite. The rendermode is determined by an enum that contains all rendermodes available. By default, objects will use whatever sprite it's currently using to decide the render mode, although you have the option of overriding this with the objectRenderMode integer within the object struct, by setting it to a value higher other than DEFAULT_TO_SPRITE (-1). This has the effect of forcing every sprite rendered for that specific object to be rendered using that mode. Similarly, DO_NOT_RENDER (-2) is used for telling the renderer to skip rendering that sprite/object altogether. 
+
+
+```
+enum RenderMode {
+	DO_NOT_RENDER = -2,
+	DEFAULT_TO_SPRITE = -1,
+	SINGLE = 0,
+	SINGLE_FULL_ALPHA = 1,
+	SINGLE_FAST = 2,
+	TILE = 3,
+	TILE_FULL_ALPHA = 4,
+	TILE_FAST = 5,
+	SCALE = 6,
+	SCALE_FULL_ALPHA = 7,
+	TILE_SCALE = 8,
+	TILE_SCALE_FULL_ALPHA = 9,
+	SCALE_TILE = 10,
+	SCALE_TILE_FULL_ALPHA = 11
+};
+```
+
 
 Every image can be rendered in any mode, they are not restrictive. 
 
-Mode 0 is Tilemode, and is the most common. This mode will render the image at a 1:1 scale to be the exact size of the object's bounding box. If it is smaller than the object, it will tile across it. The tiling is based of the object's bottom-left pixel and so changing the size will not alter the position of the texture on the object relative to that corner. This mode handles transparent pixels.
+TILE: This mode will render the image at a 1:1 scale to be the exact size of the object's bounding box. If it is smaller than the object, it will tile across it. The tiling is based of the object's bottom-left pixel and so changing the size will not alter the position of the texture on the object relative to that corner. This mode handles transparent pixels.
 
-Mode 1 is Scalemode, and this mode draws the sprite once, but stretches/shrinks it to fit the object's bounding box perfectly. This mode is more hardware intensive than Tilemode, and although I have optimised it over time, the engine will struggle to maintain 60 fps with 3+ instances of a scaled object covering the screen. In it's current state, it's easier on the game to use another render mode wherever possible. This mode handles transparent pixels.
+SCALE: Draws the sprite once, but stretches/shrinks it to fit the object's bounding box perfectly. This mode is more hardware intensive than Tilemode, and although I have optimised it over time, the engine will struggle to maintain 60 fps with 3+ instances of a scaled object covering the screen. In it's current state, it's easier on the game to use another render mode wherever possible. This mode handles transparent pixels.
 
-Mode 2-3 are for X tiling and Y scaling, or Y Tiling and X scaling respectively. These act identically to modes 0 and 1 on their respective axis. (Yet to be implemented)
+SINGLE: This mode will simply draw the image as it is in the png file, 1:1 with no tiling. This method will render the whole image regardless of the Object's size or dimensions. It is not centered, so it is drawn from the bottom-left corner of the object. (This will change in a future update to center it by default, or control its offset, or both). Mode 4 internally uses the same functions as Mode 0, so performatively, they are the same.
 
-Mode 4 is straight rendering. This mode will simply draw the image as it is in the png file, 1:1 with no tiling. This method will render the whole image regardless of the Object's size or dimensions. It is not centered, so it is drawn from the bottom-left corner of the object. (This will change in a future update to center it by default, or control its offset, or both). Mode 4 internally uses the same functions as Mode 0, so performatively, they are the same.
+XXX_FAST: This is a faster version of the other rendermodes, each type of rendering except for SCALE has a fastmode version. This renders sprites in lines and has tiling, however due to the nature of its rendering it cannot handle transparent pixels. Normally TileMode is fast enough on its own for mode 5 to be unnecessary, however for objects that are known to not require transparency this is preferred as it does improve performance overall.
 
-Mode 5 is fast TileMode rendering. This renders sprites in lines and has tiling, however due to the nature of its rendering it cannot handle transparent pixels. Normally TileMode is fast enough on its own for mode 5 to be unnecessary, however for objects that are known to not require transparency this is preferred as it does improve performance overall.
+XXX_FULL_ALPHA: This is a version of rendering that enables full proper transparency, at the cost of performance. Every type of rendering has a FULL_ALPHA version, however it's recommended to avoid using this mode where possible. (Until an update comes that improves performance.) 
