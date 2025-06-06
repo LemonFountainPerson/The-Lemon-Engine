@@ -62,7 +62,7 @@ struct world
 ```
 
 
-The GameWorld may be passed in to various functions to perform game actions, although most of the time functions will only take the neccessary data to perform its task. The player is represented as another allocated struct, and is accessible via the main function or as a pointer from the GameWorld. While the engine has a player controller already created, depending on the needs of a game, the player can be swapped out with minimal changes to surrounding code. Only its struct in data.h and the playerController.c files themselves need to be updated to function.
+The GameWorld may be passed in to various functions to perform game actions, although most of the time functions will only take the neccessary data to perform its task. The player is represented as another allocated struct, and is accessible via the main function or as a pointer from the GameWorld. While the engine has a player controller already created, depending on the needs of a game, the player can be swapped out with minimal changes to surrounding code. Only its struct in data.h and the playerController.c files themselves need to be updated to function. All game objects in the engine that have a postion/velocity, etc. use a PhysicsRect structure to hold this data. By using this common data structure, functions can be written to be compatible with any data structure as long as it conatins this PhysicsRect data.
 
 **Struct Definition:**
 ```
@@ -89,6 +89,24 @@ struct playerData
 	int crouch;
 
 	int coinCount;
+};
+
+struct physicsRect
+{
+	double xPos;
+	double yPos;
+	double xPosRight;
+	double yPosTop;
+
+	int xSize;
+	int ySize;
+
+	double yVelocity;
+	double xVelocity;
+
+	enum solidType solid;
+
+	double direction;
 };
 ```
 
@@ -157,19 +175,22 @@ GameWorld->ObjectList->firstObject .... etc. While the player is the user's way 
 In order to create a new object type, a few additions must be made. First, for readability, you should add a new slot in the ObjectTypes enum to make it clear what it is while simultaniously assigning it an integer ID. ID 0 is reserved for level flags and should not be changed, however all the others may be reorganised as you wish.
 ```
 enum ObjectType {
-	LEVEL_FLAG = 0,
+	LEVEL_FLAG_OBJ = 0,
 	SOLID_BLOCK = 1,
 	RIGHT_SLOPE = 2,
 	LEFT_SLOPE = 3,
 	JUMP_THRU = 4,
-	COIN = 5,
-	MOV_HOR = 6,
-	MOV_VER = 7,
-	SPRING = 8,
-	VERTICAL_GATE = 9,
-	GATE_SWITCH = 10,
-	GATE_SWITCH_TIMED = 11,
-        NEW_ITEM = 12
+	UI_ELEMENT = 5,
+	PARTICLE = 6,
+	COIN = 7,
+	MOVING_PLATFORM_HOR = 8,
+	MOVING_PLATFORM_VER = 9,
+	SPRING = 10,
+	GATE_SWITCH = 11,
+	GATE_SWITCH_TIMED = 12,
+	VERTICAL_GATE = 13,
+	HORIZONTAL_GATE = 14,
+        NEW_ITEM = 15,
         // ...
 };
 ```
@@ -315,7 +336,15 @@ struct object
 {
 	struct object *nextObject;
 	struct object *prevObject;
-	int objectID;
+	int ObjectID;
+	enum ObjectState State;
+
+	struct physicsRect *ObjectBox;
+
+	enum Layer layer;
+
+	int currentAnimation;
+	int animationTick;
 
 	struct sprite *spriteBuffer;
 	int currentSprite;
@@ -323,21 +352,6 @@ struct object
 	int yFlip;
 
 	enum RenderMode objectRenderMode;
-
-	enum Layer layer;
-
-	double xPos;
-	double yPos;
-	double xPosRight;
-	double yPosTop;
-	int xSize;
-	int ySize;
-	double xVel;
-	double yVel;
-	int solid;
-
-	int currentAnimation;
-	int animationTick;
 
 	// Multi-purpose args
 	int arg1;
@@ -348,7 +362,7 @@ struct object
 };
 ```
 
-Objects use xVelocity/yVelocity to move every frame via updateObjects, even if no custom behaviour is implemented. Using the velocity is preferable instead of changing the position directly as the moveObject functions also handle interaction/collision with the player if it solid. By default, objects will have no velocity, and so static props can dynamically be moved. Several helper functions part of gameObjects.c can also be used to supplement functionality.
+Objects use xVelocity/yVelocity to move every frame via updateObjects, even if no custom behaviour is implemented. Using the velocity is preferable instead of changing the position directly as the moveObject functions also handle interaction/collision with the player if it solid. By default, objects will have no velocity, and so static props can dynamically be moved. Several helper functions part of gameObjects.c can also be used to supplement functionality. As mentioned before, objects store all values associated with positioning and velocity within its PhysicsRect structure.
 
 Another such set of helper functions are changeXSizeBy and changeYSizeBy. These can be used to keep the object centered as you change its size, and also handles collision with the player. 
 
