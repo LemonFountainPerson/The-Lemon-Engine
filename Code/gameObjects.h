@@ -4,6 +4,7 @@
 #include "spriteLoader.h"
 #include "soundProcessor.h"
 #include "playerController.h"
+#include "eventManager.h"
 #endif
 
 
@@ -17,9 +18,6 @@ Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int ob
 
 // Helper function to set an object to a moving platform type 
 Object* DefineMovingPlatform(Object *inputObject, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer);
-
-
-Object* AddFlagObject(World *gameWorld, Flags flagID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5);
 
 
 // Attempts to create object sprite set if it does not already exist
@@ -104,7 +102,7 @@ int ObjectBehaviour(World *gameWorld, Object *inputObject);
 int UpdateParticle(World *GameWorld, Object *particle);
 
 
-int customParticleBehaviour(World *GameWorld, Object *particle);
+int CustomParticleBehaviour(World *GameWorld, Object *particle);
 
 
 int LoopParticleAnimation(Object *particle);
@@ -148,7 +146,7 @@ int ClimbFlatSlope(PhysicsRect *inputBox, PhysicsRect *compareBox, World *GameWo
 
 
 
-int assignDirection(PhysicsRect *inputBox, Object *currentObject);
+int AssignDirection(PhysicsRect *inputBox, Object *currentObject);
 
 
 // Checks for object overlap with a specific object ID

@@ -1,7 +1,7 @@
 #include "playerController.h"
 
 
-PlayerData* initialisePlayer(World *gameWorld)
+PlayerData* InitialisePlayer(World *gameWorld)
 {
 	PlayerData *player = malloc(sizeof(PlayerData));
 
@@ -110,7 +110,7 @@ int ResetPlayer(PlayerData *Player)
 }
 
 
-FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256])
+FunctionResult UpdatePlayer(PlayerData *player, World *gameWorld, int keyboard[256])
 {
 	if (player == NULL || gameWorld->ObjectList == NULL)
 	{
@@ -722,7 +722,7 @@ int checkIfGrounded(World *gameWorld, PlayerData *player)
 	player->PhysicsXVelocity = detectedObject->ObjectBox->xVelocity;
 	player->PhysicsYVelocity = detectedObject->ObjectBox->yVelocity;
 
-	assignDirection(player->PlayerBox, detectedObject);
+	AssignDirection(player->PlayerBox, detectedObject);
 
 	return 1;
 }

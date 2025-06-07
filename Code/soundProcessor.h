@@ -13,7 +13,7 @@ int deleteSoundInstance(SoundInstance *inputSound);
 
 int initialiseAudio(void);
 
-int CleanUpAudioData(void);
+int cleanUpAudioData(void);
 
 
 int StopAudioInChannel(int channel);

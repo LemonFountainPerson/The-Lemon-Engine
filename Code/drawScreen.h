@@ -28,7 +28,7 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 int findElement(int array[], int element, int size);
 
 
-int correct(int offset, int bound1, int bound2);
+int clamp(int offset, int bound1, int bound2);
 
 
 int modulo(int x, int N);
@@ -37,7 +37,7 @@ int modulo(int x, int N);
 int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld);
 
 
-int worldCameraControl(int width, int height, PlayerData *player, World *gameWorld);
+int WorldCameraControl(int width, int height, PlayerData *player, World *gameWorld);
 
 
 

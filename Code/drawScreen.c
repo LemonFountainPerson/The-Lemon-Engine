@@ -11,20 +11,25 @@ static uint32_t tileMap[32] = {0x00AA00AA, 0xFFFF0088, 0xFF0088FF, 0xFF552299, 0
 
 int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 {
-	if (gameWorld == NULL || gameWorld->drawPlayer == 0 || gameWorld->Player == NULL)
+	if (gameWorld == NULL || gameWorld->Player == NULL)
 	{
 		return MISSING_DATA;
+	}
+
+	if (gameWorld->drawPlayer == 0)
+	{
+		return ACTION_DISABLED;
 	}
 
 	PlayerData *player;
 	player = gameWorld->Player;
 
 	// Find offsets of player relative to center of screen/camera
-	int xOffset = player->PlayerBox->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-	int yOffset = player->PlayerBox->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+	int xOffset = player->PlayerBox->xPos - gameWorld->CameraX + (H_RESOLUTION >> 1);
+	int yOffset = player->PlayerBox->yPos - gameWorld->CameraY + (V_RESOLUTION >> 1);
 
 
-	// Load correct sprite
+	// Load clamp sprite
 	Sprite *spritePtr;
 	spritePtr = player->spriteBuffer;
 
@@ -39,10 +44,10 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 	unsigned char *data = spritePtr->spriteData;		// Instead of copying the data, use a pointer to reduce memory overhead
 
 	// Locate player on screen
-	int xDraw = correct(xOffset - 8, 0, width);
-	int yDraw = correct(yOffset, 0, height);
-	int xDraw2 = correct(xOffset + spriteWidth - 8, -1, width - 1);
-	int yDraw2 = correct(spriteHeight + yOffset, -1, height - 1);
+	int xDraw = clamp(xOffset - 8, 0, width);
+	int yDraw = clamp(yOffset, 0, height);
+	int xDraw2 = clamp(xOffset + spriteWidth - 8, -1, width - 1);
+	int yDraw2 = clamp(spriteHeight + yOffset, -1, height - 1);
 
 	// Render to screen
 	uint32_t hexValue = 0x00000000;
@@ -84,11 +89,11 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 	}
 
 
-	// Correct Offsets
-	xDraw = correct(xOffset, 0, width - 1);
-	yDraw = correct(yOffset, 0, height - 1);
-	xDraw2 = correct(player->PlayerBox->xSize + xOffset, 0, width - 1);
-	yDraw2 = correct(player->PlayerBox->ySize + yOffset, 0, height - 1);
+	// clamp Offsets
+	xDraw = clamp(xOffset, 0, width - 1);
+	yDraw = clamp(yOffset, 0, height - 1);
+	xDraw2 = clamp(player->PlayerBox->xSize + xOffset, 0, width - 1);
+	yDraw2 = clamp(player->PlayerBox->ySize + yOffset, 0, height - 1);
 
 	// Player Hitbox
 	if (gameWorld->drawHitboxes == 0)
@@ -109,38 +114,87 @@ int drawPlayer(uint32_t screen[], int width, int height, World *gameWorld)
 }
 
 
-int worldCameraControl(int width, int height, PlayerData *player, World *gameWorld)
+int WorldCameraControl(int width, int height, PlayerData *player, World *gameWorld)
 {
 	if (player == NULL || gameWorld == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	int xOffset = (int)player->PlayerBox->xPos - gameWorld->cameraX;
-	int yOffset = (int)player->PlayerBox->yPos - gameWorld->cameraY;
-
-	gameWorld->cameraX = player->PlayerBox->xPos;
-
-//	if ( (xOffset) >= (H_RESOLUTION * 0.1))
-//	{
-//		gameWorld->cameraX = player->xPos - (H_RESOLUTION * 0.1);
-//	}
-//
-//	if (xOffset < (H_RESOLUTION * -0.1))
-//	{
-//		gameWorld->cameraX = player->xPos + (H_RESOLUTION * 0.1);
-//	}
-
-	if ( (yOffset) >= (V_RESOLUTION * 0.1))
+	switch(gameWorld->CameraMode)
 	{
-		gameWorld->cameraY = (int)player->PlayerBox->yPos - (V_RESOLUTION * 0.1);
+		case FOLLOW_PLAYER:
+		{
+			int xOffset = (int)player->PlayerBox->xPos - gameWorld->CameraX;
+			int yOffset = (int)player->PlayerBox->yPos - gameWorld->CameraY;
+
+			gameWorld->CameraX = player->PlayerBox->xPos;
+
+		//	if ( (xOffset) >= (H_RESOLUTION * 0.1))
+		//	{
+		//		gameWorld->CameraX = player->xPos - (H_RESOLUTION * 0.1);
+		//	}
+		//
+		//	if (xOffset < (H_RESOLUTION * -0.1))
+		//	{
+		//		gameWorld->CameraX = player->xPos + (H_RESOLUTION * 0.1);
+		//	}
+
+			if ( (yOffset) >= (V_RESOLUTION * 0.1))
+			{
+				gameWorld->CameraY = (int)player->PlayerBox->yPos - (V_RESOLUTION * 0.1);
+			}
+
+			if (yOffset < (V_RESOLUTION * -0.2))
+			{
+				gameWorld->CameraY = (int)player->PlayerBox->yPos + (V_RESOLUTION * 0.2);
+			}
+		} break;
+
+		default:
+		break;
 	}
 
-	if (yOffset < (V_RESOLUTION * -0.2))
+
+	if (gameWorld->maxCameraX < gameWorld->minCameraX + H_RESOLUTION)
 	{
-		gameWorld->cameraY = (int)player->PlayerBox->yPos + (V_RESOLUTION * 0.2);
+		gameWorld->maxCameraX = gameWorld->minCameraX + H_RESOLUTION;
 	}
 
+	if (gameWorld->maxCameraY < gameWorld->minCameraY + V_RESOLUTION)
+	{
+		gameWorld->maxCameraY = gameWorld->minCameraY + V_RESOLUTION;
+	}
+
+	if (gameWorld->minCameraX < 0)
+	{
+		gameWorld->minCameraX = 0;
+	}
+
+	if (gameWorld->minCameraY < 0)
+	{
+		gameWorld->minCameraY = 0;
+	}
+
+	if (gameWorld->CameraX < gameWorld->minCameraX)
+	{
+		gameWorld->CameraX = gameWorld->minCameraX;
+	}
+
+	if (gameWorld->CameraY < gameWorld->minCameraY)
+	{
+		gameWorld->CameraY = gameWorld->minCameraY;
+	}
+
+	if (gameWorld->CameraX > gameWorld->maxCameraX)
+	{
+		gameWorld->CameraX = gameWorld->maxCameraX;
+	}
+
+	if (gameWorld->CameraY > gameWorld->maxCameraY)
+	{
+		gameWorld->CameraY = gameWorld->maxCameraY;
+	}
 
 	return 0;
 }
@@ -209,15 +263,15 @@ int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int
 	{
 		case 2:
 		{
-			// Correct Offsets
+			// clamp Offsets
 			double ySize = currentObject->ObjectBox->ySize;
 			double xSize = currentObject->ObjectBox->xSize;
 
-			int xOffset = (int)currentObject->ObjectBox->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-			int yOffset = (int)currentObject->ObjectBox->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
-			int xDraw = correct(xOffset, 0, width - 1);
-			int yDraw = correct(yOffset, 0, height - 1);
-			int xDraw2 = correct(xOffset + currentObject->ObjectBox->xSize, 0, width - 1);
+			int xOffset = (int)currentObject->ObjectBox->xPos - gameWorld->CameraX + (H_RESOLUTION >> 1);
+			int yOffset = (int)currentObject->ObjectBox->yPos - gameWorld->CameraY + (V_RESOLUTION >> 1);
+			int xDraw = clamp(xOffset, 0, width - 1);
+			int yDraw = clamp(yOffset, 0, height - 1);
+			int xDraw2 = clamp(xOffset + currentObject->ObjectBox->xSize, 0, width - 1);
 
 			for (int k = xDraw; k < xDraw2; k++)
 			{
@@ -231,15 +285,15 @@ int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int
 
 		case 3:
 		{
-			// Correct Offsets
+			// clamp Offsets
 			double ySize = currentObject->ObjectBox->ySize;
 			double xSize = currentObject->ObjectBox->xSize;
 
-			int xOffset = (int)currentObject->ObjectBox->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-			int yOffset = (int)currentObject->ObjectBox->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
-			int xDraw = correct(xOffset, 0, width - 1);
-			int yDraw = correct(yOffset, 0, height - 1);
-			int xDraw2 = correct(xOffset + currentObject->ObjectBox->xSize, 0, width - 1);
+			int xOffset = (int)currentObject->ObjectBox->xPos - gameWorld->CameraX + (H_RESOLUTION >> 1);
+			int yOffset = (int)currentObject->ObjectBox->yPos - gameWorld->CameraY + (V_RESOLUTION >> 1);
+			int xDraw = clamp(xOffset, 0, width - 1);
+			int yDraw = clamp(yOffset, 0, height - 1);
+			int xDraw2 = clamp(xOffset + currentObject->ObjectBox->xSize, 0, width - 1);
 
 			for (int k = xDraw; k < xDraw2; k++)
 			{
@@ -254,13 +308,13 @@ int renderObject(World *gameWorld, Object *currentObject, uint32_t screen[], int
 		default:
 		{
 
-			// Correct Offsets
-			int xOffset = (int)currentObject->ObjectBox->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-			int yOffset = (int)currentObject->ObjectBox->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
-			int xDraw = correct(xOffset, 0, width - 1);
-			int yDraw = correct(yOffset, 0, height - 1);
-			int xDraw2 = correct(xOffset + currentObject->ObjectBox->xSize, 0, width - 1);
-			int yDraw2 = correct(yOffset + currentObject->ObjectBox->ySize, 0, height - 1);
+			// clamp Offsets
+			int xOffset = (int)currentObject->ObjectBox->xPos - gameWorld->CameraX + (H_RESOLUTION >> 1);
+			int yOffset = (int)currentObject->ObjectBox->yPos - gameWorld->CameraY + (V_RESOLUTION >> 1);
+			int xDraw = clamp(xOffset, 0, width - 1);
+			int yDraw = clamp(yOffset, 0, height - 1);
+			int xDraw2 = clamp(xOffset + currentObject->ObjectBox->xSize, 0, width - 1);
+			int yDraw2 = clamp(yOffset + currentObject->ObjectBox->ySize, 0, height - 1);
 
 			for (int k = xDraw; k < xDraw2; k++)
 			{
@@ -318,13 +372,13 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 	}
 
 	// Locate object on screen
-	int xOffset = currentObject->ObjectBox->xPos - gameWorld->cameraX + (H_RESOLUTION >> 1);
-	int	yOffset = currentObject->ObjectBox->yPos - gameWorld->cameraY + (V_RESOLUTION >> 1);
+	int xOffset = currentObject->ObjectBox->xPos - gameWorld->CameraX + (H_RESOLUTION >> 1);
+	int	yOffset = currentObject->ObjectBox->yPos - gameWorld->CameraY + (V_RESOLUTION >> 1);
 
 	if (currentObject->ObjectID == UI_ELEMENT)
 	{
-		xOffset += gameWorld->cameraX;
-		yOffset += gameWorld->cameraY;
+		xOffset += gameWorld->CameraX;
+		yOffset += gameWorld->CameraY;
 	}
 
 	int xOffset2 = xOffset + currentObject->ObjectBox->xSize;
@@ -342,10 +396,10 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 		xOffset = centerX - (spritePtr->width >> 1);
 		yOffset = centerY - (spritePtr->width >> 1);
 
-		xDraw = correct(centerX - (spritePtr->width >> 1), 0, screenWidth - 1);
-		yDraw = correct(centerY - (spritePtr->height >> 1), 0, screenHeight - 1);
-		xDraw2 = correct(centerX + (spritePtr->width >> 1), 0, screenWidth - 1);
-		yDraw2 = correct(centerY + (spritePtr->height >> 1), 0, screenHeight - 1);
+		xDraw = clamp(centerX - (spritePtr->width >> 1), 0, screenWidth - 1);
+		yDraw = clamp(centerY - (spritePtr->height >> 1), 0, screenHeight - 1);
+		xDraw2 = clamp(centerX + (spritePtr->width >> 1), 0, screenWidth - 1);
+		yDraw2 = clamp(centerY + (spritePtr->height >> 1), 0, screenHeight - 1);
 
 		// Make sure the sprite position is valid on screen to avoid a crash related to assuming the position is valid 
 		if (xOffset >= screenWidth || spritePtr->width + xOffset < 0 || yOffset >= screenHeight || spritePtr->height + yOffset < 0)
@@ -355,10 +409,10 @@ int renderObjectSprite(uint32_t screen[], int screenWidth, int screenHeight, Wor
 	}
 	else
 	{
-		xDraw = correct(xOffset, 0, screenWidth - 1);
-		yDraw = correct(yOffset, 0, screenHeight - 1);
-		xDraw2 = correct(currentObject->ObjectBox->xSize + xOffset, 0, screenWidth - 1);
-		yDraw2 = correct(currentObject->ObjectBox->ySize + yOffset, 0, screenHeight - 1);
+		xDraw = clamp(xOffset, 0, screenWidth - 1);
+		yDraw = clamp(yOffset, 0, screenHeight - 1);
+		xDraw2 = clamp(currentObject->ObjectBox->xSize + xOffset, 0, screenWidth - 1);
+		yDraw2 = clamp(currentObject->ObjectBox->ySize + yOffset, 0, screenHeight - 1);
 
 		// Make sure the sprite position is valid on screen to avoid a crash related to assuming the position is valid 
 		if (xOffset >= screenWidth || currentObject->ObjectBox->xSize + xOffset < 0 || yOffset >= screenHeight || currentObject->ObjectBox->ySize + yOffset < 0)
@@ -1361,8 +1415,8 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 	unsigned char *data = spritePtr->spriteData;		// Instead of copying the data, use a pointer to reduce memory overhead
 
 	// Locate object on screen
-	int xOffset = gameWorld->cameraX * gameWorld->bgParallax;
-	int yOffset = gameWorld->cameraY * gameWorld->bgParallax;
+	int xOffset = gameWorld->CameraX * gameWorld->bgParallax;
+	int yOffset = gameWorld->CameraY * gameWorld->bgParallax;
 	int xOffset2 = xOffset + spritePtr->width;
 	int yOffset2 = yOffset + spritePtr->height;
 
@@ -1381,10 +1435,10 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 
 	if (spritePtr->RenderMode == 1)
 	{
-		xDraw = correct(0 - xOffset, 0, screenWidth - 1);
-		yDraw = correct(0 - yOffset, 0, screenHeight - 1);
-		xDraw2 = correct(spriteWidth - xOffset, 0, screenWidth - 1);
-		yDraw2 = correct(spriteHeight - yOffset, 0, screenHeight - 1);
+		xDraw = clamp(0 - xOffset, 0, screenWidth - 1);
+		yDraw = clamp(0 - yOffset, 0, screenHeight - 1);
+		xDraw2 = clamp(spriteWidth - xOffset, 0, screenWidth - 1);
+		yDraw2 = clamp(spriteHeight - yOffset, 0, screenHeight - 1);
 
 		for (i = yDraw; i < yDraw2; i++)
 		{
@@ -1410,23 +1464,13 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 	xDraw2 = screenWidth - 1;
 	yDraw2 = screenHeight - 1;
 
-	// Correct y bounds if in tile mode 0
-	if (gameWorld->bgTileVertically == 0)
-	{
-		if (spriteHeight - yOffset < screenHeight)
-		{
-			yDraw2 = spriteHeight - yOffset;
-		}
-
-	}
-
 
 	// Render sprite to screen
 	for (i = yDraw; i < yDraw2; i++)
 	{
 		if (spritePtr->RenderMode == 2 && (i + yOffset) % gameWorld->bgParallaxChunkSize == 0)
 		{
-			xOffset = gameWorld->cameraX * (gameWorld->bgParallax - (gameWorld->bgChunkParallax * (i + yOffset) ) );
+			xOffset = gameWorld->CameraX * (gameWorld->bgParallax - (gameWorld->bgChunkParallax * (i + yOffset) ) );
 		}
 		
 
@@ -1458,7 +1502,7 @@ int renderBackGroundSprite(uint32_t screen[], int screenWidth, int screenHeight,
 }
 
 
-int correct(int offset, int bound1, int bound2)
+int clamp(int offset, int bound1, int bound2)
 {
 	if (offset < bound1)
 	{

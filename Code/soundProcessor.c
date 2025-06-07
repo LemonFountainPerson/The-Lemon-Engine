@@ -329,7 +329,7 @@ int initialiseAudio(void)
 }
 
 
-int CleanUpAudioData(void)
+int cleanUpAudioData(void)
 {
 	// Close Audio devices
 	for (int i = 0; i < CHANNEL_COUNT; i++) 

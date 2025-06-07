@@ -7,14 +7,14 @@
 
 
 // Initialises an instance of the player
-PlayerData* initialisePlayer(World *gameWorld);
+PlayerData* InitialisePlayer(World *gameWorld);
 
 
 int ResetPlayer(PlayerData *Player);
 
 
 // Main player update script
-FunctionResult updatePlayer(PlayerData *player, World *gameWorld, int keyboard[256]);
+FunctionResult UpdatePlayer(PlayerData *player, World *gameWorld, int keyboard[256]);
 
 
 int playerJump(PlayerData *player, int hAxis, int vAxis);
@@ -45,14 +45,3 @@ int switchPlayerSprite(int spriteID, int spriteSet, PlayerData *player);
 
 
 int switchPlayerSpriteName(char spriteName[MAX_LEN], int spriteSet, PlayerData *player);
-
-
-
-int tileCollision(PlayerData *player, World *gameWorld, double dx, double dy);
-
-
-int fixCollisionAtPoint(PlayerData *player, World *gameWorld, int x, int y, double dx, double dy, int part);
-
-
-int getTileAtPosition(World *gameWorld, int x, int y);
-

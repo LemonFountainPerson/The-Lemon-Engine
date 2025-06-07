@@ -59,12 +59,12 @@ int RunLemonEngine(void)
     PlayerData *player;
     World *GameWorld;
 
-    GameWorld = initialiseGame(NULL);
-    player = initialisePlayer(GameWorld);
+    GameWorld = InitialiseGame(NULL);
+    player = InitialisePlayer(GameWorld);
 
 
     // test data
-	loadLevel(GameWorld, 1);
+	switchLevel(GameWorld, 1);
 
 	Object *testObject = GameWorld->ObjectList->lastObject;
 
@@ -98,10 +98,10 @@ int RunLemonEngine(void)
 
 
 		// Player control
-		updatePlayer(player, GameWorld, keyboard);
+		UpdatePlayer(player, GameWorld, keyboard);
 
 
-		worldCameraControl(frame.width, frame.height, player, GameWorld);
+		WorldCameraControl(frame.width, frame.height, player, GameWorld);
 
 
 		// Render screen
@@ -111,7 +111,7 @@ int RunLemonEngine(void)
 
 		drawObjects(frame.screen, frame.width, frame.height, GameWorld);
 
-		PutScreenOnWindow(frame, Renderer, screenSurface, texture);
+		putScreenOnWindow(frame, Renderer, screenSurface, texture);
 		
 
 		// Process sound
@@ -145,9 +145,9 @@ int RunLemonEngine(void)
 	// Clear game data and cleanup
 	clearGameData(GameWorld, player);
 
-	CleanUpAudioData();
+	cleanUpAudioData();
 
-	CleanUpWindowRenderer(Window, Renderer, screenSurface, texture);
+	cleanUpWindowRenderer(Window, Renderer, screenSurface, texture);
 
     SDL_Quit();
 
@@ -157,7 +157,7 @@ int RunLemonEngine(void)
 
 
 // SDL Functions
-int CleanUpWindowRenderer(SDL_Window *Window, SDL_Renderer *Renderer, SDL_Surface *screenSurface, SDL_Texture *texture)
+int cleanUpWindowRenderer(SDL_Window *Window, SDL_Renderer *Renderer, SDL_Surface *screenSurface, SDL_Texture *texture)
 {
 	// Close Renderer/Window
 	SDL_DestroySurface(screenSurface);
@@ -172,7 +172,7 @@ int CleanUpWindowRenderer(SDL_Window *Window, SDL_Renderer *Renderer, SDL_Surfac
 }
 
 
-int PutScreenOnWindow(RenderFrame frame, SDL_Renderer *Renderer, SDL_Surface *screenSurface, SDL_Texture *texture)
+int putScreenOnWindow(RenderFrame frame, SDL_Renderer *Renderer, SDL_Surface *screenSurface, SDL_Texture *texture)
 {
 	screenSurface = SDL_CreateSurfaceFrom(frame.width, frame.height, SDL_PIXELFORMAT_BGRA32, frame.screen, frame.width * sizeof(uint32_t));
 
@@ -365,7 +365,7 @@ void DebugControls(World *GameWorld, PlayerData *player, int keyboard[256], Obje
 
 
 // Game functions
-World* initialiseGame(PlayerData *player)
+World* InitialiseGame(PlayerData *player)
 {
 	// Game world creation
 	World *gameWorld = malloc(sizeof(World));
@@ -378,8 +378,13 @@ World* initialiseGame(PlayerData *player)
 	}
 
 	gameWorld->Gravity = -1.0;
-	gameWorld->cameraX = 0;
-	gameWorld->cameraY = 120;
+	gameWorld->CameraX = 0;
+	gameWorld->minCameraX = 0;
+	gameWorld->maxCameraX = 32768;
+	gameWorld->CameraY = 120;
+	gameWorld->minCameraY = 0;
+	gameWorld->maxCameraY = 32768;
+	gameWorld->CameraMode = FOLLOW_PLAYER;
 	gameWorld->level = 0;
 
 	gameWorld->drawnObjects = 0;
@@ -393,12 +398,10 @@ World* initialiseGame(PlayerData *player)
 	gameWorld->drawHud = 1;
 
 	gameWorld->bgParallax = 0.1;
-	gameWorld->bgTileVertically = 1;
 	gameWorld->bgParallaxChunkSize = 64;
 	gameWorld->bgChunkParallax = 0.00008;
 
 	gameWorld->bgSpriteBuffer = NULL;
-	gameWorld->playBgMusic = 1;
 
 	gameWorld->GamePaused = 0;
 

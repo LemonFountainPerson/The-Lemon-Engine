@@ -45,11 +45,12 @@ Object* AddObject(World *gameWorld, int objectID, int xPos, int yPos, int arg1, 
 	CreateObjectSpriteSet(ObjectList, objectID);
 	
 
-
 	// Set Object parameters
 	switch (objectID)
 	{
 		case LEVEL_FLAG_OBJ:
+		// Like particles, arg1 defines the subtype of the level flag object
+			SetDrawPriorityToFront(ObjectList, newObject);
 			break;
 
 
@@ -429,59 +430,6 @@ Object* DefineMovingPlatform(Object *inputObject, int objectID, int xPos, int yP
 	}
 
 	return inputObject;
-}
-
-
-Object* AddFlagObject(World *gameWorld, Flags flagID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5)
-{
-	if (gameWorld == NULL || gameWorld->ObjectList == NULL)
-	{
-		return NULL;
-	}
-
-	ObjectController *ObjectList = gameWorld->ObjectList;
-
-	Object *newObject;
-	newObject = createNewObject(ObjectList, xPos, yPos, LEVEL_FLAG_OBJ);
-
-	if (newObject == NULL)
-	{
-		return NULL;
-	}
-
-	// Default settings
-	newObject->objectRenderMode = DO_NOT_RENDER;
-	newObject->ObjectBox->ySize = 0;
-	newObject->ObjectBox->xSize = 0;
-	newObject->arg1 = arg1;
-	newObject->arg2 = arg2;
-	newObject->arg3 = arg3;
-	newObject->arg4 = arg4;
-	newObject->arg5 = arg5;
-	newObject->currentSprite = 0;
-	newObject->spriteBuffer = NULL;
-	newObject->ObjectBox->solid = UNSOLID;
-	newObject->layer = LEVELFLAGS;
-
-	printf("\nCreated object flag %d;\n\n", flagID);
-
-	// Set Flag parameters
-	switch (flagID)
-	{
-
-	default:
-		break;
-	}
-
-	newObject->ObjectBox->xPosRight = newObject->ObjectBox->xPos + newObject->ObjectBox->xSize;
-	newObject->ObjectBox->yPosTop = newObject->ObjectBox->xPos + newObject->ObjectBox->xSize;
-
-	SetDrawPriorityToFront(ObjectList, newObject);
-	// Counter intuitively, by setting draw priority to front, the flag is placed at the end of the object list
-	// This is to help with efficiency somewhat as most searches begin from the start of the list as opposed to the end;
-	// Flag objects should never be directly accessed/affected by an object unless you are designing a special circumstance
-
-	return newObject;
 }
 
 
@@ -976,6 +924,11 @@ int ObjectBehaviour(World *gameWorld, Object *inputObject)
 			break;
 
 
+		case LEVEL_FLAG_OBJ:
+			UpdateFlagObject(gameWorld, inputObject);
+			break;
+
+
 		case MOVING_PLATFORM_HOR:
 		{
 			UpdateHorizontalPlatform(player, inputObject);
@@ -1071,7 +1024,7 @@ int UpdateParticle(World *GameWorld, Object *particle)
 	LoopParticleAnimation(particle);
 
 
-	customParticleBehaviour(GameWorld, particle);
+	CustomParticleBehaviour(GameWorld, particle);
 
 
 	// If repeat count is reached or animationTick exceeds maximum lifetime, mark for deletion
@@ -1089,7 +1042,7 @@ int UpdateParticle(World *GameWorld, Object *particle)
 }
 
 
-int customParticleBehaviour(World *GameWorld, Object *particle)
+int CustomParticleBehaviour(World *GameWorld, Object *particle)
 {
 	// Custom behaviour
 	switch(particle->currentAnimation)
@@ -1710,7 +1663,7 @@ int CheckBoxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox)
 }
 
 
-int assignDirection(PhysicsRect *inputBox, Object *currentObject)
+int AssignDirection(PhysicsRect *inputBox, Object *currentObject)
 {
 	if (currentObject == NULL)
 	{
@@ -2237,12 +2190,6 @@ int ClimbFlatSlope(PhysicsRect *inputBox, PhysicsRect *compareBox, World *GameWo
 		inputBox->xVelocity = 0.0;
 	}	
 
-
-	if (compareBox->yPosTop - inputBox->yPos < 8.0 && compareBox->yPosTop - inputBox->yPos > -1.0)
-	{
-		inputBox->yPos+=compareBox->yPosTop - inputBox->yPos;
-		printf("WHY\n");
-	}
 					
 	return 0;
 }

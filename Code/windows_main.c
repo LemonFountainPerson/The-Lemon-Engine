@@ -98,20 +98,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     PlayerData *player;
     World *GameWorld;
 
-    GameWorld = initialiseGame(NULL);
-    player = initialisePlayer(GameWorld);
+    GameWorld = InitialiseGame(NULL);
+    player = InitialisePlayer(GameWorld);
 
 
     // test data
-	loadLevel(GameWorld, 1);
+	switchLevel(GameWorld, 1);
 
 
 	Object *testObject = GameWorld->ObjectList->firstObject;
-
-    while(testObject->ObjectID != VERTICAL_GATE)
-    {
-        testObject = testObject->nextObject;
-    }
 
 	
    //LemonPlaySound("StartUp", "Music", LOOP_CHANNEL, 0.7);
@@ -123,7 +118,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // Window messages
         while(PeekMessage(&Msg, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&Msg); }
 
-
+ 
 		// Timing
 		gameTick = clock() - lastTick;
 		deltaTime = ((double)(clock() - lastTick)) * 0.0625;
@@ -136,10 +131,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
         // Player control
-		updatePlayer(player, GameWorld, keyboard);
+		UpdatePlayer(player, GameWorld, keyboard);
 
 
-		worldCameraControl(frame.width, frame.height, player, GameWorld);
+		WorldCameraControl(frame.width, frame.height, player, GameWorld);
 
 
 		// Render screen
@@ -195,7 +190,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// Clear game data and cleanup
 	clearGameData(GameWorld, player);
 
-	CleanUpAudioData();
+	cleanUpAudioData();
 
     SDL_Quit();
 

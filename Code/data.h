@@ -13,7 +13,7 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include <SDL3/SDL.h>
-#define CHANNEL_COUNT 12
+#define CHANNEL_COUNT 8
 #define MAX_SOUNDS_PER_CHANNEL 8
 
 #define V_RESOLUTION 720
@@ -102,6 +102,14 @@ enum lemonGameState {
 };
 
 
+enum cameraState {
+	FOLLOW_PLAYER = 0,
+	FREEZE_POSITION = 1,
+	FREE_ROAM = 2,
+	UNDEFINED_CAMERA_STATE
+};
+
+
 enum solidType {
 	UNSOLID = 0,
 	SOLID = 1,
@@ -146,9 +154,12 @@ enum Layer {
 
 
 enum Flags {
-	BACKGROUND_SET = 0,
-	BACKGROUND_SET_TRIGGER = 1,
-	TRIGGER_CUTSCENE = 2,
+	SET_BACKGROUND = 0,
+	SET_BACKGROUND_TRIGGER = 1,
+	START_LVL_WITH_CUTSCENE = 2,
+	CUTSCENE_TRIGGER = 3,
+	SET_CAMERA_BOUNDS = 4,
+	CHANGE_CAMERA_BOUNDS = 5,
 	UNDEFINED_FLAG
 };
 
@@ -157,6 +168,9 @@ enum ObjectState {
 	TO_BE_DELETED = -1,
 	DEFAULT = 0,
 	PAUSE_BEHAVIOUR = 1,
+	DEFEATED = 2,
+	BEING_CARRIED = 3,
+	IN_INVENTORY = 4,
 	UNDEFINED_STATE
 };
 
@@ -329,15 +343,17 @@ struct world
 	struct spriteSet *BackGrounds;
 	struct sprite *bgSpriteBuffer;
 
-	double bgParallax;
-	int bgTileVertically;
+	float bgParallax;
 	int bgParallaxChunkSize;
 	double bgChunkParallax;
 
-	int cameraX;
-	int cameraY;
-	int level;
-	double Gravity;
+	int CameraX;
+	int CameraY;
+	int minCameraX;
+	int maxCameraX;
+	int minCameraY;
+	int maxCameraY;
+	enum cameraState CameraMode;
 
 	int drawHitboxes;
 	int drawSprites;
@@ -346,8 +362,9 @@ struct world
 	int drawHud;
 	int drawParticles;
 	int drawObjects;
-	int playBgMusic;
 
+	int level;
+	double Gravity;
 	int GamePaused;
 	enum lemonGameState GameState;
 };
@@ -366,6 +383,7 @@ typedef struct world World;
 
 
 typedef enum lemonGameState LemonGameState;
+typedef enum cameraState CameraState;
 typedef enum FunctionResult FunctionResult;
 typedef enum LemonKeys LemonKeys;
 typedef enum Layer Layer;

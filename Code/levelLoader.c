@@ -3,12 +3,25 @@
 
 int switchLevel(World *gameWorld, int level)
 {
+	if (gameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
 	gameWorld->GameState = LOADING;
+
+	gameWorld->drawPlayer = 1;
+	gameWorld->drawBackGround = 1;
+	gameWorld->drawObjects = 1;
+	gameWorld->drawParticles = 1;
+	gameWorld->drawHud = 1;
 
 	deleteAllObjects(gameWorld->ObjectList);
 
 	if (loadLevel(gameWorld, level) != LEMON_SUCCESS)
 	{
+		gameWorld->drawPlayer = 0;
+		gameWorld->drawBackGround = 0;
 		gameWorld->GameState = EMPTY_GAME;
 		return INVALID_DATA;
 	}
@@ -436,12 +449,12 @@ int clearCurrentlyLoadedLevelData(World *gameWorld)
 
 int loadLevelFlag(World *gameWorld, FILE *fPtr)
 {
-	char buffer[16] = {0};
+	char buffer[20] = {0};
 
-	getNextArg(fPtr, buffer, 15);
+	getNextArg(fPtr, buffer, 19);
 
 	// Flag Decoded
-	if (strcmp(buffer, "BGSET") == 0)
+	if (strcmp(buffer, "SET-BG") == 0)
 	{
 		int args[3] = {0};
 
@@ -457,19 +470,53 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 		return 0;
 	}
 
-	if (strcmp(buffer, "BGSET_TRIGGER") == 0)
+	if (strcmp(buffer, "SET-BG-TRIGGER") == 0)
 	{
 		int args[5] = {0};
 
-		int returnMsg = readMultipleIntArgs(fPtr, args, 5, 6);
+		int returnMsg = readMultipleIntArgs(fPtr, args, 4, 6);
 
 		if (returnMsg != 0)
 		{
 			return returnMsg;
 		}
 	
-		AddFlagObject(gameWorld, BACKGROUND_SET_TRIGGER, args[2], args[3], args[0], args[1], 0, 0, 0);
+		AddObject(gameWorld, LEVEL_FLAG_OBJ, args[0], args[1], SET_BACKGROUND_TRIGGER, args[2], args[3], args[4], 0);
 
+		return 0;
+	}
+
+	if (strcmp(buffer, "SET-CAMERA-EDGES") == 0)
+	{
+		int args[4] = {0};
+
+		int returnMsg = readMultipleIntArgs(fPtr, args, 4, 4);
+
+		if (returnMsg != 0)
+		{
+			return returnMsg;
+		}
+	
+		if (args[0] >= 0)
+		{
+			gameWorld->minCameraX = args[0];
+		}
+
+		if (args[1] >= 0)
+		{
+			gameWorld->maxCameraX = args[1];
+		}
+
+		if (args[2] >= 0)
+		{
+			gameWorld->minCameraY = args[2];
+		}
+
+		if (args[3] >= 0)
+		{
+			gameWorld->maxCameraY = args[3];
+		}
+		
 		return 0;
 	}
 
