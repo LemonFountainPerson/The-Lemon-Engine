@@ -3,6 +3,7 @@
 #include "drawScreen.h"
 #include "gameObjects.h"
 #include "playerController.h"
+#include "animations.h"
 #include "levelLoader.h"
 #include "eventManager.h"
 #include "spriteLoader.h"

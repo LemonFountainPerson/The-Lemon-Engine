@@ -1,6 +1,7 @@
 #ifndef IS_DEFINED
 #include "data.h"
 #include "drawScreen.h"
+#include "animations.h"
 #include "spriteLoader.h"
 #include "soundProcessor.h"
 #include "playerController.h"
@@ -103,9 +104,6 @@ int UpdateParticle(World *GameWorld, Object *particle);
 
 
 int CustomParticleBehaviour(World *GameWorld, Object *particle);
-
-
-int LoopParticleAnimation(Object *particle);
 
 
 int UpdateHorizontalPlatform(PlayerData *player, Object *platform);

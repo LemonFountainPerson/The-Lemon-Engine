@@ -730,6 +730,12 @@ int checkIfGrounded(World *gameWorld, PlayerData *player)
 
 int switchPlayerSprite(int spriteID, int spriteSet, PlayerData *player)
 {
+	if (player == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+
 	// Find correct player sprite set
 	SpriteSet *playerSprSet = player->spriteSetPtr;
 
@@ -796,6 +802,11 @@ int switchPlayerSprite(int spriteID, int spriteSet, PlayerData *player)
 
 int switchPlayerSpriteName(char spriteName[MAX_LEN], int spriteSet, PlayerData *player)
 {
+	if (player == NULL)
+	{
+		return MISSING_DATA;
+	}
+
 	// Find correct player sprite set
 	SpriteSet *playerSprSet = player->spriteSetPtr;
 

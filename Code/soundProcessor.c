@@ -47,7 +47,12 @@ int LemonPlaySound(char fileName[], char folderName[], int channel, double volum
 
 int InitSound(const char *pathPtr, int channel, double volume)
 {
-	SoundInstance* currentSound = SoundChannels[channel];
+	if (SoundChannels[channel].soundCount >= MAX_SOUNDS_PER_CHANNEL)
+	{
+		return ACTION_DISABLED;
+	}
+
+	SoundInstance* currentSound = SoundChannels[channel].firstSound;
 
 	SoundInstance *newSound = malloc(sizeof(SoundInstance));
 
@@ -57,21 +62,12 @@ int InitSound(const char *pathPtr, int channel, double volume)
 		return LEMON_ERROR;
 	}
 
+
 	if (currentSound != NULL)
 	{
-		int k = 0;
-
 		while (currentSound->nextSound != NULL)
 		{
 			currentSound = currentSound->nextSound;
-			k++;
-
-			if (k > MAX_SOUNDS_PER_CHANNEL)
-			{
-				printf("Out of space (%d sounds) for new sound instance in channel (%d)\n", k, channel);
-				deleteSoundInstance(newSound);
-				return ACTION_DISABLED;
-			}
 		}
 
 		currentSound->nextSound = newSound;
@@ -80,7 +76,7 @@ int InitSound(const char *pathPtr, int channel, double volume)
 	}
 	else
 	{
-		SoundChannels[channel] = newSound;
+		SoundChannels[channel].firstSound = newSound;
 		newSound->prevSound = NULL;
 	}
 	
@@ -137,6 +133,8 @@ int InitSound(const char *pathPtr, int channel, double volume)
 
 	SDL_free(audioBuffer);
 
+	SoundChannels[channel].soundCount++;
+
 	return 0;
 }
 
@@ -149,8 +147,8 @@ int IterateAudio(void)
 	for (int i = 0; i < CHANNEL_COUNT; i++)
 	{
 		SoundInstance *currentSound;
-		currentSound = SoundChannels[i];
-
+		currentSound = SoundChannels[i].firstSound;
+		
 		int k = 0;
 
 		while (currentSound != NULL)
@@ -207,16 +205,31 @@ int deleteSoundInstance(SoundInstance *inputSound)
 	}
 	else
 	{
-		SoundChannels[inputSound->channelID] = nextSound;
+		SoundChannels[inputSound->channelID].firstSound = nextSound;
 	}
 	
+	if (SoundChannels[inputSound->channelID].firstSound == NULL)
+	{
+		SoundChannels[inputSound->channelID].soundCount = 0;
+	}
+	else
+	{
+		SoundChannels[inputSound->channelID].soundCount--;
+	}
+
 
 	inputSound->nextSound = NULL;
 	inputSound->prevSound = NULL;
 
-	SDL_DestroyAudioStream(inputSound->stream);
+	if (inputSound->stream != NULL)
+	{
+		SDL_DestroyAudioStream(inputSound->stream);
+	}
 
-	SDL_free(inputSound->wav_data);
+	if (inputSound->wav_data != NULL)
+	{
+		SDL_free(inputSound->wav_data);
+	}
 
 	SDL_free(inputSound);
 
@@ -227,7 +240,7 @@ int deleteSoundInstance(SoundInstance *inputSound)
 int StopAudioInChannel(int channel)
 {
 	SoundInstance *currentSound;
-	currentSound = SoundChannels[channel];
+	currentSound = SoundChannels[channel].firstSound;
 
 	while (currentSound != NULL)
 	{
@@ -245,7 +258,7 @@ int PauseAllAudio(void)
 	for (int i = 0; i < CHANNEL_COUNT; i++)
 	{
 		SoundInstance *currentSound;
-		currentSound = SoundChannels[i];
+		currentSound = SoundChannels[i].firstSound;
 
 		while (currentSound != NULL)
 		{
@@ -264,7 +277,7 @@ int ResumeAllAudio(void)
 	for (int i = 0; i < CHANNEL_COUNT; i++)
 	{
 		SoundInstance *currentSound;
-		currentSound = SoundChannels[i];
+		currentSound = SoundChannels[i].firstSound;
 
 		while (currentSound != NULL)
 		{
@@ -281,7 +294,7 @@ int ResumeAllAudio(void)
 int PauseChannel(int channel)
 {
 	SoundInstance *currentSound;
-	currentSound = SoundChannels[channel];
+	currentSound = SoundChannels[channel].firstSound;
 
 	while (currentSound != NULL)
 	{
@@ -297,7 +310,7 @@ int PauseChannel(int channel)
 int ResumeChannel(int channel)
 {
 	SoundInstance *currentSound;
-	currentSound = SoundChannels[channel];
+	currentSound = SoundChannels[channel].firstSound;
 
 	while (currentSound != NULL)
 	{
@@ -322,7 +335,8 @@ int initialiseAudio(void)
 
 	for (int i = 0; i < CHANNEL_COUNT; i++) 
 	{
-        SoundChannels[i] = NULL;
+        SoundChannels[i].firstSound = NULL;
+		SoundChannels[i].soundCount = 0;
     }
 
 	return 0;
@@ -335,10 +349,10 @@ int cleanUpAudioData(void)
 	for (int i = 0; i < CHANNEL_COUNT; i++) 
 	{
 		SoundInstance *currentSound;
-		currentSound = SoundChannels[i];
+		currentSound = SoundChannels[i].firstSound;
 
 		int k = 0;
-		while (SoundChannels[i] != NULL && k < MAX_SOUNDS_PER_CHANNEL)
+		while (SoundChannels[i].firstSound != NULL && k < MAX_SOUNDS_PER_CHANNEL)
 		{
 			SoundInstance *deleteSound;
 			deleteSound = currentSound;

@@ -14,7 +14,7 @@
 
 #include <SDL3/SDL.h>
 #define CHANNEL_COUNT 8
-#define MAX_SOUNDS_PER_CHANNEL 8
+#define MAX_SOUNDS_PER_CHANNEL 32
 
 #define V_RESOLUTION 720
 #define H_RESOLUTION 1280
@@ -202,6 +202,14 @@ struct soundInstance
 };
 
 
+struct soundChannel
+{
+	int soundCount;
+
+	struct soundInstance *firstSound;
+};
+
+
 struct renderFrame 
 {
 	int width;
@@ -370,8 +378,8 @@ struct world
 };
 
 
-
 typedef struct soundInstance SoundInstance;
+typedef struct soundChannel SoundChannel;
 typedef struct sprite Sprite;
 typedef struct spriteSet SpriteSet;
 typedef struct renderFrame RenderFrame;
@@ -380,7 +388,6 @@ typedef struct playerData PlayerData;
 typedef struct objectController ObjectController;
 typedef struct object Object;
 typedef struct world World;
-
 
 typedef enum lemonGameState LemonGameState;
 typedef enum cameraState CameraState;
@@ -394,7 +401,7 @@ typedef enum GateSwitch GateSwitch;
 typedef enum solidType SolidType;
 
 
-static SoundInstance* SoundChannels[CHANNEL_COUNT];
+static SoundChannel SoundChannels[CHANNEL_COUNT];
 
 static int gameRunning = 1;
 
