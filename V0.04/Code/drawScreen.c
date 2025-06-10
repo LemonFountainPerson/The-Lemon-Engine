@@ -757,7 +757,7 @@ uint32_t blendPixel(uint32_t screenPixel, uint32_t inputPixel)
 
 	uint8_t green = (( ((screenPixel & 0x000000FF)) * (1.0 - alpha)) + ((inputPixel & 0x000000FF) * alpha));; 
 
-	return (0x00 | red << 16 | blue << 8 | green);
+	return (0xFF << 24 | red << 16 | green << 8 | blue);
 }
 
 
