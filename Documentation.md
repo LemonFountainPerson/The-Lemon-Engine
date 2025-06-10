@@ -21,13 +21,17 @@ This is not yet 100% uniform across the entire codebase, but in general:
 
 -> Functions starting with a lowercase letter are intended to operate a core function for the engine and should not be changed unless the core functionality of the engine needs to be changed. Conversely, functions that start with a capital letter are intended to be modified or added to in order to facilitate your game.
 
--> The FunctionResult enum defines a few simple exit conditions for functions to take - these can be used to clarify why a function is returning, primarily for debugging purposes.
+-> The FunctionResult enum defines a few simple exit conditions for functions to take - these can be used to clarify why a function is returning, primarily for debugging purposes. For compatibility, 0 is still success (LEMON_SUCCESS) and -1 is generally error (LEMON_ERROR).
 
--> The playercontroller is intended to be able to be swapped out for a custom one, and should only require a PhysicsRect structure to be added in order to keep it compatible with other engine functions. Objects however, are not. All functions that use objects will assume it contains the variables that the engine defaults with. While data may be added to objects for custom function, no variable should be removed.
+-> The playerController is intended to be able to be swapped out for a custom one, and should only require a PhysicsRect structure to be added in order to keep it compatible with other engine functions. Objects however, are not. All functions that use objects will assume it contains the variables that the engine defaults with. While data may be added to objects for custom function, no variable should be removed. Any added variable should be initialised in the createNewObject function.
 
 -> Some functions will purposely abstract its process or take a more roundabout algorithm in order to facilitate eligability: the only exception to this are extremely perfomance-sensitive functions such as those used in rendering sprites.
 
--> Any enums which define data categories that re expected to be expanded/added to contain an additional UNDEFINED_XXX value to denotes where the defined data ends. This means when checking for out of bounds data (at least in the > 0 direction) you may simply check if [data] < UNDEFINED_DATA.
+-> Any enums which define data categories that are expected to be expanded/added for a game will contain an additional UNDEFINED_XXX value to denote where the defined data ends. This means when checking for out of bounds data (at least in the > 0 direction) you may simply ensure [data] < UNDEFINED_DATA.
+
+-> The keyboard array doesn't map to a standard keyboard layout and is only a size of 256 for backwards compatibility. Keys from A to Z can be found by indexing the char values (i.e. keyboard['A'] will yield the state for the 'A' key.) Other keys such as predefined JUMP and INTERACT are defined in the LemonKeys enum. In general, 0 means unpressed and 1 means pressed, but for single inputs you can alter the entry to 2 to signify that the key is still being held but was taken as an input for something.
+
+-> The deltaTime, gameRunning and frameThrottle variables are all global variables usable across all files in the engine, but in general only deltaTime need be used in this way; frameThrottle and gameRunning are handle by the RunLemonEngine function.
 
 
 # Engine Initialisation
@@ -61,20 +65,20 @@ struct world
 	int maxCameraX;
 	int minCameraY;
 	int maxCameraY;
-	enum cameraState CameraMode;
+	CameraState CameraMode;
 
 	int drawHitboxes;
 	int drawSprites;
 	int drawBackGround;
 	int drawPlayer;
-	int drawHud;
+	int drawUI;
 	int drawParticles;
 	int drawObjects;
 
+	LemonGameState GameState;
 	int level;
-	double Gravity;
+	float Gravity;
 	int GamePaused;
-	enum lemonGameState GameState;
 };
 ```
 
@@ -89,7 +93,6 @@ struct playerData
 	double maxYVel;
 	double maxXVel;
 
-	int xFlip;
 	int currentSprite;
 	struct sprite *spriteBuffer;
 	struct spriteSet *spriteSetPtr;
@@ -124,6 +127,8 @@ struct physicsRect
 	enum solidType solid;
 
 	double direction;
+	int xFlip;
+	int yFlip;
 };
 ```
 
@@ -138,7 +143,7 @@ For ease of use, it is unrecommended to alter the main game loop code already pr
 
 After window and audio initialisation, game data is created using the initialiseWorld and initialisePlayer functions. These functions take in a PlayerData struct and a World struct respectively. They are formatted so that pointer association between the GameWorld and the Player is handled automatically, and these functions can be called in any order, and will accept NULL if the respective struct has not been created/initialised yet. The functions each return a pointer to allocated data for their respective structs. 
 
-Most functions in the engine at the higher levels will perform checks to insure the pointers being passed to them are valid, however at lower levels of engine operation this may not be the case, so it is unadvised to call smaller functions such as helper functions directly without first ensuring Player and GameWorld initialisation.
+Most functions in the engine at the higher levels will perform checks to ensure the pointers being passed to them are valid, however at lower levels of engine operation this may not be the case, so it is unadvised to call smaller functions such as helper functions directly without first ensuring Player and GameWorld initialisation.
 
 **Game Loop**
 
@@ -148,7 +153,7 @@ First, updateObjects is run to update every object in the GameWorld.
 Next, updatePlayer is ran to take user input and operate the player. 
 After these two functions all game logic has been performed. Any further functionality should go here after these functions (such as menu control, other self-implemented object types, etc.)
 
-Next, worldCameraControl is called to move the GameWorld's camera according to the state of the GameWorld. (i.e: following the player) The seperation of the camera and the player means the camera is completely independent of the player and can be moved independently if you wish. For convinience, it's recommended to do this from the worldCameraControl function. This can be controlled through the use of the CameraMode variable which holds a CameraState enum defining what the camera should be doing. (Following the player, staying in place, free roam, etc.)
+Next, worldCameraControl is called to move the GameWorld's camera according to the state of the GameWorld. (i.e: following the player) The separation of the camera and the player means the camera is completely independent of the player and can be moved independently if you wish. For convinience, it's recommended to do this from the worldCameraControl function. This can be controlled through the use of the CameraMode variable which holds a CameraState enum defining what the camera should be doing. (Following the player, staying in place, free roam, etc.)
 
 ```
 enum cameraState {
@@ -163,9 +168,9 @@ enum cameraState {
 
 Next, rendering begins. First, cleanRenderer is called to reset the frame for new things to be drawn, as well as NULL handling in the event of mis-allocated memory. 
 
-Objects in the GameWorld are drawn in the order they are placed within the linked list that comprises all objects. (except the player) In order to facilitate better control, there is a layering system in which an object can be defined to only be drawn on a specific layer, and the main game loop does one rendering pass for each of these layers. This means objects in the FOREGROUND will always be drawn over objects in the MIDDLEGROUND and BACKGROUND, and so on. 
+Objects in the GameWorld are drawn in the order they are placed within the linked list that comprises all objects (except the player). In order to facilitate better control, there is a layering system in which an object can be defined to only be drawn on a specific layer, and the main game loop does one rendering pass for each of these layers. This means objects in the FOREGROUND will always be drawn over objects in the MIDDLEGROUND and BACKGROUND, and so on. 
 By default, the player is drawn on the MIDDLEGROUND layer, however due to the player not being an object contained within the GameWorld's object list, it is always drawn after the objects of that layer have been drawn. (For example, on the MIDDLEGROUND the player will be drawn behind the objects on the FOREGROUND but always in front of the objects on the MIDDLEGROUND and BACKGROUND)
-More layers can be defined in the Layers enum contained within data.h, but additional rendering passes must be implemented within the main game loop to account for this.
+More layers can be defined in the Layers enum contained within data.h.
 
 After the RenderFrame's screen buffer has finished being rendered for the frame, PutScreenOnWindow is run to well...you know. This is a function that is simply comprised of some SDL functions responsible for creating a surface, a texture forom that surface and finally rendering the texture to the renderer to be placed on the window. (This function is replaced by two windows API functions in windows_main.)
 
@@ -175,13 +180,13 @@ Next, the iterateAudio function is called to handle audio events. SDL handles au
 
 However, the engine uses multiple channels oraganisation and for controlling whether to loop a sound. All channels are currently identical except for the LOOP_CHANNEL channel as defined in the ChannelNames enum. The only difference between these channels is that sounds played in most channels will only be played once, while those played in LOOP_CHANNEL will loop forever until manually stopped. 
 
-every sound is its own memory-allocated struct in a linked list attached to the SoundChannels array, essentially to represent each instance of a sound as its own "object". This means each sound can be modified individually, or on a channel-wise basis. However, a liomitation of this implementation is that there is a defined limit to the amount of sounds that can be played on a channel at one time, in order to conserve memory.
+Every sound is its own memory-allocated struct in a linked list attached to the SoundChannels array, essentially to represent each instance of a sound as its own "object". This means each sound can be modified individually, or on a channel-wise basis. However, a limitation of this implementation is that there is a defined limit to the amount of sounds that can be played on a channel at one time, in order to conserve memory.
 
 For ease of operation, macros or enums can be defined to assist with organisation, such as defining "MUSIC_CHANNEL" as 0 to signify that channel 0 is reserved for music.
 
 **Frame Throttling**
 
-Next, the frame throttling functionality. The function frameRate is called with an integer to determine how much to delay to maintain the specified frames per second. Ideally, without this function the engine will run unencumbered at approximately 400-600 fps. DeltaTime is a static global variable meaning it is accessable from any file that includes data.h. (NOTE: while partially implemented, deltaTime calculations and the frameRate function are not 100% accurate and are currently being worked on for a future version. As such, this information and its functionality may be subject to change.)
+Next, the frame throttling functionality. The function frameRate is called with an integer to determine how much to delay to maintain the specified frames per second. Ideally, without this function the engine will run unencumbered at approximately 400-600 fps. DeltaTime is a extern global variable meaning it is accessable from any file that includes data.h. (NOTE: while partially implemented, deltaTime calculations and the frameRate function are not 100% accurate and are currently being worked on for a future version. As such, this information and its functionality may be subject to change.)
 
 **Extra Stuff**
 
@@ -189,7 +194,7 @@ After that, the frame has finished rendering and the remaining space in the main
 
 The variable "gameRunning" is a global variable which is used by the game loop to decide when to terminate the engine program. When gameRunning equals 0, the game loop ends and clean-up begins.
 
-The "keyboard" int array is used to keep track of user input, where each entry corresponds to a key being pressed fo 1 and not for 0. In order for simplicity (especially for when switching between windows_main.c and RunLemonEngine) an enum called LemonKeys is used to map keys in this array.
+The "keyboard" int array is used to keep track of user input, where each entry corresponds to a key being pressed, 1 for true and 0 for false. In order for simplicity (especially for when switching between windows_main.c and RunLemonEngine) an enum called LemonKeys is used to map common game inputs in this array. For example, INTERACT is mapped to 'Z' and 'E', while JUMP is mapped to the spacebar.
 
 
 # Game Objects
@@ -201,30 +206,29 @@ GameWorld->ObjectList->firstObject .... etc. While the player is the user's way 
 
 In order to create a new object type, a few additions must be made. First, for readability, you should add a new slot in the ObjectTypes enum to make it clear what it is while simultaniously assigning it an integer ID. ID 0 is reserved for level flags and should not be changed, however all the others may be reorganised as you wish.
 ```
-enum ObjectType {
+typedef enum {
 	LEVEL_FLAG_OBJ = 0,
 	SOLID_BLOCK = 1,
-	RIGHT_SLOPE = 2,
-	LEFT_SLOPE = 3,
-	JUMP_THRU = 4,
-	UI_ELEMENT = 5,
-	PARTICLE = 6,
-	COIN = 7,
-	MOVING_PLATFORM_HOR = 8,
-	MOVING_PLATFORM_VER = 9,
-	SPRING = 10,
-	GATE_SWITCH = 11,
-	GATE_SWITCH_TIMED = 12,
-	VERTICAL_GATE = 13,
-	HORIZONTAL_GATE = 14,
-        NEW_ITEM = 15,
-        // ...
-};
+	FLAT_SLOPE_FLOOR = 2,
+	JUMP_THRU = 3,
+	UI_ELEMENT = 4,
+	PARTICLE = 5,
+	COIN = 6,
+	MOVING_PLATFORM_HOR = 7,
+	MOVING_PLATFORM_VER = 8,
+	SPRING = 9,
+	GATE_SWITCH = 10,
+	GATE_SWITCH_TIMED = 11,
+	VERTICAL_GATE = 12,
+	HORIZONTAL_GATE = 13,
+	UNDEFINED_OBJECT
+} ObjectType;
 ```
 
 Next, if you wish to assign custom attributes such as size, shape, collision type, multi-use args, etc. you should create a new case in the switch statement of your choice. If you are making a moving platform, you should put it in the defineMovingPlatform function, if it is a level flag, you should put it in the addLevelFlag function, etc. If it is more generic than any of the defined presets, then simply add a slot to the addObject function. The object system is designed such that all objects can be spawned via the addObject function.
+
 ```
-void addObject(ObjectController *objectList, int xPos, int yPos, int objectID, int arg1, int arg2, int arg3, int arg4, int arg5)
+void addObject(ObjectController *objectList, int objectID, int xPos, int yPos, int xSize, int ySize, int arg1, int arg2, int arg3, int arg4, int arg5)
 {
 	Object *newObject;
 	newObject = createNewObject(objectList, xPos, yPos, objectID);
@@ -239,8 +243,8 @@ void addObject(ObjectController *objectList, int xPos, int yPos, int objectID, i
 		break;
 
 	case SOLID_BLOCK:
-		newObject->xSize = arg1 * X_TILESCALE;
-		newObject->ySize = arg2 * Y_TILESCALE;
+		newObject->xSize = xSize * X_TILESCALE;
+		newObject->ySize = ySize * Y_TILESCALE;
 		break;
 
 	// ...
@@ -260,6 +264,7 @@ void addObject(ObjectController *objectList, int xPos, int yPos, int objectID, i
 ```
 
 Finally, the sprite set should be defined if it is not intended to be an invisible object. To do this, go to the createSpriteSet function in the same file, and enter a new case in its switch statement using the loadObjectSprite function to load each sprite you wish to uses for that object. The third argument of loadObjectSprite defines what RenderMode the sprite will use, 0/SINGLE, 3/TILE, 6/SCALE, etc. (More on this in the Sprite section)
+
 ```
 void createObjectSpriteSet(ObjectController *objectList, int objectID)
 {
@@ -289,6 +294,7 @@ void createObjectSpriteSet(ObjectController *objectList, int objectID)
 ```
 
 With this, the basic set-up of the object is complete! The final optional step is to add custom behaviour in the objectBehhaviour function in the same file. This is done by making your own function that takes in at least the pointer to the object itself as an arguement, and can be used to create interactivity, animations, custom actions, etc. for that specific object.
+
 ```
 void objectBehaviour(World *gameWorld, Object *inputObject)
 {
@@ -309,20 +315,7 @@ void objectBehaviour(World *gameWorld, Object *inputObject)
 		} break;
 
 
-		case COIN:
-		{
-			if (overlapsPlayer(player, ObjXPos, ObjXPos2, ObjYPos, ObjYPos2) == 1)
-			{
-				deleteObject(objectList, &currentObject);
-				deleteFlag++;
-				player->coinCount++;
-				LemonPlaySound("Coin_Collect", "Objects", 4, 0.8);
-			}
-
-		} break;
-
 		//...
-
 
 				case NEW_ITEM:
 					updateNewItem(currentObject, ...);
@@ -342,7 +335,7 @@ void objectBehaviour(World *gameWorld, Object *inputObject)
 ```
 
 In order to load your object from a (.lem) file, 
-you would simply type "OBJECT-\_\_[Object ID]\_\_[X position]\_\_[Y position]\_\_[arg1]\_\_[arg2]\_\_////..." 
+you would simply type "OBJECT-\_\_[Object ID]\_\_[X position]\_\_[Y position]\_\_[xSize]\_\_[ySize]\_\_////..." 
 
 For a moving platform, you would type "OBJECT-\_\_[Object ID]\_\_...[bound1]\_\_[bound2]\_\_[speed]\_\_[timer]\_\_////..."
 
@@ -357,24 +350,23 @@ Objects have fairly self-explanitory attributes, except for args 1-5. These are 
 ```
 struct object
 {
+	int ObjectID;
+	ObjectState State;
 	struct object *nextObject;
 	struct object *prevObject;
-	int ObjectID;
-	enum ObjectState State;
+	struct object *ParentObject;
 
 	struct physicsRect *ObjectBox;
 
-	enum Layer layer;
+	Layer layer;
 
 	int currentAnimation;
 	int animationTick;
 
 	struct sprite *spriteBuffer;
 	int currentSprite;
-	int xFlip;
-	int yFlip;
 
-	enum RenderMode objectRenderMode;
+	RenderMode objectRenderMode;
 
 	// Multi-purpose args
 	int arg1;
@@ -395,6 +387,7 @@ The method for animating an object uses currentAnimation to set the animaton cur
 
 While these two variables can (optionally) be used to control the state of the animation of the object, in order to actually switch the currently drawn sprite the function switchObjectSprite or SwitchObjectSpriteName is used. It simply takes in an input object pointer and an integer ID or string respectively to switch the sprite to. All sprites have both a sprite ID (which simply starts from 1 and counts upwards, effectively acting as an index) and a char string as a sprite name.
 
+The ParentObject pointer is normally set to NULL, but can be assigned to another object to classify a parent relationship between objects. This is useful for syncing state with another object without having to search for it. When a parent object is marked for deletion, all objects that have it as its parent will be marked for deletion as well, and this will continue recursively until the end of the parent 'tree' is reached.
 
 
 **Technical Details**
@@ -405,14 +398,14 @@ CurrentAnimation is used to denote what animation is currently playing while ani
 
 Currently 5 multi-purpose integer args are provided in each object, however this may increase in the future. These can be used for whatever you like, such as health, ammo and armour, etc. for enemies, X and Y locations for pathing, IDs for connecting to other objects and more.
 
-The updatePlayer function is run before the updateObjects function, which will result in some difficulty when trying to perform interactions from the player to the objects - this was chosen deliberately to make custom behaviour less reliant on the player controller which is designed to be able to be swapped out with minimal changes. This does mean that some interactions do have to be specially handled by objects such as movement matching with moving platforms, enemy attacks hitting the player, etc. This is relatively easy to do as the update objects function provides the pointer to the player via the GameWorld struct.
+The updatePlayer function is run after the updateObjects function. This means objects can move the player freely but for player to object interactions, they will most likely have to be handled rom the object's perspective in order to prevent a frame delay.
 
 Objects can be directly deleted from update objects function, but this requires extra logic handling so that an object in the list does not get skipped for evaluation that frame. The delete object function works by deleting the object you provide the pointer to, and will change the given pointer to point to the next item in the object list. Because of these complications, a helper function called "MarkObjectForDeletion" is preferable as it can used at any point in the program's execution safely and will provide additional checks for you to ensure the object can be deleted without error. When an object is marked for deletion, its state is set to (TO_BE_DELETED), and at the end of its iteration in the update objects function it will be deleted. If you wish to undo the mark before its actual deletion you may use "UnmarkObjectForDeletion" to reverse this and preserve the object, although as a consequence the objects state will be reset to DEFAULT, and you may lose some data. (Such as if an object is in a unique state, this data will be lost when marked for deletion, which may cause logic errors.)
 
 
 **Particles**
 
-The Lemon engine has a built-in particle system; although basic it provides an easy-to-use template for 2D animated effects to be created. All particles use the PARTICLE object ID (13) and each different particle is defined simply by their animation number as defined in the currentAnimation variable. (E.g: animation 0 corresponds to the coin sparkle particle effect.) Its position, velocity, amount of animation loops, framerate, animation direction and particle lifetime can all be defined when spawning a particle but have default values if left at 0. For example, if particle lifetime is left at 0, the particle will default to deleting itself when it has run through all its loops. If additional effects such as movement are required, you should simply add the behaviour logic to the updateParticles function as you would in the updateObjects function. Although, by default only two integer arg variables are available for free use.
+The Lemon engine has a built-in particle system; although basic it provides an easy-to-use template for 2D animated effects to be created. All particles use the PARTICLE object ID (5) and each different particle is defined simply by their animation number as defined in the currentAnimation variable. (E.g: animation 0 corresponds to the coin sparkle particle effect.) Its position, velocity, amount of animation loops, framerate, animation direction and particle lifetime can all be defined when spawning a particle but have default values if left at 0. For example, if particle lifetime is left at 0, the particle will default to deleting itself when it has run through all its loops. If additional effects such as movement are required, you should simply add the behaviour logic to the updateParticles function as you would in the updateObjects function. Although, by default only two integer arg variables are available for free use.
 
 ```
 	// Arg1: particle sub type (SPARKLE)
@@ -529,16 +522,18 @@ switch (animateType)
 }
 ```
 
+A limitation of this implementation is that particles will only support one animation at a time, so multiple particles will need to be created for different animations, however they can share the same sprite data as they all share a spriteset.
+
 # Audio
 
 Audio uses SDL as a layer to load, play and modify sounds in real-time. The channel system is explained in the game loop section, but the method to play sounds is relatively simple. Simply by calling the LemonPlaySound function with four arguments is enough for playing sounds normally, as the engine will handle the rest. 
 
 The first two arguments are the name of the sound file (with or without .wav) and the name of the folder to find it in from the sounds folder in LemonData respectively. (e.g: LemonPlaySound("StartUp", "Music", ...) or LemonPlaySound("Jump.wav", "Player", ...) )
 
-The third argument is what channel to play the sound on. Enums can be used to make this more readable. The fourth argument is the volume level as a double, going from 0.0 to 1.0. As mentioned before, sounds played on Loop channels will repeat indefinitely and sounds played elswhere will only play once.
+The third argument is what channel to play the sound on. Enums can be used to make this more readable. The fourth argument is the volume level as a float, going from 0.0 to 1.0. As mentioned before, sounds played on Loop channels will repeat indefinitely and sounds played elswhere will only play once.
 
 ```
-int LemonPlaySound(char fileName[], char folderName[], int channel, double volume)
+int LemonPlaySound(char fileName[], char folderName[], int channel, float volume)
 {
     // ...
     return 0;
@@ -606,6 +601,6 @@ SCALE: Draws the sprite once, but stretches/shrinks it to fit the object's bound
 
 SINGLE: This mode will simply draw the image as it is in the png file, 1:1 with no tiling. This method will render the whole image regardless of the Object's size or dimensions. It is not centered, so it is drawn from the bottom-left corner of the object. (This will change in a future update to center it by default, or control its offset, or both). Mode 4 internally uses the same functions as Mode 0, so performatively, they are the same.
 
-XXX_FAST: This is a faster version of the other rendermodes, each type of rendering except for SCALE has a fastmode version. This renders sprites in lines and has tiling, however due to the nature of its rendering it cannot handle transparent pixels. Normally TileMode is fast enough on its own for mode 5 to be unnecessary, however for objects that are known to not require transparency this is preferred as it does improve performance overall.
+XXX_FAST: This is a faster version of the other rendermodes. Each type of rendering except for SCALE has a fastmode version. This renders sprites in lines and has tiling, however due to the nature of its rendering it cannot handle transparent pixels. Normally TileMode is fast enough on its own for mode 5 to be unnecessary, however for objects that are known to not require transparency this is preferred as it does improve performance overall.
 
-XXX_FULL_ALPHA: This is a version of rendering that enables full proper transparency, at the cost of performance. Every type of rendering has a FULL_ALPHA version, however it's recommended to avoid using this mode where possible. (Until an update comes that improves performance.) 
+XXX_FULL_ALPHA: This is a version of rendering that enables full proper transparency, at the cost of performance. Every type of rendering has a FULL_ALPHA version, however it's recommended to avoid using this mode where possible. (Until an update comes that improves performance!) 
