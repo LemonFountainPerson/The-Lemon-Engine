@@ -12,9 +12,9 @@ Internal Structure changes:
     -> PhysicsRect now holds xFlip and yFlip to control hitbox orientation. These are now used to decide which way to render the displayed sprite. Also moved PhysicsXVelocity and 
     PhysicsYVelocity to PhysicsRect for compatibility.
 
-    -> Physicsrect now holds SpriteXOffset and SpriteYOffset, which can be used to move the location of the rendered sprite reltive to the PhysicsRect hitbox.
+    -> PhysicsRect now holds SpriteXOffset and SpriteYOffset, which can be used to move the location of the rendered sprite relative to the PhysicsRect hitbox.
 
-    -> Refactored the Collision functions to now be usable by any object with a physicsRect. There are now two sets of collision functions: Resolve[X/Y]Collision and 
+    -> Refactored the Collision functions to now be usable by any object with a PhysicsRect. There are now two sets of collision functions: Resolve[X/Y]Collision and 
     Resolve[X/Y]CollisionByPush. The former is used when the moving object in question should conoform to the world around it, and the latter should be used to push collided objects out of 
     its way. Both of these functions take in the previous position as an arguement as they expect the moving object in question to have already moved for that frame.
     NOTE: Currently the Resolve[X/Y]Collision function handles all collision neccessary, but Resolve[X/Y]CollisionByPush can only handle collision with two specific objects at a time, for
