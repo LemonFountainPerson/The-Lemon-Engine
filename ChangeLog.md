@@ -1,7 +1,7 @@
 
 # v0.05:
 
-** Internal Structure changes: **
+*** Internal Structure changes: ***
 
 -> Added UIObjects and eventManager files. UIObjects handles all UI_Elements while eventManager controls in-game events such as levelflags, game pausing, and other triggerable events.
 
@@ -37,7 +37,7 @@ FREE_ROAM or FREE_ROAM_RESTRICTED).
 
 
 
-** New additions: **
+*** New additions: ***
 
 -> As part of the HUD/Menu system added, a new object type called "UI_ELEMENT" has been added that is immune to the gameWorld being paused, is rendered relative to the camera's center 
 as opposed to the gameWorld, and uses arg1 to denote its subtype i.e: option buttons, animatable graphics, and other prompts.
@@ -55,7 +55,7 @@ to unsolid, "TOBACKGROUND"; sets the object layer to the background, etc.
 
 
 
-** Bug fixes/Performance improvements: **
+*** Bug fixes/Performance improvements: ***
 
 -> Lowered Dependency count for new solid types from 10-12 to 5-6. (Dependency count in this case refers to how many functions must be updated to allow for full functionality.) 
 
