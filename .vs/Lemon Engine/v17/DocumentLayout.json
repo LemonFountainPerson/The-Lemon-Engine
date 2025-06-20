@@ -1,0 +1,685 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\UIObjects.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\UIObjects.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\gameObjects.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\gameObjects.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\main.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\main.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\playerController.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\playerController.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\LemonMain.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\LemonMain.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\data.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\data.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\LemonMain.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\LemonMain.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\spriteLoader.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\spriteLoader.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\soundProcessor.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\soundProcessor.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\spriteLoader.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\spriteLoader.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\soundProcessor.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\soundProcessor.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\levelLoader.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\levelLoader.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\windows_main.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\windows_main.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\UIObjects.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\UIObjects.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\drawScreen.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\drawScreen.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\levelLoader.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\levelLoader.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\drawScreen.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\drawScreen.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\eventManager.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\eventManager.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\eventManager.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\eventManager.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\gameObjects.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\gameObjects.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\animations.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\animations.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\animations.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\animations.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\playerController.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:V0.05\\Code\\playerController.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\main.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\main.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\windows_main.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\windows_main.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\data.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\data.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\soundProcessor.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\soundProcessor.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\spriteLoader.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\spriteLoader.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\soundProcessor.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\soundProcessor.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\gameObjects.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\gameObjects.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\gameObjects.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\gameObjects.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\animations.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\animations.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\animations.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\animations.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\LemonMain.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\LemonMain.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\playerController.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\playerController.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\eventManager.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\eventManager.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\drawScreen.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\drawScreen.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\drawScreen.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\drawScreen.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\levelLoader.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\levelLoader.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\eventManager.c||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\eventManager.c||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\stb_image.h||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Code\\stb_image.h||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 4,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "main.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\main.c",
+              "RelativeDocumentMoniker": "V0.05\\Code\\main.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\main.c",
+              "RelativeToolTip": "V0.05\\Code\\main.c",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAAB8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-07T12:00:03.515Z",
+              "IsPinned": true,
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "LemonMain.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\LemonMain.h",
+              "RelativeDocumentMoniker": "V0.05\\Code\\LemonMain.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\LemonMain.h",
+              "RelativeToolTip": "V0.05\\Code\\LemonMain.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-07T12:00:03.22Z",
+              "IsPinned": true,
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "gameObjects.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\gameObjects.c",
+              "RelativeDocumentMoniker": "V0.05\\Code\\gameObjects.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\gameObjects.c",
+              "RelativeToolTip": "V0.05\\Code\\gameObjects.c",
+              "ViewState": "AgIAAJ0CAAAAAAAAAAAnwNMCAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-07T11:59:59.341Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "data.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\data.h",
+              "RelativeDocumentMoniker": "V0.05\\Code\\data.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\data.h",
+              "RelativeToolTip": "V0.05\\Code\\data.h",
+              "ViewState": "AgIAADIBAAAAAAAAAAAAAGABAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-07T11:59:58.949Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "UIObjects.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\UIObjects.c",
+              "RelativeDocumentMoniker": "V0.05\\Code\\UIObjects.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\UIObjects.c",
+              "RelativeToolTip": "V0.05\\Code\\UIObjects.c",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAABkAAAAYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-09T12:03:09.954Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "spriteLoader.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\spriteLoader.c",
+              "RelativeDocumentMoniker": "V0.05\\Code\\spriteLoader.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\spriteLoader.c",
+              "RelativeToolTip": "V0.05\\Code\\spriteLoader.c",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACgCAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-07T12:00:06.698Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "drawScreen.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\drawScreen.h",
+              "RelativeDocumentMoniker": "V0.05\\Code\\drawScreen.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\drawScreen.h",
+              "RelativeToolTip": "V0.05\\Code\\drawScreen.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAF8AAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-07T11:59:59.114Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "playerController.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\playerController.c",
+              "RelativeDocumentMoniker": "V0.05\\Code\\playerController.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\playerController.c",
+              "RelativeToolTip": "V0.05\\Code\\playerController.c",
+              "ViewState": "AgIAACIAAAAAAAAAAAAnwAgBAAACAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-07T12:00:03.606Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "levelLoader.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\levelLoader.c",
+              "RelativeDocumentMoniker": "V0.05\\Code\\levelLoader.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\levelLoader.c",
+              "RelativeToolTip": "V0.05\\Code\\levelLoader.c",
+              "ViewState": "AgIAAJgBAAAAAAAAAAAnwL8BAAACAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-07T12:00:03.317Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "UIObjects.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\UIObjects.h",
+              "RelativeDocumentMoniker": "V0.05\\Code\\UIObjects.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\UIObjects.h",
+              "RelativeToolTip": "V0.05\\Code\\UIObjects.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAAlAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-09T12:03:08.842Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "levelLoader.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\levelLoader.h",
+              "RelativeDocumentMoniker": "V0.05\\Code\\levelLoader.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\levelLoader.h",
+              "RelativeToolTip": "V0.05\\Code\\levelLoader.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-07T12:00:03.414Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "soundProcessor.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\soundProcessor.h",
+              "RelativeDocumentMoniker": "V0.05\\Code\\soundProcessor.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\soundProcessor.h",
+              "RelativeToolTip": "V0.05\\Code\\soundProcessor.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-07T12:00:05.681Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "spriteLoader.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\spriteLoader.h",
+              "RelativeDocumentMoniker": "V0.05\\Code\\spriteLoader.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\spriteLoader.h",
+              "RelativeToolTip": "V0.05\\Code\\spriteLoader.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-07T12:00:08.219Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "soundProcessor.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\soundProcessor.c",
+              "RelativeDocumentMoniker": "V0.05\\Code\\soundProcessor.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\soundProcessor.c",
+              "RelativeToolTip": "V0.05\\Code\\soundProcessor.c",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABkAAAAPAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-07T21:39:40.099Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "LemonMain.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\LemonMain.c",
+              "RelativeDocumentMoniker": "V0.05\\Code\\LemonMain.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\LemonMain.c",
+              "RelativeToolTip": "V0.05\\Code\\LemonMain.c",
+              "ViewState": "AgIAABUAAAAAAAAAAAAAAD0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-07T12:00:03.131Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "windows_main.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\windows_main.c",
+              "RelativeDocumentMoniker": "V0.05\\Code\\windows_main.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\windows_main.c",
+              "RelativeToolTip": "V0.05\\Code\\windows_main.c",
+              "ViewState": "AgIAAGcAAAAAAAAAAAAnwJ8AAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-07T12:00:09.575Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "drawScreen.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\drawScreen.c",
+              "RelativeDocumentMoniker": "V0.05\\Code\\drawScreen.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\drawScreen.c",
+              "RelativeToolTip": "V0.05\\Code\\drawScreen.c",
+              "ViewState": "AgIAAD4BAAAAAAAAAAAnwH4BAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-10T17:41:05.648Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "eventManager.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\eventManager.c",
+              "RelativeDocumentMoniker": "V0.05\\Code\\eventManager.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\eventManager.c",
+              "RelativeToolTip": "V0.05\\Code\\eventManager.c",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAE4AAAACAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-07T11:59:59.191Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "eventManager.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\eventManager.h",
+              "RelativeDocumentMoniker": "V0.05\\Code\\eventManager.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\eventManager.h",
+              "RelativeToolTip": "V0.05\\Code\\eventManager.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAA2AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-07T11:59:59.265Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "gameObjects.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\gameObjects.h",
+              "RelativeDocumentMoniker": "V0.05\\Code\\gameObjects.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\gameObjects.h",
+              "RelativeToolTip": "V0.05\\Code\\gameObjects.h",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAAADIAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-07T11:59:58.443Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "animations.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\animations.c",
+              "RelativeDocumentMoniker": "V0.05\\Code\\animations.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\animations.c",
+              "RelativeToolTip": "V0.05\\Code\\animations.c",
+              "ViewState": "AgIAAHoAAAAAAAAAAAAnwHoAAAADAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-07T11:59:58.778Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "animations.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\animations.h",
+              "RelativeDocumentMoniker": "V0.05\\Code\\animations.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\animations.h",
+              "RelativeToolTip": "V0.05\\Code\\animations.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-07T11:59:58.867Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "playerController.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\playerController.h",
+              "RelativeDocumentMoniker": "V0.05\\Code\\playerController.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\V0.05\\Code\\playerController.h",
+              "RelativeToolTip": "V0.05\\Code\\playerController.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-07T12:00:03.029Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 31,
+              "Title": "animations.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\animations.c",
+              "RelativeDocumentMoniker": "Code\\animations.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\animations.c",
+              "RelativeToolTip": "Code\\animations.c",
+              "ViewState": "AgIAADwAAAAAAAAAAAAAAKEAAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-07T10:58:00.783Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 32,
+              "Title": "animations.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\animations.h",
+              "RelativeDocumentMoniker": "Code\\animations.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\animations.h",
+              "RelativeToolTip": "Code\\animations.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-07T10:57:59.841Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "gameObjects.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\gameObjects.c",
+              "RelativeDocumentMoniker": "Code\\gameObjects.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\gameObjects.c",
+              "RelativeToolTip": "Code\\gameObjects.c",
+              "ViewState": "AgIAAIsDAAAAAAAAAADgv7YDAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-05-23T14:18:47.485Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "gameObjects.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\gameObjects.h",
+              "RelativeDocumentMoniker": "Code\\gameObjects.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\gameObjects.h",
+              "RelativeToolTip": "Code\\gameObjects.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAEIAAAA4AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-05-23T14:18:47.519Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 36,
+              "Title": "drawScreen.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\drawScreen.c",
+              "RelativeDocumentMoniker": "Code\\drawScreen.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\drawScreen.c",
+              "RelativeToolTip": "Code\\drawScreen.c",
+              "ViewState": "AgIAAGQAAAAAAAAAAADgv34AAAADAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-05-23T14:18:47.36Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "data.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\data.h",
+              "RelativeDocumentMoniker": "Code\\data.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\data.h",
+              "RelativeToolTip": "Code\\data.h",
+              "ViewState": "AgIAABgAAAAAAAAAAAAAADwAAAACAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-05-23T14:18:47.319Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 33,
+              "Title": "LemonMain.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\LemonMain.h",
+              "RelativeDocumentMoniker": "Code\\LemonMain.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\LemonMain.h",
+              "RelativeToolTip": "Code\\LemonMain.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-05-23T14:18:47.592Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 34,
+              "Title": "playerController.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\playerController.h",
+              "RelativeDocumentMoniker": "Code\\playerController.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\playerController.h",
+              "RelativeToolTip": "Code\\playerController.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAC8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-05-23T14:18:46.984Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "soundProcessor.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\soundProcessor.h",
+              "RelativeDocumentMoniker": "Code\\soundProcessor.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\soundProcessor.h",
+              "RelativeToolTip": "Code\\soundProcessor.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABoAAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-05-31T13:17:34.421Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "main.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\main.c",
+              "RelativeDocumentMoniker": "Code\\main.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\main.c",
+              "RelativeToolTip": "Code\\main.c",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-05-23T14:18:47.759Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "soundProcessor.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\soundProcessor.c",
+              "RelativeDocumentMoniker": "Code\\soundProcessor.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\soundProcessor.c",
+              "RelativeToolTip": "Code\\soundProcessor.c",
+              "ViewState": "AgIAAIQAAAAAAAAAAAAAAJUAAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-05-25T10:46:35.236Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 27,
+              "Title": "spriteLoader.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\spriteLoader.c",
+              "RelativeDocumentMoniker": "Code\\spriteLoader.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\spriteLoader.c",
+              "RelativeToolTip": "Code\\spriteLoader.c",
+              "ViewState": "AgIAAF0CAAAAAAAAAAAnwIICAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-05-25T13:02:28.732Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "windows_main.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\windows_main.c",
+              "RelativeDocumentMoniker": "Code\\windows_main.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\windows_main.c",
+              "RelativeToolTip": "Code\\windows_main.c",
+              "ViewState": "AgIAAFUAAAAAAAAAAAAnwIwAAABEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-05-30T20:16:32.773Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 37,
+              "Title": "drawScreen.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\drawScreen.h",
+              "RelativeDocumentMoniker": "Code\\drawScreen.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\drawScreen.h",
+              "RelativeToolTip": "Code\\drawScreen.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAC4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-05-23T14:18:47.434Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 38,
+              "Title": "levelLoader.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\levelLoader.c",
+              "RelativeDocumentMoniker": "Code\\levelLoader.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\levelLoader.c",
+              "RelativeToolTip": "Code\\levelLoader.c",
+              "ViewState": "AgIAABoCAAAAAAAAAADgvyoCAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-05-23T14:18:47.625Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 35,
+              "Title": "eventManager.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\eventManager.h",
+              "RelativeDocumentMoniker": "Code\\eventManager.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\eventManager.h",
+              "RelativeToolTip": "Code\\eventManager.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAA8AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-06T14:05:45.085Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 39,
+              "Title": "eventManager.c",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\eventManager.c",
+              "RelativeDocumentMoniker": "Code\\eventManager.c",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\eventManager.c",
+              "RelativeToolTip": "Code\\eventManager.c",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2025-06-06T14:03:06.875Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 40,
+              "Title": "stb_image.h",
+              "DocumentMoniker": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\stb_image.h",
+              "RelativeDocumentMoniker": "Code\\stb_image.h",
+              "ToolTip": "C:\\Users\\usern\\Documents\\C Projects\\Lemon Engine\\Code\\stb_image.h",
+              "RelativeToolTip": "Code\\stb_image.h",
+              "ViewState": "AgIAAFwBAAAAAAAAAAAAABUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-03T10:59:34.494Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
