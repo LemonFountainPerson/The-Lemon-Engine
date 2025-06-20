@@ -17,13 +17,13 @@ int cleanRenderer(World *gameWorld, uint32_t *screen);
 
 
 // Draws objects from gameWorld to screen array
-int drawObjects(uint32_t *screen, World *gameWorld);
+int drawObjects(uint32_t *screen, Camera inputCamera, World *gameWorld);
 
 
-int renderObjectHitbox(uint32_t *screen, World *gameWorld, Object *currentObject, Layer drawLayer);
+int renderObjectHitbox(uint32_t *screen, Camera inputCamera, World *gameWorld, Object *currentObject, Layer drawLayer);
 
 
-int renderObjectSprite(uint32_t *screen, World *gameWorld, Object *currentObject, Layer drawLayer);
+int renderObjectSprite(uint32_t *screen, Camera inputCamera, World *gameWorld, Object *currentObject, Layer drawLayer);
 
 
 int findElement(int array[], int element, int size);
@@ -35,20 +35,20 @@ int clamp(int input, int lowerBound, int upperBound);
 int modulo(int x, int N);
 
 // Draws and positions player relative to camera position in gameWorld
-int drawPlayer(uint32_t *screen, World *gameWorld);
+int drawPlayer(uint32_t *screen, Camera inputCamera, World *gameWorld);
 
 
-int WorldCameraControl(World *GameWorld);
+int WorldCameraControl(World *GameWorld, Camera *inputCamera);
 
 
-int restrictCameraToBounds(World *GameWorld);
+int restrictCameraToBounds(Camera *inputCamera);
 
 
 uint32_t blendPixel(uint32_t screenPixel, uint32_t inputPixel);
 
 
 
-int renderBackGroundSprite(uint32_t *screen, World *gameWorld);
+int renderBackGroundSprite(uint32_t *screen, Camera inputCamera, World *gameWorld);
 
 
 int renderSpriteInRenderMode(uint32_t *screen, DisplayData *inputData, int realXOffset, int realYOffset, PhysicsRect *inputBox);

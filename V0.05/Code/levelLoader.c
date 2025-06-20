@@ -526,22 +526,22 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 	
 		if (args[0] >= 0)
 		{
-			gameWorld->minCameraX = args[0];
+			gameWorld->MainCamera.minCameraX = args[0];
 		}
 
 		if (args[1] >= 0)
 		{
-			gameWorld->maxCameraX = args[1];
+			gameWorld->MainCamera.maxCameraX = args[1];
 		}
 
 		if (args[2] >= 0)
 		{
-			gameWorld->minCameraY = args[2];
+			gameWorld->MainCamera.minCameraY = args[2];
 		}
 
 		if (args[3] >= 0)
 		{
-			gameWorld->maxCameraY = args[3];
+			gameWorld->MainCamera.maxCameraY = args[3];
 		}
 		
 		return 0;
@@ -574,8 +574,8 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 			return returnMsg;
 		}
 
-		gameWorld->CameraX = args[0];
-		gameWorld->CameraY = args[1];
+		gameWorld->MainCamera.CameraX = args[0];
+		gameWorld->MainCamera.CameraY = args[1];
 	}
 
 	if (strcmp(buffer, "START-PLAYERPOS") == 0)

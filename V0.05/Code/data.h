@@ -408,23 +408,8 @@ struct playerData
 };
 
 
-// Memory allocated struct that controls camera, holds the object list and level data
-struct world
+struct Camera 
 {
-	struct objectController *ObjectList;
-	int drawnObjects;
-	int drawnParticles;
-	int drawnHudElements;
-
-	struct playerData *Player;
-
-	struct spriteSet *BackGrounds;
-	struct sprite *bgSpriteBuffer;
-
-	float bgParallax;
-	int bgParallaxChunkSize;
-	double bgChunkParallax;
-
 	int CameraX;
 	int CameraY;
 	int minCameraX;
@@ -436,7 +421,28 @@ struct world
 	int CameraYBuffer;
 	int CameraLatch;
 	CameraState CameraMode;
+};
 
+
+// Memory allocated struct that controls camera, holds the object list and level data
+struct world
+{
+	struct Camera MainCamera;
+
+	struct objectController *ObjectList;
+
+	struct playerData *Player;
+
+	struct spriteSet *BackGrounds;
+	struct sprite *bgSpriteBuffer;
+
+	float bgParallax;
+	int bgParallaxChunkSize;
+	double bgChunkParallax;
+
+	int drawnObjects;
+	int drawnParticles;
+	int drawnHudElements;
 	int drawHitboxes;
 	int drawSprites;
 	int drawBackGround;
@@ -465,6 +471,7 @@ typedef struct physicsRect PhysicsRect;
 typedef struct playerData PlayerData;
 typedef struct objectController ObjectController;
 typedef struct object Object;
+typedef struct Camera Camera;
 typedef struct world World;
 
 

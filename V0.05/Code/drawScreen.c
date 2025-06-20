@@ -9,7 +9,7 @@ static uint32_t tileMap[32] = {0x00AA00AA, 0xFFFF0088, 0xFF0088FF, 0xFF552299, 0
 
 
 
-int drawPlayer(uint32_t *screen, World *gameWorld)
+int drawPlayer(uint32_t *screen, Camera inputCamera, World *gameWorld)
 {
 	if (gameWorld == NULL || gameWorld->Player == NULL || gameWorld->Player->PlayerDisplay == NULL)
 	{
@@ -27,8 +27,8 @@ int drawPlayer(uint32_t *screen, World *gameWorld)
 	DisplayData *PlayerDisplay = player->PlayerDisplay;
 
 	// Find offsets of player relative to center of screen/camera
-	int xOffset = player->PlayerBox->xPos - gameWorld->CameraX + (screenWidth >> 1);
-	int yOffset = player->PlayerBox->yPos - gameWorld->CameraY + (screenHeight >> 1);
+	int xOffset = player->PlayerBox->xPos - inputCamera.CameraX + (screenWidth >> 1);
+	int yOffset = player->PlayerBox->yPos - inputCamera.CameraY + (screenHeight >> 1);
 
 
 	// Load clamp sprite
@@ -62,8 +62,8 @@ int drawPlayer(uint32_t *screen, World *gameWorld)
 	}
 
 
-	xOffset = player->InteractBox->xPos - gameWorld->CameraX + (screenWidth >> 1);
-	yOffset = player->InteractBox->yPos - gameWorld->CameraY + (screenHeight >> 1);
+	xOffset = player->InteractBox->xPos - inputCamera.CameraX + (screenWidth >> 1);
+	yOffset = player->InteractBox->yPos - inputCamera.CameraY + (screenHeight >> 1);
 
 	xDraw = clamp(xOffset, 0, screenWidth - 1);
 	yDraw = clamp(yOffset, 0, screenHeight - 1);
@@ -83,9 +83,9 @@ int drawPlayer(uint32_t *screen, World *gameWorld)
 }
 
 
-int WorldCameraControl(World *GameWorld)
+int WorldCameraControl(World *GameWorld, Camera *inputCamera)
 {
-	if (GameWorld == NULL || GameWorld->Player == NULL || GameWorld->GameState == EMPTY_GAME)
+	if (GameWorld == NULL || inputCamera == NULL || GameWorld->Player == NULL || GameWorld->GameState == EMPTY_GAME)
 	{
 		return MISSING_DATA;
 	}
@@ -95,60 +95,59 @@ int WorldCameraControl(World *GameWorld)
 		return ACTION_DISABLED;
 	}
 
-
 	// Control latching/buffering
-	switch(GameWorld->CameraMode)
+	switch(inputCamera->CameraMode)
 	{
 		case MENU_CAMERA:
 		{
-			if (GameWorld->CameraLatch == 0)
+			if (inputCamera->CameraLatch == 0)
 			{
-				GameWorld->CameraXBuffer = GameWorld->CameraX;
-				GameWorld->CameraYBuffer = GameWorld->CameraY;
-				GameWorld->CameraX = -32000;
-				GameWorld->CameraY = 0;
-				GameWorld->CameraLatch = 1;
+				inputCamera->CameraXBuffer = inputCamera->CameraX;
+				inputCamera->CameraYBuffer = inputCamera->CameraY;
+				inputCamera->CameraX = -32000;
+				inputCamera->CameraY = 0;
+				inputCamera->CameraLatch = 1;
 			}
 		} break;
 
 		default:
 		{
-			if (GameWorld->CameraLatch == 1)
+			if (inputCamera->CameraLatch == 1)
 			{
-				GameWorld->CameraX = GameWorld->CameraXBuffer;
-				GameWorld->CameraY = GameWorld->CameraYBuffer;
-				GameWorld->CameraLatch = 0;
+				inputCamera->CameraX = inputCamera->CameraXBuffer;
+				inputCamera->CameraY = inputCamera->CameraYBuffer;
+				inputCamera->CameraLatch = 0;
 			}
 		} break;
 	}
 
 
 	// Move camera
-	switch(GameWorld->CameraMode)
+	switch(inputCamera->CameraMode)
 	{
 		case FOLLOW_PLAYER:
 		{
-			int xDifference = (int)GameWorld->Player->PlayerBox->xPos - GameWorld->CameraX;
+			int xDifference = (int)GameWorld->Player->PlayerBox->xPos - inputCamera->CameraX;
 
-			GameWorld->CameraX += (int)(xDifference / 5) + 1;
+			inputCamera->CameraX += (int)(xDifference / 5) + 1;
 
 			if (abs(xDifference) < 1)
 			{
-				GameWorld->CameraX = (int)GameWorld->Player->PlayerBox->xPos;
+				inputCamera->CameraX = (int)GameWorld->Player->PlayerBox->xPos;
 			}
 			
 
-			int yOffset = (int)GameWorld->Player->PlayerBox->yPos - GameWorld->CameraY;
+			int yOffset = (int)GameWorld->Player->PlayerBox->yPos - inputCamera->CameraY;
 
 			if (yOffset >= (screenHeight * 0.1))
 			{
 				int difference = yOffset - (screenHeight * 0.1);
 
-				GameWorld->CameraY += (int)(difference / 5) + 1;
+				inputCamera->CameraY += (int)(difference / 5) + 1;
 
 				if (abs(difference) < 5)
 				{
-					GameWorld->CameraY = (int)GameWorld->Player->PlayerBox->yPos - (screenHeight * 0.1);
+					inputCamera->CameraY = (int)GameWorld->Player->PlayerBox->yPos - (screenHeight * 0.1);
 				}
 			}
 
@@ -156,21 +155,21 @@ int WorldCameraControl(World *GameWorld)
 			{
 				int difference = yOffset + (screenHeight * 0.2);
 
-				GameWorld->CameraY += (int)(difference / 5) + 1;
+				inputCamera->CameraY += (int)(difference / 5) + 1;
 
 				if (abs(difference) < 5)
 				{
-					GameWorld->CameraY = (int)GameWorld->Player->PlayerBox->yPos + (screenHeight * 0.2);
+					inputCamera->CameraY = (int)GameWorld->Player->PlayerBox->yPos + (screenHeight * 0.2);
 				}
 			}
 
-			restrictCameraToBounds(GameWorld);
+			restrictCameraToBounds(inputCamera);
 		} break;
 
 
 		case FREE_ROAM_RESTRICTED:
 		{
-			restrictCameraToBounds(GameWorld);
+			restrictCameraToBounds(inputCamera);
 		} break;
 
 
@@ -182,59 +181,59 @@ int WorldCameraControl(World *GameWorld)
 	return 0;
 }
 
-int restrictCameraToBounds(World *GameWorld)
+int restrictCameraToBounds(Camera *inputCamera)
 {
-	if (GameWorld == NULL || GameWorld->GameState == EMPTY_GAME)
+	if (inputCamera == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (GameWorld->maxCameraX < GameWorld->minCameraX + screenWidth)
+	if (inputCamera->maxCameraX < inputCamera->minCameraX + screenWidth)
 	{
-		GameWorld->maxCameraX = GameWorld->minCameraX + screenWidth;
+		inputCamera->maxCameraX = inputCamera->minCameraX + screenWidth;
 	}
 
-	if (GameWorld->maxCameraY < GameWorld->minCameraY + screenHeight)
+	if (inputCamera->maxCameraY < inputCamera->minCameraY + screenHeight)
 	{
-		GameWorld->maxCameraY = GameWorld->minCameraY + screenHeight;
+		inputCamera->maxCameraY = inputCamera->minCameraY + screenHeight;
 	}
 
-	if (GameWorld->minCameraX < 0)
+	if (inputCamera->minCameraX < 0)
 	{
-		GameWorld->minCameraX = 0;
+		inputCamera->minCameraX = 0;
 	}
 
-	if (GameWorld->minCameraY < 0)
+	if (inputCamera->minCameraY < 0)
 	{
-		GameWorld->minCameraY = 0;
+		inputCamera->minCameraY = 0;
 	}
 
-	if (GameWorld->CameraX < GameWorld->minCameraX)
+	if (inputCamera->CameraX < inputCamera->minCameraX)
 	{
-		GameWorld->CameraX = GameWorld->minCameraX;
+		inputCamera->CameraX = inputCamera->minCameraX;
 	}
 
-	if (GameWorld->CameraY < GameWorld->minCameraY)
+	if (inputCamera->CameraY < inputCamera->minCameraY)
 	{
-		GameWorld->CameraY = GameWorld->minCameraY;
+		inputCamera->CameraY = inputCamera->minCameraY;
 	}
 
-	if (GameWorld->CameraX > GameWorld->maxCameraX - screenWidth)
+	if (inputCamera->CameraX > inputCamera->maxCameraX - screenWidth)
 	{
-		GameWorld->CameraX = GameWorld->maxCameraX - screenWidth;
+		inputCamera->CameraX = inputCamera->maxCameraX - screenWidth;
 		
 	}
 
-	if (GameWorld->CameraY + screenHeight > GameWorld->maxCameraY)
+	if (inputCamera->CameraY + screenHeight > inputCamera->maxCameraY)
 	{
-		GameWorld->CameraY = GameWorld->maxCameraY - screenHeight;
+		inputCamera->CameraY = inputCamera->maxCameraY - screenHeight;
 	}
 
 	return 0;
 }
 
 
-int drawObjects(uint32_t *screen, World *gameWorld)
+int drawObjects(uint32_t *screen, Camera inputCamera, World *gameWorld)
 {
 	if (gameWorld == NULL || gameWorld->ObjectList == NULL || gameWorld->GameState == EMPTY_GAME)
 	{
@@ -253,11 +252,11 @@ int drawObjects(uint32_t *screen, World *gameWorld)
 		while(currentObject != NULL && i > 0)
 		{
 			// Drawing routine - max objects on screen is defined as Macro
-			renderObjectSprite(screen, gameWorld, currentObject, drawLayer);
+			renderObjectSprite(screen, inputCamera, gameWorld, currentObject, drawLayer);
 
 			if (gameWorld->drawHitboxes == 1 && currentObject->ObjectID != UI_ELEMENT)
 			{
-				renderObjectHitbox(screen, gameWorld, currentObject, drawLayer);
+				renderObjectHitbox(screen, inputCamera, gameWorld, currentObject, drawLayer);
 			}
 		
 			currentObject = currentObject->nextObject;
@@ -267,7 +266,7 @@ int drawObjects(uint32_t *screen, World *gameWorld)
 
 		if (gameWorld->Player != NULL && gameWorld->Player->PlayerLayer == drawLayer)
 		{
-			drawPlayer(screen, gameWorld);
+			drawPlayer(screen, inputCamera, gameWorld);
 		}
 	}
 
@@ -275,7 +274,7 @@ int drawObjects(uint32_t *screen, World *gameWorld)
 }
 
 
-int renderObjectHitbox(uint32_t *screen, World *gameWorld, Object *currentObject, Layer drawLayer)
+int renderObjectHitbox(uint32_t *screen, Camera inputCamera, World *gameWorld, Object *currentObject, Layer drawLayer)
 {
 	if (currentObject == NULL)
 	{
@@ -299,8 +298,8 @@ int renderObjectHitbox(uint32_t *screen, World *gameWorld, Object *currentObject
 			double ySize = currentObject->ObjectBox->ySize;
 			double xSize = currentObject->ObjectBox->xSize;
 
-			int xOffset = (int)currentObject->ObjectBox->xPos - gameWorld->CameraX + (screenWidth >> 1);
-			int yOffset = (int)currentObject->ObjectBox->yPos - gameWorld->CameraY + (screenHeight >> 1);
+			int xOffset = (int)currentObject->ObjectBox->xPos - inputCamera.CameraX + (screenWidth >> 1);
+			int yOffset = (int)currentObject->ObjectBox->yPos - inputCamera.CameraY + (screenHeight >> 1);
 			int xDraw = clamp(xOffset, 0, screenWidth - 1);
 			int yDraw = clamp(yOffset, 0, screenHeight - 1);
 			int xDraw2 = clamp(xOffset + currentObject->ObjectBox->xSize, 0, screenWidth - 1);
@@ -341,8 +340,8 @@ int renderObjectHitbox(uint32_t *screen, World *gameWorld, Object *currentObject
 		{
 
 			// clamp Offsets
-			int xOffset = (int)currentObject->ObjectBox->xPos - gameWorld->CameraX + (screenWidth >> 1);
-			int yOffset = (int)currentObject->ObjectBox->yPos - gameWorld->CameraY + (screenHeight >> 1);
+			int xOffset = (int)currentObject->ObjectBox->xPos - inputCamera.CameraX + (screenWidth >> 1);
+			int yOffset = (int)currentObject->ObjectBox->yPos - inputCamera.CameraY + (screenHeight >> 1);
 			int xDraw = clamp(xOffset, 0, screenWidth - 1);
 			int yDraw = clamp(yOffset, 0, screenHeight - 1);
 			int xDraw2 = clamp(xOffset + currentObject->ObjectBox->xSize, 0, screenWidth - 1);
@@ -366,7 +365,7 @@ int renderObjectHitbox(uint32_t *screen, World *gameWorld, Object *currentObject
 
 
 
-int renderObjectSprite(uint32_t *screen, World *gameWorld, Object *currentObject, Layer drawLayer)
+int renderObjectSprite(uint32_t *screen, Camera inputCamera, World *gameWorld, Object *currentObject, Layer drawLayer)
 {
 	// WARNING! This function is really messy and not easy to read: All variations of rendering has its own copy of the
 	// main render loop, even extremely similar ones. This was done to squeeze out performance (at the expense of a bit of memory)
@@ -420,8 +419,8 @@ int renderObjectSprite(uint32_t *screen, World *gameWorld, Object *currentObject
 	}
 	else
 	{
-		xOffset = currentObject->ObjectBox->xPos - gameWorld->CameraX + (screenWidth >> 1);
-		yOffset = currentObject->ObjectBox->yPos - gameWorld->CameraY + (screenHeight >> 1);
+		xOffset = currentObject->ObjectBox->xPos - inputCamera.CameraX + (screenWidth >> 1);
+		yOffset = currentObject->ObjectBox->yPos - inputCamera.CameraY + (screenHeight >> 1);
 	}
 
 	// Render
@@ -1678,7 +1677,7 @@ int renderSprite_RLDU_Scale_Full_Alpha(uint32_t screen[], Sprite *spritePtr, int
 }
 
 
-int renderBackGroundSprite(uint32_t *screen, World *gameWorld)
+int renderBackGroundSprite(uint32_t *screen, Camera inputCamera, World *gameWorld)
 {
 	if (gameWorld == NULL || gameWorld->drawBackGround == 0)
 	{
@@ -1699,8 +1698,8 @@ int renderBackGroundSprite(uint32_t *screen, World *gameWorld)
 	unsigned char *data = spritePtr->spriteData;		// Instead of copying the data, use a pointer to reduce memory overhead
 
 	// Locate object on screen
-	int xOffset = gameWorld->CameraX * gameWorld->bgParallax;
-	int yOffset = gameWorld->CameraY * gameWorld->bgParallax;
+	int xOffset = inputCamera.CameraX * gameWorld->bgParallax;
+	int yOffset = inputCamera.CameraY * gameWorld->bgParallax;
 	int xOffset2 = xOffset + spritePtr->width;
 	int yOffset2 = yOffset + spritePtr->height;
 
@@ -1754,7 +1753,7 @@ int renderBackGroundSprite(uint32_t *screen, World *gameWorld)
 	{
 		if (spritePtr->RenderMode == BG_ROW_PARALLAX && (i + yOffset) % gameWorld->bgParallaxChunkSize == 0)
 		{
-			xOffset = gameWorld->CameraX * (gameWorld->bgParallax - (gameWorld->bgChunkParallax * (i + yOffset) ) );
+			xOffset = inputCamera.CameraX * (gameWorld->bgParallax - (gameWorld->bgChunkParallax * (i + yOffset) ) );
 		}
 		
 

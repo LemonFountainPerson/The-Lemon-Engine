@@ -40,22 +40,22 @@ int UpdateFlagObject(World *GameWorld, Object* inputObject)
 		{
 			if (inputObject->arg2 > -1)
 			{
-				GameWorld->minCameraX = inputObject->arg2;
+				GameWorld->MainCamera.minCameraX = inputObject->arg2;
 			}
 
 			if (inputObject->arg3 > -1)
 			{
-				GameWorld->maxCameraX = inputObject->arg3;
+				GameWorld->MainCamera.maxCameraX = inputObject->arg3;
 			}
 
 			if (inputObject->arg4 > -1)
 			{
-				GameWorld->minCameraY = inputObject->arg4;
+				GameWorld->MainCamera.minCameraY = inputObject->arg4;
 			}
 
 			if (inputObject->arg5 > -1)
 			{
-				GameWorld->maxCameraY = inputObject->arg5;
+				GameWorld->MainCamera.maxCameraY = inputObject->arg5;
 			}	
 
 			inputObject->animationTick = 2;
@@ -82,7 +82,7 @@ int PauseGame(World *GameWorld, int keyboard[256])
 
 	GameWorld->GamePaused = 1;
 	GameWorld->drawBackGround = 0;
-	GameWorld->CameraMode = MENU_CAMERA;
+	GameWorld->MainCamera.CameraMode = MENU_CAMERA;
 	ClearKeyboardInput(keyboard);
 
 	// In order to have particles be visible in the pause menu while hiding normal particles, the camera is moved elsewhere
@@ -118,7 +118,7 @@ int ResumeGame(World *GameWorld)
 
 	GameWorld->GamePaused = 0;
 	GameWorld->drawBackGround = 1;
-	GameWorld->CameraMode = FOLLOW_PLAYER;
+	GameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;
 
 	return 0;
 }

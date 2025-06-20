@@ -141,9 +141,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	    // Render screen
 	    cleanRenderer(GameWorld, frame.screen);
 
-	    renderBackGroundSprite(frame.screen, GameWorld);
+	    renderBackGroundSprite(frame.screen, GameWorld->MainCamera, GameWorld);
 
-	    drawObjects(frame.screen, GameWorld);
+	    drawObjects(frame.screen, GameWorld->MainCamera, GameWorld);
 
 
         // Force window to update frame

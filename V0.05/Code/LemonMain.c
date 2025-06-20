@@ -109,9 +109,9 @@ int RunLemonEngine(void)
 		// Render screen
 		cleanRenderer(GameWorld, screenBuffer);
 
-		renderBackGroundSprite(screenBuffer, GameWorld);
+		renderBackGroundSprite(screenBuffer, GameWorld->MainCamera, GameWorld);
 
-		drawObjects(screenBuffer, GameWorld);
+		drawObjects(screenBuffer, GameWorld->MainCamera, GameWorld);
 
 		putScreenOnWindow(screenBuffer, Renderer, screenSurface, texture);
 		
@@ -171,7 +171,7 @@ int GameTick(World *GameWorld, int keyboard[256])
 
 	UpdatePlayer(GameWorld->Player, GameWorld, keyboard);
 
-	WorldCameraControl(GameWorld);
+	WorldCameraControl(GameWorld, &GameWorld->MainCamera);
 
 	return 0;
 }
@@ -398,17 +398,18 @@ World* InitialiseGame(PlayerData *player)
 		return NULL;
 	}
 
+	gameWorld->MainCamera.CameraX = 1000;
+	gameWorld->MainCamera.minCameraX = 0;
+	gameWorld->MainCamera.maxCameraX = 32768;
+	gameWorld->MainCamera.CameraY = 120;
+	gameWorld->MainCamera.minCameraY = 0;
+	gameWorld->MainCamera.maxCameraY = 32768;
+	gameWorld->MainCamera.CameraLatch = 0;
+	gameWorld->MainCamera.CameraXBuffer = 0;
+	gameWorld->MainCamera.CameraYBuffer = 0;
+	gameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;
+
 	gameWorld->Gravity = -1.0;
-	gameWorld->CameraX = 1000;
-	gameWorld->minCameraX = 0;
-	gameWorld->maxCameraX = 32768;
-	gameWorld->CameraY = 120;
-	gameWorld->minCameraY = 0;
-	gameWorld->maxCameraY = 32768;
-	gameWorld->CameraLatch = 0;
-	gameWorld->CameraXBuffer = 0;
-	gameWorld->CameraYBuffer = 0;
-	gameWorld->CameraMode = FOLLOW_PLAYER;
 	gameWorld->level = 0;
 	gameWorld->CurrentCutscene = EMPTY_CUTSCENE;
 	gameWorld->SceneTick = 0;
