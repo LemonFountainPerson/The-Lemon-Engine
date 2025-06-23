@@ -1641,11 +1641,14 @@ int UpdateDoor(PlayerData *Player, Object *Door)
 	// arg3: open/close state
 	// arg1, arg2: [x/y]Pos in event of no linked door
 
-	if (Door->arg3 < 1 && checkBoxOverlapsBox(Door->ObjectBox, Player->InteractBox) == 1)
+	if (Door->arg3 < 1 && PlayerInteractingWithBox(Player, Door->ObjectBox) == 1 && Player->PlayerState == DEFAULT)
 	{
 		Door->arg3 = 32;
 
 		LemonPlaySound("DoorOpen", "Objects", OBJECT_SFX, 1.0);
+		Player->PlayerBox->xVelocity = 0.0;
+		Player->PlayerBox->yVelocity = 0.0;
+		Player->PlayerState = PAUSE_BEHAVIOUR;
 		
 		if (Door->ParentObject == NULL || Door->ParentObject->ObjectBox == NULL)
 		{
@@ -1662,6 +1665,11 @@ int UpdateDoor(PlayerData *Player, Object *Door)
 	else if (Door->arg3 > 0)
 	{
 		Door->arg3--;
+
+		if (Player->PlayerState == PAUSE_BEHAVIOUR && Door->arg3 < 1)
+		{
+			Player->PlayerState = DEFAULT;
+		}
 	}
 
 	return 0;

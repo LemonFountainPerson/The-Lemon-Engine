@@ -122,7 +122,7 @@ FunctionResult UpdatePlayer(PlayerData *Player, World *gameWorld, int keyboard[2
 		return MISSING_DATA;
 	}
 
-	if (gameWorld->GamePaused > 0 || gameWorld->GameState == EMPTY_GAME || gameWorld->GameState == LOADING)
+	if (gameWorld->GamePaused > 0 || gameWorld->GameState == EMPTY_GAME || gameWorld->GameState == LOADING || Player->PlayerState == PAUSE_BEHAVIOUR)
 	{
 		return ACTION_DISABLED;
 	}
@@ -360,6 +360,26 @@ int HandlePlayerInteract(PlayerData *Player, int keyboard[])
 	}
 
 	return 0;
+}
+
+
+int PlayerInteractingWithBox(PlayerData *Player, PhysicsRect *inputBox)
+{
+	if (Player == NULL || Player->InteractBox == NULL || inputBox == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+
+	int result = checkBoxOverlapsBox(inputBox, Player->InteractBox);
+
+	if (result == 1)
+	{
+		Player->InteractBox->xSize = 0;
+		Player->InteractBox->ySize = 0;
+	}
+
+	return result;
 }
 
 
