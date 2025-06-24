@@ -341,7 +341,7 @@ int loadLevelData(World *gameWorld, int level)
 
 	if (strcmp(charBuffer, LEMON_VERSION) != 0)
 	{
-		printf("Level %d load failed: Incompatible version number! %s\n", charBuffer);
+		printf("Level %d load failed: Incompatible version number! %s\n", level, charBuffer);
 		fclose(fPtr);
 		gameWorld->GameState = GAMEPLAY;
 		return INVALID_DATA;
