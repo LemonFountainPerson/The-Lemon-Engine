@@ -553,7 +553,7 @@ In the engine, the method of collision is decided based on the PhysicsRect's col
 Resolve[X/Y]Collision. In addition, solid types and other aspects can help define what method is used. The evaluateCollideMode function is used to decide
 which collision mode to use.
 
-## Descriptions of solid types:
+** Descriptions of solid types: **
 
 SOLID: Fully solid; the shape of the hitbox is always a rectangle conforming to the shape/size of the physicsRect itself.
 
