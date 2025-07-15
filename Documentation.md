@@ -63,12 +63,13 @@ run, such as the player if it exists, backgrounds, the object list, etc.
 ```
 struct world
 {
-	struct objectController *ObjectList;
-	int drawnObjects;
-	int drawnParticles;
-	int drawnHudElements;
+	struct Camera MainCamera;
+
+	struct ObjectController *ObjectList;
 
 	struct playerData *Player;
+
+	struct TextInstance *TextQueue;
 
 	struct spriteSet *BackGrounds;
 	struct sprite *bgSpriteBuffer;
@@ -77,50 +78,49 @@ struct world
 	int bgParallaxChunkSize;
 	double bgChunkParallax;
 
-	int CameraX;
-	int CameraY;
-	int minCameraX;
-	int maxCameraX;
-	int minCameraY;
-	int maxCameraY;
-	CameraState CameraMode;
-
-	int drawHitboxes;
-	int drawSprites;
-	int drawBackGround;
-	int drawPlayer;
-	int drawUI;
-	int drawParticles;
-	int drawObjects;
+	int drawnObjects;
+	int drawnParticles;
+	int drawnHudElements;
+	short drawHitboxes;
+	short drawSprites;
+	short drawBackGround;
+	short drawPlayer;
+	short drawUI;
+	short drawParticles;
+	short drawObjects;
 
 	LemonGameState GameState;
-	int level;
-	float Gravity;
+	CutsceneID CurrentCutscene;
+	int SceneTick;
+	int PlayingText;
 	int GamePaused;
+	int level;
+
+	WorldPhysics PhysicsType;
+	float Gravity;
 };
 ```
 
 
-The GameWorld may be passed in to various functions to perform game actions, although most of the time functions will only take the neccessary data to perform 
-its task. The player is represented as another allocated struct, and is accessible via the main function or as a pointer from the GameWorld. While the engine has 
-a player controller already created, depending on the needs of a game, the player can be swapped out with minimal changes to surrounding code. Only its struct in 
-data.h and the playerController.c files themselves need to be updated to function. All game objects in the engine that have a postion/velocity, etc. use a 
-PhysicsRect structure to hold this data. By using this common data structure, functions can be written to be compatible with any data structure as long as it 
-conatins this PhysicsRect data.
+The GameWorld may be passed in to various functions to perform game actions, although most of the time functions will only take the neccessary data 
+to perform its task. The player is represented as another allocated struct, and is accessible via the main function or as a pointer from the 
+GameWorld. While the engine has a player controller already created, depending on the needs of a game, the player can be swapped out with minimal 
+changes to surrounding code. Only its struct in data.h and the playerController.c files themselves need to be updated to function. All game objects 
+in the engine that have a postion/velocity, etc. use a PhysicsRect structure to hold this data. By using this common data structure, functions can be
+written to be compatible with any data structure as long as it conatins this PhysicsRect data.
 
-The Player uses a physicsRect for its collision hitbox, as well as a separate one to represent an interaction hitbox. The Player also uses a DisplayData struct 
-to hold its' sprite buffer and spriteset and other data neccessary for rendering.
+The Player uses a physicsRect for its collision hitbox, as well as a separate one to represent an interaction hitbox. The Player also uses a 
+DisplayData struct to hold its' sprite buffer and spriteset and other data neccessary for rendering.
 
 **Struct Definition:**
 ```
 struct playerData
 {
-	struct physicsRect *PlayerBox;
-	struct physicsRect *InteractBox;
-	struct displayData *PlayerDisplay;
+	struct Object *PlayerPtr;
 
-	Layer PlayerLayer;
-	ObjectState PlayerState;
+	struct physicsRect *PlayerBox;
+	struct displayData *PlayerDisplay;
+	struct physicsRect *InteractBox;
 
 	// These variables can be freely modified according to your modified player controller
 	double maxYVel;
@@ -141,56 +141,70 @@ struct physicsRect
 	double xPosRight;
 	double yPosTop;
 
-	int xSize;
-	int ySize;
+	unsigned int xSize;
+	unsigned int ySize;
 
+	double forwardVelocity;
 	double yVelocity;
 	double xVelocity;
+
 	double PhysicsXVelocity;
 	double PhysicsYVelocity;
 
 	SolidType solid;
-	int crouch;
+	CollideType collideMode;
 
-	int xFlip;
-	int yFlip;
 	double direction;
+	short xFlip;
+	short yFlip;
+	short crouch;
 
-	int spriteXOffset;
-	int spriteYOffset;
+	float friction;
 };
 
 
 struct displayData
 {
-	RenderMode RenderModeOverride;
-
 	int currentSprite;
 	struct sprite *spriteBuffer;
 
 	struct spriteSet *spriteSetSource;
+
+	RenderMode RenderModeOverride;
+	int spriteXOffset;
+	int spriteYOffset;
+	int pixelXOffset;
+	int pixelYOffset;
+
+	short currentAnimation;
+	int animationTick;
+	short animationLoopCount;
+
+	struct animationFrame *frameBuffer;
+	struct animation *animationBuffer;
 };
 ```
 
-The screen of the engine is comprised of a struct called a RenderFrame that contains a pointer to the Uint32_t pixel data of the frame, and the screen's intended 
-width and height. This frame is used by the drawing routines as a buffer to render all items for the game's scene. This frame is then taken by the window 
-renderer (windows API for windows_main) and displayed to the window.
+The screen of the engine is comprised of a struct called a RenderFrame that contains a pointer to the Uint32_t pixel data of the frame, and the 
+screen's intended width and height. This frame is used by the drawing routines as a buffer to render all items for the game's scene. This frame 
+is then taken by the window renderer (windows API for windows_main) and displayed to the window.
 
 
 # Main game loop
 
-For ease of use, it is unrecommended to alter the main game loop code already present. However if you wish to do so, keep in mind the following information.
+For ease of use, it is unrecommended to alter the main game loop code already present. However if you wish to do so, keep in mind the following 
+information.
 
 **Initialisation**
 
-After window and audio initialisation, game data is created using the initialiseWorld and initialisePlayer functions. These functions take in a PlayerData struct 
-and a World struct respectively. They are formatted so that pointer association between the GameWorld and the Player is handled automatically, and these 
-functions can be called in any order, and will accept NULL if the respective struct has not been created/initialised yet. The functions each return a pointer to 
-allocated data for their respective structs. 
+After window and audio initialisation, game data is created using the initialiseWorld and initialisePlayer functions. These functions take in a 
+PlayerData struct and a World struct respectively. They are formatted so that pointer association between the GameWorld and the Player is handled
+automatically, and these functions can be called in any order, and will accept NULL if the respective struct has not been created/initialised yet. 
+The functions each return a pointer to allocated data for their respective structs. 
 
-Most functions in the engine at the higher levels will perform checks to ensure the pointers being passed to them are valid, however at lower levels of engine 
-operation this may not be the case, so it is unadvised to call smaller functions such as helper functions directly without first ensuring Player and GameWorld 
-initialisation.
+Most functions in the engine at the higher levels will perform checks to ensure the pointers being passed to them are valid, however at lower levels 
+of engine operation this may not be the case, so it is unadvised to call smaller functions such as helper functions directly without first ensuring 
+Player and GameWorld initialisation.
 
 **Game Loop**
 
@@ -200,15 +214,30 @@ First, PlayCutscene is run to operate the currently playing cutscene, if the Gam
 Next, updateObjects is run to update every object in the GameWorld. 
 
 Next, updatePlayer is ran to take user input and operate the player. 
-After these two functions all game logic has been performed. Any further functionality should go here after these functions (such as menu control, other 
-self-implemented object types, etc.)
+After these two functions all game logic has been performed. Any further functionality should go here after these functions (such as menu control, 
+other self-implemented object types, etc.)
 
-Finally, worldCameraControl is called to move the GameWorld's camera according to the state of the GameWorld. (i.e: following the player) The separation of the 
-camera and the player means the camera is completely independent of the player and can be moved independently if you wish. For convinience, it's recommended to 
-do this from the worldCameraControl function. This can be controlled through the use of the CameraMode variable which holds a CameraState enum defining what the 
-camera should be doing. (Following the player, staying in place, free roam, etc.)
+Finally, worldCameraControl is called to move the GameWorld's camera according to the state of the GameWorld. (i.e: following the player) The camera is represented by a Camera struct that is part of the GameWorld. The separation of the camera and the player means the camera is completely independent of
+the player and can be moved independently if you wish. For convinience, it's recommended to do this from the worldCameraControl function. This can be
+controlled through the use of the CameraMode variable which holds a CameraState enum defining what the camera should be doing. (Following the player,
+staying in place, free roam, etc.)
 
 ```
+struct Camera 
+{
+	int CameraX;
+	int CameraY;
+	int minCameraX;
+	int maxCameraX;
+	int minCameraY;
+	int maxCameraY;
+
+	int CameraXBuffer;
+	int CameraYBuffer;
+	short CameraLatch;
+	CameraState CameraMode;
+};
+
 enum CameraState {
 	FOLLOW_PLAYER = 0,
 	MENU_CAMERA = 1,
@@ -220,47 +249,48 @@ enum CameraState {
 
 **Rendering**
 
-Next, rendering begins. First, cleanRenderer is called to reset the frame for new things to be drawn, as well as NULL handling in the event of mis-allocated 
-memory. 
+Next, rendering begins. First, cleanRenderer is called to reset the frame for new things to be drawn, as well as NULL handling in the event of 
+mis-allocated memory. 
 
-Objects in the GameWorld are drawn in the order they are placed within the linked list that comprises all objects (except the player). In order to facilitate 
-better control, there is a layering system in which an object can be defined to only be drawn on a specific layer, and the main game loop does one rendering pass 
-for each of these layers. This means objects in the FOREGROUND will always be drawn over objects in the MIDDLEGROUND and BACKGROUND, and so on. 
-By default, the player is drawn on the MIDDLEGROUND layer, however due to the player not being an object contained within the GameWorld's object list, it is 
-always drawn after the objects of that layer have been drawn. (For example, on the MIDDLEGROUND the player will be drawn behind the objects on the FOREGROUND but 
-always in front of the objects on the MIDDLEGROUND and BACKGROUND)
+Objects in the GameWorld are drawn in the order they are placed within the linked list that comprises all objects (except the player). In order to 
+facilitate better control, there is a layering system in which an object can be defined to only be drawn on a specific layer, and the main game loop 
+does one rendering pass for each of these layers. This means objects in the FOREGROUND will always be drawn over objects in the MIDDLEGROUND and 
+BACKGROUND, and so on. 
+By default, the player is drawn on the MIDDLEGROUND layer, however due to the player not being an object contained within the GameWorld's object list, 
+it is always drawn after the objects of that layer have been drawn. (For example, on the MIDDLEGROUND the player will be drawn behind the objects on 
+the FOREGROUND but always in front of the objects on the MIDDLEGROUND and BACKGROUND)
 
 More layers can be defined in the Layers enum contained within data.h.
 
-After the RenderFrame's screen buffer has finished being rendered for the frame, PutScreenOnWindow is run to well...you know. This is a function that is simply 
-comprised of some SDL functions responsible for creating a surface, a texture forom that surface and finally rendering the texture to the renderer to be placed 
-on the window. (This function is replaced by two windows API functions in windows_main.)
+After the RenderFrame's screen buffer has finished being rendered for the frame, PutScreenOnWindow is run to well...you know. This is a function that 
+is simply comprised of some SDL functions responsible for creating a surface, a texture forom that surface and finally rendering the texture to the 
+renderer to be placed on the window. (This function is replaced by two windows API functions in windows_main.)
 
 **Audio**
 
-Next, the iterateAudio function is called to handle audio events. SDL handles audio multi-threadedly so this function is mostly used to repeat sounds playing on 
-looping channels, but can also be used to apply other sound modifications to the engine's audio. The LemonEngine uses SDL's BindAudioToStream function to 
-effectively create a channel of audio that plays asyncroniously and can play multiple sounds at once. 
+Next, the iterateAudio function is called to handle audio events. SDL handles audio multi-threadedly so this function is mostly used to repeat sounds 
+playing on looping channels, but can also be used to apply other sound modifications to the engine's audio. The LemonEngine uses SDL's BindAudioToStream 
+function to effectively create a channel of audio that plays asyncroniously and can play multiple sounds at once. 
 
 However, the engine uses multiple channels oraganisation and for controlling whether to loop a sound. All channels are currently identical except for the 
-LOOP_CHANNEL channel as defined in the ChannelNames enum. The only difference between these channels is that sounds played in most channels will only be played 
-once, while those played in LOOP_CHANNEL will loop forever until manually stopped. 
+LOOP_CHANNEL channel as defined in the ChannelNames enum. The only difference between these channels is that sounds played in most channels will only be 
+played once, while those played in LOOP_CHANNEL will loop forever until manually stopped. 
 
-Every sound is its own memory-allocated struct in a linked list attached to the SoundChannels array, essentially to represent each instance of a sound as its 
-own "object". This means each sound can be modified individually, or on a channel-wise basis. However, a limitation of this implementation is that there is a 
-defined limit to the amount of sounds that can be played on a channel at one time, in order to conserve memory.
+Every sound is its own memory-allocated struct in a linked list attached to the SoundChannels array, essentially to represent each instance of a sound as 
+its own "object". This means each sound can be modified individually, or on a channel-wise basis. However, a limitation of this implementation is that 
+there is a defined limit to the amount of sounds that can be played on a channel at one time, in order to conserve memory.
 
-For ease of operation, macros or enums can be defined to assist with organisation, such as defining "MUSIC_CHANNEL" as 0 to signify that channel 0 is reserved 
-for music.
+For ease of operation, macros or enums can be defined to assist with organisation, such as defining "MUSIC_CHANNEL" as 0 to signify that channel 0 is 
+reserved for music.
 
 **Game Ticks**
 
-All of the previous code which pertains to updating the state of the game is only run during a game tick. By default, this is set to run at 60 times per second. 
-Game ticks are a way of maintaining a maximum constant speed without having to use deltaTime. By setting the TICK_DELTA to 60, it will attempt to run the update 
-functions only after approx 16 ms have passed. This simplifies code execution relative to timing, as this system essentially emulates a FixedUpdate function like 
-those found in Unity. A limitation of this approach is that it does not account for the frames per second dipping below 60, which means while the game cannot 
-speed up faster than the expected value, it can slow down. This should not be a significant issue as normal running of the engine hovers around 400 fps, however 
-in a particularly busy scene with lots of transparency/scaled sprites it may slow down considerably.
+All of the previous code which pertains to updating the state of the game is only run during a game tick. By default, this is set to run at 60 times per 
+second. Game ticks are a way of maintaining a maximum constant speed without having to use deltaTime. By setting the TICK_DELTA to 60, it will attempt 
+to run the update functions only after approx 16 ms have passed. This simplifies code execution relative to timing, as this system essentially emulates 
+a FixedUpdate function like those found in Unity. A limitation of this approach is that it does not account for the frames per second dipping below 60, 
+which means while the game cannot speed up faster than the expected value, it can slow down. This should not be a significant issue as normal running 
+of the engine hovers around 400 fps, however in a particularly busy scene with lots of transparency/scaled sprites it may slow down considerably.
 
 **Extra Stuff**
 
@@ -290,11 +320,11 @@ what it is while simultaniously assigning it an integer ID. ID 0 is reserved for
 as you wish.
 
 ```
-enum ObjectType { 
+enum ObjectType {
 	LEVEL_FLAG_OBJ = 0,
 	SOLID_BLOCK = 1,
 	FLAT_SLOPE_FLOOR = 2,
-	JUMP_THRU = 3,
+	JUMP_THRU_BLOCK = 3,
 	UI_ELEMENT = 4,
 	PARTICLE = 5,
 	COIN = 6,
@@ -306,6 +336,9 @@ enum ObjectType {
 	VERTICAL_GATE = 12,
 	HORIZONTAL_GATE = 13,
 	DOOR = 14,
+	BASIC_ENEMY = 15,
+	PLAYER_OBJECT = 16,
+	PUSHABLE_BOX = 17,
 	UNDEFINED_OBJECT
 };
 ```
@@ -437,24 +470,24 @@ For a level flag, "LVFLAG-\_\_[Flag name]\_\_[args]..." The number of arguments 
 **Game Object's attributes**
 
 
-Objects have fairly self-explanitory attributes, except for args 1-5. These are multi-purpose and are used for different things depending on the object type. 
-For example, for moving platforms arg1 and arg2 are the bounds the platform will move between, arg3 is its maxspeed while arg4 and arg5 are used for the timer 
-between laps.
+Objects have fairly self-explanitory attributes, except for args 1-5. These are multi-purpose and are used for different things depending on the object 
+type. For example, for moving platforms arg1 and arg2 are the bounds the platform will move between, arg3 is its maxspeed while arg4 and arg5 are used 
+for the timer between laps.
 
 ```
 struct object
 {
 	int ObjectID;
 	ObjectState State;
-	Layer layer;
-	struct object *nextObject;
-	struct object *prevObject;
-	struct object *ParentObject;
+	CurrentAction Action;
+
+	struct Object *nextObject;
+	struct Object *prevObject;
+	struct Object *ParentObject;
 
 	struct physicsRect *ObjectBox;
 	struct displayData *ObjectDisplay;
-	int currentAnimation;
-	int animationTick;
+	Layer layer;
 
 	// Multi-purpose args
 	int arg1;
@@ -465,30 +498,21 @@ struct object
 };
 ```
 
-Objects use xVelocity/yVelocity to move every frame via updateObjects, even if no custom behaviour is implemented. Using the velocity is preferable instead of 
-changing the position directly as the moveObject functions also handle interaction/collision with the player if it solid. By default, objects will have no 
-velocity, and so static props can dynamically be moved. Several helper functions part of gameObjects.c can also be used to supplement functionality. As 
-mentioned before, objects store all values associated with positioning and velocity within its PhysicsRect structure.
+Objects use xVelocity/yVelocity to move every frame via updateObjects, even if no custom behaviour is implemented. Using the velocity is preferable 
+instead of changing the position directly as the moveObject functions also handle interaction/collision with the player if it solid. By default, 
+objects will have no velocity, and so static props can dynamically be moved. Several helper functions part of gameObjects.c can also be used to 
+supplement functionality. As mentioned before, objects store all values associated with positioning and velocity within its PhysicsRect structure.
 
-Another such set of helper functions are changeXSizeBy and changeYSizeBy. These can be used to keep the object centered as you change its size, and also handles 
-collision with the player. 
+Another such set of helper functions are changeXSizeBy and changeYSizeBy. These can be used to keep the object centered as you change its size, and also 
+handles collision with the player. 
 
-Objects also have the overlapsObjectType, overlapsObjectSolid and OverlapsObjectAllSolids functions. These can be used to detect overlap/collision with specific 
-groups of objects depending on which one you use. OverlapsObjectAllSolids is particularly helpful with collision detection for objects as it essentially acts 
-the same way that the player detection does.
+Objects also have the overlapsObjectType, overlapsObjectSolid and OverlapsObjectAllSolids functions. These can be used to detect overlap/collision with 
+specific groups of objects depending on which one you use. OverlapsObjectAllSolids is particularly helpful with collision detection for objects as it 
+essentially acts the same way that the player detection does.
 
-The method for animating an object uses currentAnimation to set the animaton currently playing, while animationTick can be used to determine the current frame 
-in the animation its on. Having two spearate variables allows for some control such as switching to a near identical animation as the currently playing one and 
-not changing the animationTick in order to preserve fluidity of motion if the two animation's timings are similiar. 
-
-While these two variables can (optionally) be used to control the state of the animation of the object, in order to actually switch the currently drawn sprite 
-the function switchObjectSprite or SwitchObjectSpriteName is used. It simply takes in an input object pointer and an integer ID or string respectively to switch 
-the sprite to. All sprites have both a sprite ID (which simply starts from 1 and counts upwards, effectively acting as an index) and a char string as a sprite 
-name.
-
-The ParentObject pointer is normally set to NULL, but can be assigned to another object to classify a parent relationship between objects. This is useful for 
-syncing state with another object without having to search for it. When a parent object is marked for deletion, all objects that have it as its parent will be 
-marked for deletion as well, and this will continue recursively until the end of the parent 'tree' is reached.
+The ParentObject pointer is normally set to NULL, but can be assigned to another object to classify a parent relationship between objects. This is 
+useful for syncing state with another object without having to search for it. When a parent object is marked for deletion, all objects that have it as 
+its parent will be marked for deletion as well, and this will continue recursively until the end of the parent 'tree' is reached.
 
 
 **Technical Details**
@@ -525,25 +549,33 @@ i.e: defining the shape of the solidtype, any extra requirments for collision to
 functions must be modified to accomodate the new solid type to define how a moving PhysicsRect can collide with a static instance of your solid type. The last 
 two functions are the Resolve[X/Y]CollisionByPush in order to define what happens when your solid type is meant to push other objects in its way when moving.
 
-In the engine, only two types of collision are currently handled: cases where the moving object must conform to the collided object, and cases where the moving 
-object does reach its destination, and should push other objects out of its way.
+In the engine, the method of collision is decided based on the PhysicsRect's collideMode - "PUSH" for using Resolve[X/Y]CollisionBYPush, and "IMPACT" for
+Resolve[X/Y]Collision. In addition, solid types and other aspects can help define what method is used. The evaluateCollideMode function is used to decide
+which collision mode to use.
 
-Descriptions of solid types:
+## Descriptions of solid types:
 
 SOLID: Fully solid; the shape of the hitbox is always a rectangle conforming to the shape/size of the physicsRect itself.
 
 UNSOLID: No collisions are possible with this solidtype.
 
-FLAT_SLOPE: Fully solid; the shape is a triangle with a flat hypoteneuse with a slope calculated from the height of the PhysicsRect over the width of the 
-PhysicsRect. 
+FLAT_SLOPE: Fully solid; the shape is a triangle with a flat hypoteneuse with a slope calculated from the height of the PhysicsRect over the width of 
+the PhysicsRect. 
 (Y = X * ySize/xSize)
 
-JUMP_THROUGH: Semi-solid; has no x axis collision, and is only solid when approaching from above. For example, the player can jump through these solids from 
-below, only to land on top of it when falling back down.
+JUMP_THROUGH: Semi-solid; has no x axis collision, and is only solid when approaching from above. For example, the player can jump through these 
+solids from below, only to land on top of it when falling back down.
 
-ENTITY: Fully solid; acts identically to SOLID, however ignores all collision with other PhysicsRects with the same solidtype. For example, a player and an enemy 
-could both use ENTITY, meaning they would both interact with the gameWorld as you would expect but the player and enemy can pass through each other as two 
-entities cannot collide.
+ENTITY: Fully solid; acts identically to SOLID, however ignores all collision with other PhysicsRects with the same solidtype. For example, a player 
+and an enemy could both use ENTITY, meaning they would both interact with the gameWorld as you would expect but the player and enemy can pass through 
+each other as two entities cannot collide.
+
+ENTITY_SOLID: Fully solid; these solids only collide with boxes that have the "ENTITY" solid type.
+
+PUSHABLE_SOLID: Fully solid; these solids act just like the default SOLID type, however when an ENTITY or another PUSHABLE_SOLID collides with it, it 
+is always pushed instead of depending on its collideMode variable. This interaction only happens in one direction, for example if an ENTITY is hit by
+a PUSHABLE_SOLID it is not forced to be pushed, only when an ENTITY hits the PUSHABLE_SOLID does this happen. 
+
 
 
 **Particles**
@@ -677,6 +709,7 @@ switch (animateType)
 A limitation of this implementation is that particles will only support one animation at a time, so multiple particles will need to be created for different 
 animations, however they can share the same sprite data as they all share a spriteset.
 
+
 # Audio
 
 Audio uses SDL as a layer to load, play and modify sounds in real-time. The channel system is explained in the game loop section, but the method to play sounds 
@@ -698,6 +731,7 @@ int LemonPlaySound(char fileName[], char folderName[], int channel, float volume
 
 Functions such as PauseChannel, ResumeChannel, StopAudioInChannel, etc. are for convenience as they are really just wrappers for already existing SDL functions. 
 This allows for the potential to expand on its functionality, but more importantly it makes the code easier to read and work with.
+
 
 # Sprites
 
@@ -741,6 +775,20 @@ struct sprite
 
 	int spriteID;
 	char spriteName[MAX_LEN];
+};
+
+struct spriteSet
+{
+	struct sprite *firstSprite;
+	struct sprite *lastSprite;
+
+	struct spriteSet *nextSet;
+	struct spriteSet *prevSet;
+
+	struct animation *Animations;
+
+	int setID;
+	int spriteCount;
 };
 ```
 
@@ -790,3 +838,43 @@ unnecessary, however for objects that are known to not require transparency this
 
 XXX_FULL_ALPHA: This is a version of rendering that enables full proper transparency, at the cost of performance. Every type of rendering has a FULL_ALPHA 
 version, however it's recommended to avoid using this mode where possible. (Until an update comes that improves performance!) 
+
+
+# Animations
+
+The animation system is operated through the spriteSets and the DisplayData. They are stored with AnimationFrame structs as linked lists connected to 
+an Animation struct representing each animation. These Animation structs are themselves stored as a linked list from the animations pointer located
+in the spriteSet.
+
+`
+struct animationFrame 
+{
+	struct animationFrame *nextFrame;
+
+	struct sprite *frameSprite;
+};
+
+
+struct animation 
+{
+	struct animation *nextAnimation;
+
+	int animationID;
+	char name[MAX_LEN]; 
+	float frameRate;
+
+	struct animationFrame *animationData;
+
+};
+`
+
+The currently playing animation is referenced by the DisplayData in the animationBuffer pointer, although it is not updated when no animation is 
+playing. The currentAnimation integer is set to the value of the currently playing animation and is set to 0 when no animation is playing. The
+currentAnimation variable being 0 is how to check if the displayData isn't playing an animation.
+
+To play an animation, the PlayAnimation function is called, with the number of repititions being the second arguement. (0 for repeating infinitely.)
+
+`
+int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputData);
+`
+
