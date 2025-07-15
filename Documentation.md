@@ -3,7 +3,7 @@
 _________________________________________________
 
 
-Current Version: 0.05
+Current Version: 0.06
 Currently only supported on windows. Sorry!
 
 This is a project that serves more as a proof-of-concept or exercise as opposed to a real useful tool, especially because this project is being made from almost 
