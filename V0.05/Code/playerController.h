@@ -26,6 +26,9 @@ int PlayerJump(PlayerData *Player, int hAxis, int vAxis);
 int HandlePlayerInteract(PlayerData *Player, int keyboard[]);
 
 
+int PlayerInteractingWithBox(PlayerData *Player, PhysicsRect *inputBox);
+
+
 int setPlayerSprite(PlayerData *Player);
 
 
