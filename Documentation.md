@@ -475,6 +475,18 @@ void objectBehaviour(World *gameWorld, Object *inputObject)
 }
 ```
 
+Levels are created by reading from a leveldata file, which has a specific format. All files have a header which define the intended version number 
+for the engine to be read from, as well as what type of file it is. Arguments can be separated by either spaces or double underscores. Four slashes
+in a leveldata file indicate a new Object entry. Files will stop being read when encountering "////ENDFILE". For example:
+
+```
+V0.06-LEVELDATA
+////OBJECT-__17__
+////OBJECT-__1__100__32__480__1__
+...
+////ENDFILE
+```
+
 In order to load your object from a (.lem) file, 
 you would simply type "OBJECT-\_\_[Object ID]\_\_[X position]\_\_[Y position]\_\_[xSize]\_\_[ySize]\_\_////..." 
 
