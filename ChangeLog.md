@@ -2,7 +2,7 @@
 # v0.05:
 10/06/25
 
-## Internal Structure changes:
+Internal Structure changes:
 
     -> Added UIObjects and eventManager files. UIObjects handles all UI_Elements while eventManager controls in-game events such as levelflags, 
     game pausing, and other triggerable events.
@@ -47,7 +47,7 @@
 
 
 
-## New additions:
+New additions:
 
     -> As part of the HUD/Menu system added, a new object type called "UI_ELEMENT" has been added that is immune to the gameWorld being paused, is 
     rendered relative to the camera's center as opposed to the gameWorld, and uses arg1 to denote its subtype i.e: option buttons, animatable 
@@ -67,7 +67,7 @@
 
 
 
-## Bug fixes/Performance improvements:
+Bug fixes/Performance improvements:
 
     -> Lowered Dependency count for new solid types from 10-12 to 5-6. (Dependency count in this case refers to how many functions must be updated 
     to allow for full functionality.) 
@@ -95,7 +95,7 @@
 # v0.06:
 15/07/25
 
-## Internal Structure changes:
+Internal Structure changes:
 
     -> Separated the objectState enum into two enums: objectState and currentAction. ObjectState can be used to control what the object should do at 
        the engine level, handling deletion, special cross-object interactions such as being carried, and whether the object is an actor in a cutscene.
@@ -113,9 +113,12 @@
    -> Fleshed out collision handling functions to automatically account for whether the object is a IMPACT type collide or an PUSH type via the 
    evaluateCollideType function. (i.e: does the object stop when hitting a wall or push the wall out of its way, respectively.)
 
+   -> Restructured the level loading routine, and now the object that represents the player must be manually created from the leveldata file, 
+   although different objects can be specified and error-handling has improved.
 
 
-## New additions:
+
+New additions:
 
     -> Added an animation system via the DisplayData that handles animation creation and playback with modifiable framerate and loop amount.
 
@@ -128,6 +131,10 @@
     -> Added a caching system to the ObjectControllers so that unused objects in a scene can be put away to avoid unnecessary processing. This can be
     done by using a "CACHE-TRIGGER" level flag or directly via the cacheObjects function; an objectBox will be needed to represented the area in which
     objects will remain in the scene, while the rest are 'cached' away.
+
+    -> Sprite loading and animation loading can now be 'hot-loaded' into the engine via "ANIMATION" files located in the Animations folder in
+    LemonData. This method is optional, and objects can choose between loading via files or being hard-coded or both. (The game does not need to be
+    recompiled in order to reorganise/modify sprites and animations if you want.)
 
     -> Added the pixel[X/Y]Offset(s) to the displayData struct so that sprites can be drawn from any location of its image.
 
@@ -146,9 +153,17 @@
 
     -> Added the "friction" double variable which controls how fast forward velocity decays.
 
+    -> Added the "SWITCHING_LEVEL" GameState to the LemonGameState enum to denote when the engine should switch the level so that objects can 'request'
+    a level change whenever they want without having to worry about crashing due to the contents of the objectlist changing in the middle of the program
+    iterating through it for object behaviour, etc. This works by setting the desired new level to the level variable in the GameWorld struct and by
+    setting the GameState variable to "SWITCHING_LEVEL".
+
+    -> Added the "HandleGameWorldEvents" function to handle level-switching, game pausing or other triggerable events for a provided GameWorld struct,
+    located in the GameTick function.
 
 
-## Bug fixes/Performance improvements:
+
+Bug fixes/Performance improvements:
 
     -> Objects are first evaluated using the checkBoxOverlapsBox function when checking for collision to save cpu time on unneccesary sine/cosine
     calculations where it is not neccessary. (This has noticably improved performance, especially when more than ~2000 objects are present.)
