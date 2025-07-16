@@ -42,9 +42,8 @@ the char values (i.e. keyboard['A'] will yield the state for the 'A' key.) Other
 general, 0 means unpressed and 1 means pressed, but for single inputs you can alter the entry to 2 to signify that the key is still being held but was taken as 
 an input for something.
 
--> The gameRunning and frameThrottle variables are all global variables usable across all files in the engine, although care should be taken as the gameRunning
-variable is directly responsible for engine operation; if you wish to close the game, you should instead set the GameState variable in the GameWorld struct to 
-CLOSE_GAME.
+-> The deltaTime, gameRunning and frameThrottle variables are all global variables usable across all files in the engine, but in general only deltaTime need be 
+used in this way; frameThrottle and gameRunning are handle by the RunLemonEngine function.
 
 
 # Engine Initialisation
@@ -602,7 +601,8 @@ updateParticles function as you would in the updateObjects function. Although, b
 	// ...
 ```
 
-To add a new particle, only three or four additions are required. (Other than the sprites added to the objects folder.)
+To add a new particle, only three or four additions are required. (Other than the sprites added to the objects folder,
+and any animations necessary to the spriteSet.)
 
 First, its identifier should be added to the ParticleType enum.
 
@@ -847,7 +847,7 @@ The animation system is operated through the spriteSets and the DisplayData. The
 an Animation struct representing each animation. These Animation structs are themselves stored as a linked list from the animations pointer located
 in the spriteSet.
 
-`
+```
 struct animationFrame 
 {
 	struct animationFrame *nextFrame;
@@ -867,15 +867,32 @@ struct animation
 	struct animationFrame *animationData;
 
 };
-`
+```
 
 The currently playing animation is referenced by the DisplayData in the animationBuffer pointer, although it is not updated when no animation is 
 playing. The currentAnimation integer is set to the value of the currently playing animation and is set to 0 when no animation is playing. The
 currentAnimation variable being 0 is how to check if the displayData isn't playing an animation.
+The frameBuffer pointer contains the reference to the currently frame of the Animation that the object is displaying. Due to each frame being
+contained in a linked list that makes up the animation, in order to progress the animation the program simply sets the frameBuffer to [frameBuffer->nextFrame].
 
 To play an animation, the PlayAnimation function is called, with the number of repititions being the second arguement. (0 for repeating infinitely.)
 
-`
+```
 int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputData);
-`
+```
 
+To create an animation, two functions are used; initialiseNewAnimation and addSpriteToAnimation. The initialiseNewAnimation function returns a
+pointer to a newly allocated animation struct, and automatically assigns it to the provided DisplayData's spriteSet. The addSpriteToAnimation
+function is used to add a new sprite to the animation. In order to create an animation, the desired frames should be sequentially added via this
+function in the order of the animation. Any created animations should be done within the LoadAnimations function in animations.c.
+
+```
+			Animation *newAnim = initialiseNewAnimation("Bounce", 24, newSet);
+			addSpriteToAnimation("Spring3", newAnim, newSet);
+			addSpriteToAnimation("Spring4", newAnim, newSet);
+			addSpriteToAnimation("Spring5", newAnim, newSet);
+			addSpriteToAnimation("Spring4", newAnim, newSet);
+			addSpriteToAnimation("Spring3", newAnim, newSet);
+			addSpriteToAnimation("Spring2", newAnim, newSet);
+			addSpriteToAnimation("Spring", newAnim, newSet);
+```
