@@ -882,11 +882,13 @@ int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputDat
 ```
 
 To create an animation, two functions are used; initialiseNewAnimation and addSpriteToAnimation. The initialiseNewAnimation function returns a
-pointer to a newly allocated animation struct, and automatically assigns it to the provided DisplayData's spriteSet. The addSpriteToAnimation
-function is used to add a new sprite to the animation. In order to create an animation, the desired frames should be sequentially added via this
-function in the order of the animation. Any created animations should be done within the LoadAnimations function in animations.c.
+pointer to a newly allocated animation struct, and automatically assigns it to the provided spriteSet. The addSpriteToAnimation function is 
+used to add a new sprite to the animation. In order to create an animation, the desired frames should be sequentially added via this function 
+in the order of the animation. Any created animations should be done within the LoadAnimations function in animations.c.
 
 ```
+Animation* initialiseNewAnimation(const char animationName[], int frameRate, SpriteSet *inputSet)
+
 			Animation *newAnim = initialiseNewAnimation("Bounce", 24, newSet);
 			addSpriteToAnimation("Spring3", newAnim, newSet);
 			addSpriteToAnimation("Spring4", newAnim, newSet);
