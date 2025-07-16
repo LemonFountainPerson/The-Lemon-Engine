@@ -490,8 +490,6 @@ V0.06-LEVELDATA
 In order to load your object from a (.lem) file, 
 you would simply type "OBJECT-\_\_[Object ID]\_\_[X position]\_\_[Y position]\_\_[xSize]\_\_[ySize]\_\_////..." 
 
-For a moving platform, you would type "OBJECT-\_\_[Object ID]\_\_...[bound1]\_\_[bound2]\_\_[speed]\_\_[timer]\_\_////..."
-
 For a level flag, "LVFLAG-\_\_[Flag name]\_\_[args]..." The number of arguments changes depending on the flag name given.
 
 
