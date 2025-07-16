@@ -530,11 +530,10 @@ objects will have no velocity, and so static props can dynamically be moved. Sev
 supplement functionality. As mentioned before, objects store all values associated with positioning and velocity within its PhysicsRect structure.
 
 Another such set of helper functions are changeXSizeBy and changeYSizeBy. These can be used to keep the object centered as you change its size, and also 
-handles collision with the player. 
+handles collision with other objects. 
 
 Objects also have the overlapsObjectType, overlapsObjectSolid and OverlapsObjectAllSolids functions. These can be used to detect overlap/collision with 
-specific groups of objects depending on which one you use. OverlapsObjectAllSolids is particularly helpful with collision detection for objects as it 
-essentially acts the same way that the player detection does.
+specific groups of objects depending on which one you use.
 
 The ParentObject pointer is normally set to NULL, but can be assigned to another object to classify a parent relationship between objects. This is 
 useful for syncing state with another object without having to search for it. When a parent object is marked for deletion, all objects that have it as 
@@ -556,11 +555,11 @@ health, ammo and armour, etc. for enemies, X and Y locations for pathing, IDs fo
 The updatePlayer function is run after the updateObjects function. This means objects can move the player freely but for player to object interactions, they 
 will most likely have to be handled rom the object's perspective in order to prevent a frame delay.
 
-Objects can be directly deleted from update objects function, but this requires extra logic handling so that an object in the list does not get skipped for 
+Objects cannot be directly deleted from update objects function, but this requires extra logic handling so that an object in the list does not get skipped for 
 evaluation that frame. The delete object function works by deleting the object you provide the pointer to, and will change the given pointer to point to the 
 next item in the object list. Because of these complications, a helper function called "MarkObjectForDeletion" is preferable as it can used at any point in the 
 program's execution safely and will provide additional checks for you to ensure the object can be deleted without error. When an object is marked for deletion, 
-its state is set to (TO_BE_DELETED), and at the end of its iteration in the update objects function it will be deleted. If you wish to undo the mark before its 
+its state is set to (TO_BE_DELETED), and at the end of the behaviour loop in the update objects function it will be deleted. If you wish to undo the mark before its 
 actual deletion you may use "UnmarkObjectForDeletion" to reverse this and preserve the object, although as a consequence the objects state will be reset to 
 DEFAULT, and you may lose some data. (Such as if an object is in a unique state, this data will be lost when marked for deletion, which may cause logic errors.)
 
