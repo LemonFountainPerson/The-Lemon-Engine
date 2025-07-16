@@ -109,8 +109,14 @@ changes to surrounding code. Only its struct in data.h and the playerController.
 in the engine that have a postion/velocity, etc. use a PhysicsRect structure to hold this data. By using this common data structure, functions can be
 written to be compatible with any data structure as long as it conatins this PhysicsRect data.
 
-The Player uses a physicsRect for its collision hitbox, as well as a separate one to represent an interaction hitbox. The Player also uses a 
-DisplayData struct to hold its' sprite buffer and spriteset and other data neccessary for rendering.
+The Player struct holds a series of pointers to an object's components (NULL if it does not exist), and this object is effectively used as the 
+player itself. In addition, it also contains more general variables independent of whatever object is being used as the player avatar. This means
+on a level transition, the 'avatar' is deleted and effectively reset, while the other values in the PlayerData struct is preserved. For save 
+files, the data in the PlayerData struct are what is necessary to be saved, while data such as the avatar's position and state are more optional 
+to be saved.
+
+By default, there is a PLAYER_OBJECT object that will automatically assign itself to be the new player avatar when it is created, but this 
+functionality can be extended to other objects for multiple types of player avatars, or removed for a completely new system.
 
 **Struct Definition:**
 ```
@@ -209,15 +215,20 @@ Player and GameWorld initialisation.
 **Game Loop**
 
 The main structure of the game loop is as follows: 
-First, PlayCutscene is run to operate the currently playing cutscene, if the GameWorld's GameState is set to "CUTSCENE".
+First, the Game Tick function is called, which comprises of all functions responsible for updating the state of the game. This function runs as 
+follows;
 
-Next, updateObjects is run to update every object in the GameWorld. 
+MasterControls is run to take input from the keyboard and run any debug commands that can be used for ease of development.
 
-Next, updatePlayer is ran to take user input and operate the player. 
+PlayCutscene is run to operate the currently playing cutscene, if the GameWorld's GameState is set to "CUTSCENE".
+
+UpdateObjects is run to update every object in the GameWorld. 
+
+UpdatePlayer is ran to take user input and operate the player. 
 After these two functions all game logic has been performed. Any further functionality should go here after these functions (such as menu control, 
 other self-implemented object types, etc.)
 
-Finally, worldCameraControl is called to move the GameWorld's camera according to the state of the GameWorld. (i.e: following the player) The camera is represented by a Camera struct that is part of the GameWorld. The separation of the camera and the player means the camera is completely independent of
+WorldCameraControl is called to move the GameWorld's camera according to the state of the GameWorld. (i.e: following the player) The camera is represented by a Camera struct that is part of the GameWorld. The separation of the camera and the player means the camera is completely independent of
 the player and can be moved independently if you wish. For convinience, it's recommended to do this from the worldCameraControl function. This can be
 controlled through the use of the CameraMode variable which holds a CameraState enum defining what the camera should be doing. (Following the player,
 staying in place, free roam, etc.)
@@ -246,6 +257,11 @@ enum CameraState {
 	UNDEFINED_CAMERA_STATE
 };
 ```
+
+UpdateText is run to update any playing dialogue/text boxes and is responsible for operating the textQueue itself. (More on this later.)
+
+HandleGameWorldEvents is called to handle more abstract game events such as pausing, level loading, etc.
+
 
 **Rendering**
 
