@@ -443,7 +443,7 @@ struct displayData
 	int pixelXOffset;
 	int pixelYOffset;
 
-	short currentAnimation;
+	int currentAnimation;
 	int animationTick;
 	short animationLoopCount;
 

@@ -98,6 +98,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 		case JUMP_THRU_BLOCK:
 			newObject->ObjectBox->solid = JUMP_THROUGH;
 			newObject->ObjectBox->xSize = xSize * X_TILESCALE;
+			newObject->ObjectBox->ySize = ySize * Y_TILESCALE;
 			break;
 
 		case COIN:

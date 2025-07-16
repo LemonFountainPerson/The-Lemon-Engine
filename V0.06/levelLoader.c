@@ -298,11 +298,43 @@ FILE* convertLemToTxt(char fileName[MAX_LEN + 4], FILE *lemPtr)
 }
 
 
+int checkFileHeader(FILE *fPtr, const char FileType[])
+{
+	if (fPtr == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	char charBuffer[11];
+
+	// Read version number
+	fread(charBuffer, sizeof(char), 5, fPtr);
+	charBuffer[5] = 0;
+
+	if (strcmp(charBuffer, LEMON_VERSION) != 0)
+	{
+		printf("File load failed: Incompatible version number! %s\n", charBuffer);
+		return INVALID_DATA;
+	}
+
+
+	// Read data type
+	fread(charBuffer, sizeof(char), 10, fPtr);
+	charBuffer[10] = 0;
+
+	if (strcmp(charBuffer, FileType) != 0)
+	{
+		printf("File load failed: This file does not contain expected data type!\n");
+		return INVALID_DATA;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
 int loadLevelData(World *gameWorld, int level)
 {
 	gameWorld->GameState = LOADING;
-
-	FILE *fPtr;
 
 	char charBuffer[MAX_LEN + 4] = "Level0Data.lem";
 	charBuffer[5] = level + 48;
@@ -310,7 +342,7 @@ int loadLevelData(World *gameWorld, int level)
 	char path[96] = "LemonData/LevelData/";
 	strcat(path, charBuffer);
 
-	fPtr = fopen(path, "rb");
+	FILE *fPtr = fopen(path, "rb");
 
 	if (fPtr == NULL)
 	{
@@ -335,32 +367,15 @@ int loadLevelData(World *gameWorld, int level)
 
 		if (fPtr == NULL)
 		{
-			printf("Could not convert Lem to txt!\n");
 			return ERROR;
 		}
 	}
 
 
-	// Read version number
-	fread(charBuffer, sizeof(char), 5, fPtr);
-	charBuffer[5] = 0;
+	int result = checkFileHeader(fPtr, "-LEVELDATA");
 
-	if (strcmp(charBuffer, LEMON_VERSION) != 0)
+	if (result != LEMON_SUCCESS)
 	{
-		printf("Level %d load failed: Incompatible version number! %s\n", level, charBuffer);
-		fclose(fPtr);
-		gameWorld->GameState = GAMEPLAY;
-		return INVALID_DATA;
-	}
-
-
-	// Read data type
-	fread(charBuffer, sizeof(char), 10, fPtr);
-	charBuffer[10] = 0;
-
-	if (strcmp(charBuffer, "-LEVELDATA") != 0)
-	{
-		printf("Level %d load failed: This file does not contain level data!\n");
 		fclose(fPtr);
 		gameWorld->GameState = GAMEPLAY;
 		return INVALID_DATA;
@@ -371,7 +386,7 @@ int loadLevelData(World *gameWorld, int level)
 	int i = 0;
 
 
-	while (endOfFile == 0 && i < 8000)
+	while (endOfFile == 0 && feof(fPtr) == 0)
 	{
 		getNextArg(fPtr, charBuffer, 4);
 		charBuffer[4] = 0;
@@ -390,8 +405,6 @@ int loadLevelData(World *gameWorld, int level)
 		if (strcmp(charBuffer, "ENDFILE") == 0)
 		{
 			endOfFile = 1;
-			printf("\nSuccessfully read file (%s)!\n\n", path);
-			fflush(stdout);
 			continue;
 		}
 		else if (strcmp(charBuffer, "OBJECT-") == 0)
@@ -432,9 +445,15 @@ int loadLevelData(World *gameWorld, int level)
 		// This is incredibly hacky but basically I do this in case only one entry is malformed, stops at '////'
 		int temp[16];
 
-		readMultipleIntArgs(fPtr, temp, 16);
+		readIntArgs(fPtr, temp, 16);
 
 		i++;
+
+		if (i > 10000)
+		{
+			printf("\nFile limit reached! (%s)!\n", path);
+			endOfFile = 1;
+		}
 	}
 
 
@@ -443,6 +462,7 @@ int loadLevelData(World *gameWorld, int level)
 	//charBuffer[10] = 0;
 	//convertTxtToLem(charBuffer, fPtr);
 
+	printf("\nSuccessfully read file (%s)!\n\n", path);
 	fclose(fPtr);
 
 
@@ -480,7 +500,7 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 	{
 		int args[3] = {0};
 
-		int returnMsg = readMultipleIntArgs(fPtr, args, 2);
+		int returnMsg = readIntArgs(fPtr, args, 2);
 
 		if (returnMsg != 0)
 		{
@@ -496,7 +516,7 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 	{
 		int args[8] = {0};
 
-		int returnMsg = readMultipleIntArgs(fPtr, args, 8);
+		int returnMsg = readIntArgs(fPtr, args, 8);
 
 		if (returnMsg != 0)
 		{
@@ -512,7 +532,7 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 	{
 		int args[4] = {0};
 
-		int returnMsg = readMultipleIntArgs(fPtr, args, 4);
+		int returnMsg = readIntArgs(fPtr, args, 4);
 
 		if (returnMsg != 0)
 		{
@@ -546,7 +566,7 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 	{
 		int args[8] = {0};
 
-		int returnMsg = readMultipleIntArgs(fPtr, args, 8);
+		int returnMsg = readIntArgs(fPtr, args, 8);
 
 		if (returnMsg != 0)
 		{
@@ -562,7 +582,7 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 	{
 		int args[2] = {0};
 
-		int returnMsg = readMultipleIntArgs(fPtr, args, 2);
+		int returnMsg = readIntArgs(fPtr, args, 2);
 
 		if (returnMsg != 0)
 		{
@@ -577,7 +597,7 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 	{
 		int args[2] = {0};
 
-		int returnMsg = readMultipleIntArgs(fPtr, args, 2);
+		int returnMsg = readIntArgs(fPtr, args, 2);
 
 		if (returnMsg != 0)
 		{
@@ -620,7 +640,7 @@ int loadLevelFlag(World *gameWorld, FILE *fPtr)
 	{
 		int args[8] = {0};
 
-		int returnMsg = readMultipleIntArgs(fPtr, args, 8);
+		int returnMsg = readIntArgs(fPtr, args, 8);
 
 		if (returnMsg != 0)
 		{
@@ -640,7 +660,7 @@ int loadRepeatingObject(World *gameWorld, FILE *fPtr)
 {
 	int args[5] = {0};
 
-	int returnMsg = readMultipleIntArgs(fPtr, args, 4);
+	int returnMsg = readIntArgs(fPtr, args, 4);
 
 	if (returnMsg != 0)
 	{
@@ -648,7 +668,6 @@ int loadRepeatingObject(World *gameWorld, FILE *fPtr)
 	}
 
 
-	//fflush(fPtr);
 	unsigned long objectPosition = ftell(fPtr);
 			
 	for (int yIter = 0; yIter < args[1]; yIter++)
@@ -733,7 +752,7 @@ int loadObject(World *gameWorld, FILE *fPtr, int xOffset, int yOffset)
 	int readID = ConvertEntryToObjectID(readArgs);
 
 	// X/Y pos & args
-	if (readMultipleIntArgs(fPtr, convertedArgs, 9) != 0)
+	if (readIntArgs(fPtr, convertedArgs, 9) != 0)
 	{
 		return INVALID_DATA;
 	}
@@ -762,7 +781,7 @@ int loadObject(World *gameWorld, FILE *fPtr, int xOffset, int yOffset)
 }
 
 
-int readMultipleIntArgs(FILE *fPtr, int argsDest[], int number)
+int readIntArgs(FILE *fPtr, int argsDest[], int number)
 {
 	if (fPtr == NULL)
 	{
@@ -780,9 +799,9 @@ int readMultipleIntArgs(FILE *fPtr, int argsDest[], int number)
 
 		int returnMsg = getNextArg(fPtr, inputBuffer, 8);
 
-		if (returnMsg == -1)
+		if (returnMsg != LEMON_SUCCESS)
 		{
-			return -1;
+			return LEMON_ERROR;
 		}
 
 		if (strcmp(inputBuffer, "////") == 0 || inputBuffer[0] > 64)
@@ -805,27 +824,39 @@ int getNextArg(FILE *fPtr, char buffer[], int max)
 {
 	int i = 0;
 
-	do
+	buffer[0] = '_';
+
+	while ((buffer[0] < 33 || buffer[0] == '_') && i < max)
 	{
+		if (feof(fPtr) != 0)
+		{
+			return MISSING_DATA;
+		}
+
 		fread(buffer, sizeof(char), 1, fPtr);
 	
 		if (buffer[0] > 32)
 		{
 			i++;
 		}
-	} while ((buffer[0] < 33 || buffer[0] == '_') && i < max);
+	}
 
 
 	if (i > 3)
 	{
-		printf("Object data badly formatted! %c\n", buffer[0]);
+		printf("Data badly formatted!\n");
 		return INVALID_DATA;
 	}
 
 	i = 0;
 	
-	while (buffer[i] != '_' && i < max)
+	while (buffer[i] != '_' && buffer[i] > 32 && i < max)
 	{
+		if (feof(fPtr) != 0)
+		{
+			return MISSING_DATA;
+		}
+
 		i++;
 		fread(buffer + i, sizeof(char), 1, fPtr);
 
@@ -833,21 +864,13 @@ int getNextArg(FILE *fPtr, char buffer[], int max)
 
 		if (strcmp(buffer, "////") == 0)
 		{
-			return 0;
+			return LEMON_SUCCESS;
 		}
-	}
-
-	fread(buffer + i, sizeof(char), 1, fPtr);
-
-	if (buffer[i] != '_')
-	{
-		printf("Object data badly formatted!\n");
-		return INVALID_DATA;
 	}
 
 	buffer[i] = 0;
 
-	return 0;
+	return LEMON_SUCCESS;
 }
 
 

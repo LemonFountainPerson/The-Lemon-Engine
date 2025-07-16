@@ -12,6 +12,8 @@ int loadDefault(World *gameWorld);
 
 int loadLevelData(World *gameWorld, int level);
 
+int checkFileHeader(FILE *fPtr, const char FileType[]);
+
 int clearCurrentlyLoadedLevelData(World *gameWorld);
 
 int loadLevel(World *gameWorld, int level);
@@ -38,7 +40,7 @@ int ConvertEntryToObjectID(char entry[60]);
 int ApplyObjectLoadCommands(Object *inputObject, char commands[32]);
 
 
-int readMultipleIntArgs(FILE *fPtr, int argsDest[], int number);
+int readIntArgs(FILE *fPtr, int argsDest[], int number);
 
 int getNextArg(FILE *fPtr, char buffer[], int max);
 

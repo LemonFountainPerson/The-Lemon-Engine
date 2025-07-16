@@ -20,6 +20,9 @@ int LoadAnimations(SpriteSet *newSet, int ObjectID)
 	{
 		case SPRING:
 		{
+			//loadAnimationsFromFile("Spring", newSet);
+			//return 0;
+
 			Animation *newAnim = initialiseNewAnimation("Bounce", 24, newSet);
 			addSpriteToAnimation("Spring3", newAnim, newSet);
 			addSpriteToAnimation("Spring4", newAnim, newSet);
@@ -39,6 +42,90 @@ int LoadAnimations(SpriteSet *newSet, int ObjectID)
 		default:
 		return 0;
 	}
+
+	return 0;
+}
+
+
+int loadAnimationsFromFile(const char FileName[], SpriteSet *destSet)
+{
+	if (destSet == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	// Check string
+	unsigned int i = 0;
+	while (i < MAX_LEN && FileName[i] > 31)
+	{
+		i++;
+	}
+
+	if (i >= MAX_LEN)
+	{
+		return INVALID_DATA;
+	}
+
+	char path[25 + MAX_LEN] = "LemonData/Animations/";
+	strcat(path, FileName);
+	strcat(path, ".txt");
+
+	FILE *fPtr = fopen(path, "rb");
+
+	if (fPtr == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	checkFileHeader(fPtr, "-ANIMATION");
+
+	char argBuffer[MAX_LEN + 1] = {0};
+
+	Animation *newAnimation = NULL;
+
+	while (feof(fPtr) == 0)
+	{
+		getNextArg(fPtr, argBuffer, MAX_LEN);
+
+		if (strcmp(argBuffer, "NewAnimation:") == 0)
+		{
+			int result = getNextArg(fPtr, argBuffer, MAX_LEN);
+
+			if (result != LEMON_SUCCESS)
+			{
+				fclose(fPtr);
+				return LEMON_ERROR;
+			}
+
+			int intBuffer[1] = {0};
+			result = readIntArgs(fPtr, intBuffer, 1);
+
+			if (result != LEMON_SUCCESS)
+			{
+				fclose(fPtr);
+				return LEMON_ERROR;
+			}
+
+			newAnimation = initialiseNewAnimation(argBuffer, intBuffer[0], destSet);
+		}
+		else if (strcmp(argBuffer, "AddFrame:") == 0)
+		{
+			int result = getNextArg(fPtr, argBuffer, MAX_LEN);
+			
+			if (result != LEMON_SUCCESS)
+			{
+				fclose(fPtr);
+				return LEMON_ERROR;
+			}
+
+			addSpriteToAnimation(argBuffer, newAnimation, destSet);
+		}
+	}
+
+
+	fclose(fPtr);
+
+
 
 	return 0;
 }
@@ -180,6 +267,21 @@ int LoopParticleAnimation(Object *particle)
 }
 
 
+int PlayNewAnimation(const char desiredName[], int loopCount, DisplayData *inputData)
+{
+	if (inputData == NULL) { return MISSING_DATA; }
+	
+	if (inputData->currentAnimation != 0 && inputData->animationBuffer != NULL && strcmp(inputData->animationBuffer->name, desiredName) == 0)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	PlayAnimation(desiredName, loopCount, inputData);
+
+	return 0;
+}
+
+
 int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputData)
 {
 	if (inputData == NULL || inputData->spriteSetSource == NULL)
@@ -224,7 +326,6 @@ int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputDat
 
 int iterateAnimation(DisplayData *inputData)
 {
-
 	// loop count decrements every time animation loops; if == 0, then animation value is 0, which stops the animation. 
 	// If value is stareted on <= 0, then on animation end value will be less than 0, and it will loop indefinitely
 
