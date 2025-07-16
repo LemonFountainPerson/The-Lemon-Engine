@@ -384,12 +384,10 @@ void addObject(ObjectController *objectList, int objectID, int xPos, int yPos, i
 		newObject->ySize = ySize * Y_TILESCALE;
 		break;
 
-	// ...
 
-
-        case NEW_ITEM:
-            // New item's custom attributes go here!
-            break;
+	case NEW_ITEM:
+		// New item's custom attributes go here!
+		break;
 
 
 	default:
@@ -407,8 +405,6 @@ loadObjectSprite defines what RenderMode the sprite will use, 0/SINGLE, 3/TILE, 
 ```
 void createObjectSpriteSet(ObjectController *objectList, int objectID)
 {
-	// ...
-
 
 	// Fill sprite set with sprites
 	switch (objectID)
@@ -456,12 +452,10 @@ void objectBehaviour(World *gameWorld, Object *inputObject)
 		} break;
 
 
-		//...
-
-				case NEW_ITEM:
-					updateNewItem(currentObject, ...);
-					// Custom behaviour execution goes here!
-					break;
+		case NEW_ITEM:
+			updateNewItem(currentObject, ...);
+			// Custom behaviour execution goes here!
+			break;
 
 
 		default:
