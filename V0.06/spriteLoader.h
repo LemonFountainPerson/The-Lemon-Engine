@@ -46,4 +46,10 @@ int loadPlayerSprite(const char spriteName[], int desiredSetID, RenderMode rende
 int deleteSprite(SpriteSet *spriteSet, Sprite **input);
 
 
-int deleteSpriteSet(SpriteSet *inputSet);
+int deleteSpriteSet(SpriteSet *inputSet, ObjectController *ObjectList);
+
+
+int deleteExcessSpriteSets(ObjectController *ObjectList, int numberToKeep);
+
+
+RenderMode convertStringToRenderMode(char string[]);

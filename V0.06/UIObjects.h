@@ -54,7 +54,7 @@ TextInstance* SayTextCutscene(const char inputPhrase[], const char Portrait[], T
 
 
 
-int UpdateText(World *GameWorld, int keyboard[256]);
+int updateText(World *GameWorld, int keyboard[256]);
 
 
 int displayNextCharacter(TextInstance *inputText, World *GameWorld);

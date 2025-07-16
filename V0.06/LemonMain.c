@@ -114,8 +114,6 @@ int RunLemonEngine(void)
 		IterateAudio();
        
 
-		MasterControls(GameWorld, keyboard, GameWorld->Player);
-
 		// Framerate control
     	frameRate(60, gameTick);
 
@@ -150,6 +148,9 @@ int GameTick(World *GameWorld, int keyboard[256])
 	}
 
 
+	MasterControls(GameWorld, keyboard, GameWorld->Player);
+
+
 	UpdateCutscene(GameWorld, keyboard);
 
 	updateObjects(GameWorld, keyboard);
@@ -158,7 +159,9 @@ int GameTick(World *GameWorld, int keyboard[256])
 
 	WorldCameraControl(GameWorld, &GameWorld->MainCamera);
 
-	UpdateText(GameWorld, keyboard);
+	updateText(GameWorld, keyboard);
+
+	HandleGameWorldEvents(GameWorld, keyboard);
 
 	return 0;
 }
@@ -310,24 +313,9 @@ int getKeyboardInput(SDL_Event *event, int keyboard[256])
 
 void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 {
-	if (GameWorld == NULL)
+	if (GameWorld == NULL || GameWorld->GameState == EMPTY_GAME)
 	{
 		return;
-	}
-
-
-	if (keyboard[LMN_ESCAPE] == 1)
-	{
-		keyboard[LMN_ESCAPE] = 2;
-
-		if (GameWorld->GamePaused == 0)
-		{
-			PauseGame(GameWorld, keyboard);
-		}
-		else
-		{
-			ResumeGame(GameWorld);
-		}
 	}
 
 
@@ -350,15 +338,9 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 		//deleteAllObjects(GameWorld->ObjectList);
 		//loadLevel(GameWorld, 1);
 
-		PhysicsRect cameraBox;
-		cameraBox.xPos = GameWorld->MainCamera.CameraX - screenWidth;
-		cameraBox.yPos = GameWorld->MainCamera.CameraY - screenHeight;
-		cameraBox.xSize = screenWidth << 1;
-		cameraBox.ySize = screenHeight << 1;
-
-		//cacheObjects(GameWorld->ObjectList, &cameraBox, GameWorld->Player);
-
 		printf("Object size: %d\n", sizeof(Object) + sizeof(PhysicsRect) + sizeof(DisplayData));
+
+		GameWorld->GameState = EMPTY_GAME;
 
 		keyboard['Y'] = 2;
 	}
@@ -425,50 +407,50 @@ void frameRate(int rate, clock_t gameTick)
 World* InitialiseGame()
 {
 	// Game world creation
-	World *gameWorld = malloc(sizeof(World));
+	World *GameWorld = malloc(sizeof(World));
 
-	if (gameWorld == NULL)
+	if (GameWorld == NULL)
 	{
 		printf("\nError: Could not allocate space for game world.\n\n");
 		fflush(stdout);
 		return NULL;
 	}
 
-	gameWorld->MainCamera.CameraX = 1000;
-	gameWorld->MainCamera.minCameraX = 0;
-	gameWorld->MainCamera.maxCameraX = 32768;
-	gameWorld->MainCamera.CameraY = 120;
-	gameWorld->MainCamera.minCameraY = 0;
-	gameWorld->MainCamera.maxCameraY = 32768;
-	gameWorld->MainCamera.CameraLatch = 0;
-	gameWorld->MainCamera.CameraXBuffer = 0;
-	gameWorld->MainCamera.CameraYBuffer = 0;
-	gameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;
+	GameWorld->MainCamera.CameraX = 1000;
+	GameWorld->MainCamera.minCameraX = 0;
+	GameWorld->MainCamera.maxCameraX = 32768;
+	GameWorld->MainCamera.CameraY = 120;
+	GameWorld->MainCamera.minCameraY = 0;
+	GameWorld->MainCamera.maxCameraY = 32768;
+	GameWorld->MainCamera.CameraLatch = 0;
+	GameWorld->MainCamera.CameraXBuffer = 0;
+	GameWorld->MainCamera.CameraYBuffer = 0;
+	GameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;
 
-	gameWorld->level = 0;
-	gameWorld->CurrentCutscene = EMPTY_CUTSCENE;
-	gameWorld->SceneTick = 0;
-	gameWorld->PlayingText = 0;
+	GameWorld->level = 0;
+	GameWorld->CurrentCutscene = EMPTY_CUTSCENE;
+	GameWorld->SceneTick = 0;
+	GameWorld->PlayingText = 0;
 
-	gameWorld->drawnObjects = 0;
-	gameWorld->drawnParticles = 0;
-	gameWorld->drawnHudElements = 0;
-	gameWorld->drawHitboxes = 0;
-	gameWorld->drawSprites = 1;
-	gameWorld->drawPlayer = 1;
-	gameWorld->drawBackGround = 1;
-	gameWorld->drawParticles = 1;
-	gameWorld->drawUI = 1;
+	GameWorld->drawnObjects = 0;
+	GameWorld->drawnParticles = 0;
+	GameWorld->drawnHudElements = 0;
+	GameWorld->drawHitboxes = 0;
+	GameWorld->drawSprites = 1;
+	GameWorld->drawPlayer = 1;
+	GameWorld->drawBackGround = 1;
+	GameWorld->drawParticles = 1;
+	GameWorld->drawUI = 1;
 
-	gameWorld->bgParallax = 0.1;
-	gameWorld->bgParallaxChunkSize = 64;
-	gameWorld->bgChunkParallax = 0.00008;
+	GameWorld->bgParallax = 0.1;
+	GameWorld->bgParallaxChunkSize = 64;
+	GameWorld->bgChunkParallax = 0.00008;
 
-	gameWorld->bgSpriteBuffer = NULL;
+	GameWorld->bgSpriteBuffer = NULL;
 
-	gameWorld->GamePaused = 0;
+	GameWorld->GamePaused = 0;
 
-	gameWorld->TextQueue = NULL;
+	GameWorld->TextQueue = NULL;
 
 	
 	// Object controller creation
@@ -477,7 +459,7 @@ World* InitialiseGame()
 	if (objController == NULL)
 	{
 		printf("\nError: Could not allocate space for Object Controller.\n\n");
-		free(gameWorld);
+		free(GameWorld);
 		return NULL;
 	}
 
@@ -490,40 +472,40 @@ World* InitialiseGame()
 	objController->cachedLastObject = NULL;
 	objController->cachedCount = 0;
 
-	gameWorld->ObjectList = objController;
+	GameWorld->ObjectList = objController;
 
-	gameWorld->BackGrounds = NULL;
+	GameWorld->BackGrounds = NULL;
 
-	gameWorld->bgSpriteBuffer = NULL;
+	GameWorld->bgSpriteBuffer = NULL;
 
 	srand(0);
 
 
 	// Load backgrounds
-	LoadBackGroundSprites(gameWorld);
+	LoadBackGroundSprites(GameWorld);
 
-	gameWorld->GameState = EMPTY_GAME;
+	GameWorld->GameState = EMPTY_GAME;
 
-	gameWorld->Player = InitialisePlayerData(gameWorld);
+	GameWorld->Player = InitialisePlayerData(GameWorld);
 
-	gameWorld->Gravity = -1.0;
-	gameWorld->PhysicsType = PLATFORMER;
+	GameWorld->Gravity = -1.0;
+	GameWorld->PhysicsType = PLATFORMER;
 
 	printf("Initialised World\n");
 	fflush(stdout);
 
-	return gameWorld;
+	return GameWorld;
 }
 
 
-void clearGameData(World *gameWorld, uint32_t screen[])
+void clearGameData(World *GameWorld, uint32_t screen[])
 {
-	if (gameWorld == NULL || gameWorld->ObjectList == NULL)
+	if (GameWorld == NULL || GameWorld->ObjectList == NULL)
 	{
 		return;
 	}
 
-	PlayerData *Player = gameWorld->Player;
+	PlayerData *Player = GameWorld->Player;
 
 	if (screen != NULL)
 	{
@@ -532,17 +514,17 @@ void clearGameData(World *gameWorld, uint32_t screen[])
 
 	int i = 0;
 
-	while (gameWorld->TextQueue != NULL && i < 500)
+	while (GameWorld->TextQueue != NULL && i < 500)
 	{
-		endTextInstance(gameWorld);
+		endTextInstance(GameWorld);
 		i++;
 	}
 
 
-	deleteAllObjects(gameWorld->ObjectList);
+	deleteAllObjects(GameWorld->ObjectList);
 
 	SpriteSet *currentSet;
-	currentSet = gameWorld->ObjectList->startSpriteSetPtr;
+	currentSet = GameWorld->ObjectList->startSpriteSetPtr;
 
 	SpriteSet *prevSet;
 	prevSet = NULL;
@@ -554,12 +536,12 @@ void clearGameData(World *gameWorld, uint32_t screen[])
 		prevSet = currentSet;
 		currentSet = currentSet->nextSet;
 
-		deleteSpriteSet(prevSet);
+		deleteSpriteSet(prevSet, GameWorld->ObjectList);
 	}
 	
-	free(gameWorld->ObjectList);
+	free(GameWorld->ObjectList);
 	
-	currentSet = gameWorld->BackGrounds;
+	currentSet = GameWorld->BackGrounds;
 	prevSet = NULL;
 	
 	while (currentSet != NULL)
@@ -567,13 +549,13 @@ void clearGameData(World *gameWorld, uint32_t screen[])
 		prevSet = currentSet;
 		currentSet = currentSet->nextSet;
 
-		deleteSpriteSet(prevSet);
+		deleteSpriteSet(prevSet, NULL);
 	}
 
-	gameWorld->ObjectList = NULL;
-	gameWorld->bgSpriteBuffer = NULL;
-	gameWorld->BackGrounds = NULL;
-	gameWorld->GameState = EMPTY_GAME;
+	GameWorld->ObjectList = NULL;
+	GameWorld->bgSpriteBuffer = NULL;
+	GameWorld->BackGrounds = NULL;
+	GameWorld->GameState = EMPTY_GAME;
 
 
 	if (Player == NULL)

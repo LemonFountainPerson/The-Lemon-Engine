@@ -119,7 +119,7 @@ int EndCutscene(World *GameWorld)
 	{
 		if (currentObject->State == ACTOR)
 		{
-			MarkObjectForDeletion(currentObject, GameWorld->ObjectList);
+			MarkObjectForDeletion(currentObject);
 		}
 
 		currentObject = currentObject->nextObject;

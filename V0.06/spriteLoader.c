@@ -965,7 +965,7 @@ int deleteSprite(SpriteSet *spriteSet, Sprite **input)
 }
 
 
-int deleteSpriteSet(SpriteSet *inputSet)
+int deleteSpriteSet(SpriteSet *inputSet, ObjectController *ObjectList)
 {
 	if (inputSet == NULL)
 	{
@@ -988,7 +988,124 @@ int deleteSpriteSet(SpriteSet *inputSet)
 		deleteAnimation(deleteAnim);
 	}
 
+	if (inputSet->nextSet != NULL)
+	{
+		inputSet->nextSet->prevSet = inputSet->prevSet;
+	}
+
+	if (inputSet->prevSet != NULL)
+	{
+		inputSet->prevSet->nextSet = inputSet->nextSet;
+	}
+	else if (ObjectList != NULL)
+	{
+		ObjectList->startSpriteSetPtr = inputSet->nextSet;
+	}
+
 	free(inputSet);
 
 	return 0;
+}
+
+
+int deleteExcessSpriteSets(ObjectController *ObjectList, int numberToKeep)
+{
+	if (ObjectList == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	SpriteSet *currentSet = ObjectList->startSpriteSetPtr;
+	int i = 0;
+
+	while (currentSet != NULL && i < numberToKeep)
+	{
+		currentSet = currentSet->nextSet;
+		i++;
+	}
+
+	SpriteSet *tempSet;
+	
+	while (currentSet != NULL)
+	{
+		tempSet = currentSet;
+		currentSet = currentSet->nextSet;
+
+		deleteSpriteSet(tempSet, ObjectList);
+	}
+
+	return 0;
+}
+
+
+RenderMode convertStringToRenderMode(char string[])
+{
+	int i = 0;
+	while (string[i] != 0 && i < MAX_LEN)
+	{
+		i++;
+	}
+
+	if (i >= MAX_LEN)
+	{
+		return UNDEFINED_RENDERMODE;
+	}
+
+	if (strcmp(string, "TILE") == 0)
+	{
+		return TILE;
+	}
+	else if (strcmp(string, "SINGLE") == 0)
+	{
+		return SINGLE;
+	}
+	else if (strcmp(string, "SINGLE_FULL_ALPHA") == 0)
+	{
+		return SINGLE_FULL_ALPHA;
+	}
+	else if (strcmp(string, "SINGLE_FAST") == 0)
+	{
+		return SINGLE_FAST;
+	}
+	else if (strcmp(string, "TILE_FULL_ALPHA") == 0)
+	{
+		return TILE_FULL_ALPHA;
+	}
+	else if (strcmp(string, "TILE_FAST") == 0)
+	{
+		return TILE_FAST;
+	}
+	else if (strcmp(string, "SCALE") == 0)
+	{
+		return SCALE;
+	}
+	else if (strcmp(string, "SCALE_FULL_ALPHA") == 0)
+	{
+		return SCALE_FULL_ALPHA;
+	}
+	else if (strcmp(string, "TILE_SCALE") == 0)
+	{
+		return TILE_SCALE;
+	}
+	else if (strcmp(string, "TILE_SCALE_FULL_ALPHA") == 0)
+	{
+		return TILE_SCALE_FULL_ALPHA;
+	}
+	else if (strcmp(string, "SCALE_TILE") == 0)
+	{
+		return SCALE_TILE;
+	}
+	else if (strcmp(string, "SCALE_TILE_FULL_ALPHA") == 0)
+	{
+		return SCALE_TILE_FULL_ALPHA;
+	}
+	else if (strcmp(string, "BG_ROW_PARALLAX") == 0)
+	{
+		return BG_ROW_PARALLAX;
+	}
+	else 
+	{
+		return UNDEFINED_RENDERMODE;
+	}
+
 }

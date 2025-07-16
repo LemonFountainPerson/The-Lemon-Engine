@@ -20,8 +20,8 @@ int LoadAnimations(SpriteSet *newSet, int ObjectID)
 	{
 		case SPRING:
 		{
-			//loadAnimationsFromFile("Spring", newSet);
-			//return 0;
+			loadAnimationsFromFile("Spring", newSet);
+			return 0;
 
 			Animation *newAnim = initialiseNewAnimation("Bounce", 24, newSet);
 			addSpriteToAnimation("Spring3", newAnim, newSet);
@@ -119,6 +119,44 @@ int loadAnimationsFromFile(const char FileName[], SpriteSet *destSet)
 			}
 
 			addSpriteToAnimation(argBuffer, newAnimation, destSet);
+		}
+		else if (strcmp(argBuffer, "AddSprite:") == 0)
+		{
+			char FileName[MAX_LEN];
+			int result = getNextArg(fPtr, FileName, MAX_LEN);
+			
+			if (result != LEMON_SUCCESS)
+			{
+				fclose(fPtr);
+				return LEMON_ERROR;
+			}
+
+			char FolderName[MAX_LEN];
+			result = getNextArg(fPtr, FolderName, MAX_LEN);
+			
+			if (result != LEMON_SUCCESS)
+			{
+				fclose(fPtr);
+				return LEMON_ERROR;
+			}
+
+			result = getNextArg(fPtr, argBuffer, MAX_LEN);
+			
+			if (result != LEMON_SUCCESS)
+			{
+				fclose(fPtr);
+				return LEMON_ERROR;
+			}
+
+			result = convertStringToRenderMode(argBuffer);
+
+			if (result == UNDEFINED_RENDERMODE)
+			{
+				fclose(fPtr);
+				return LEMON_ERROR;
+			}
+
+			loadSpriteIntoSpriteSet(FileName, FolderName, destSet, result);
 		}
 	}
 

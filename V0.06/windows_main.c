@@ -167,10 +167,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    		windowsFrames++;
 	    
 
-
-	    // Debug Controls
-        MasterControls(GameWorld, keyboard, GameWorld->Player);	
-
         if (GameWorld->GameState == CLOSE_GAME)
         {
             gameRunning = 0;

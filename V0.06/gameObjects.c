@@ -49,6 +49,12 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 			InitialisePlayerObject(newObject, GameWorld);
 			break;
 
+		case LEVEL_DOOR:
+			newObject->ObjectBox->solid = JUMP_THROUGH;
+			newObject->ObjectBox->xSize = X_TILESCALE << 1;
+			newObject->ObjectBox->ySize = Y_TILESCALE * 3;
+			break;
+
 		case DOOR:
 			newObject->ObjectBox->solid = JUMP_THROUGH;
 			newObject->ObjectBox->xSize = X_TILESCALE << 1;
@@ -266,6 +272,7 @@ int LoadSpriteSet(SpriteSet *newSet, int ObjectID)
 		} break;
 
 		case SPRING:
+			return 0;
 			loadObjectSprite("Spring", newSet, TILE);
 			loadObjectSprite("Spring2", newSet, TILE);
 			loadObjectSprite("Spring3", newSet, TILE);
@@ -324,6 +331,12 @@ Object* AddObjectWithParent(World *GameWorld, Object *ParentObject, int objectID
 	}
 
 	return newObject;
+}
+
+
+Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int yPos, int repeatCount, int frameRate, int particleLifeTime)
+{
+	return AddObject(GameWorld, PARTICLE, xPos, yPos, 0, 0, animation, repeatCount, frameRate, particleLifeTime, 0);
 }
 
 
@@ -724,14 +737,14 @@ void deleteAllObjects(ObjectController *ObjectList)
 }
 
 
-int MarkObjectForDeletion(Object *inputObject, ObjectController *ObjectList)
+int MarkObjectForDeletion(Object *inputObject)
 {
-	if (inputObject == NULL || ObjectList == NULL)
+	if (inputObject == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (inputObject->State == TO_BE_DELETED || ObjectList->firstObject == NULL)
+	if (inputObject->State == TO_BE_DELETED)
 	{
 		return INVALID_DATA;
 	}
@@ -1086,14 +1099,7 @@ FunctionResult updateObjects(World *GameWorld, int keyboard[256])
 
 		ObjectBehaviour(GameWorld, currentObject, keyboard);
 
-
-		if (currentObject == NULL)
-		{
-			return MISSING_DATA;
-		}
-
 		currentObject = currentObject->nextObject;
-		
 	}
 
 
@@ -1196,6 +1202,11 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 			break;
 
 
+		case LEVEL_DOOR:
+			UpdateLevelDoor(GameWorld->Player, inputObject, GameWorld);
+			break;
+
+
 		case BASIC_ENEMY:
 			UpdateEntityPhysics(inputObject, GameWorld->Player, GameWorld);
 			break;
@@ -1252,8 +1263,8 @@ int UpdateCoin(Object *coin, World *GameWorld)
 	if (checkBoxOverlapsBox(PlayerBox, coin->ObjectBox) == 1)
 	{
 		GameWorld->Player->coinCount++;
-		AddObject(GameWorld, PARTICLE, coin->ObjectBox->xPos, coin->ObjectBox->yPos, 0, 0, SPARKLE, 1, 0, 0, 0);
-		MarkObjectForDeletion(coin, GameWorld->ObjectList);
+		AddParticle(GameWorld, SPARKLE, coin->ObjectBox->xPos, coin->ObjectBox->yPos, 1, 0, 0);
+		MarkObjectForDeletion(coin);
 		LemonPlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.8);
 	}
 
@@ -1296,13 +1307,13 @@ int InitialiseParticle(Object *particle, int animation, int repeatCount, int fra
 
 	if (frameRate < 1 || frameRate > 999)
 	{
-		frameRate = 3;
+		frameRate = 30;
 	}
 
 	particle->layer = PARTICLES;
 	particle->ObjectBox->solid = UNSOLID;
 	particle->ObjectDisplay->currentAnimation = animation;
-	particle->arg2 = frameRate;
+	particle->arg2 = 60 / frameRate;
 	particle->arg3 = particleLifeTime;
 	particle->arg4 = 0;
 	particle->arg5 = 0;
@@ -1355,12 +1366,12 @@ int UpdateParticle(World *GameWorld, Object *particle)
 	// If repeat count is reached or animationTick exceeds maximum lifetime, mark for deletion
 	if (particle->arg3 < 1 && particle->arg1 < 1)
 	{
-		MarkObjectForDeletion(particle, GameWorld->ObjectList);
+		MarkObjectForDeletion(particle);
 	}
 
 	if (particle->arg3 > 0 && particle->ObjectDisplay->animationTick > particle->arg3)
 	{
-		MarkObjectForDeletion(particle, GameWorld->ObjectList);
+		MarkObjectForDeletion(particle);
 	}
 
 	return 0;
@@ -1850,23 +1861,19 @@ int UpdateDoor(PlayerData *Player, Object *Door, World *GameWorld)
 	if (Door->arg3 < 1 && PlayerInteractingWithBox(Player, Door->ObjectBox) == 1 && Player->PlayerPtr->State == DEFAULT)
 	{
 		SayText("It's a door.", NO_PORTRAIT, DEFAULT_BOTTOM, GameWorld);
-		SayText("....Or is it?\n\rIt just looks like a big pink and black \nrectangle...", NO_PORTRAIT, DEFAULT_BOTTOM, GameWorld);
+		SayText("....Or is it?\n\rIt just looks like a big pink and black rectangle...", NO_PORTRAIT, DEFAULT_BOTTOM, GameWorld);
 
 		LemonPlaySound("DoorOpen", "Objects", OBJECT_SFX, 1.0);
 		ResetPlayer(Player);
 		Player->PlayerPtr->State = PAUSE_BEHAVIOUR;
 
 		Door->arg3 = 32;
+
+		Player->PlayerBox->xPos = Door->arg1;
+		Player->PlayerBox->yPos = Door->arg2;
 		
-		if (Door->ParentObject == NULL || Door->ParentObject->ObjectBox == NULL)
+		if (Door->ParentObject != NULL && Door->ParentObject->ObjectBox != NULL)
 		{
-			Player->PlayerBox->xPos = Door->arg1;
-			Player->PlayerBox->yPos = Door->arg2;
-		}
-		else
-		{
-			Player->PlayerBox->xPos = Door->ParentObject->ObjectBox->xPos;
-			Player->PlayerBox->yPos = Door->ParentObject->ObjectBox->yPos;
 			Door->ParentObject->arg3 = 32;
 		}
 	}
@@ -1878,6 +1885,39 @@ int UpdateDoor(PlayerData *Player, Object *Door, World *GameWorld)
 		{
 			Player->PlayerPtr->State = DEFAULT;
 		}
+	}
+
+	return 0;
+} 
+
+
+int UpdateLevelDoor(PlayerData *Player, Object *Door, World *GameWorld)
+{
+	// arg1: Level to load
+	// arg2: Open/close state
+	if (Player->PlayerBox == NULL || Door == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (Door->arg2 > 0 && GameWorld->PlayingText == 0)
+	{
+		Door->arg2++;
+
+		if (Door->arg2 > 20)
+		{
+			GameWorld->GameState = SWITCHING_LEVEL;
+			GameWorld->level = Door->arg1;
+			Door->arg2 = 0;
+		}
+	}
+
+	if (Door->arg2 < 1 && PlayerInteractingWithBox(Player, Door->ObjectBox) == 1 && Player->PlayerPtr->State == DEFAULT)
+	{
+		SayText("It's a door.\f.\f.\r \nIt eminates a strange glow.", NO_PORTRAIT, DEFAULT_BOTTOM, GameWorld);
+		SayText("This Door will send you AWAYYYYY!", NO_PORTRAIT, DEFAULT_BOTTOM, GameWorld);
+
+		Door->arg2 = 1;
 	}
 
 	return 0;

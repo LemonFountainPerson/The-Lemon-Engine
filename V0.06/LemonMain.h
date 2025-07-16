@@ -40,7 +40,7 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player);
 void frameRate(int milliseconds, clock_t gameTick);
 
 
-void clearGameData(World *gameWorld, uint32_t screen[]);
+void clearGameData(World *GameWorld, uint32_t screen[]);
 
 
 int cleanUpWindowRenderer(SDL_Window *Window, SDL_Renderer *Renderer, SDL_Surface *screenSurface, SDL_Texture *texture);

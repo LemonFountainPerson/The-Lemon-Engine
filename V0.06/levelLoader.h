@@ -8,17 +8,17 @@
 #endif
 
 
-int loadDefault(World *gameWorld);
+int loadDefault(World *GameWorld);
 
-int loadLevelData(World *gameWorld, int level);
+int loadLevelData(World *GameWorld, int level);
 
 int checkFileHeader(FILE *fPtr, const char FileType[]);
 
-int clearCurrentlyLoadedLevelData(World *gameWorld);
+int clearCurrentlyLoadedLevelData(World *GameWorld);
 
-int loadLevel(World *gameWorld, int level);
+int loadLevel(World *GameWorld, int level);
 
-int saveLevel(World *gameWorld);
+int saveLevel(World *GameWorld);
 
 int lemon_Modulo(int x, int N);
 
@@ -27,13 +27,13 @@ FILE* convertTxtToLem(char FileName[MAX_LEN], FILE *txtPtr);
 FILE* convertLemToTxt(char fileName[MAX_LEN + 4], FILE *lemPtr);
 
 
-int loadObject(World *gameWorld, FILE *fPtr, int xOffset, int yOffset);
+int loadObject(World *GameWorld, FILE *fPtr, int xOffset, int yOffset);
 
-int loadRepeatingObject(World *gameWorld, FILE *fPtr);
+int loadRepeatingObject(World *GameWorld, FILE *fPtr);
 
-int loadMovingPlatform(World *gameWorld, FILE *fPtr);
+int loadMovingPlatform(World *GameWorld, FILE *fPtr);
 
-int loadLevelFlag(World *gameWorld, FILE *fPtr);
+int loadLevelFlag(World *GameWorld, FILE *fPtr);
 
 int ConvertEntryToObjectID(char entry[60]);
 

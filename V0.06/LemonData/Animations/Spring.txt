@@ -1,4 +1,10 @@
 V0.06-ANIMATION
+AddSprite: 	Spring		Objects		TILE
+AddSprite: 	Spring2		Objects		TILE
+AddSprite: 	Spring3		Objects		TILE
+AddSprite: 	Spring4		Objects		TILE
+AddSprite: 	Spring5		Objects		TILE
+
 NewAnimation: Bounce 	30
 AddFrame: 	Spring3
 AddFrame: 	Spring4

@@ -19,6 +19,38 @@ int StartGame(World *GameWorld)
 }
 
 
+int HandleGameWorldEvents(World *GameWorld, int keyboard[256])
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (GameWorld->GameState == SWITCHING_LEVEL)
+	{
+		loadLevel(GameWorld, GameWorld->level);
+		return 0;
+	}
+
+
+	if (keyboard[LMN_ESCAPE] == 1)
+	{
+		keyboard[LMN_ESCAPE] = 2;
+
+		if (GameWorld->GamePaused == 0)
+		{
+			PauseGame(GameWorld, keyboard);
+		}
+		else
+		{
+			ResumeGame(GameWorld);
+		}
+	}
+
+	return 0;
+}
+
+
 int PauseGame(World *GameWorld, int keyboard[256])
 {
 	if (GameWorld == NULL)
@@ -176,7 +208,7 @@ int UpdateFlagObject(World *GameWorld, Object* inputObject)
 		if (inputObject->Action == 1)
 		{
 			PlayCutscene(inputObject->arg2, GameWorld);
-			MarkObjectForDeletion(inputObject, GameWorld->ObjectList);
+			MarkObjectForDeletion(inputObject);
 			inputObject->Action = 2;
 		}
 		break;
@@ -220,7 +252,7 @@ int UpdateFlagObject(World *GameWorld, Object* inputObject)
 
 
 		default:
-		MarkObjectForDeletion(inputObject, GameWorld->ObjectList);
+		MarkObjectForDeletion(inputObject);
 		break;
 	}
 

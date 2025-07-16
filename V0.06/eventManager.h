@@ -12,6 +12,9 @@
 int StartGame(World *GameWorld);
 
 
+int HandleGameWorldEvents(World *GameWorld, int keyboard[256]);
+
+
 int PauseGame(World *GameWorld, int keyboard[256]);
 
 

@@ -9,6 +9,7 @@
 #include "UIObjects.h"
 #include "enemies.h"
 #include "LemonMain.h"
+#include "levelLoader.h"
 #endif
 
 
@@ -17,6 +18,9 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 
 
 Object* AddObjectWithParent(World *GameWorld, Object *ParentObject, int objectID, int xPos, int yPos, int xSize, int ySize, int arg1, int arg2, int arg3, int arg4, int arg5);
+
+
+Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int yPos, int repeatCount, int frameRate, int particleLifeTime);
 
 
 // Initialises a new empty object to the object list
@@ -58,7 +62,7 @@ int switchObjectSpriteName(char spriteName[], Object *inputObject, ObjectControl
 void deleteObject(Object **input, ObjectController *objController);
 
 
-int MarkObjectForDeletion(Object *inputObject, ObjectController *ObjectList);
+int MarkObjectForDeletion(Object *inputObject);
 
 
 int UnmarkObjectForDeletion(Object *inputObject, ObjectController *ObjectList);
@@ -188,6 +192,9 @@ int gateControl(Object *gate, ObjectController *objectList);
 
 
 int UpdateDoor(PlayerData *Player, Object *Door, World *GameWorld);
+
+
+int UpdateLevelDoor(PlayerData *Player, Object *Door, World *GameWorld);
 
 
 int UpdateSpring(Object *spring, World *GameWorld);

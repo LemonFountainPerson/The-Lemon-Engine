@@ -27,16 +27,18 @@ int InitialiseUIElement(World *GameWorld, Object *UIElement)
 
 	switch(UIElement->arg1)
 	{
+		case UNDEFINED_UI_ELEMENT:
+		MarkObjectForDeletion(UIElement);
+		break;
+
 		case TEXT_BOX:
 		switchSpriteByName("TextBox_Basic", 0, UIElement->ObjectDisplay);
 		switchSprite(UIElement->ObjectDisplay->currentSprite + UIElement->arg2, 0, UIElement->ObjectDisplay);
-
 		if (UIElement->ObjectDisplay->spriteBuffer != NULL)
 		{
 			UIElement->ObjectBox->xSize = UIElement->ObjectDisplay->spriteBuffer->width;
 			UIElement->ObjectBox->ySize = UIElement->ObjectDisplay->spriteBuffer->height;
 		}
-	
 		break;
 
 		case TEXT_CHARACTER:
@@ -255,7 +257,7 @@ int PauseMenu(Object *MenuController, World *GameWorld, int keyboard[256])
 			case 1:
 				if (OpenSettings(GameWorld, keyboard) == 0)
 				{
-					MarkObjectForDeletion(MenuController, GameWorld->ObjectList);
+					MarkObjectForDeletion(MenuController);
 				}
 				break;
 
@@ -272,7 +274,7 @@ int PauseMenu(Object *MenuController, World *GameWorld, int keyboard[256])
 
 	if (GameWorld->GamePaused == 0 && GameWorld->GameState != IN_MENU)
 	{
-		MarkObjectForDeletion(MenuController, GameWorld->ObjectList);
+		MarkObjectForDeletion(MenuController);
 	}
 
 	return 0;
@@ -335,14 +337,14 @@ int SettingsMenu(Object *MenuController, World *GameWorld, int keyboard[256])
 
 			default:
 				PauseGame(GameWorld, keyboard);
-				MarkObjectForDeletion(MenuController, GameWorld->ObjectList);
+				MarkObjectForDeletion(MenuController);
 				break;
 		}
 	}
 
 	if (GameWorld->GamePaused == 0 && GameWorld->GameState != IN_MENU)
 	{
-		MarkObjectForDeletion(MenuController, GameWorld->ObjectList);
+		MarkObjectForDeletion(MenuController);
 	}
 
 	return 0;
@@ -546,7 +548,7 @@ TextInstance* CreateTextCutscene(const char inputPhrase[], const char Portrait[]
 
 
 // Play the text at the first slot in the linked list, then delete and shift everything up when done with that instance
-int UpdateText(World *GameWorld, int keyboard[256])
+int updateText(World *GameWorld, int keyboard[256])
 {
 	if (GameWorld == NULL || GameWorld->TextQueue == NULL)
 	{
@@ -634,11 +636,13 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 
 
 	// Start text
+	char currentChar = inputText->textPhrase[inputText->currentChar];
+	bool spaceCharacter = true;
+
 	if (inputText->currentChar == 0)
 	{
 		// create text box
 		Object *TextBox = AddObject(GameWorld, UI_ELEMENT, inputText->xOffset - 30, inputText->yOffset - 190, 1214, 260, TEXT_BOX, inputText->textBoxSprite, 0, 0, 0);
-
 
 		// Create portrait
 		Object *portrait = NULL;
@@ -655,12 +659,12 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 		}
 
 		// create first character
-		inputText->firstChar = AddObject(GameWorld, UI_ELEMENT, inputText->xOffset, inputText->yOffset, 40, 40, TEXT_CHARACTER, inputText->textPhrase[0], inputText->font, 0, 0);
+		inputText->firstChar = AddObject(GameWorld, UI_ELEMENT, inputText->xOffset, inputText->yOffset, 40, 40, TEXT_CHARACTER, currentChar, inputText->font, 0, 0);
 
 		if (inputText->firstChar == NULL)
 		{
-			MarkObjectForDeletion(portrait, GameWorld->ObjectList);
-			MarkObjectForDeletion(TextBox, GameWorld->ObjectList);
+			MarkObjectForDeletion(portrait);
+			MarkObjectForDeletion(TextBox);
 			endTextInstance(GameWorld);
 			return ERROR;
 		}
@@ -675,50 +679,48 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 			TextBox->ParentObject = inputText->firstChar;
 		}
 
-
 		GameWorld->PlayingText = 1;
-		inputText->currentChar = 1;
 	}
 	else
 	{
-		// Spawn next character
-		char currentChar = inputText->textPhrase[inputText->currentChar];
-		
+		// Spawn next character		
 		if (inputText->xOffset + 100 > (screenWidth >> 1) + 600 || currentChar == 10)
 		{
 			inputText->xOffset = inputText->firstChar->ObjectBox->xPos;
 			inputText->yOffset -= 50;
+			spaceCharacter = false;
 		}
-		else
+
+		switch(currentChar)
 		{
-			switch(currentChar)
-			{
-				case 13:	// (/r) is repurposed to insert a delay of 30 ticks
-				inputText->Counter = -30;
-				break;
+			case 13:	// (/r) is repurposed to insert a delay of 30 ticks
+			inputText->Counter = -30;
+			break;
 
-				case 12:	// (/f) is repurposed to insert a delay of 12 ticks  
-				inputText->Counter = -12;
-				break;
-		
-				case 11:		// (/v) is repurposed to insert a delay of 8 ticks 
-				inputText->Counter = -8;
-				break;
+			case 12:	// (/f) is repurposed to insert a delay of 12 ticks  
+			inputText->Counter = -12;
+			break;
+	
+			case 11:		// (/v) is repurposed to insert a delay of 8 ticks 
+			inputText->Counter = -8;
+			break;
 
-				default:
-				break;
-			}
-
-			inputText->xOffset += getCharacterSpacing(inputText->textPhrase[inputText->currentChar - 1]);
+			default:
+			break;
 		}
 
 		if (currentChar > 32 && currentChar < 123)
 		{
 			AddObjectWithParent(GameWorld, inputText->firstChar, UI_ELEMENT, inputText->xOffset, inputText->yOffset, 40, 40, TEXT_CHARACTER, currentChar, inputText->font, 0, 0);
 		}
-
-		inputText->currentChar++;
 	}
+
+	if (spaceCharacter == true)
+	{
+		inputText->xOffset += getCharacterSpacing(currentChar);
+	}
+	
+	inputText->currentChar++;
 
 	
 	// Finished creating text
@@ -744,7 +746,7 @@ int endTextInstance(World *GameWorld)
 		GameWorld->SceneTick = GameWorld->TextQueue->SceneTickOnTextEnd;
 	}
 
-	MarkObjectForDeletion(GameWorld->TextQueue->firstChar, GameWorld->ObjectList);
+	MarkObjectForDeletion(GameWorld->TextQueue->firstChar);
 
 	TextInstance *textToDelete = GameWorld->TextQueue;
 
@@ -808,6 +810,7 @@ int getCharacterSpacing(char inputCharacter)
 		case 8:
 		case 10:
 		case 11:
+		case 12:
 		case 13:
 		return 0;
 
