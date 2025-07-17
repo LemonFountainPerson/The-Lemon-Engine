@@ -760,6 +760,9 @@ int LemonPlaySound(char fileName[], char folderName[], int channel, float volume
 Functions such as PauseChannel, ResumeChannel, StopAudioInChannel, etc. are for convenience as they are really just wrappers for already existing SDL functions. 
 This allows for the potential to expand on its functionality, but more importantly it makes the code easier to read and work with.
 
+Basic functionality for audio in the engine includes modifying the gain (volume) of individual channels, muting, unmuting, pausing
+and unpausing for both channels and all audio.
+
 
 # Sprites
 
