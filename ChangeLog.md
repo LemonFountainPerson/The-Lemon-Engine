@@ -105,7 +105,7 @@ Internal Structure changes:
 
    -> Moved the sprite[X/Y]Offset(s) from the physicsRect to the displaydata struct.
 
-   -> Added the "Fonts", "VoiceMode" and "TextPreset" enums to facilitate text box functionality.
+   -> CurrentAnimation and animationTick variables have been moved from the Object struct into the DisplayData struct.
 
    -> Restructured player handling so that the player is represented by both the playerdata and a player object - playerdata now contains pointers
    to parts of this player object.
@@ -115,6 +115,9 @@ Internal Structure changes:
 
    -> Restructured the level loading routine, and now the object that represents the player must be manually created from the leveldata file, 
    although different objects can be specified and error-handling has improved.
+
+   -> Changed the method for deciding whether to render sprites relative to the camera from checking if the objectID is UI_ELEMENT to checking
+   if the object is located on the HUD layer. Now any object can be rendered as part of the UI and vice-versa.
 
 
 
@@ -149,7 +152,7 @@ New additions:
 
     -> Added the PLAYER_OBJECT object.
 
-    -> Added the CollideType enum.
+    -> Added the Font, TextBox, TextPreset, VoiceMode and CollideType enums.
 
     -> Added the "friction" double variable which controls how fast forward velocity decays.
 
@@ -161,9 +164,12 @@ New additions:
     -> Added the "HandleGameWorldEvents" function to handle level-switching, game pausing or other triggerable events for a provided GameWorld struct,
     located in the GameTick function.
 
+    -> Added the "SET_CAMMODE" level flag so that a level can start with a specific camera mode. (Following player, free roam, etc.)
+
 
 
 Bug fixes/Performance improvements:
 
     -> Objects are first evaluated using the checkBoxOverlapsBox function when checking for collision to save cpu time on unneccesary sine/cosine
     calculations where it is not neccessary. (This has noticably improved performance, especially when more than ~2000 objects are present.)
+
