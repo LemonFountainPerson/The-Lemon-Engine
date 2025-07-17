@@ -9,7 +9,7 @@ NewAnimation: Bounce 	30
 AddFrame: 	Spring3
 AddFrame: 	Spring4
 AddFrame:	Spring5
-AddFrame: 	Spring4
+AddFrame: 	Spring4	
 AddFrame: 	Spring3
 AddFrame: 	Spring2
 AddFrame: 	Spring

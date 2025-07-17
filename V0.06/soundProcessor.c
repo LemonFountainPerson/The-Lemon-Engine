@@ -6,9 +6,9 @@ static SDL_AudioDeviceID audio_device = 0;
 static char lastPlayedSound[80] = {0};
 
 
-int LemonPlaySound(const char fileName[], const char folderName[], int channel, float volume)
+int LemonPlaySound(const char fileName[], const char folderName[], ChannelName channel, float volume)
 {
-	if (strcmp(fileName, lastPlayedSound) == 0)
+	if (strcmp(fileName, lastPlayedSound) == 0 || SoundChannels[channel].Pause == 1)
 	{
 		return EXECUTION_UNNECESSARY;
 	}
@@ -41,7 +41,7 @@ int LemonPlaySound(const char fileName[], const char folderName[], int channel, 
 }
 
 
-int InitSound(const char *pathPtr, int channel, float volume)
+int InitSound(const char *pathPtr, ChannelName channel, float volume)
 {
 	if (SoundChannels[channel].soundCount >= MAX_SOUNDS_PER_CHANNEL)
 	{
@@ -115,22 +115,10 @@ int InitSound(const char *pathPtr, int channel, float volume)
 	}
 
 
-	Uint8 *audioBuffer = (Uint8 *)calloc((int)newSound->wav_data_len, 1);
+	SDL_SetAudioStreamGain(newSound->stream, newSound->volume * SoundChannels[channel].channelVolume);
 
-	if (audioBuffer == NULL)
-	{
-		printf("Couldn't allocate audio buffer (%s)\n", SDL_GetError());
-		deleteSoundInstance(newSound);
-		return LEMON_ERROR;
-	}
-
-	SDL_MixAudio(audioBuffer, newSound->wav_data, newSound->format, newSound->wav_data_len, volume);
-
-
-	SDL_PutAudioStreamData(newSound->stream, audioBuffer, (int)newSound->wav_data_len);
+	SDL_PutAudioStreamData(newSound->stream, newSound->wav_data, (int)newSound->wav_data_len);
 	
-
-	SDL_free(audioBuffer);
 
 	SoundChannels[channel].soundCount++;
 
@@ -164,22 +152,7 @@ int IterateAudio(void)
 
 			if (deleteSound == 0 && i == LOOP_CHANNEL && streamResult < ( (int)currentSound->wav_data_len) )
 			{		
-				Uint8 *audioBuffer = (Uint8 *)calloc((int)currentSound->wav_data_len, 1);
-
-				if (audioBuffer == NULL)
-				{
-					deleteSound = 1;
-				}
-				else
-				{
-					SDL_MixAudio(audioBuffer, currentSound->wav_data, currentSound->format, currentSound->wav_data_len, currentSound->volume);
-
-
-					SDL_PutAudioStreamData(currentSound->stream, audioBuffer, (int)currentSound->wav_data_len);
-	
-
-					SDL_free(audioBuffer);
-				}
+				SDL_PutAudioStreamData(currentSound->stream, currentSound->wav_data, (int)currentSound->wav_data_len);
 			}
 
 			if (deleteSound == 1)
@@ -201,6 +174,89 @@ int IterateAudio(void)
 	
 
 	return 0;
+}
+
+
+
+int MuteChannel(ChannelName channel)
+{
+	if (channel >= CHANNEL_COUNT || channel < 0)
+	{
+		return INVALID_DATA;
+	}
+
+	SoundInstance *currentSound;
+	currentSound = SoundChannels[channel].firstSound;
+
+	while (currentSound != NULL)
+	{
+		SDL_SetAudioStreamGain(currentSound->stream, 0.0);
+
+		currentSound = currentSound->nextSound;
+	}
+	
+	return LEMON_SUCCESS;
+}
+
+
+int UnmuteChannel(ChannelName channel)
+{
+	if (channel >= CHANNEL_COUNT || channel < 0)
+	{
+		return INVALID_DATA;
+	}
+
+	SoundInstance *currentSound;
+	currentSound = SoundChannels[channel].firstSound;
+
+	while (currentSound != NULL)
+	{
+		SDL_SetAudioStreamGain(currentSound->stream, currentSound->volume * SoundChannels[channel].channelVolume);
+
+		printf("%f\n", currentSound->volume * SoundChannels[channel].channelVolume);
+		currentSound = currentSound->nextSound;
+	}
+	
+	return LEMON_SUCCESS;
+}
+
+
+int MuteAllAudio(void)
+{
+	for (int i = 0; i < CHANNEL_COUNT; i++)
+	{
+		SoundInstance *currentSound;
+		currentSound = SoundChannels[i].firstSound;
+
+		while (currentSound != NULL)
+		{
+			SDL_SetAudioStreamGain(currentSound->stream, 0.0);
+
+
+			currentSound = currentSound->nextSound;
+		}
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int UnmuteAllAudio(void)
+{
+	for (int i = 0; i < CHANNEL_COUNT; i++)
+	{
+		SoundInstance *currentSound;
+		currentSound = SoundChannels[i].firstSound;
+
+		while (currentSound != NULL)
+		{
+			SDL_SetAudioStreamGain(currentSound->stream, currentSound->volume * SoundChannels[i].channelVolume);
+
+			currentSound = currentSound->nextSound;
+		}
+	}
+
+	return LEMON_SUCCESS;
 }
 
 
@@ -258,8 +314,13 @@ int deleteSoundInstance(SoundInstance *inputSound)
 }
 
 
-int StopAudioInChannel(int channel)
+int StopAudioInChannel(ChannelName channel)
 {
+	if (channel >= CHANNEL_COUNT || channel < 0)
+	{
+		return INVALID_DATA;
+	}
+
 	SoundInstance *currentSound;
 	SoundInstance *deleteSound;
 	currentSound = SoundChannels[channel].firstSound;
@@ -277,22 +338,32 @@ int StopAudioInChannel(int channel)
 }
 
 
+int ToggleAllAudio(void)
+{
+	for (int i = 0; i < CHANNEL_COUNT; i++)
+	{
+		if (SoundChannels[i].Pause == 0)
+		{
+			PauseChannel(i);
+		}
+		else
+		{
+			ResumeChannel(i);
+		}
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
 int PauseAllAudio(void)
 {
 	for (int i = 0; i < CHANNEL_COUNT; i++)
 	{
-		SoundInstance *currentSound;
-		currentSound = SoundChannels[i].firstSound;
-
-		while (currentSound != NULL)
-		{
-			SDL_PauseAudioStreamDevice(currentSound->stream);
-
-			currentSound = currentSound->nextSound;
-		}
+		PauseChannel(i);
 	}
-	
-	return 0;
+
+	return LEMON_SUCCESS;
 }
 
 
@@ -300,23 +371,40 @@ int ResumeAllAudio(void)
 {
 	for (int i = 0; i < CHANNEL_COUNT; i++)
 	{
-		SoundInstance *currentSound;
-		currentSound = SoundChannels[i].firstSound;
-
-		while (currentSound != NULL)
-		{
-			SDL_ResumeAudioStreamDevice(currentSound->stream);
-
-			currentSound = currentSound->nextSound;
-		}
+		ResumeChannel(i);
 	}
-	
+
 	return 0;
 }
 
 
-int PauseChannel(int channel)
+int ToggleChannel(ChannelName channel)
 {
+	if (channel >= CHANNEL_COUNT || channel < 0)
+	{
+		return INVALID_DATA;
+	}
+
+	if (SoundChannels[channel].Pause == 0)
+	{
+		PauseChannel(channel);
+	}
+	else
+	{
+		ResumeChannel(channel);
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int PauseChannel(ChannelName channel)
+{
+	if (channel >= CHANNEL_COUNT || channel < 0)
+	{
+		return INVALID_DATA;
+	}
+
 	SoundInstance *currentSound;
 	currentSound = SoundChannels[channel].firstSound;
 
@@ -327,12 +415,19 @@ int PauseChannel(int channel)
 		currentSound = currentSound->nextSound;
 	}
 
+	SoundChannels[channel].Pause = 1;
+
 	return 0;
 }
 
 
-int ResumeChannel(int channel)
+int ResumeChannel(ChannelName channel)
 {
+	if (channel >= CHANNEL_COUNT || channel < 0)
+	{
+		return INVALID_DATA;
+	}
+
 	SoundInstance *currentSound;
 	currentSound = SoundChannels[channel].firstSound;
 
@@ -342,6 +437,8 @@ int ResumeChannel(int channel)
 
 		currentSound = currentSound->nextSound;
 	}
+
+	SoundChannels[channel].Pause = 0;
 
 	return 0;
 }
@@ -361,6 +458,8 @@ int initialiseAudio(void)
 	{
         SoundChannels[i].firstSound = NULL;
 		SoundChannels[i].soundCount = 0;
+		SoundChannels[i].Pause = 0;
+		SoundChannels[i].channelVolume = 1.0;
     }
 
 	return 0;

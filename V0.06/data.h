@@ -110,7 +110,7 @@ enum LemonKeys{
 };
 
 
-enum ChannelNames {
+enum ChannelName {
 	LOOP_CHANNEL = 0,
 	SPEECH = 1,
 	PLAYER_SFX = 2,
@@ -339,7 +339,7 @@ enum GateSwitch {
 
 typedef enum FunctionResult FunctionResult;
 typedef enum LemonKeys LemonKeys;
-typedef enum ChannelNames ChannelNames;
+typedef enum ChannelName ChannelName;
 typedef enum Font Font;
 typedef enum TextBox TextBox;
 typedef enum VoiceMode VoiceMode;
@@ -380,6 +380,8 @@ struct soundInstance
 struct soundChannel
 {
 	int soundCount;
+	int Pause;
+	float channelVolume;
 
 	struct soundInstance *firstSound;
 };

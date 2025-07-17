@@ -340,8 +340,6 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 
 		printf("Object size: %d\n", sizeof(Object) + sizeof(PhysicsRect) + sizeof(DisplayData));
 
-		GameWorld->GameState = EMPTY_GAME;
-
 		keyboard['Y'] = 2;
 	}
 
