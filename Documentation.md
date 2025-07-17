@@ -490,9 +490,9 @@ V0.06-LEVELDATA
 ```
 
 In order to load your object from a (.lem) file, 
-you would simply type "OBJECT-\_\_[Object ID]\_\_[X position]\_\_[Y position]\_\_[xSize]\_\_[ySize]\_\_////..." 
+you would simply type "OBJECT- [Object ID] [X position] [Y position] [xSize] [ySize]..." 
 
-For a level flag, "LVFLAG-\_\_[Flag name]\_\_[args]..." The number of arguments changes depending on the flag name given.
+For a level flag, "LVFLAG- [Flag name] [args]..." The number of arguments changes depending on the flag name given.
 
 
 **Game Object's attributes**
