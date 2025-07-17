@@ -4,7 +4,8 @@ _________________________________________________
 
 
 Current Version: 0.06
-Currently only supported on windows. Sorry!
+
+Currently only supported on windows. 
 
 This is a project that serves more as a proof-of-concept or exercise as opposed to a real useful tool, especially because this project is being made from almost 
 the ground up. That said, if you like what you see go ahead and download the source code to try it out! 
