@@ -33,6 +33,7 @@ int loadLevel(World *GameWorld, int level)
 	// Create a default particle and UIElement object to initilise their sprite sets to avoid lag during gameplay 
 	AddObject(GameWorld, PARTICLE, 0, 0, 0, 0, EMPTY_PARTICLE, 0, 0, 0, 0);
 	AddObject(GameWorld, UI_ELEMENT, 0, 0, UNDEFINED_UI_ELEMENT, 0, 0, 0, 0, 0, 0);
+	AddObject(GameWorld, UI_TEXT, 0, 0, UNDEFINED_UI_ELEMENT, 0, 0, 0, 0, 0, 0);
 
 	SpawnHUD(GameWorld);
 

@@ -465,6 +465,13 @@ int renderSpriteInRenderMode(uint32_t *screen, DisplayData *inputData, int realX
 
 	realXOffset += inputData->spriteXOffset;
 	realYOffset += inputData->spriteYOffset;
+
+	if (inputData->frameBuffer != NULL && inputData->currentAnimation > 0)
+	{
+		realXOffset += inputData->frameBuffer->SpriteXOffset;
+		realYOffset += inputData->frameBuffer->SpriteYOffset;
+	}
+
 	int xOffset2 = realXOffset + inputBox->xSize;
 	int yOffset2 = realYOffset + inputBox->ySize;
 

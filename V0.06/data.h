@@ -29,7 +29,7 @@
 #define TICK_DELTA (int)((1.0/60.0) * 1000)
 
 #define MAX_OBJECTS 5000
-#define PRESERVED_SPRITESETS 4
+#define PRESERVED_SPRITESETS 5
 
 #define MAX_OBJECTS_RENDER 150
 #define MAX_PARTICLES_RENDER 64
@@ -414,6 +414,8 @@ struct animationFrame
 	struct animationFrame *nextFrame;
 
 	struct sprite *frameSprite;
+	short SpriteXOffset;
+	short SpriteYOffset;
 };
 
 

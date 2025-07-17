@@ -111,14 +111,23 @@ int loadAnimationsFromFile(const char FileName[], SpriteSet *destSet)
 		else if (strcmp(argBuffer, "AddFrame:") == 0)
 		{
 			int result = getNextArg(fPtr, argBuffer, MAX_LEN);
-			
+
 			if (result != LEMON_SUCCESS)
 			{
 				fclose(fPtr);
 				return LEMON_ERROR;
 			}
 
-			addSpriteToAnimation(argBuffer, newAnimation, destSet);
+			int intBuffer[2] = {0};
+			result = readIntArgs(fPtr, intBuffer, 2);
+
+			if (result != LEMON_SUCCESS)
+			{
+				fclose(fPtr);
+				return LEMON_ERROR;
+			}
+
+			addSpriteToAnimationWithOffsets(argBuffer, newAnimation, destSet, intBuffer[0], intBuffer[1]);
 		}
 		else if (strcmp(argBuffer, "AddSprite:") == 0)
 		{
@@ -391,7 +400,6 @@ int iterateAnimation(DisplayData *inputData)
 	}
 
 	inputData->animationTick = 0;
-
 	inputData->frameBuffer = inputData->frameBuffer->nextFrame;
 
 	if (inputData->frameBuffer == NULL)
@@ -402,18 +410,22 @@ int iterateAnimation(DisplayData *inputData)
 			inputData->animationLoopCount--;
 		}
 
-		inputData->frameBuffer = inputData->animationBuffer->animationData;
-
 		if (inputData->animationLoopCount == 0)
 		{
 			inputData->currentAnimation = 0;
 			return EXECUTION_UNNECESSARY;
+		}
+
+		inputData->frameBuffer = inputData->animationBuffer->animationData;
+
+		if (inputData->frameBuffer == NULL)
+		{
+			return MISSING_DATA;
 		}	
 	}
 
 	inputData->spriteBuffer = inputData->frameBuffer->frameSprite;
 	inputData->currentSprite = inputData->spriteBuffer->spriteID;
-	
 	
 	return 0;
 }
@@ -473,18 +485,18 @@ Animation* initialiseNewAnimation(const char animationName[], int frameRate, Spr
 }
 
 
-int addSpriteToAnimation(const char spriteName[], Animation *inputAnimation, SpriteSet *sourceSet)
+AnimationFrame* addSpriteToAnimation(const char spriteName[], Animation *inputAnimation, SpriteSet *sourceSet)
 {
 	if (sourceSet == NULL || inputAnimation == NULL)
 	{
-		return MISSING_DATA;
+		return NULL;
 	}
 
 	Sprite *currentSprite = sourceSet->firstSprite;
 
 	if (currentSprite == NULL)
 	{
-		return MISSING_DATA;
+		return NULL;
 	}
 
 	while (currentSprite->nextSprite != NULL && strcmp(currentSprite->spriteName, spriteName) != 0)
@@ -494,7 +506,7 @@ int addSpriteToAnimation(const char spriteName[], Animation *inputAnimation, Spr
 
 	if (strcmp(currentSprite->spriteName, spriteName) != 0)
 	{
-		return MISSING_DATA;
+		return NULL;
 	}
 
 
@@ -512,10 +524,12 @@ int addSpriteToAnimation(const char spriteName[], Animation *inputAnimation, Spr
 
 	if (newFrame == NULL)
 	{
-		return LEMON_ERROR;
+		return NULL;
 	}
 
 	newFrame->frameSprite = currentSprite;
+	newFrame->SpriteXOffset = 0;
+	newFrame->SpriteYOffset = 0;
 	newFrame->nextFrame = NULL;
 
 	if (lastFrame == NULL)
@@ -527,7 +541,21 @@ int addSpriteToAnimation(const char spriteName[], Animation *inputAnimation, Spr
 		lastFrame->nextFrame = newFrame;
 	}
 
-	return 0;
+	return newFrame;
+}
+
+
+AnimationFrame* addSpriteToAnimationWithOffsets(const char spriteName[], Animation *inputAnimation, SpriteSet *sourceSet, int XOffset, int YOffset)
+{
+	AnimationFrame *createdFrame = addSpriteToAnimation(spriteName, inputAnimation, sourceSet);
+
+	if (createdFrame != NULL)
+	{
+		createdFrame->SpriteXOffset = XOffset;
+		createdFrame->SpriteYOffset = YOffset;
+	}
+
+	return createdFrame;
 }
 
 

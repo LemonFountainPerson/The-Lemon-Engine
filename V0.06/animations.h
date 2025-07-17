@@ -27,7 +27,10 @@ int iterateAnimation(DisplayData *inputData);
 Animation* initialiseNewAnimation(const char animationName[], int frameRate, SpriteSet *inputSet);
 
 
-int addSpriteToAnimation(const char spriteName[], Animation *inputAnimation, SpriteSet *sourceSet);
+AnimationFrame* addSpriteToAnimation(const char spriteName[], Animation *inputAnimation, SpriteSet *sourceSet);
+
+
+AnimationFrame* addSpriteToAnimationWithOffsets(const char spriteName[], Animation *inputAnimation, SpriteSet *sourceSet, int XOffset, int YOffset);
 
 
 int deleteAnimation(Animation *deleteAnimation);
