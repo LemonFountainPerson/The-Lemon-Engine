@@ -42,8 +42,9 @@ the char values (i.e. keyboard['A'] will yield the state for the 'A' key.) Other
 general, 0 means unpressed and 1 means pressed, but for single inputs you can alter the entry to 2 to signify that the key is still being held but was taken as 
 an input for something.
 
--> The deltaTime, gameRunning and frameThrottle variables are all global variables usable across all files in the engine, but in general only deltaTime need be 
-used in this way; frameThrottle and gameRunning are handle by the RunLemonEngine function.
+-> The gameRunning and frameThrottle variables are all global variables usable across all files in the engine, but sould not be
+modified outside of the runLemonEngine function. If you wish to terminate the program, you should set the GameWorld's GameState 
+to CLOSE_GAME so that any necessary end-program actions can be taken in the future.
 
 
 # Engine Initialisation
