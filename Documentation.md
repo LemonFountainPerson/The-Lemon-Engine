@@ -472,8 +472,8 @@ void objectBehaviour(World *gameWorld, Object *inputObject)
 ```
 
 Levels are created by reading from a leveldata file, which has a specific format. All files have a header which define the intended version number 
-for the engine to be read from, as well as what type of file it is. Arguments can be separated by either spaces or double underscores. Four slashes
-in a leveldata file indicate a new Object entry. 
+for the engine to be read from, as well as what type of file it is. Arguments can be separated by either spaces or commas.
+Four slashes in a leveldata file indicate a new Object entry. 
 Files will stop being read when encountering "////ENDFILE". 
 OBJECT- simply indicates a single object being created, while OBJREP- indicates the same object being created multiple times as a 2D-array with 
 adjustable X and Y offsets from each other. This means objects created this way can be arranged into a 2D grid. Comments can be put inside of
@@ -481,9 +481,9 @@ leveldata files with "//// >" that will continue until the next entry marked by 
 
 ```
 V0.06-LEVELDATA
-////OBJECT-__17__
-////OBJECT-__1__100__32__480__1__
-////OBJREP-__10__5__64__64__6__2200__256__		(OBJREP-__XCount__YCount__XOffset__YOffset__ObjectID__StartXPos__StartYPos__...)
+////OBJECT- 17
+////OBJECT- 1, 100, 32, 480, 1
+////OBJREP- 10, 5, 64, 64, 6 2200 256		(OBJREP- XCount YCount XOffset YOffset ObjectID StartXPos StartYPos...)
 ...
 ////> This is a comment!!!!!!
 ////ENDFILE
