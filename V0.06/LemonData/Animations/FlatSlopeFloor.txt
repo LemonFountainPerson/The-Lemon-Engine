@@ -1,0 +1,4 @@
+V0.06-ANIMATION
+AddSprite: 	Grass_Angle_Small	Objects		SCALE
+AddSprite: 	Grass_Angle_Medium	Objects		SCALE
+AddSprite: 	Grass_Angle_Large	Objects		SCALE

@@ -29,6 +29,8 @@
 #define TICK_DELTA (int)((1.0/60.0) * 1000)
 
 #define MAX_OBJECTS 5000
+#define PRESERVED_SPRITESETS 4
+
 #define MAX_OBJECTS_RENDER 150
 #define MAX_PARTICLES_RENDER 64
 #define MAX_HUD_ELEMENTS_RENDER 128
@@ -117,10 +119,17 @@ enum ChannelNames {
 };
 
 
-enum Fonts {
+enum Font {
 	PIXEL_REGULAR = 0,
 	PIXEL_BLACK = 1,
 	UNDEFINED_FONT
+};
+
+
+enum TextBox {
+	BASIC_BLACK = 0,
+	BASIC_WHITE = 1,
+	UNDEFINED_TEXTBOX
 };
 
 
@@ -259,21 +268,22 @@ enum ObjectType {
 	SOLID_BLOCK = 1,
 	FLAT_SLOPE_FLOOR = 2,
 	JUMP_THRU_BLOCK = 3,
-	UI_ELEMENT = 4,
-	PARTICLE = 5,
-	COIN = 6,
-	MOVING_PLATFORM_HOR = 7,
-	MOVING_PLATFORM_VER = 8,
-	SPRING = 9,
-	GATE_SWITCH = 10,
-	GATE_SWITCH_TIMED = 11,
-	VERTICAL_GATE = 12,
-	HORIZONTAL_GATE = 13,
-	DOOR = 14,
-	LEVEL_DOOR = 15,
-	BASIC_ENEMY = 16,
-	PLAYER_OBJECT = 17,
+	PLAYER_OBJECT = 4,
+	UI_ELEMENT = 5,
+	UI_TEXT = 6,
+	PARTICLE = 7,
+	COIN = 8,
+	MOVING_PLATFORM_HOR = 9,
+	MOVING_PLATFORM_VER = 10,
+	SPRING = 11,
+	GATE_SWITCH = 12,
+	GATE_SWITCH_TIMED = 13,
+	VERTICAL_GATE = 14,
+	HORIZONTAL_GATE = 15,
+	DOOR = 16,
+	LEVEL_DOOR = 17,
 	PUSHABLE_BOX = 18,
+	BASIC_ENEMY = 19,
 	UNDEFINED_OBJECT
 };
 
@@ -303,17 +313,20 @@ enum ParticleSubType {
 };
 
 
+// UISubType is shared by all UI_xxx objects, although behaviour, 
+// sprites and animation are separate - if you set a UI_ELEMENT's subtype to TEXT_BOX 
+// it will result in it being treated as a BASIC GRAPHIC
 enum UISubType {
 	BASIC_GRAPHIC = 0,
 	OPTION_BUTTON,
-	TEXT_BOX,
-	TEXT_CHARACTER,
 	PAUSE_MENU_CONTROLLER,
 	PAUSE_HEADER,
 	PAUSE_BACKGROUND,
 	SETTINGS_MENU_CONTROLLER,
 	SETTINGS_HEADER,
 	PLAYER_HUD_CONTROLLER,
+	TEXT_BOX,
+	TEXT_CHARACTER,
 	UNDEFINED_UI_ELEMENT
 };
 
@@ -327,7 +340,8 @@ enum GateSwitch {
 typedef enum FunctionResult FunctionResult;
 typedef enum LemonKeys LemonKeys;
 typedef enum ChannelNames ChannelNames;
-typedef enum Fonts Fonts;
+typedef enum Font Font;
+typedef enum TextBox TextBox;
 typedef enum VoiceMode VoiceMode;
 typedef enum TextPreset TextPreset;
 typedef enum RenderMode RenderMode;

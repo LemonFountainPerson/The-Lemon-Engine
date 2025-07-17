@@ -84,8 +84,8 @@ int LoadPlayerSprites(SpriteSet *inputSet)
 		return MISSING_DATA;
 	}
 
-	loadSprite("Idle_R.png", "Player", &inputSet, PLAYER_OBJECT, SINGLE);
-	loadSprite("Spin_R.png", "Player", &inputSet, PLAYER_OBJECT, SINGLE);
+	loadSprite("Idle.png", "Player", &inputSet, PLAYER_OBJECT, SINGLE);
+	loadSprite("Spin.png", "Player", &inputSet, PLAYER_OBJECT, SINGLE);
 
 	return 0;
 }

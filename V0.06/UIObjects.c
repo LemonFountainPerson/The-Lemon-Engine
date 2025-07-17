@@ -31,21 +31,6 @@ int InitialiseUIElement(World *GameWorld, Object *UIElement)
 		MarkObjectForDeletion(UIElement);
 		break;
 
-		case TEXT_BOX:
-		switchSpriteByName("TextBox_Basic", 0, UIElement->ObjectDisplay);
-		switchSprite(UIElement->ObjectDisplay->currentSprite + UIElement->arg2, 0, UIElement->ObjectDisplay);
-		if (UIElement->ObjectDisplay->spriteBuffer != NULL)
-		{
-			UIElement->ObjectBox->xSize = UIElement->ObjectDisplay->spriteBuffer->width;
-			UIElement->ObjectBox->ySize = UIElement->ObjectDisplay->spriteBuffer->height;
-		}
-		break;
-
-		case TEXT_CHARACTER:
-		switchSpriteByName("Text_0", 0, UIElement->ObjectDisplay);
-		switchSprite(UIElement->ObjectDisplay->currentSprite + UIElement->arg3, 0, UIElement->ObjectDisplay);
-		mapTextToCharacter(UIElement);
-		break;
 
 		case PAUSE_BACKGROUND:
 		switchSpriteByName("PauseBackground", 0, UIElement->ObjectDisplay);
@@ -146,6 +131,47 @@ int InitialiseUIElement(World *GameWorld, Object *UIElement)
 }
 
 
+int InitialiseUIText(World *GameWorld, Object *UIText)
+{
+	if (GameWorld == NULL || UIText == NULL || GameWorld->ObjectList == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	UIText->layer = HUD;
+	UIText->ObjectBox->solid = UNSOLID;
+
+
+	switch(UIText->arg1)
+	{
+		case UNDEFINED_UI_ELEMENT:
+		MarkObjectForDeletion(UIText);
+		break;
+
+		case TEXT_BOX:
+		switchSpriteByName("TextBox_Basic", 0, UIText->ObjectDisplay);
+		switchSprite(UIText->ObjectDisplay->currentSprite + UIText->arg2, 0, UIText->ObjectDisplay);
+		if (UIText->ObjectDisplay->spriteBuffer != NULL)
+		{
+			UIText->ObjectBox->xSize = UIText->ObjectDisplay->spriteBuffer->width;
+			UIText->ObjectBox->ySize = UIText->ObjectDisplay->spriteBuffer->height;
+		}
+		break;
+
+		case TEXT_CHARACTER:
+		switchSpriteByName("Text_0", 0, UIText->ObjectDisplay);
+		switchSprite(UIText->ObjectDisplay->currentSprite + UIText->arg3, 0, UIText->ObjectDisplay);
+		mapTextToCharacter(UIText);
+		break;
+
+		default:
+		break;
+	}
+
+	return 0;
+}
+
+
 int LoadUISprites(SpriteSet *newSet)
 {
 	loadObjectSprite("OBJ_Missing", newSet, TILE);
@@ -167,6 +193,12 @@ int LoadUISprites(SpriteSet *newSet)
 	loadObjectSprite("Volume_Option", newSet, SINGLE);
 	loadObjectSprite("Test_Option", newSet, SINGLE);
 
+	return 0;
+}
+
+
+int LoadUITextSprites(SpriteSet *newSet)
+{
 	loadSpriteIntoSpriteSet("Test_Face", "TextDisplay", newSet, TILE);
 
 	loadSpriteIntoSpriteSet("TextBox_Basic", "TextDisplay", newSet, TILE_FAST);
@@ -177,7 +209,6 @@ int LoadUISprites(SpriteSet *newSet)
 
 	return 0;
 }
-
 
 
 int UpdateUIElement(World *GameWorld, Object *UIElement, int keyboard[256])
@@ -376,10 +407,10 @@ int UpdateOptionButton(Object *Button)
 TextInstance* SayText(const char inputPhrase[], const char Portrait[], TextPreset inputPreset, World *GameWorld)
 {
 	char voice[MAX_LEN] = {0};
-	Fonts font = PIXEL_REGULAR;
+	Font font = PIXEL_REGULAR;
 	int xPos = (screenWidth >> 1) - 580;
 	int yPos = 240;
-	int textBox = 0;
+	TextBox textBox = BASIC_BLACK;
 	int textDelay = 3;
 	int skipState = 1;
 	VoiceMode voiceMode = PLAY_EACH_CHARACTER;
@@ -388,14 +419,14 @@ TextInstance* SayText(const char inputPhrase[], const char Portrait[], TextPrese
 	switch (inputPreset)
 	{
 		case INVERTED_TOP:
-		textBox = 1;
+		textBox = BASIC_WHITE;
 		font = PIXEL_BLACK;
 		yPos = screenHeight - 80;
 		strcpy(voice, "Text_snd");
 		break;
 
 		case INVERTED_BOTTOM:
-		textBox = 1;
+		textBox = BASIC_WHITE;
 		font = PIXEL_BLACK;
 		strcpy(voice, "Text_snd");
 		break;
@@ -425,7 +456,7 @@ TextInstance* SayText(const char inputPhrase[], const char Portrait[], TextPrese
 }
 
 
-TextInstance* CreateText(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, int font, int textBox, int textDelay, int skipState, int xPos, int yPos, World *GameWorld)
+TextInstance* CreateText(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, Font font, TextBox textBox, int textDelay, int skipState, int xPos, int yPos, World *GameWorld)
 {
 	if (GameWorld == NULL || inputPhrase == NULL || inputPhrase[0] < 1)
 	{
@@ -520,20 +551,20 @@ TextInstance* SayTextCutscene(const char inputPhrase[], const char Portrait[], T
 }
 
 
-TextInstance* CreateTextBasic(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, int font, int textDelay, int skipState, int yPos, World *GameWorld)
+TextInstance* CreateTextBasic(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, int textDelay, int skipState, int yPos, World *GameWorld)
 {
 	if (GameWorld == NULL || GameWorld->ObjectList == NULL)
 	{
 		return NULL;
 	}
 
-	TextInstance *newText = CreateText(inputPhrase, Portrait, Voice, voiceMode, font, 0, textDelay, skipState, 60, yPos, GameWorld);
+	TextInstance *newText = CreateText(inputPhrase, Portrait, Voice, voiceMode, PIXEL_REGULAR, BASIC_BLACK, textDelay, skipState, 60, yPos, GameWorld);
 	
 	return newText;
 }
 
 
-TextInstance* CreateTextCutscene(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, int font, int textBox, int textDelay, int skipState, int xPos, int yPos, World *GameWorld, int PlayOnSceneTick, int SceneTickOnTextEnd)
+TextInstance* CreateTextCutscene(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, Font font, TextBox textBox, int textDelay, int skipState, int xPos, int yPos, World *GameWorld, int PlayOnSceneTick, int SceneTickOnTextEnd)
 {
 	TextInstance *newText = CreateText(inputPhrase, Portrait, Voice, voiceMode, font, textBox, textDelay, skipState, xPos, yPos, GameWorld);
 
@@ -642,13 +673,13 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 	if (inputText->currentChar == 0)
 	{
 		// create text box
-		Object *TextBox = AddObject(GameWorld, UI_ELEMENT, inputText->xOffset - 30, inputText->yOffset - 190, 1214, 260, TEXT_BOX, inputText->textBoxSprite, 0, 0, 0);
+		Object *TextBox = AddObject(GameWorld, UI_TEXT, inputText->xOffset - 30, inputText->yOffset - 190, 1214, 260, TEXT_BOX, inputText->textBoxSprite, 0, 0, 0);
 
 		// Create portrait
 		Object *portrait = NULL;
 		if (inputText->Portrait[0] != 0)
 		{
-			portrait = AddObject(GameWorld, UI_ELEMENT, inputText->xOffset, inputText->yOffset - 160, 200, 200, BASIC_GRAPHIC, 0, 0, 0, 0);
+			portrait = AddObject(GameWorld, UI_TEXT, inputText->xOffset, inputText->yOffset - 160, 200, 200, BASIC_GRAPHIC, 0, 0, 0, 0);
 
 			if (portrait != NULL)
 			{
@@ -659,7 +690,7 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 		}
 
 		// create first character
-		inputText->firstChar = AddObject(GameWorld, UI_ELEMENT, inputText->xOffset, inputText->yOffset, 40, 40, TEXT_CHARACTER, currentChar, inputText->font, 0, 0);
+		inputText->firstChar = AddObject(GameWorld, UI_TEXT, inputText->xOffset, inputText->yOffset, 40, 40, TEXT_CHARACTER, currentChar, inputText->font, 0, 0);
 
 		if (inputText->firstChar == NULL)
 		{
@@ -711,7 +742,7 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 
 		if (currentChar > 32 && currentChar < 123)
 		{
-			AddObjectWithParent(GameWorld, inputText->firstChar, UI_ELEMENT, inputText->xOffset, inputText->yOffset, 40, 40, TEXT_CHARACTER, currentChar, inputText->font, 0, 0);
+			AddObjectWithParent(GameWorld, inputText->firstChar, UI_TEXT, inputText->xOffset, inputText->yOffset, 40, 40, TEXT_CHARACTER, currentChar, inputText->font, 0, 0);
 		}
 	}
 

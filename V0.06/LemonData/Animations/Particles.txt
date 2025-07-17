@@ -1,0 +1,8 @@
+V0.06-ANIMATION
+AddSprite: 	Sparkle1	Particles	SINGLE
+AddSprite: 	Sparkle2	Particles	SINGLE
+AddSprite: 	Sparkle3	Particles	SINGLE
+AddSprite: 	Sparkle4	Particles	SINGLE
+AddSprite: 	Sparkle5	Particles	SINGLE
+AddSprite: 	Sparkle6	Particles	SINGLE
+AddSprite: 	Sparkle7	Particles	SINGLE

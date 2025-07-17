@@ -406,7 +406,7 @@ int renderObjectSprite(uint32_t *screen, Camera inputCamera, World *gameWorld, O
 	int xOffset = 0;
 	int	yOffset = 0;
 
-	if (currentObject->ObjectID == UI_ELEMENT)
+	if (currentObject->layer == HUD)
 	{
 		xOffset = currentObject->ObjectBox->xPos;
 		yOffset = currentObject->ObjectBox->yPos;

@@ -60,10 +60,10 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 			newObject->ObjectBox->xSize = X_TILESCALE << 1;
 			newObject->ObjectBox->ySize = Y_TILESCALE * 3;
 
-			if (newObject->arg4 == 0)
+			if (newObject->arg3 == 0)
 			{
-				newObject->arg4 = 1;
-				newObject->ParentObject = AddObject(GameWorld, DOOR, arg1, arg2, xSize, ySize, xPos, yPos, 0, 1, 0);
+				newObject->arg3 = 1;
+				newObject->ParentObject = AddObject(GameWorld, DOOR, arg1, arg2, xSize, ySize, xPos, yPos, 1, 0, 0);
 
 				newObject->ParentObject->ParentObject = newObject;
 			}
@@ -191,9 +191,12 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 			break;
 
 
+		case UI_TEXT:
+			InitialiseUIText(GameWorld, newObject);
+			break;
+
+
 		case UI_ELEMENT:
-			newObject->ObjectBox->xPos = xPos;
-			newObject->ObjectBox->yPos = yPos;
 			InitialiseUIElement(GameWorld, newObject);
 			break;
 
@@ -264,6 +267,11 @@ int LoadSpriteSet(SpriteSet *newSet, int ObjectID)
 			LoadUISprites(newSet);
 		} break;
 
+	case UI_TEXT:
+		{
+			LoadUITextSprites(newSet);
+		} break;
+
 		case FLAT_SLOPE_FLOOR:
 		{
 			loadObjectSprite("Grass_Angle_Small", newSet, SCALE);
@@ -297,7 +305,7 @@ int LoadSpriteSet(SpriteSet *newSet, int ObjectID)
 	}
 
 
-	return 0;
+	return LEMON_SUCCESS;
 }
 
 
@@ -407,12 +415,21 @@ Object* createNewObject(ObjectController *ObjectList, int xPos, int yPos, int ob
 	newObject->Action = IDLE;
 	newObject->layer = MIDDLEGROUND;
 
-	newObject->ObjectBox->xPos = (double)abs(xPos - (xPos % X_TILESCALE));
-	newObject->ObjectBox->yPos = (double)abs(yPos - (yPos % Y_TILESCALE));
 	newObject->ObjectBox->xSize = X_TILESCALE;
 	newObject->ObjectBox->ySize = Y_TILESCALE;
 	newObject->ObjectBox->xPosRight = newObject->ObjectBox->xPos + newObject->ObjectBox->xSize;
 	newObject->ObjectBox->yPosTop = newObject->ObjectBox->xPos + newObject->ObjectBox->xSize;
+
+	if (objectID == UI_ELEMENT || objectID == UI_TEXT)
+	{
+		newObject->ObjectBox->xPos = xPos;
+		newObject->ObjectBox->yPos = yPos;
+	}
+	else
+	{
+		newObject->ObjectBox->xPos = (double)abs(xPos - (xPos % X_TILESCALE));
+		newObject->ObjectBox->yPos = (double)abs(yPos - (yPos % Y_TILESCALE));
+	}
 
 	newObject->ObjectDisplay->spriteSetSource = createObjectSpriteSet(ObjectList, objectID);
 
@@ -529,9 +546,10 @@ SpriteSet* createObjectSpriteSet(ObjectController *ObjectList, int ObjectID)
 	ObjectList->spriteSetCount = i + 1;
 	newSet->Animations = NULL;
 
-	LoadSpriteSet(newSet, ObjectID);
-
-	LoadAnimations(newSet, ObjectID);
+	if (LoadSpriteSet(newSet, ObjectID) == LEMON_SUCCESS)
+	{
+		LoadAnimations(newSet, ObjectID);
+	}
 	
 	return newSet;
 }
@@ -1904,7 +1922,7 @@ int UpdateLevelDoor(PlayerData *Player, Object *Door, World *GameWorld)
 	{
 		Door->arg2++;
 
-		if (Door->arg2 > 20)
+		if (Door->arg2 > 1)
 		{
 			GameWorld->GameState = SWITCHING_LEVEL;
 			GameWorld->level = Door->arg1;

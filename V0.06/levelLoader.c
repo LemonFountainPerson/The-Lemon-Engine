@@ -380,7 +380,9 @@ int loadLevelData(World *GameWorld, int level)
 	// Erase existing data
 	deleteAllObjects(GameWorld->ObjectList);
 
-	deleteExcessSpriteSets(GameWorld->ObjectList, 0);
+	deleteExcessSpriteSets(GameWorld->ObjectList, PRESERVED_SPRITESETS);
+
+	GameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;
 
 
 	int endOfFile = 0;
@@ -514,8 +516,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		return 0;
 	}
-
-	if (strcmp(buffer, "SET-BG-TRIGGER") == 0)
+	else if (strcmp(buffer, "SET-BG-TRIGGER") == 0)
 	{
 		int args[8] = {0};
 
@@ -530,8 +531,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		return 0;
 	}
-
-	if (strcmp(buffer, "SET-CAMBOX") == 0)
+	else if (strcmp(buffer, "SET-CAMBOX") == 0)
 	{
 		int args[4] = {0};
 
@@ -564,8 +564,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		
 		return 0;
 	}
-
-	if (strcmp(buffer, "SET-CAMBOX-TRIGGER") == 0)
+	else if (strcmp(buffer, "SET-CAMBOX-TRIGGER") == 0)
 	{
 		int args[8] = {0};
 
@@ -580,8 +579,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		return 0;
 	}
-
-	if (strcmp(buffer, "START-CAMPOS") == 0)
+	else if (strcmp(buffer, "START-CAMPOS") == 0)
 	{
 		int args[2] = {0};
 
@@ -595,8 +593,20 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		GameWorld->MainCamera.CameraX = args[0];
 		GameWorld->MainCamera.CameraY = args[1];
 	}
+	else if (strcmp(buffer, "START-CAMMODE") == 0)
+	{
+		int args[1] = {0};
 
-	if (strcmp(buffer, "START-PLAYERPOS") == 0)
+		int returnMsg = readIntArgs(fPtr, args, 1);
+
+		if (returnMsg != 0)
+		{
+			return returnMsg;
+		}
+
+		GameWorld->MainCamera.CameraMode = args[0];
+	}
+	else if (strcmp(buffer, "START-PLAYERPOS") == 0)
 	{
 		int args[2] = {0};
 
@@ -617,9 +627,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		return 0;
 	}
-
-
-	if (strcmp(buffer, "START-MUSIC") == 0)
+	else if (strcmp(buffer, "START-MUSIC") == 0)
 	{
 		char nameBuffer[80] = {0};
 
@@ -637,9 +645,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		return 0;
 	}
-
-
-	if (strcmp(buffer, "CACHE-TRIGGER") == 0)
+	else if (strcmp(buffer, "CACHE-TRIGGER") == 0)
 	{
 		int args[8] = {0};
 
