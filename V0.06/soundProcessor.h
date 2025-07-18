@@ -5,9 +5,21 @@
 
 int LemonPlaySound(const char fileName[], const char folderName[], ChannelName channel, float volume);
 
-int InitSound(const char *pathPtr, ChannelName channel, float volume);
+SoundInstance* InitSound(const char *pathPtr, ChannelName channel, float volume);
+
+SoundInstance* getSoundInstance(const char soundName[], ChannelName channel);
 
 int IterateAudio(void);
+
+
+int initialiseAudio(void);
+
+int deleteSoundInstance(SoundInstance *inputSound);
+
+int StopAudioInChannel(ChannelName channel);
+
+int cleanUpAudioData(void);
+
 
 int MuteChannel(ChannelName channel);
 
@@ -16,15 +28,6 @@ int UnmuteChannel(ChannelName channel);
 int MuteAllAudio(void);
 
 int UnmuteAllAudio(void);
-
-int deleteSoundInstance(SoundInstance *inputSound);
-
-int initialiseAudio(void);
-
-int cleanUpAudioData(void);
-
-
-int StopAudioInChannel(ChannelName channel);
 
 int ToggleAllAudio(void);
 

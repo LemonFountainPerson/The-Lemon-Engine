@@ -622,3 +622,18 @@ int modulo(int x, int N)
 {
     return (x % N + N) % N;
 }
+
+
+void stringToLower(char input[])
+{
+	int i = 0;
+
+	while (input[i] > 31 && i < MAX_LEN)
+	{
+		input[i] = tolower(input[i]);
+		
+		i++;
+	}
+
+	return;
+}

@@ -21,6 +21,15 @@ int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputDat
 int PlayNewAnimation(const char desiredName[], int loopCount, DisplayData *inputData);
 
 
+int SwitchAnimation(const char desiredName[], int loopCount, DisplayData *inputData);
+
+
+int PlayAnimationAfterOther(const char desiredName[], const char otherAnim[], int loopCount, DisplayData *inputData);
+
+
+int PlayAnimationAfterOtherPrefix(const char desiredName[], const char otherPrefix[], int loopCount, DisplayData *inputData);
+
+
 int iterateAnimation(DisplayData *inputData);
 
 

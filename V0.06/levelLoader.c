@@ -68,6 +68,99 @@ int loadDefault(World *GameWorld)
 }
 
 
+int ConvertEntryToObjectID(char entry[MAX_LEN])
+{
+	entry[MAX_LEN - 1] = 0;
+
+	if (entry[0] > 47 && entry[0] < 58)
+	{
+		return convertStrToInt(entry, 6);
+	}
+
+	stringToLower(entry);
+
+	if (strcmp(entry, "solidblock") == 0)
+	{
+		return SOLID_BLOCK;
+	}
+	else if (strcmp(entry, "flatslopefloor") == 0)
+	{
+		return FLAT_SLOPE_FLOOR;
+	}
+	else if (strcmp(entry, "jumpthrublock") == 0)
+	{
+		return JUMP_THRU_BLOCK;
+	}
+	else if (strcmp(entry, "coin") == 0)
+	{
+		return COIN;
+	}
+	else if (strcmp(entry, "playerobject") == 0)
+	{
+		return PLAYER_OBJECT;
+	}
+	else if (strcmp(entry, "uielement") == 0)
+	{
+		return UI_ELEMENT;
+	}
+	else if (strcmp(entry, "uitext") == 0)
+	{
+		return UI_TEXT;
+	}
+	else if (strcmp(entry, "particle") == 0)
+	{
+		return PARTICLE;
+	}
+	else if (strcmp(entry, "movingplatformhor") == 0)
+	{
+		return MOVING_PLATFORM_HOR;
+	}
+	else if (strcmp(entry, "movingplatformver") == 0)
+	{
+		return MOVING_PLATFORM_VER;
+	}
+	else if (strcmp(entry, "spring") == 0)
+	{
+		return SPRING;
+	}
+	else if (strcmp(entry, "gateswitch") == 0)
+	{
+		return GATE_SWITCH;
+	}
+	else if (strcmp(entry, "gateswitchtimed") == 0)
+	{
+		return GATE_SWITCH_TIMED;
+	}
+	else if (strcmp(entry, "verticalgate") == 0)
+	{
+		return VERTICAL_GATE;
+	}
+	else if (strcmp(entry, "horizontalgate") == 0)
+	{
+		return HORIZONTAL_GATE;
+	}
+	else if (strcmp(entry, "door") == 0)
+	{
+		return DOOR;
+	}
+	else if (strcmp(entry, "leveldoor") == 0)
+	{
+		return LEVEL_DOOR;
+	}
+	else if (strcmp(entry, "pushablebox") == 0)
+	{
+		return PUSHABLE_BOX;
+	}
+	else if (strcmp(entry, "basicenemy") == 0)
+	{
+		return BASIC_ENEMY;
+	}	
+
+
+	return -1;
+}
+
+
 int saveLevel(World *GameWorld)
 {
 	// BROKEN
@@ -379,6 +472,8 @@ int loadLevelData(World *GameWorld, int level)
 
 
 	// Erase existing data
+	clearTextQueue(GameWorld);
+
 	deleteAllObjects(GameWorld->ObjectList);
 
 	deleteExcessSpriteSets(GameWorld->ObjectList, PRESERVED_SPRITESETS);
@@ -642,7 +737,10 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		double volume = (float)convertStrToInt(volumeBuffer, 4) / 100.0;
 
-		LemonPlaySound(nameBuffer, "Music", LOOP_CHANNEL, volume);
+		if (getSoundInstance(nameBuffer, LOOP_CHANNEL) == NULL)
+		{
+			LemonPlaySound(nameBuffer, "Music", LOOP_CHANNEL, volume);
+		}
 
 		return 0;
 	}
@@ -694,22 +792,6 @@ int loadRepeatingObject(World *GameWorld, FILE *fPtr)
 }
 
 
-int ConvertEntryToObjectID(char entry[60])
-{
-	entry[59] = 0;
-
-	if (entry[0] > 47 && entry[0] < 58 || entry[0] == 45)
-	{
-		return convertStrToInt(entry, 6);
-	}
-
-
-
-
-	return -1;
-}
-
-
 int ApplyObjectLoadCommands(Object *inputObject, char commands[32])
 {
 	if (inputObject == NULL)
@@ -753,11 +835,11 @@ int ApplyObjectLoadCommands(Object *inputObject, char commands[32])
 
 int loadObject(World *GameWorld, FILE *fPtr, int xOffset, int yOffset)
 {
-	char readArgs[60] = {0};
+	char readArgs[MAX_LEN] = {0};
 	int convertedArgs[9] = {0};
 
 	// ID
-	getNextArg(fPtr, readArgs, 60);
+	getNextArg(fPtr, readArgs, MAX_LEN);
 
 	int readID = ConvertEntryToObjectID(readArgs);
 
@@ -811,13 +893,16 @@ int readIntArgs(FILE *fPtr, int argsDest[], int number)
 
 		if (returnMsg != LEMON_SUCCESS)
 		{
+			fseek(fPtr, objectPosition, SEEK_SET);
 			return LEMON_ERROR;
 		}
+
+		inputBuffer[7] = 0;
 
 		if (strcmp(inputBuffer, "////") == 0 || inputBuffer[0] > 64)
 		{
 			fseek(fPtr, objectPosition, SEEK_SET);
-			return 0;
+			return LEMON_SUCCESS;
 		}
 		else
 		{
@@ -826,41 +911,32 @@ int readIntArgs(FILE *fPtr, int argsDest[], int number)
 	
 	}
 
-	return 0;
+	return LEMON_SUCCESS;
 }
 
 
 int getNextArg(FILE *fPtr, char buffer[], int max)
 {
-	int i = 0;
+	if (fPtr == NULL)
+	{
+		return MISSING_DATA;
+	}
 
-	buffer[0] = '_';
+	buffer[0] = 0;
 
-	while ((buffer[0] < 33 || buffer[0] == '_') && i < max)
+	while (buffer[0] < 33)
 	{
 		if (feof(fPtr) != 0)
 		{
-			return MISSING_DATA;
+			return LEMON_SUCCESS;
 		}
 
 		fread(buffer, sizeof(char), 1, fPtr);
-	
-		if (buffer[0] > 32)
-		{
-			i++;
-		}
 	}
 
-
-	if (i > 3)
-	{
-		printf("Data badly formatted!\n");
-		return INVALID_DATA;
-	}
-
-	i = 0;
+	int i = 0;
 	
-	while (buffer[i] != '_' && buffer[i] > 32 && i < max)
+	while (buffer[i] != ',' && buffer[i] > 32 && i < max)
 	{
 		if (feof(fPtr) != 0)
 		{

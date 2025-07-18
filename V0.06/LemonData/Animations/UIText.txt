@@ -1,0 +1,9 @@
+V0.06-ANIMATION
+AddSprite: 	Test_Face 		TextDisplay	TILE
+
+AddSprite: 	TextBox_Basic 		TextDisplay	TILE_FAST
+AddSprite: 	TextBox_White 		TextDisplay	TILE_FAST
+
+AddSprite: 	Text_0 			TextDisplay	TILE_FAST
+AddSprite: 	Text_1	 		TextDisplay	TILE
+	

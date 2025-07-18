@@ -10,11 +10,21 @@ int LemonPlaySound(const char fileName[], const char folderName[], ChannelName c
 {
 	if (strcmp(fileName, lastPlayedSound) == 0 || SoundChannels[channel].Pause == 1)
 	{
-		return EXECUTION_UNNECESSARY;
+		return ACTION_DISABLED;
+	}
+
+	if (strlen(fileName) > MAX_LEN || strlen(folderName) > MAX_LEN)
+	{
+		return INVALID_DATA;
+	}
+
+	if (channel < 0 || channel >= CHANNEL_COUNT)
+	{
+		return INVALID_DATA;
 	}
 
 	// Construct audio file path
-	char path[200] = "LemonData/Sounds/";
+	char path[(MAX_LEN << 1) + 22] = "LemonData/Sounds/";
 
 	strcat(path, folderName);
 
@@ -23,29 +33,33 @@ int LemonPlaySound(const char fileName[], const char folderName[], ChannelName c
 	strcat(path, fileName);
 
 	strcat(path, ".wav");
-	path[199] = 0;
 
-	const char *pathPtr;
-	pathPtr = path;
+	const char *pathPtr = path;
 
 
 	// Load the Wav file
-	if (channel < 0 || channel >= CHANNEL_COUNT)
-	{
-		return INVALID_DATA;
-	}
-
 	strcpy(lastPlayedSound, fileName);
 
-	return InitSound(pathPtr, channel, volume);
+	SoundInstance *newSnd = InitSound(pathPtr, channel, volume);
+
+	if (newSnd == NULL)
+	{
+		return LEMON_ERROR;
+	}
+	else
+	{
+		strcpy(newSnd->name, fileName);
+	}
+
+	return LEMON_SUCCESS;
 }
 
 
-int InitSound(const char *pathPtr, ChannelName channel, float volume)
+SoundInstance* InitSound(const char *pathPtr, ChannelName channel, float volume)
 {
 	if (SoundChannels[channel].soundCount >= MAX_SOUNDS_PER_CHANNEL)
 	{
-		return ACTION_DISABLED;
+		return NULL;
 	}
 
 	SoundInstance* currentSound = SoundChannels[channel].firstSound;
@@ -55,7 +69,7 @@ int InitSound(const char *pathPtr, ChannelName channel, float volume)
 	if (newSound == NULL)
 	{
 		printf("Failed to initialise new sound instance.\n");
-		return LEMON_ERROR;
+		return NULL;
 	}
 
 
@@ -82,6 +96,7 @@ int InitSound(const char *pathPtr, ChannelName channel, float volume)
 	newSound->wav_data = 0;
 	newSound->wav_data_len = 0;
 	newSound->stream = 0;
+	memset(newSound->name, 0, MAX_LEN * sizeof(char));
 
 
 	SDL_AudioSpec spec;
@@ -90,7 +105,7 @@ int InitSound(const char *pathPtr, ChannelName channel, float volume)
 	{
 		printf("Couldn't load audio file (%s)\n", SDL_GetError());
 		deleteSoundInstance(newSound);
-		return MISSING_DATA;
+		return NULL;
 	}
 
 
@@ -101,7 +116,7 @@ int InitSound(const char *pathPtr, ChannelName channel, float volume)
 	{
 		printf("Couldn't create audio stream %d (%s)\n", audio_device, SDL_GetError());
 		deleteSoundInstance(newSound);
-		return LEMON_ERROR;
+		return NULL;
 	}
 
 	newSound->format = spec.format;
@@ -111,7 +126,7 @@ int InitSound(const char *pathPtr, ChannelName channel, float volume)
 	{
 		printf("Couldn't bind audio stream (%s)\n", SDL_GetError());
 		deleteSoundInstance(newSound);
-		return LEMON_ERROR;
+		return NULL;
 	}
 
 
@@ -122,7 +137,37 @@ int InitSound(const char *pathPtr, ChannelName channel, float volume)
 
 	SoundChannels[channel].soundCount++;
 
-	return 0;
+	return newSound;
+}
+
+
+SoundInstance* getSoundInstance(const char soundName[], ChannelName channel)
+{
+	if (channel >= CHANNEL_COUNT || channel < 0)
+	{
+		return NULL;
+	}
+
+	if (strlen(soundName) > MAX_LEN)
+	{
+		return NULL;
+	}
+
+	SoundInstance *currentSound = SoundChannels[channel].firstSound;
+
+	int i = 1;
+	while (currentSound != NULL && i < MAX_SOUNDS_PER_CHANNEL)
+	{
+		if (strcmp(currentSound->name, soundName) == 0)
+		{
+			return currentSound;
+		}
+
+		currentSound = currentSound->nextSound;
+		i++;
+	}
+
+	return NULL;
 }
 
 

@@ -20,9 +20,6 @@ int LoadAnimations(SpriteSet *newSet, int ObjectID)
 	{
 		case SPRING:
 		{
-			loadAnimationsFromFile("Spring", newSet);
-			return 0;
-
 			Animation *newAnim = initialiseNewAnimation("Bounce", 24, newSet);
 			addSpriteToAnimation("Spring3", newAnim, newSet);
 			addSpriteToAnimation("Spring4", newAnim, newSet);
@@ -40,10 +37,10 @@ int LoadAnimations(SpriteSet *newSet, int ObjectID)
 		} break;
 
 		default:
-		return 0;
+		break;
 	}
 
-	return 0;
+	return LEMON_SUCCESS;
 }
 
 
@@ -83,6 +80,7 @@ int loadAnimationsFromFile(const char FileName[], SpriteSet *destSet)
 
 	Animation *newAnimation = NULL;
 
+
 	while (feof(fPtr) == 0)
 	{
 		getNextArg(fPtr, argBuffer, MAX_LEN);
@@ -105,6 +103,7 @@ int loadAnimationsFromFile(const char FileName[], SpriteSet *destSet)
 				fclose(fPtr);
 				return LEMON_ERROR;
 			}
+
 
 			newAnimation = initialiseNewAnimation(argBuffer, intBuffer[0], destSet);
 		}
@@ -172,9 +171,7 @@ int loadAnimationsFromFile(const char FileName[], SpriteSet *destSet)
 
 	fclose(fPtr);
 
-
-
-	return 0;
+	return LEMON_SUCCESS;
 }
 
 
@@ -314,21 +311,6 @@ int LoopParticleAnimation(Object *particle)
 }
 
 
-int PlayNewAnimation(const char desiredName[], int loopCount, DisplayData *inputData)
-{
-	if (inputData == NULL) { return MISSING_DATA; }
-	
-	if (inputData->currentAnimation != 0 && inputData->animationBuffer != NULL && strcmp(inputData->animationBuffer->name, desiredName) == 0)
-	{
-		return EXECUTION_UNNECESSARY;
-	}
-
-	PlayAnimation(desiredName, loopCount, inputData);
-
-	return 0;
-}
-
-
 int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputData)
 {
 	if (inputData == NULL || inputData->spriteSetSource == NULL)
@@ -359,13 +341,81 @@ int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputDat
 	inputData->animationBuffer = currentAnimation;
 
 	inputData->currentAnimation = currentAnimation->animationID;
-	inputData->animationTick = 0;
+	inputData->animationTick = -1;
 	inputData->animationLoopCount = loopCount;
 
 	if (inputData->spriteBuffer != NULL)
 	{
 		inputData->currentSprite = inputData->spriteBuffer->spriteID;
 	}
+
+	return 0;
+}
+
+
+int SwitchAnimation(const char desiredName[], int loopCount, DisplayData *inputData)
+{
+	if (inputData == NULL) { return MISSING_DATA; }
+	
+	if (inputData->animationBuffer != NULL && strcmp(inputData->animationBuffer->name, desiredName) == 0)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	PlayAnimation(desiredName, loopCount, inputData);
+
+	return 0;
+}
+
+
+int PlayNewAnimation(const char desiredName[], int loopCount, DisplayData *inputData)
+{
+	if (inputData == NULL) { return MISSING_DATA; }
+	
+	if (inputData->currentAnimation != 0 && inputData->animationBuffer != NULL && strcmp(inputData->animationBuffer->name, desiredName) == 0)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	PlayAnimation(desiredName, loopCount, inputData);
+
+	return 0;
+}
+
+
+int PlayAnimationAfterOther(const char desiredName[], const char otherAnim[], int loopCount, DisplayData *inputData)
+{
+	if (inputData == NULL || inputData->animationBuffer == NULL) { return MISSING_DATA; }
+	
+	if (strcmp(inputData->animationBuffer->name, otherAnim) != 0 || inputData->currentAnimation != 0)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	PlayAnimation(desiredName, loopCount, inputData);
+
+
+	return 0;
+}
+
+
+int PlayAnimationAfterOtherPrefix(const char desiredName[], const char otherPrefix[], int loopCount, DisplayData *inputData)
+{
+	if (inputData == NULL || inputData->animationBuffer == NULL) { return MISSING_DATA; }
+
+	int i = strlen(otherPrefix);
+
+	char buffer[MAX_LEN];
+	strcpy(buffer, inputData->animationBuffer->name);
+	buffer[i] = 0;
+	
+	if (strcmp(buffer, otherPrefix) != 0 || inputData->currentAnimation != 0)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	PlayAnimation(desiredName, loopCount, inputData);
+
 
 	return 0;
 }
@@ -492,12 +542,15 @@ AnimationFrame* addSpriteToAnimation(const char spriteName[], Animation *inputAn
 		return NULL;
 	}
 
+	printf("Added frame to %s\n", inputAnimation->name);
+
 	Sprite *currentSprite = sourceSet->firstSprite;
 
 	if (currentSprite == NULL)
 	{
 		return NULL;
 	}
+
 
 	while (currentSprite->nextSprite != NULL && strcmp(currentSprite->spriteName, spriteName) != 0)
 	{

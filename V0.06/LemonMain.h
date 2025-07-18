@@ -50,3 +50,6 @@ int clamp(int input, int lowerBound, int upperBound);
 
 
 int modulo(int x, int N);
+
+
+void stringToLower(char input[]);

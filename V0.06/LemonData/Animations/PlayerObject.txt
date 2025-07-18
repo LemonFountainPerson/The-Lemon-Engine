@@ -1,3 +1,12 @@
 V0.06-ANIMATION
 AddSprite: 	Idle	Player	SINGLE
 AddSprite: 	Spin	Player	SINGLE
+
+NewAnimation:	Stand		30
+AddFrame:	Idle
+
+NewAnimation:	StartJump	30
+AddFrame:	Spin
+
+NewAnimation:	JumpLoop	30
+AddFrame:	Spin

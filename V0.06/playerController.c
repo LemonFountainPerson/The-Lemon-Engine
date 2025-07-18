@@ -128,8 +128,6 @@ FunctionResult UpdatePlayer(PlayerData *Player, World *gameWorld, int keyboard[2
 		return ACTION_DISABLED;
 	}
 
-	iterateAnimation(Player->PlayerDisplay);
-
 	if ((gameWorld->GameState != CUTSCENE || Player->PlayerPtr->State == ACTOR) && gameWorld->PlayingText == 0)
 	{
 		if (gameWorld->PhysicsType == PLATFORMER)
@@ -143,6 +141,8 @@ FunctionResult UpdatePlayer(PlayerData *Player, World *gameWorld, int keyboard[2
 	}
 
 	animatePlayer(Player);
+
+	iterateAnimation(Player->PlayerDisplay);
 
 	if (Player->PlayerBox->yPos < -60.0 || Player->PlayerBox->yPos > 60000.0)
 	{
@@ -470,6 +470,8 @@ int PlayerJump(PlayerData *Player, int hAxis, int vAxis)
 		{
 			Player->PlayerBox->xVelocity += Player->PlayerBox->PhysicsXVelocity;
 		}
+
+		PlayNewAnimation("StartJump", 1, Player->PlayerDisplay);
 	}
 
 	Player->jumpHeld = 1;
@@ -542,22 +544,17 @@ int animatePlayer(PlayerData *Player)
 	}
 
 	DisplayData *PlayerDisplay = Player->PlayerDisplay;
-	int prevSprite = PlayerDisplay->currentSprite;
 
 	if (Player->jumpProgress > 0)
 	{
-		PlayerDisplay->currentSprite = 2;
+		PlayAnimationAfterOther("JumpLoop", "StartJump", 0, PlayerDisplay);
 	}
 
 	if (Player->inAir == 0)
 	{
-		PlayerDisplay->currentSprite = 1;
+		PlayNewAnimation("Stand", 0, PlayerDisplay);
 	}
 
-	if (prevSprite != PlayerDisplay->currentSprite)
-	{
-		switchSprite(PlayerDisplay->currentSprite, 0, PlayerDisplay);
-	}
 
 	return 0;
 }

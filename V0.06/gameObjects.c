@@ -254,49 +254,32 @@ int LoadSpriteSet(SpriteSet *newSet, int ObjectID)
 	switch (ObjectID)
 	{
 		case PLAYER_OBJECT:
-			LoadPlayerSprites(newSet);
-			break;
+			loadAnimationsFromFile("PlayerObject", newSet);
+			return EXECUTION_UNNECESSARY;
 
 		case PARTICLE:
-		{
-			LoadParticleSprites(newSet);
-		} break;
+			loadAnimationsFromFile("Particles", newSet);
+			return EXECUTION_UNNECESSARY;
 
 		case UI_ELEMENT:
-		{
-			LoadUISprites(newSet);
-		} break;
+			loadAnimationsFromFile("UIElements", newSet);
+			return EXECUTION_UNNECESSARY;
 
-	case UI_TEXT:
-		{
-			LoadUITextSprites(newSet);
-		} break;
+		case UI_TEXT:
+			loadAnimationsFromFile("UIText", newSet);
+			return EXECUTION_UNNECESSARY;
 
 		case FLAT_SLOPE_FLOOR:
-		{
-			loadObjectSprite("Grass_Angle_Small", newSet, SCALE);
-			loadObjectSprite("Grass_Angle_Medium", newSet, SCALE);
-			loadObjectSprite("Grass_Angle_Large", newSet, SCALE);
-		} break;
+			loadAnimationsFromFile("FlatSlopeFloor", newSet);
+			return EXECUTION_UNNECESSARY;
 
 		case SPRING:
-			return 0;
-			loadObjectSprite("Spring", newSet, TILE);
-			loadObjectSprite("Spring2", newSet, TILE);
-			loadObjectSprite("Spring3", newSet, TILE);
-			loadObjectSprite("Spring4", newSet, TILE);
-			loadObjectSprite("Spring5", newSet, TILE);
-			break;
+			loadAnimationsFromFile("Spring", newSet);
+			return EXECUTION_UNNECESSARY;
 
 		case SOLID_BLOCK:
-			loadObjectSprite("Grass_Block", newSet, TILE_FAST);
-			loadObjectSprite("Dirt_Block", newSet, TILE_FAST);
-			loadObjectSprite("Bottom_Block", newSet, TILE_FAST);
-			loadObjectSprite("CornerEdge_Left_Block", newSet, TILE_FAST);
-			loadObjectSprite("CornerEdge_Right_Block", newSet, TILE_FAST);
-			loadObjectSprite("Mud_Block", newSet, TILE_FAST);
-			loadObjectSprite("Snow_Block", newSet, TILE_FAST);
-			break;
+			loadAnimationsFromFile("SolidBlock", newSet);
+			return EXECUTION_UNNECESSARY;
 
 		default:
 		{
@@ -1153,10 +1136,9 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 		return EXECUTION_UNNECESSARY;
 	}
 
-	iterateAnimation(inputObject->ObjectDisplay);
-
 	if (inputObject->State == PAUSE_BEHAVIOUR || (GameWorld->GameState == CUTSCENE && inputObject->State != ACTOR) || inputObject->State == IN_INVENTORY)
 	{
+		iterateAnimation(inputObject->ObjectDisplay);
 		return ACTION_DISABLED;
 	}
 	
@@ -1264,6 +1246,7 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 	// Assign Sprite   (0 means do not change spriteset)
 	switchSprite(inputObject->ObjectDisplay->currentSprite, 0, inputObject->ObjectDisplay);
 
+	iterateAnimation(inputObject->ObjectDisplay);
 
 	return 0;
 }
@@ -1918,7 +1901,16 @@ int UpdateLevelDoor(PlayerData *Player, Object *Door, World *GameWorld)
 		return MISSING_DATA;
 	}
 
-	if (Door->arg2 > 0 && GameWorld->PlayingText == 0)
+	if (Door->arg2 < 1 && PlayerInteractingWithBox(Player, Door->ObjectBox) == 1 && Player->PlayerPtr->State == DEFAULT)
+	{
+		Door->arg2 = 1;
+		SayText("It's a door.\f.\f.\r \nIt eminates a strange glow.", NO_PORTRAIT, DEFAULT_BOTTOM, GameWorld);
+		char phrase[] = "This Door will send you to level 0!";
+		phrase[33] += Door->arg1;
+		SayText(phrase, NO_PORTRAIT, DEFAULT_BOTTOM, GameWorld);
+	}
+
+	if (Door->arg2 > 0 && GameWorld->TextQueue == NULL)
 	{
 		Door->arg2++;
 
@@ -1928,14 +1920,6 @@ int UpdateLevelDoor(PlayerData *Player, Object *Door, World *GameWorld)
 			GameWorld->level = Door->arg1;
 			Door->arg2 = 0;
 		}
-	}
-
-	if (Door->arg2 < 1 && PlayerInteractingWithBox(Player, Door->ObjectBox) == 1 && Player->PlayerPtr->State == DEFAULT)
-	{
-		SayText("It's a door.\f.\f.\r \nIt eminates a strange glow.", NO_PORTRAIT, DEFAULT_BOTTOM, GameWorld);
-		SayText("This Door will send you AWAYYYYY!", NO_PORTRAIT, DEFAULT_BOTTOM, GameWorld);
-
-		Door->arg2 = 1;
 	}
 
 	return 0;

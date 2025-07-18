@@ -5,6 +5,7 @@
 #include "playerController.h"
 #include "soundProcessor.h"
 #include "UIObjects.h"
+#include "LemonMain.h"
 #endif
 
 
@@ -35,7 +36,7 @@ int loadMovingPlatform(World *GameWorld, FILE *fPtr);
 
 int loadLevelFlag(World *GameWorld, FILE *fPtr);
 
-int ConvertEntryToObjectID(char entry[60]);
+int ConvertEntryToObjectID(char entry[MAX_LEN]);
 
 int ApplyObjectLoadCommands(Object *inputObject, char commands[32]);
 
