@@ -542,8 +542,6 @@ AnimationFrame* addSpriteToAnimation(const char spriteName[], Animation *inputAn
 		return NULL;
 	}
 
-	printf("Added frame to %s\n", inputAnimation->name);
-
 	Sprite *currentSprite = sourceSet->firstSprite;
 
 	if (currentSprite == NULL)
