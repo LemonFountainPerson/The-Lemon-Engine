@@ -8,10 +8,10 @@
 
 
 // Initialises an instance of the Player
-PlayerData* InitialisePlayerData(World *gameWorld);
+PlayerData* InitialisePlayerData(World *GameWorld);
 
 
-int InitialisePlayerObject(Object *Player, World *gameWorld);
+int InitialisePlayerObject(Object *Player, World *GameWorld);
 
 
 int LoadPlayerSprites(SpriteSet *inputSet);
@@ -21,13 +21,13 @@ int ResetPlayer(PlayerData *Player);
 
 
 // Main Player update script
-FunctionResult UpdatePlayer(PlayerData *Player, World *gameWorld, int keyboard[256]);
+FunctionResult UpdatePlayer(PlayerData *Player, World *GameWorld, int keyboard[256]);
 
 
-int PlayerPlatformerPhysics(PlayerData *Player, World *gameWorld, int keyboard[256]);
+int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld, int keyboard[256]);
 
 
-int PlayerTopDownPhysics(PlayerData *Player, World *gameWorld, int keyboard[256]);
+int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld, int keyboard[256]);
 
 
 int PlayerJump(PlayerData *Player, int hAxis, int vAxis);

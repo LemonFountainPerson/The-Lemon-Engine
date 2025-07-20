@@ -22,6 +22,7 @@ int InitialiseUIElement(World *GameWorld, Object *UIElement)
 	}
 
 	UIElement->layer = HUD;
+	UIElement->ObjectBox->collideLayer = HUD;
 	UIElement->ObjectBox->solid = UNSOLID;
 
 
@@ -139,6 +140,7 @@ int InitialiseUIText(World *GameWorld, Object *UIText)
 	}
 
 	UIText->layer = HUD;
+	UIText->ObjectBox->collideLayer = HUD;
 	UIText->ObjectBox->solid = UNSOLID;
 
 
@@ -278,10 +280,9 @@ int PauseMenu(Object *MenuController, World *GameWorld, int keyboard[256])
 	}
 
 
-	if (keyboard[LMN_INTERACT] == 1 || keyboard[LMN_JUMP] == 1)
+	if (keyboard[LMN_INTERACT] == 1 || keyboard[LMN_JUMP] == 1 || keyboard[LMN_ENTER] == 1)
 	{
-		keyboard[LMN_INTERACT] = 0;
-		keyboard[LMN_JUMP] = 0;
+		ClearKeyboardInput(keyboard);
 
 		switch (MenuController->arg2)
 		{
@@ -349,10 +350,9 @@ int SettingsMenu(Object *MenuController, World *GameWorld, int keyboard[256])
 	}
 
 
-	if (keyboard[LMN_INTERACT] == 1 || keyboard[LMN_JUMP] == 1)
+	if (keyboard[LMN_INTERACT] == 1 || keyboard[LMN_JUMP] == 1 || keyboard[LMN_ENTER] == 1)
 	{
-		keyboard[LMN_INTERACT] = 0;
-		keyboard[LMN_JUMP] = 0;
+		ClearKeyboardInput(keyboard);
 
 		switch (MenuController->arg2)
 		{
@@ -458,7 +458,7 @@ TextInstance* SayText(const char inputPhrase[], const char Portrait[], TextPrese
 
 TextInstance* CreateText(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, Font font, TextBox textBox, int textDelay, int skipState, int xPos, int yPos, World *GameWorld)
 {
-	if (GameWorld == NULL || inputPhrase == NULL || inputPhrase[0] < 1)
+	if (GameWorld == NULL || inputPhrase == NULL || inputPhrase[0] < 9)
 	{
 		return NULL;
 	}
@@ -478,7 +478,7 @@ TextInstance* CreateText(const char inputPhrase[], const char Portrait[], const 
 
 	currentChar = 0;
 
-	while (Voice[currentChar] != 0 && Portrait[currentChar] != 0 && currentChar < MAX_LEN)
+	while (currentChar < MAX_LEN && (Voice[currentChar] != 0 || Portrait[currentChar] != 0))
 	{
 		currentChar++;
 	}
@@ -525,9 +525,18 @@ TextInstance* CreateText(const char inputPhrase[], const char Portrait[], const 
 		TextInstance *currentText;
 		currentText = GameWorld->TextQueue;
 
-		while (currentText->nextText != NULL)
+		int i = 0;
+
+		while (i < MAX_TEXTQUEUE_LENGTH && currentText->nextText != NULL)
 		{
 			currentText = currentText->nextText;
+			i++;
+		}
+
+		if (currentText->nextText != NULL)
+		{
+			free(newText);
+			return NULL;
 		}
 
 		currentText->nextText = newText;
@@ -789,6 +798,24 @@ int endTextInstance(World *GameWorld)
 	{
 		GameWorld->PlayingText = 0;
 	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int clearTextQueue(World *GameWorld)
+{
+	if (GameWorld == NULL || GameWorld->TextQueue == NULL) { return MISSING_DATA; }
+
+	int i = 0;
+
+	while (i < MAX_TEXTQUEUE_LENGTH && GameWorld->TextQueue != NULL)
+	{
+		endTextInstance(GameWorld);
+		i++;
+	}
+
+	if (GameWorld->TextQueue != NULL) { return LEMON_ERROR; }
 
 	return LEMON_SUCCESS;
 }

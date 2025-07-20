@@ -6,14 +6,12 @@
 
 int switchBackGroundSprite(int spriteID, int desiredSetID, World *gameWorld)
 {
-	SpriteSet *currentSet;
-	currentSet = gameWorld->BackGrounds;
+	SpriteSet *currentSet = gameWorld->BackGrounds;
 
 	if (currentSet == NULL)
 	{
 		printf("No sprite set for Backgrounds found\n");
-		fflush(stdout);
-		return -1;
+		return MISSING_DATA;
 	}
 
 	while (currentSet->nextSet != NULL && currentSet->setID != desiredSetID)
@@ -24,16 +22,14 @@ int switchBackGroundSprite(int spriteID, int desiredSetID, World *gameWorld)
 	if (currentSet->setID != desiredSetID)
 	{
 		printf("Sprite Set %d not found\n", desiredSetID);
-		fflush(stdout);
-		return -1;
+		return MISSING_DATA;
 	}
 
 	if (currentSet->spriteCount < 1 || currentSet->firstSprite == NULL)
 	{
 		printf("Background Sprite set does not contain sprites\n");
-		fflush(stdout);
 		currentSet->spriteCount = 0;
-		return -1;
+		return MISSING_DATA;
 	}
 
 
@@ -60,19 +56,19 @@ int switchBackGroundSprite(int spriteID, int desiredSetID, World *gameWorld)
 
 		while (i < currentSet->spriteCount && currentSprite != NULL && currentSprite->spriteID != spriteID)
 		{
-			printf("%d\n", currentSprite->spriteID);
 			currentSprite = currentSprite->nextSprite;
 			i++;
 		}
 
 	}
 
+
 	if (currentSprite == NULL || currentSprite->spriteID != spriteID)
 	{
 		printf("Could not find sprite %d for Background set %d\n", spriteID, desiredSetID);
-		fflush(stdout);
-		return -1;
+		return MISSING_DATA;
 	}
+
 
 	gameWorld->bgSpriteBuffer = currentSprite;
 
@@ -438,6 +434,8 @@ int loadSpriteIntoSpriteSet(const char spriteName[], const char folderName[], Sp
 		{
 			inputSet->firstSprite = NULL;
 		}
+
+		printf("Could not find %s in %s\n", spriteName, path);
 
 		return LEMON_ERROR;
 	}

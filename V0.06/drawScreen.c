@@ -1662,11 +1662,7 @@ int renderBackGroundSprite(uint32_t *screen, Camera inputCamera, World *gameWorl
 		return MISSING_DATA;
 	}
 
-	// Load up data buffers for sprite to be rendered
-	int spriteWidth = spritePtr->width;
-	int spriteHeight = spritePtr->height;
-	unsigned char *data = spritePtr->spriteData;		// Instead of copying the data, use a pointer to reduce memory overhead
-
+	
 	// Locate object on screen
 	int xOffset = inputCamera.CameraX * gameWorld->bgParallax;
 	int yOffset = inputCamera.CameraY * gameWorld->bgParallax;
@@ -1676,9 +1672,9 @@ int renderBackGroundSprite(uint32_t *screen, Camera inputCamera, World *gameWorl
 	int xDraw2, xDraw, yDraw2, yDraw;
 
 	size_t sizeOfPixel = sizeof(uint32_t);
-	int i, k;
+	int i, screenx;
 
-	int pixely = spriteHeight - 1 - (((yDraw + yOffset) % spriteHeight));
+	int pixely = spritePtr->height - 1 - (((yDraw + yOffset) % spritePtr->height));
 	int pixelx = 0;
 
 
@@ -1690,20 +1686,20 @@ int renderBackGroundSprite(uint32_t *screen, Camera inputCamera, World *gameWorl
 	{
 		xDraw = clamp(0 - xOffset, 0, screenWidth - 1);
 		yDraw = clamp(0 - yOffset, 0, screenHeight - 1);
-		xDraw2 = clamp(spriteWidth - xOffset, 0, screenWidth - 1);
-		yDraw2 = clamp(spriteHeight - yOffset, 0, screenHeight - 1);
+		xDraw2 = clamp(spritePtr->width - xOffset, 0, screenWidth - 1);
+		yDraw2 = clamp(spritePtr->height - yOffset, 0, screenHeight - 1);
 
 		for (i = yDraw; i < yDraw2; i++)
 		{
-			pixelx = (((xDraw + xOffset) % spriteWidth));
+			pixelx = (((xDraw + xOffset) % spritePtr->width));
 
-			memcpy(screen + (i * screenWidth) + xDraw, data + ((pixely << 2) * spriteWidth) + (pixelx << 2), ((xDraw2 - xDraw) % spriteWidth) * sizeOfPixel);
+			memcpy(screen + (i * screenWidth) + xDraw, spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), ((xDraw2 - xDraw) % spritePtr->width) * sizeOfPixel);
 			
 			pixely--;
 
 			if (pixely < 0)
 			{
-				pixely = spriteHeight - 1;
+				pixely = spritePtr->height - 1;
 			}
 
 		}
@@ -1727,27 +1723,27 @@ int renderBackGroundSprite(uint32_t *screen, Camera inputCamera, World *gameWorl
 		}
 		
 
-		pixelx = ((xDraw + xOffset) % spriteWidth);
+		pixelx = ((xDraw + xOffset) % spritePtr->width);
 
-		memcpy(screen + (i * screenWidth), data + ((pixely << 2) * spriteWidth) + (pixelx << 2), sizeOfPixel * (spriteWidth - pixelx));
+		screenx = clamp((spritePtr->width - pixelx), 0, screenWidth);
+
+		memcpy(screen + (i * screenWidth), spritePtr->spriteData + ((pixely << 2) * spritePtr->width) + (pixelx << 2), sizeOfPixel * screenx);
 		
-		k = spriteWidth - pixelx;
-
-		for (; k + spriteWidth < xDraw2; k += spriteWidth)
+		for (; (screenx + spritePtr->width) < xDraw2; screenx += spritePtr->width)
 		{
-			memcpy(screen + (i * screenWidth) + k, data + ((pixely << 2) * spriteWidth), spriteWidth * sizeOfPixel);
+			memcpy(screen + (i * screenWidth) + screenx, spritePtr->spriteData + ((pixely << 2) * spritePtr->width), spritePtr->width * sizeOfPixel);
 		}
 
-	
-		memcpy(screen + (i * screenWidth) + k, data + ((pixely << 2) * spriteWidth), ((xDraw2 - k) % spriteWidth) * sizeOfPixel);
+		int j = clamp((screenWidth - screenx), 0, screenWidth);
+
+		memcpy(screen + (i * screenWidth) + screenx, spritePtr->spriteData + ((pixely << 2) * spritePtr->width), j * sizeOfPixel);
 
 		pixely--;
 
 		if (pixely < 0)
 		{
-			pixely = spriteHeight - 1;
+			pixely = spritePtr->height - 1;
 		}
-
 	}
 
 

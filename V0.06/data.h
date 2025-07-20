@@ -17,6 +17,9 @@
 
 //								Engine constants
 //-------------------------------------------------------------------------------------------------
+#define MAX_LEN 80
+#define ENCRYPT_OFFSET 600
+
 #define CHANNEL_COUNT 8
 #define MAX_SOUNDS_PER_CHANNEL 32
 
@@ -36,8 +39,8 @@
 #define MAX_PARTICLES_RENDER 64
 #define MAX_HUD_ELEMENTS_RENDER 128
 
-#define MAX_LEN 80
-#define ENCRYPT_OFFSET 600
+// Number of textInstances allowed in the TextQueue at once
+#define MAX_TEXTQUEUE_LENGTH 1000
 //-------------------------------------------------------------------------------------------------
 
 
@@ -94,6 +97,7 @@ enum FunctionResult{
 enum LemonKeys{
 	LMN_SPACE = 0,
 	LMN_ESCAPE = 1,
+	LMN_ENTER = 2,
 	LMN_UPARROW = 100,
 	LMN_DOWNARROW = 101,
 	LMN_LEFTARROW = 102,
@@ -361,15 +365,16 @@ typedef enum ParticleSubType ParticleSubType;
 typedef enum UISubType UISubType;
 typedef enum GateSwitch GateSwitch;
 
-// Memory allocated structs of data
 
+// Memory allocated structs of data
 struct soundInstance
 {
 	Uint8 *wav_data;
 	Uint32 wav_data_len;
 	SDL_AudioStream *stream;
-	
 	SDL_AudioFormat format;
+
+	char name[MAX_LEN];
 	float volume;
 
 	int channelID;
@@ -493,6 +498,7 @@ struct physicsRect
 
 	SolidType solid;
 	CollideType collideMode;
+	Layer collideLayer;
 
 	double direction;
 	short xFlip;

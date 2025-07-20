@@ -340,6 +340,8 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 
 		printf("Object size: %d\n", sizeof(Object) + sizeof(PhysicsRect) + sizeof(DisplayData));
 
+		saveLevel(GameWorld);
+
 		keyboard['Y'] = 2;
 	}
 
@@ -510,14 +512,8 @@ void clearGameData(World *GameWorld, uint32_t screen[])
 		free(screen);
 	}
 
-	int i = 0;
-
-	while (GameWorld->TextQueue != NULL && i < 500)
-	{
-		endTextInstance(GameWorld);
-		i++;
-	}
-
+	
+	clearTextQueue(GameWorld);
 
 	deleteAllObjects(GameWorld->ObjectList);
 
@@ -595,6 +591,7 @@ int ClearKeyboardInput(int keyboard[])
 	keyboard[LMN_DOWN] = 0;
 	keyboard[LMN_ESCAPE] = 0;
 	keyboard[LMN_SPACE] = 0;
+	keyboard[LMN_ENTER] = 0;
 
 
 	return 0;

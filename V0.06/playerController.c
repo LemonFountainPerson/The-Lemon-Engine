@@ -1,9 +1,9 @@
 #include "PlayerController.h"
 
 
-int InitialisePlayerObject(Object *Player, World *gameWorld)
+int InitialisePlayerObject(Object *Player, World *GameWorld)
 {
-	if (gameWorld == NULL || gameWorld->Player == NULL || Player == NULL)
+	if (GameWorld == NULL || GameWorld->Player == NULL || Player == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -18,22 +18,22 @@ int InitialisePlayerObject(Object *Player, World *gameWorld)
 
 	Player->ObjectDisplay->spriteYOffset = 14;
 
-	gameWorld->Player->PlayerPtr = Player;
-	gameWorld->Player->PlayerBox = Player->ObjectBox;
-	gameWorld->Player->PlayerDisplay = Player->ObjectDisplay;
-	gameWorld->Player->PlayerPtr->layer = MIDDLEGROUND_2;
-	gameWorld->Player->PlayerPtr->State = DEFAULT;
+	GameWorld->Player->PlayerPtr = Player;
+	GameWorld->Player->PlayerBox = Player->ObjectBox;
+	GameWorld->Player->PlayerDisplay = Player->ObjectDisplay;
+	GameWorld->Player->PlayerPtr->layer = MIDDLEGROUND_2;
+	GameWorld->Player->PlayerPtr->State = DEFAULT;
 
-	ResetPlayer(gameWorld->Player);
+	ResetPlayer(GameWorld->Player);
 
 
 	return 0;
 }
 
 
-PlayerData* InitialisePlayerData(World *gameWorld)
+PlayerData* InitialisePlayerData(World *GameWorld)
 {
-	if (gameWorld == NULL)
+	if (GameWorld == NULL)
 	{
 		return NULL;
 	}
@@ -116,33 +116,33 @@ int ResetPlayer(PlayerData *Player)
 }
 
 
-FunctionResult UpdatePlayer(PlayerData *Player, World *gameWorld, int keyboard[256])
+FunctionResult UpdatePlayer(PlayerData *Player, World *GameWorld, int keyboard[256])
 {
-	if (Player == NULL || Player->PlayerPtr == NULL || gameWorld->ObjectList == NULL)
+	if (Player == NULL || Player->PlayerPtr == NULL || GameWorld->ObjectList == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (gameWorld->GamePaused > 0 || gameWorld->GameState == EMPTY_GAME || gameWorld->GameState == LOADING)
+	if (GameWorld->GamePaused > 0 || GameWorld->GameState == EMPTY_GAME || GameWorld->GameState == LOADING)
 	{
 		return ACTION_DISABLED;
 	}
 
-	if ((gameWorld->GameState != CUTSCENE || Player->PlayerPtr->State == ACTOR) && gameWorld->PlayingText == 0)
+	if ((GameWorld->GameState != CUTSCENE || Player->PlayerPtr->State == ACTOR) && GameWorld->PlayingText == 0)
 	{
-		if (gameWorld->PhysicsType == PLATFORMER)
+		if (GameWorld->PhysicsType == PLATFORMER)
 		{
-			PlayerPlatformerPhysics(Player, gameWorld, keyboard);
+			PlayerPlatformerPhysics(Player, GameWorld, keyboard);
 		}
 		else
 		{
-			PlayerTopDownPhysics(Player, gameWorld, keyboard);
+			PlayerTopDownPhysics(Player, GameWorld, keyboard);
 		}
 	}
 
 	animatePlayer(Player);
 
-	iterateAnimation(Player->PlayerDisplay);
+	UpdateObjectDisplay(GameWorld, Player->PlayerPtr);
 
 	if (Player->PlayerBox->yPos < -60.0 || Player->PlayerBox->yPos > 60000.0)
 	{
@@ -160,9 +160,9 @@ FunctionResult UpdatePlayer(PlayerData *Player, World *gameWorld, int keyboard[2
 }
 
 
-int PlayerPlatformerPhysics(PlayerData *Player, World *gameWorld, int keyboard[256])
+int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld, int keyboard[256])
 {
-	if (Player == NULL || gameWorld->ObjectList == NULL)
+	if (Player == NULL || GameWorld->ObjectList == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -219,7 +219,7 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *gameWorld, int keyboard[2
 	}
 
 	PlayerBox->yPos += 8.0;
-	int againstCeiling = (GetCollidingObject(PlayerBox, gameWorld->ObjectList) != NULL);
+	int againstCeiling = (GetCollidingObject(PlayerBox, GameWorld->ObjectList) != NULL);
 	PlayerBox->yPos -= 8.0;
 
 	if (againstCeiling == 0 && jump == 1 && ((Player->inAir < 6 && Player->jumpHeld == 0) || (PlayerBox->yVelocity > 12.0 && Player->jumpProgress > 0) ))
@@ -281,7 +281,7 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *gameWorld, int keyboard[2
 
 
 	// Gravity
-	PlayerBox->yVelocity += gameWorld->Gravity;
+	PlayerBox->yVelocity += GameWorld->Gravity;
 
 	if (fabs(PlayerBox->forwardVelocity) > Player->maxXVel)
 	{
@@ -295,11 +295,11 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *gameWorld, int keyboard[2
 
 
 	// collision detection
-	MoveForward(PlayerBox, gameWorld);
+	MoveForward(PlayerBox, GameWorld);
 
-	MovePlayerX(Player, gameWorld);
+	MovePlayerX(Player, GameWorld);
 
-	MovePlayerY(Player, gameWorld);
+	MovePlayerY(Player, GameWorld);
 	
 
 
@@ -310,7 +310,7 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *gameWorld, int keyboard[2
 	Player->InteractBox->yPosTop = Player->InteractBox->yPos + Player->InteractBox->ySize;
 
 
-	int onGround = checkIfGrounded(gameWorld, PlayerBox);
+	int onGround = checkIfGrounded(GameWorld, PlayerBox);
 
 	if (Player->inAir > 0 && fabs(PlayerBox->PhysicsXVelocity) > 0.1)
 	{
@@ -327,16 +327,16 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *gameWorld, int keyboard[2
 		Player->inAir = 0;
 	}
 
-	HandlePlayerInteract(gameWorld, keyboard);
+	HandlePlayerInteract(GameWorld, keyboard);
 
 	return 0;
 }
 
 
 
-int PlayerTopDownPhysics(PlayerData *Player, World *gameWorld, int keyboard[256])
+int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld, int keyboard[256])
 {
-	if (Player == NULL || gameWorld->ObjectList == NULL)
+	if (Player == NULL || GameWorld->ObjectList == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -424,11 +424,11 @@ int PlayerTopDownPhysics(PlayerData *Player, World *gameWorld, int keyboard[256]
 	double prevYPos = PlayerBox->yPos;
 
 
-	MovePlayerX(Player, gameWorld);
+	MovePlayerX(Player, GameWorld);
 
 	PlayerBox->yPos = prevYPos;
 
-	MovePlayerY(Player, gameWorld);
+	MovePlayerY(Player, GameWorld);
 
 
 	PlayerBox->xPosRight = PlayerBox->xPos + PlayerBox->xSize;
@@ -437,7 +437,7 @@ int PlayerTopDownPhysics(PlayerData *Player, World *gameWorld, int keyboard[256]
 	Player->InteractBox->xPosRight = Player->InteractBox->xPos + Player->InteractBox->xSize;
 	Player->InteractBox->yPosTop = Player->InteractBox->yPos + Player->InteractBox->ySize;
 
-	HandlePlayerInteract(gameWorld, keyboard);
+	HandlePlayerInteract(GameWorld, keyboard);
 
 	return 0;
 }

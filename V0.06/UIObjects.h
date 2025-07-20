@@ -73,3 +73,6 @@ int getCharacterSpacing(char inputCharacter);
 
 
 int endTextInstance(World *GameWorld);
+
+
+int clearTextQueue(World *GameWorld);

@@ -238,6 +238,10 @@ LRESULT CALLBACK WndProc(HWND handle, UINT msg, WPARAM wParam, LPARAM lParam)
 			                keyCode = LMN_DOWNARROW;
 			                break;
 
+			            case VK_RETURN:
+			            	keyCode = LMN_ENTER;
+			            	break;
+
 		                default:
                             keyCode = (int)wParam;
 			                break;

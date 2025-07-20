@@ -168,8 +168,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 				newObject->arg2 = CHAIN_SWITCH;
 			}
 			newObject->arg5 = abs(arg2);
-			newObject->ObjectBox->solid = 0;
-			newObject->ObjectDisplay->animationTick = abs(arg2);
+			newObject->ObjectBox->solid = UNSOLID;
 			break;
 
 
@@ -207,6 +206,11 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 			newObject->ObjectBox->xSize = 40;
 			newObject->ObjectBox->ySize = 60;
 			newObject->ObjectBox->friction = 1.0;
+			break;
+
+
+		case PUSHABLE_BOX:
+			newObject->ObjectBox->solid = PUSHABLE_SOLID;
 			break;
 
 
@@ -446,6 +450,7 @@ PhysicsRect* createPhysicsRect(SolidType inputSolid)
 	newRect->yVelocity = 0.0;
 	newRect->forwardVelocity = 0.0;
 	newRect->friction = 0.7;
+	newRect->collideLayer = MIDDLEGROUND;
 
 	return newRect;
 }
@@ -1098,7 +1103,12 @@ FunctionResult updateObjects(World *GameWorld, int keyboard[256])
 	{
 		i--;
 
-		ObjectBehaviour(GameWorld, currentObject, keyboard);
+		if (currentObject != GameWorld->Player->PlayerPtr)
+		{
+			ObjectBehaviour(GameWorld, currentObject, keyboard);
+
+			UpdateObjectDisplay(GameWorld, currentObject);
+		}
 
 		currentObject = currentObject->nextObject;
 	}
@@ -1131,14 +1141,13 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 		return MISSING_DATA;
 	}
 
-	if (GameWorld->GamePaused == 1 && inputObject->ObjectID != UI_ELEMENT || inputObject->State < DEFAULT || inputObject->ObjectID == PLAYER_OBJECT)
+	if (GameWorld->GamePaused == 1 && inputObject->ObjectID != UI_ELEMENT || inputObject->State < DEFAULT)
 	{
 		return EXECUTION_UNNECESSARY;
 	}
 
 	if (inputObject->State == PAUSE_BEHAVIOUR || (GameWorld->GameState == CUTSCENE && inputObject->State != ACTOR) || inputObject->State == IN_INVENTORY)
 	{
-		iterateAnimation(inputObject->ObjectDisplay);
 		return ACTION_DISABLED;
 	}
 	
@@ -1224,31 +1233,33 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 
 
 	// Move object
-	if (GameWorld->PhysicsType == PLATFORMER && 0)
-	{
-		inputObject->ObjectBox->yPos += GameWorld->Gravity * 2;
-		Object *ground = GetCollidingObject(inputObject->ObjectBox, GameWorld->ObjectList);
-		inputObject->ObjectBox->yPos -= GameWorld->Gravity * 2;
-
-		if (ground != NULL)
-		{
-			inputObject->ObjectBox->PhysicsXVelocity = ground->ObjectBox->xVelocity;
-			inputObject->ObjectBox->PhysicsXVelocity = ground->ObjectBox->yVelocity;
-		}
-	}
-
 	moveObjectX(inputObject, GameWorld);
 
 	moveObjectY(inputObject, GameWorld);
 
 	MoveForward(inputObject->ObjectBox, GameWorld);
 		
-	// Assign Sprite   (0 means do not change spriteset)
-	switchSprite(inputObject->ObjectDisplay->currentSprite, 0, inputObject->ObjectDisplay);
+	return 0;
+}
+
+
+int UpdateObjectDisplay(World *GameWorld, Object *inputObject)
+{
+	if (GameWorld == NULL || inputObject == NULL)	{ return MISSING_DATA; }
+
+	if (GameWorld->GamePaused == 1 && inputObject->ObjectID != UI_ELEMENT || inputObject->State < DEFAULT)
+	{
+		return ACTION_DISABLED;
+	}
+
 
 	iterateAnimation(inputObject->ObjectDisplay);
 
-	return 0;
+	// Assign Sprite   (0 means do not change spriteset)
+	switchSprite(inputObject->ObjectDisplay->currentSprite, 0, inputObject->ObjectDisplay);
+
+
+	return LEMON_SUCCESS;
 }
 
 
@@ -1949,6 +1960,8 @@ int UpdateEntityPhysics(Object *entity, PlayerData *Player, World *GameWorld)
 
 int moveObjectX(Object *inputObject, World *GameWorld)
 {
+	if (inputObject == NULL || inputObject->State < DEFAULT || GameWorld == NULL)	{ return  MISSING_DATA; }
+
 	if (fabs(inputObject->ObjectBox->xVelocity) < 0.1)
 	{
 		inputObject->ObjectBox->xVelocity = 0.0;
@@ -1989,6 +2002,8 @@ int moveObjectX(Object *inputObject, World *GameWorld)
 
 int moveObjectY(Object *inputObject, World *GameWorld)
 {
+	if (inputObject == NULL || inputObject->State < DEFAULT || GameWorld == NULL)	{ return  MISSING_DATA; }
+
 	if (fabs(inputObject->ObjectBox->yVelocity) < 0.1)
 	{
 		inputObject->ObjectBox->yVelocity = 0.0;
@@ -2208,7 +2223,7 @@ int CheckBoxCollidesBox(PhysicsRect *inputBox, PhysicsRect *compareBox)
 		return MISSING_DATA;
 	}
 
-	if (inputBox == compareBox || inputBox->xSize == 0 || inputBox->ySize == 0 || compareBox->xSize == 0 || compareBox->ySize == 0)
+	if (compareBox->collideLayer != inputBox->collideLayer || inputBox == compareBox || inputBox->xSize == 0 || inputBox->ySize == 0 || compareBox->xSize == 0 || compareBox->ySize == 0)
 	{
 		return 0;
 	}
@@ -2506,7 +2521,7 @@ CollideType evaluateCollideMode(PhysicsRect *movingBox, PhysicsRect *collideBox,
 		pushable = 1;
 	}
 
-	if (movingBox->collideMode == PUSH || (pushable && (movingBox->solid == ENTITY || movingBox->solid == PUSHABLE_SOLID)) )
+	if (movingBox->collideMode == PUSH || (collideBox->solid == PUSHABLE_SOLID && (movingBox->solid == ENTITY || movingBox->solid == PUSHABLE_SOLID)) )
 	{
 		return PUSH;
 	}
@@ -2703,7 +2718,15 @@ int ResolveAllXCollision(PhysicsRect *movingBox, ObjectController *ObjectList)
 		{
 			ResolveXCollisionByPush(movingBox, currentObject->ObjectBox);
 
+			double prevXVel = currentObject->ObjectBox->xVelocity;
+			currentObject->ObjectBox->xVelocity = movingBox->xVelocity;
+			SolidType prevType = movingBox->solid;
+			movingBox->solid = UNSOLID;
+
 			ResolveAllXCollision(currentObject->ObjectBox, ObjectList);
+
+			movingBox->solid = prevType;
+			currentObject->ObjectBox->xVelocity = prevXVel;
 
 			if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
 			{
@@ -2850,11 +2873,6 @@ int ApplyXPhysics(PhysicsRect *inputBox, PhysicsRect *physicsBox)
 		return MISSING_DATA;
 	}
 
-	if (inputBox->solid == PUSHABLE_SOLID || physicsBox->solid == PUSHABLE_SOLID)
-	{
-		return 0;
-	}
-
 	if ((inputBox->xVelocity > 0.0 && physicsBox->xVelocity > 0.1) || (inputBox->xVelocity < 0.0 && physicsBox->xVelocity < -0.1))
 	{
 		inputBox->xVelocity = physicsBox->xVelocity;
@@ -2889,7 +2907,15 @@ int ResolveAllYCollision(PhysicsRect *movingBox, ObjectController *ObjectList, i
 		{
 			ResolveYCollisionByPush(movingBox, currentObject->ObjectBox);
 
+			double prevYVel = currentObject->ObjectBox->yVelocity;
+			currentObject->ObjectBox->yVelocity = movingBox->yVelocity;
+			SolidType prevType = movingBox->solid;
+			movingBox->solid = UNSOLID;
+
 			ResolveAllYCollision(currentObject->ObjectBox, ObjectList, NULL);
+
+			currentObject->ObjectBox->yVelocity = prevYVel;
+			movingBox->solid = prevType;
 
 			if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
 			{
@@ -3063,11 +3089,6 @@ int ApplyYPhysics(PhysicsRect *inputBox, PhysicsRect *physicsBox)
 	if (inputBox == NULL || physicsBox == NULL)
 	{
 		return MISSING_DATA;
-	}
-
-	if (inputBox->solid == PUSHABLE_SOLID || physicsBox->solid == PUSHABLE_SOLID)
-	{
-		return 0;
 	}
 
 	if (inputBox->yVelocity > 0.0)

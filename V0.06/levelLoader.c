@@ -32,8 +32,8 @@ int loadLevel(World *GameWorld, int level)
 
 	// Create a default particle and UIElement object to initilise their sprite sets to avoid lag during gameplay 
 	AddObject(GameWorld, PARTICLE, 0, 0, 0, 0, EMPTY_PARTICLE, 0, 0, 0, 0);
-	AddObject(GameWorld, UI_ELEMENT, 0, 0, UNDEFINED_UI_ELEMENT, 0, 0, 0, 0, 0, 0);
-	AddObject(GameWorld, UI_TEXT, 0, 0, UNDEFINED_UI_ELEMENT, 0, 0, 0, 0, 0, 0);
+	AddObject(GameWorld, UI_ELEMENT, 0, 0, 0, 0, UNDEFINED_UI_ELEMENT, 0, 0, 0, 0);
+	AddObject(GameWorld, UI_TEXT, 0, 0, 0, 0, UNDEFINED_UI_ELEMENT, 0, 0, 0, 0);
 
 	SpawnHUD(GameWorld);
 
@@ -166,7 +166,7 @@ int saveLevel(World *GameWorld)
 	// BROKEN
 	FILE *fPtr;
 
-	char path[96] = "LemonData/LevelData/Level0Data.txt";
+	char path[40] = "LemonData/LevelData/Level0DataTEST.txt";
 	path[25] = GameWorld->level + 48;
 
 	fPtr = fopen(path, "wb");
@@ -178,7 +178,10 @@ int saveLevel(World *GameWorld)
 	}
 
 
-	fwrite("V1____", sizeof(char), 6, fPtr);
+	fwrite("V0.06-LEVELDATA", sizeof(char), strlen("V0.06-LEVELDATA"), fPtr);
+
+	fwrite("\n////", sizeof(char), 5, fPtr);
+
 
 	Object *currentObject;
 	currentObject = GameWorld->ObjectList->firstObject;
@@ -189,62 +192,83 @@ int saveLevel(World *GameWorld)
 	{
 		switch(currentObject->ObjectID)
 		{
-			case 7:
-			case 8:
-				fwrite("MOV-", sizeof(char), 4, fPtr);
+			case LEVEL_FLAG_OBJ:
+				fwrite("LVFLAG- ", sizeof(char), 8, fPtr);
 				break;
 
 			default:
-				fwrite("OBJ-", sizeof(char), 4, fPtr);
+				fwrite("OBJECT- ", sizeof(char), 8, fPtr);
 				break;
 		}
 
-		fwrite("__", sizeof(char), 2, fPtr);
 
 		int size = convertIntToStr(buffer, currentObject->ObjectID);
 
 		fwrite(buffer, sizeof(char), size, fPtr);
 
-		fwrite("__", sizeof(char), 2, fPtr);
+		fwrite(", ", sizeof(char), 2, fPtr);
 
+		
 		size = convertIntToStr(buffer, currentObject->ObjectBox->xPos);
 
 		fwrite(buffer, sizeof(char), size, fPtr);
 
-		fwrite("__", sizeof(char), 2, fPtr);
+		fwrite(", ", sizeof(char), 2, fPtr);
 
 		size = convertIntToStr(buffer, currentObject->ObjectBox->yPos);
 
 		fwrite(buffer, sizeof(char), size, fPtr);
 
-		fwrite("__", sizeof(char), 2, fPtr);
-		
+		fwrite(", ", sizeof(char), 2, fPtr);
 
-		switch(currentObject->ObjectID)
-		{
-			case 1:
-				size = convertIntToStr(buffer, (int)(currentObject->ObjectBox->xSize/X_TILESCALE));
+		size = convertIntToStr(buffer, currentObject->ObjectBox->xSize);
 
-				fwrite(buffer, sizeof(char), size, fPtr);
+		fwrite(buffer, sizeof(char), size, fPtr);
 
-				fwrite("__", sizeof(char), 2, fPtr);
+		fwrite(", ", sizeof(char), 2, fPtr);
 
-				size = convertIntToStr(buffer, (int)(currentObject->ObjectBox->ySize/Y_TILESCALE));
+		size = convertIntToStr(buffer, currentObject->ObjectBox->ySize);
 
-				fwrite(buffer, sizeof(char), size, fPtr);
-				break;
+		fwrite(buffer, sizeof(char), size, fPtr);
 
-			default:
-				
-				break;
-		}
+		fwrite(", ", sizeof(char), 2, fPtr);
 
-		fwrite("____", sizeof(char), 4, fPtr);
+
+		size = convertIntToStr(buffer, currentObject->arg1);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+		fwrite(", ", sizeof(char), 2, fPtr);
+
+		size = convertIntToStr(buffer, currentObject->arg2);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+		fwrite(", ", sizeof(char), 2, fPtr);
+
+		size = convertIntToStr(buffer, currentObject->arg4);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+		fwrite(", ", sizeof(char), 2, fPtr);
+
+		size = convertIntToStr(buffer, currentObject->arg4);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+		fwrite(", ", sizeof(char), 2, fPtr);
+
+		size = convertIntToStr(buffer, currentObject->arg5);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+
+		fwrite("\n////", sizeof(char), 5, fPtr);
 
 		currentObject = currentObject->nextObject;
 	}
 
-	fwrite("ENDF", sizeof(char), 4, fPtr);
+	fwrite("ENDFILE", sizeof(char), 8, fPtr);
 
 	fclose(fPtr);
 
@@ -805,27 +829,57 @@ int ApplyObjectLoadCommands(Object *inputObject, char commands[32])
 	{
 		inputObject->ObjectBox->solid = UNSOLID;
 	}
-
-	if (strcmp(commands, "UNSOLID-TOBACKGROUND") == 0)
+	else if (strcmp(commands, "UNSOLID-TOBACKGROUND") == 0)
 	{
 		inputObject->ObjectBox->solid = UNSOLID;
 		inputObject->layer = BACKGROUND;
 	}
-
-	if (strcmp(commands, "TOBACKGROUND") == 0)
+	else if (strcmp(commands, "TOBACKGROUND") == 0)
 	{
 		inputObject->layer = BACKGROUND;
 	}
-
-	if (strcmp(commands, "TOFOREGROUND") == 0)
+	else if (strcmp(commands, "TOFOREGROUND") == 0)
 	{
 		inputObject->layer = FOREGROUND;
 	}
-
-	if (strcmp(commands, "UNSOLID-TOFOREGROUND") == 0)
+	else if (strcmp(commands, "UNSOLID-TOFOREGROUND") == 0)
 	{
 		inputObject->ObjectBox->solid = UNSOLID;
 		inputObject->layer = FOREGROUND;
+	}
+	else if (strcmp(commands, "COLLIDETOFOREGROUND") == 0)
+	{
+		inputObject->ObjectBox->collideLayer = FOREGROUND;
+	}
+	else if (strcmp(commands, "COLLIDETOMIDDLEGRND") == 0)
+	{
+		inputObject->ObjectBox->collideLayer = MIDDLEGROUND;
+	}
+	else if (strcmp(commands, "COLLIDETOBACKGROUND") == 0)
+	{
+		inputObject->ObjectBox->collideLayer = BACKGROUND;
+	}
+	else if (strcmp(commands, "ALLTOBACKGROUND") == 0)
+	{
+		inputObject->ObjectBox->collideLayer = BACKGROUND;
+		inputObject->layer = BACKGROUND;
+	}
+	else if (strcmp(commands, "ALLTOFOREGROUND") == 0)
+	{
+		inputObject->ObjectBox->collideLayer = FOREGROUND;
+		inputObject->layer = FOREGROUND;
+	}
+	else if (strcmp(commands, "UNSOLID-ALLTOBACKGROUND") == 0)
+	{
+		inputObject->ObjectBox->solid = UNSOLID;
+		inputObject->layer = BACKGROUND;
+		inputObject->ObjectBox->collideLayer = BACKGROUND;
+	}
+	else if (strcmp(commands, "UNSOLID-ALLTOFOREGROUND") == 0)
+	{
+		inputObject->ObjectBox->solid = UNSOLID;
+		inputObject->layer = FOREGROUND;
+		inputObject->ObjectBox->collideLayer = FOREGROUND;
 	}
 
 
@@ -993,26 +1047,38 @@ int convertStrToInt(char str[], int size)
 
 int convertIntToStr(char str[], int input)
 {
-	int inputBuffer = input;
-	int polarity = 1;
-	
-	int i = 0;
+	if (input == 0)
+	{
+		str[0] = 48;
+		str[1] = 0;
+		return 1;
+	}
 
-	int count = (int)((ceil(log10(abs(input))) + 1) * sizeof(char));
+	int i = 0;
 
 	if (input < 0)
 	{
-		i++;
+		i = 1;
 		str[0] = '-';
+		input = abs(input);
 	}
 
-	sprintf(str + i, "%d", count);
 
-	str[i + count] = 0;
+	int j = floor( log10(input) );
+
+	while (j > 0)
+	{
+		int power = pow(10, j);
+		str[i] = ((input / power) % 10) + 48;
+		j--;
+		i++;
+	}
+
+	str[i] = (input % 10) + 48;
+	i++;
+	str[i] = 0;
 	
-	printf("%d - Converted str: %s\n", input, str);
-
-	return count;
+	return i;
 }
 
 

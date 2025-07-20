@@ -167,6 +167,9 @@ FunctionResult updateObjects(World *GameWorld, int keyboard[256]);
 int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256]);
 
 
+int UpdateObjectDisplay(World *GameWorld, Object *inputObject);
+
+
 int UpdateParticle(World *GameWorld, Object *particle);
 
 
