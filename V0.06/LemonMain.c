@@ -21,18 +21,18 @@ int RunLemonEngine(void)
 
     SDL_Window *Window = NULL;
 	SDL_Surface *screenSurface = NULL;
-	SDL_Renderer *Renderer = NULL;
-    SDL_Texture* texture = NULL;
+	SDL_Surface *destSurface = NULL;
     SDL_FRect destRect;
     destRect.x = screenWidth>>1;
     destRect.y = screenHeight>>1;
     destRect.w = screenWidth;
     destRect.h = screenHeight;
 
-	SDL_CreateWindowAndRenderer("Lemon Engine", screenWidth, screenHeight, 0, &Window, &Renderer);
+	Window = SDL_CreateWindow("Lemon Engine", screenWidth, screenHeight, 0);
+	destSurface = SDL_GetWindowSurface(Window);
 
 	// Check that the window was successfully created
-    if (Window == NULL || Renderer == NULL) 
+    if (Window == NULL) 
 	{
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
         return 1;
@@ -47,6 +47,9 @@ int RunLemonEngine(void)
 	clock_t gameTick = clock();
     clock_t currentFrameTime = 0;
 	clock_t lastFrameTime = 0;
+	clock_t lastSecond = clock();
+
+    int windowsFrames = 0;
 
 
 	uint32_t *screenBuffer = malloc(sizeof(uint32_t) * screenHeight * screenWidth);
@@ -101,21 +104,27 @@ int RunLemonEngine(void)
 
 
 		// Render screen
-		cleanRenderer(GameWorld, screenBuffer);
-
-		renderBackGroundSprite(screenBuffer, GameWorld->MainCamera, GameWorld);
-
-		drawObjects(screenBuffer, GameWorld->MainCamera, GameWorld);
-
-		putScreenOnWindow(screenBuffer, Renderer, screenSurface, texture);
-		
+		RenderSDL(GameWorld, screenBuffer, Window, destSurface, screenSurface);
 
 		// Process sound
 		IterateAudio();
-       
+
 
 		// Framerate control
     	frameRate(60, gameTick);
+       
+      	if (((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) > 0.99)
+	    {
+            if (GameWorld->GamePaused == 0)
+            {
+                printf("%d at %lf\n", windowsFrames, ((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) );
+            }
+           
+   		    windowsFrames = 0;
+   		    lastSecond = clock();
+	    }
+	   
+   		windowsFrames++;
 
 
 		if (GameWorld->GameState == CLOSE_GAME)
@@ -131,7 +140,7 @@ int RunLemonEngine(void)
 
 	cleanUpAudioData();
 
-	cleanUpWindowRenderer(Window, Renderer, screenSurface, texture);
+	cleanUpWindowRenderer(Window, destSurface, screenSurface);
 
     SDL_Quit();
 
@@ -167,24 +176,15 @@ int GameTick(World *GameWorld, int keyboard[256])
 }
 
 
-// SDL Functions
-int cleanUpWindowRenderer(SDL_Window *Window, SDL_Renderer *Renderer, SDL_Surface *screenSurface, SDL_Texture *texture)
+int RenderSDL(World *GameWorld, uint32_t *screenBuffer, SDL_Window *Window, SDL_Surface *destSurface, SDL_Surface *screenSurface)
 {
-	// Close Renderer/Window
-	SDL_DestroySurface(screenSurface);
+	if (GameWorld == NULL || screenBuffer == NULL || Window == NULL || destSurface == NULL || screenSurface == NULL)
+	{
+		return MISSING_DATA;
+	}
 
-	SDL_DestroyTexture(texture);
+	RenderEngine(GameWorld, screenBuffer);
 
-	SDL_DestroyRenderer(Renderer);
-
-    SDL_DestroyWindow(Window);
-
-	return 0;
-}
-
-
-int putScreenOnWindow(uint32_t *screenBuffer, SDL_Renderer *Renderer, SDL_Surface *screenSurface, SDL_Texture *texture)
-{
 	screenSurface = SDL_CreateSurfaceFrom(screenWidth, screenHeight, SDL_PIXELFORMAT_BGRA32, screenBuffer, screenWidth * sizeof(uint32_t));
 
 	if (!screenSurface)
@@ -193,19 +193,42 @@ int putScreenOnWindow(uint32_t *screenBuffer, SDL_Renderer *Renderer, SDL_Surfac
 	}
 
 	SDL_FlipSurface(screenSurface, SDL_FLIP_VERTICAL);
-	texture = SDL_CreateTextureFromSurface(Renderer, screenSurface);
+	SDL_BlitSurface(screenSurface, NULL, destSurface, NULL);
+	SDL_UpdateWindowSurface(Window);
 
-	if (!texture)
+
+	return 0;
+}
+
+
+int RenderEngine(World *GameWorld, uint32_t *screenBuffer)
+{
+	if (GameWorld == NULL || screenBuffer == NULL)
 	{
-		printf("Couldnt load texture: %s\n", SDL_GetError());
+		return MISSING_DATA;
 	}
 
-	SDL_SetRenderDrawColor(Renderer, 0x00, 0x00, 0x00, 0x00);
-	SDL_RenderClear(Renderer);
+	cleanRenderer(GameWorld, screenBuffer);
 
-	SDL_RenderTexture(Renderer, texture, NULL, NULL);
+	renderBackGroundSprite(screenBuffer, GameWorld->MainCamera, GameWorld);
 
-	SDL_RenderPresent(Renderer);
+	drawObjects(screenBuffer, GameWorld->MainCamera, GameWorld);
+
+	return 0;
+}
+
+
+// SDL Functions
+int cleanUpWindowRenderer(SDL_Window *Window, SDL_Surface *destSurface, SDL_Surface *screenSurface)
+{
+	// Close Renderer/Window
+	SDL_DestroySurface(screenSurface);
+
+	SDL_DestroySurface(destSurface);
+
+    SDL_DestroyWindow(Window);
+
+	return 0;
 }
 
 
@@ -231,11 +254,11 @@ int getKeyboardInput(SDL_Event *event, int keyboard[256])
 			keyCode = LMN_RIGHTARROW;
 			break;
 
-		case 81:
+		case 82:
 			keyCode = LMN_UPARROW;
 			break;
 
-		case 82:
+		case 81:
 			keyCode = LMN_DOWNARROW;
 			break;
 
@@ -341,6 +364,7 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 		printf("Object size: %d\n", sizeof(Object) + sizeof(PhysicsRect) + sizeof(DisplayData));
 
 		saveLevel(GameWorld);
+		AddObject(GameWorld, UI_ELEMENT, 0, 0, 0, 0, FADEOUT, 0, 0, 0, 0);
 
 		keyboard['Y'] = 2;
 	}
@@ -443,8 +467,9 @@ World* InitialiseGame()
 	GameWorld->drawUI = 1;
 
 	GameWorld->bgParallax = 0.1;
-	GameWorld->bgParallaxChunkSize = 64;
-	GameWorld->bgChunkParallax = 0.00008;
+	GameWorld->bgRowParallax = 0.00006;
+	GameWorld->ParallaxRowCutOff = 640;
+	GameWorld->ParallaxRowStart = 1000;
 
 	GameWorld->bgSpriteBuffer = NULL;
 

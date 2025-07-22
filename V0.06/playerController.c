@@ -210,7 +210,7 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld, int keyboard[2
 	if (vAxis < 0 && Player->inAir == 0)
 	{
 		PlayerBox->crouch = 1;
-		PlayerBox->yVelocity -= 1.0;
+		//PlayerBox->yVelocity -= 1.0;
 	}
 
 	if (vAxis > -1 && Player->inAir == 0)
@@ -320,6 +320,11 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld, int keyboard[2
 	if (onGround == 0 && Player->inAir < 100)
 	{
 		Player->inAir++;
+	}
+
+	if (Player->inAir > 50 && Player->PlayerBox->crouch == 1)
+	{
+		Player->PlayerBox->crouch = 0;
 	}
 
 	if (onGround > 0)

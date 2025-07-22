@@ -33,6 +33,15 @@ int InitialiseUIElement(World *GameWorld, Object *UIElement)
 		break;
 
 
+		case FADEOUT:
+			UIElement->ObjectBox->xPos = screenWidth >> 1;
+			UIElement->ObjectBox->yPos = screenHeight >> 1;
+			UIElement->ObjectDisplay->transparency = 0;
+			UIElement->arg2 = 0;
+			switchSpriteByName("FadeOut", 0, UIElement->ObjectDisplay);
+		break;
+
+
 		case PAUSE_BACKGROUND:
 		switchSpriteByName("PauseBackground", 0, UIElement->ObjectDisplay);
 		break;
@@ -233,6 +242,31 @@ int UpdateUIElement(World *GameWorld, Object *UIElement, int keyboard[256])
 
 		case OPTION_BUTTON:
 		UpdateOptionButton(UIElement);
+		break;
+
+		case FADEOUT:
+			if (UIElement->arg2 == 0)
+			{
+				UIElement->ObjectDisplay->transparency+=0.06;
+				if (UIElement->ObjectDisplay->transparency > 0.99)
+				{
+					UIElement->ObjectDisplay->transparency = 1.0;
+					UIElement->arg2 = 1;
+				}
+			}
+			else if (UIElement->arg2 > 30)
+			{
+				UIElement->ObjectDisplay->transparency-=0.05;
+				if (UIElement->ObjectDisplay->transparency < 0.01)
+				{
+					MarkObjectForDeletion(UIElement);
+				}
+			}
+			else
+			{
+				UIElement->arg2++;
+			}
+
 		break;
 
 		default:

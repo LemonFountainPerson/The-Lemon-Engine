@@ -19,13 +19,16 @@ int RunLemonEngine(void);
 int GameTick(World *GameWorld, int keyboard[256]);
 
 
+int RenderEngine(World *GameWorld, uint32_t *screenBuffer);
+
+
 World* InitialiseGame();
 
 
 int LoadBackGroundSprites(World *GameWorld);
 
 
-int putScreenOnWindow(uint32_t *screenBuffer, SDL_Renderer *Renderer, SDL_Surface *screenSurface, SDL_Texture *texture);
+int putScreenOnWindow(uint32_t *screenBuffer, SDL_Window *Window, SDL_Surface *destSurface, SDL_Surface *screenSurface);
 
 
 int getKeyboardInput(SDL_Event *event, int keyboard[256]);
@@ -43,7 +46,10 @@ void frameRate(int milliseconds, clock_t gameTick);
 void clearGameData(World *GameWorld, uint32_t screen[]);
 
 
-int cleanUpWindowRenderer(SDL_Window *Window, SDL_Renderer *Renderer, SDL_Surface *screenSurface, SDL_Texture *texture);
+int RenderSDL(World *GameWorld, uint32_t *screenBuffer, SDL_Window *Window, SDL_Surface *destSurface, SDL_Surface *screenSurface);
+
+
+int cleanUpWindowRenderer(SDL_Window *Window, SDL_Surface *destSurface, SDL_Surface *screenSurface);
 
 
 int clamp(int input, int lowerBound, int upperBound);

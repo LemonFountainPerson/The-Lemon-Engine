@@ -17,6 +17,8 @@
 
 //								Engine constants
 //-------------------------------------------------------------------------------------------------
+#define MULTITHREADED_ENABLED 0
+
 #define MAX_LEN 80
 #define ENCRYPT_OFFSET 600
 
@@ -323,6 +325,7 @@ enum ParticleSubType {
 // it will result in it being treated as a BASIC GRAPHIC
 enum UISubType {
 	BASIC_GRAPHIC = 0,
+	FADEOUT,
 	OPTION_BUTTON,
 	PAUSE_MENU_CONTROLLER,
 	PAUSE_HEADER,
@@ -401,6 +404,23 @@ struct renderFrame
 };
 
 
+struct threadRenderData
+{
+	struct displayData *inputData;
+	struct physicsRect *inputBox;
+	int xDraw;
+	int xDraw2; 
+	int yDraw;
+	int yDraw2;
+	int xOffset;
+	int yOffset;
+	uint32_t *screen;
+	size_t sizeOfPixel;
+
+	int thread;
+};
+
+
 // Regular Sprites (Objects, player, particles, etc.)
 struct sprite
 {
@@ -469,6 +489,7 @@ struct displayData
 	int spriteYOffset;
 	int pixelXOffset;
 	int pixelYOffset;
+	float transparency;
 
 	int currentAnimation;
 	int animationTick;
@@ -626,8 +647,9 @@ struct world
 	struct sprite *bgSpriteBuffer;
 
 	float bgParallax;
-	int bgParallaxChunkSize;
-	double bgChunkParallax;
+	double bgRowParallax;
+	short ParallaxRowCutOff;
+	short ParallaxRowStart;
 
 	int drawnObjects;
 	int drawnParticles;

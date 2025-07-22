@@ -9,7 +9,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 		return NULL;
 	}
 
-	if (GameWorld->ObjectList->objectCount + GameWorld->ObjectList->cachedCount >= MAX_OBJECTS - (GameWorld->GameState == LOADING) << 4)
+	if (GameWorld->ObjectList->objectCount + GameWorld->ObjectList->cachedCount >= MAX_OBJECTS)
 	{
 		return NULL;
 	}
@@ -73,6 +73,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 		case SOLID_BLOCK:
 			newObject->ObjectBox->xSize = xSize * X_TILESCALE;
 			newObject->ObjectBox->ySize = ySize * Y_TILESCALE;
+			newObject->ObjectDisplay->transparency = 0.9;
 			if (arg1 > 0)
 			{
 				switchObjectSprite(arg1, newObject, ObjectList);
@@ -120,7 +121,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 		case SPRING:
 		// spring
 			newObject->arg1 = arg1;
-			newObject->ObjectBox->solid = 0;
+			newObject->ObjectBox->solid = UNSOLID;
 			break;
 
 
@@ -475,6 +476,7 @@ DisplayData* createDisplayData(RenderMode startRenderMode)
 	newDisplay->animationBuffer = NULL;
 	newDisplay->animationTick = 0;
 	newDisplay->animationLoopCount = 0;
+	newDisplay->transparency = 1.0;
 
 	return newDisplay;
 }
@@ -1217,6 +1219,11 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 
 
 		case BASIC_ENEMY:
+			UpdateEntityPhysics(inputObject, GameWorld->Player, GameWorld);
+			break;
+
+
+		case PUSHABLE_BOX:
 			UpdateEntityPhysics(inputObject, GameWorld->Player, GameWorld);
 			break;
 

@@ -4,7 +4,7 @@
  
 int main(void)
 {
-	runLemonEngine();
+	RunLemonEngine();
 
 	return 0;
 }
@@ -13,6 +13,7 @@ int main(void)
 
 // gcc windows_main.c LemonMain.c gameObjects.c levelLoader.c drawScreen.c playerController.c spriteLoader.c soundProcessor.c eventManager.c animations.c UIObjects.c cutsceneManager.c enemies.c -o LemonEngine.exe -lgdi32 -lwinmm -O3 -I C:\Libraries\i686-w64-mingw32\include -L C:\Libraries\i686-w64-mingw32\lib -lSDL3
 
+// gcc main.c LemonMain.c gameObjects.c levelLoader.c drawScreen.c playerController.c spriteLoader.c soundProcessor.c eventManager.c animations.c UIObjects.c cutsceneManager.c enemies.c -o LemonEngineSDL.exe -lgdi32 -lwinmm -O3 -I C:\Libraries\i686-w64-mingw32\include -L C:\Libraries\i686-w64-mingw32\lib -lSDL3
 
 
 /*
@@ -45,10 +46,7 @@ LemonMain.c <- data.h
 | | soundProcessor.c
 | | ...
 
-*/
 
-
-/*
 TO DO:.
 
 (In order of importance)
@@ -57,4 +55,4 @@ TO DO:.
 - Add decoding/encoding function for txt -> lem files
 - Develop cutscene manager
 
-*\
+*/

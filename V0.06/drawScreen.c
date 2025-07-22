@@ -418,8 +418,18 @@ int renderObjectSprite(uint32_t *screen, Camera inputCamera, World *gameWorld, O
 	}
 
 	// Render
-	int renderResult = renderSpriteInRenderMode(screen, currentObject->ObjectDisplay, xOffset, yOffset, currentObject->ObjectBox);
+	int renderResult;
+
+	if (MULTITHREADED_ENABLED == 0)
+	{
+		renderResult = renderSpriteInRenderMode(screen, currentObject->ObjectDisplay, xOffset, yOffset, currentObject->ObjectBox);
+	}
+	else
+	{
+		renderResult = renderSpriteInRenderMode_MultiThreaded(screen, currentObject->ObjectDisplay, xOffset, yOffset, currentObject->ObjectBox);
+	}
 	
+
 	if (renderResult != LEMON_SUCCESS)
 	{
 		return EXECUTION_UNNECESSARY;
@@ -445,6 +455,7 @@ int renderObjectSprite(uint32_t *screen, Camera inputCamera, World *gameWorld, O
 
 	return 0;
 }
+
 
 
 int renderSpriteInRenderMode(uint32_t *screen, DisplayData *inputData, int realXOffset, int realYOffset, PhysicsRect *inputBox)
@@ -512,6 +523,19 @@ int renderSpriteInRenderMode(uint32_t *screen, DisplayData *inputData, int realX
 	}
 
 
+	// Multi-Thread Set-up
+	struct threadRenderData Data;
+	Data.screen = screen;
+	Data.sizeOfPixel = sizeof(uint32_t);
+	Data.inputData = inputData;
+	Data.inputBox = inputBox;
+	Data.xDraw = xDraw;
+	Data.xDraw2 = xDraw2;
+	Data.yDraw = yDraw;
+	Data.yDraw2 = yDraw2;
+	Data.xOffset = realXOffset;
+	Data.yOffset = realYOffset;
+
 
 	// Render sprite to screen
 	switch(inputRenderMode)
@@ -545,22 +569,22 @@ int renderSpriteInRenderMode(uint32_t *screen, DisplayData *inputData, int realX
 		{
 			if (inputBox->xFlip == 1 && inputBox->yFlip == 1)
 			{
-				renderSprite_LRUD_FullAlpha(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset);
+				renderSprite_LRUD_FullAlpha(&Data);
+				
 			}
 			else if (inputBox->xFlip == -1 && inputBox->yFlip == 1)
 			{
-				renderSprite_RLUD_FullAlpha(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset);
+				renderSprite_RLUD_FullAlpha(&Data);
 			}
 			else if (inputBox->xFlip == 1 && inputBox->yFlip == -1)
 			{
-				renderSprite_LRDU_FullAlpha(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset);
+				renderSprite_LRDU_FullAlpha(&Data);
 			}
 			else
 			{
-				renderSprite_RLDU_FullAlpha(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset);
+				renderSprite_RLDU_FullAlpha(&Data);
 			}
 
-			return 0;
 		} break;
 
 
@@ -584,7 +608,6 @@ int renderSpriteInRenderMode(uint32_t *screen, DisplayData *inputData, int realX
 				renderSprite_RLDU_Tile(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset);
 			}
 
-			return 0;
 		} break;
 
 
@@ -592,22 +615,21 @@ int renderSpriteInRenderMode(uint32_t *screen, DisplayData *inputData, int realX
 		{
 			if (inputBox->xFlip == 1 && inputBox->yFlip == 1)
 			{
-				renderSprite_LRUD_Scale(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset, inputBox);
+				renderSprite_LRUD_Scale(&Data);
 			}
 			else if (inputBox->xFlip == -1 && inputBox->yFlip == 1)
 			{
-				renderSprite_RLUD_Scale(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset, inputBox);
+				renderSprite_RLUD_Scale(&Data);
 			}
 			else if (inputBox->xFlip == 1 && inputBox->yFlip == -1)
 			{
-				renderSprite_LRDU_Scale(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset, inputBox);
+				renderSprite_LRDU_Scale(&Data);
 			}
 			else
 			{
-				renderSprite_RLDU_Scale(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset, inputBox);
+				renderSprite_RLDU_Scale(&Data);
 			}
 
-			return 0;
 		} break;
 
 
@@ -630,7 +652,6 @@ int renderSpriteInRenderMode(uint32_t *screen, DisplayData *inputData, int realX
 				renderSprite_RLDU_Scale_Full_Alpha(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset, inputBox);
 			}
 
-			return 0;
 		} break;
 
 		default:
@@ -644,38 +665,272 @@ int renderSpriteInRenderMode(uint32_t *screen, DisplayData *inputData, int realX
 }
 
 
-int renderSprite_LRUD_FullAlpha(uint32_t screen[], DisplayData *inputData, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
+// MULTITHREADED - Works, :) but i need to finish implementing 
+int renderSpriteInRenderMode_MultiThreaded(uint32_t *screen, DisplayData *inputData, int realXOffset, int realYOffset, PhysicsRect *inputBox)
 {
-	size_t sizeOfPixel = sizeof(uint32_t);
+	if (screen == NULL || inputData == NULL || inputBox == NULL || inputData->spriteBuffer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
 	Sprite *spritePtr = inputData->spriteBuffer;
+	RenderMode inputRenderMode = inputData->RenderModeOverride;
+
+	if (inputRenderMode == DEFAULT_TO_SPRITE)
+	{
+		inputRenderMode = spritePtr->RenderMode;
+	}
+
+
+	realXOffset += inputData->spriteXOffset;
+	realYOffset += inputData->spriteYOffset;
+
+	if (inputData->frameBuffer != NULL && inputData->currentAnimation > 0)
+	{
+		realXOffset += inputData->frameBuffer->SpriteXOffset;
+		realYOffset += inputData->frameBuffer->SpriteYOffset;
+	}
+
+	int xOffset2 = realXOffset + inputBox->xSize;
+	int yOffset2 = realYOffset + inputBox->ySize;
+
+	int xDraw2, xDraw, yDraw2, yDraw;
+
+	// Set draw locations on screen
+	if (inputRenderMode == SINGLE || inputRenderMode == SINGLE_FULL_ALPHA || inputRenderMode == SINGLE_FAST)
+	{
+		// Find center of object and then center sprite on that point
+		int centerX = (xOffset2 + realXOffset) >> 1;
+		int centerY = (yOffset2 + realYOffset) >> 1;
+		realXOffset = centerX - (spritePtr->width >> 1);
+		realYOffset = centerY - (spritePtr->height >> 1);
+		xOffset2 = centerX + (spritePtr->width >> 1);
+		yOffset2 = centerY + (spritePtr->height >> 1);
+
+		if (realXOffset >= screenWidth || xOffset2 < 0 || realYOffset >= screenHeight || yOffset2 < 0)
+		{
+			return INVALID_DATA;
+		}
+
+		xDraw = clamp(centerX - (spritePtr->width >> 1), 0, screenWidth - 1);
+		yDraw = clamp(centerY - (spritePtr->height >> 1), 0, screenHeight - 1);
+		xDraw2 = clamp(centerX + (spritePtr->width >> 1), 0, screenWidth - 1);
+		yDraw2 = clamp(centerY + (spritePtr->height >> 1), 0, screenHeight - 1);
+	}
+	else
+	{
+		if (realXOffset >= screenWidth || xOffset2 < 0 || realYOffset >= screenHeight || yOffset2 < 0)
+		{
+			return INVALID_DATA;
+		}
+
+		xDraw = clamp(realXOffset, 0, screenWidth - 1);
+		yDraw = clamp(realYOffset, 0, screenHeight - 1);
+		xDraw2 = clamp(inputBox->xSize + realXOffset, 0, screenWidth - 1);
+		yDraw2 = clamp(inputBox->ySize + realYOffset, 0, screenHeight - 1);
+	}
+
+
+	// Multi-Thread Set-up
+	struct threadRenderData Data1;
+	Data1.screen = screen;
+	Data1.sizeOfPixel = sizeof(uint32_t);
+	Data1.inputData = inputData;
+	Data1.inputBox = inputBox;
+	Data1.xDraw = xDraw;
+	Data1.xDraw2 = xDraw2;
+	Data1.yDraw = yDraw;
+	Data1.yDraw2 = yDraw2;
+	Data1.xOffset = realXOffset;
+	Data1.yOffset = realYOffset;
+
+	struct threadRenderData Data2;
+	Data2.screen = screen;
+	Data2.sizeOfPixel = sizeof(uint32_t);
+	Data2.inputData = inputData;
+	Data2.inputBox = inputBox;
+	Data2.xDraw = xDraw;
+	Data2.xDraw2 = xDraw2;
+	Data2.yDraw = yDraw + 1;
+	Data2.yDraw2 = yDraw2;
+	Data2.xOffset = realXOffset;
+	Data2.yOffset = realYOffset;
+
+
+	SDL_Thread *Thread2 = NULL;
+	int thread2Result = 0;
+
+
+	// Render sprite to screen
+	switch(inputRenderMode)
+	{
+		case SINGLE:
+		case TILE:
+		{
+			if (inputBox->xFlip == 1 && inputBox->yFlip == 1)
+			{
+				renderSprite_LRUD_Tile(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset);
+			}
+			else if (inputBox->xFlip == -1 && inputBox->yFlip == 1)
+			{
+				renderSprite_RLUD_Tile(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset);
+			}
+			else if (inputBox->xFlip == 1 && inputBox->yFlip == -1)
+			{
+				renderSprite_LRDU_Tile(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset);
+			}
+			else
+			{
+				renderSprite_RLDU_Tile(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset);
+			}
+
+			return 0;
+		} break;
+
+
+		case TILE_FULL_ALPHA:
+		case SINGLE_FULL_ALPHA:
+		{
+			if (inputBox->xFlip == 1 && inputBox->yFlip == 1)
+			{
+				Thread2 = SDL_CreateThread(renderSprite_LRUD_FullAlpha_MT, "RenderThread2", (void *)&Data2);
+				renderSprite_LRUD_FullAlpha_MT((void *)&Data1);
+				
+			}
+			else if (inputBox->xFlip == -1 && inputBox->yFlip == 1)
+			{
+				Thread2 = SDL_CreateThread(renderSprite_RLUD_FullAlpha_MT, "RenderThread2", (void *)&Data2);
+				renderSprite_RLUD_FullAlpha_MT((void *)&Data1);
+			}
+			else if (inputBox->xFlip == 1 && inputBox->yFlip == -1)
+			{
+				Thread2 = SDL_CreateThread(renderSprite_LRDU_FullAlpha_MT, "RenderThread2", (void *)&Data2);
+				renderSprite_LRDU_FullAlpha_MT((void *)&Data1);
+			}
+			else
+			{
+				Thread2 = SDL_CreateThread(renderSprite_RLDU_FullAlpha_MT, "RenderThread2", (void *)&Data2);
+				renderSprite_RLDU_FullAlpha_MT((void *)&Data1);
+			}
+
+		} break;
+
+
+		case SINGLE_FAST:
+		case TILE_FAST:
+		{
+			if (inputBox->xFlip == 1 && inputBox->yFlip == 1)
+			{
+				renderSprite_LRUD_TileFast(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset);
+			}
+			else if (inputBox->xFlip == -1 && inputBox->yFlip == 1)
+			{
+				renderSprite_RLUD_Tile(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset);
+			}
+			else if (inputBox->xFlip == 1 && inputBox->yFlip == -1)
+			{
+				renderSprite_LRDU_TileFast(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset);
+			}
+			else
+			{
+				renderSprite_RLDU_Tile(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset);
+			}
+
+		} break;
+
+
+		case SCALE:
+		{
+			if (inputBox->xFlip == 1 && inputBox->yFlip == 1)
+			{
+				Thread2 = SDL_CreateThread(renderSprite_LRUD_Scale_MT, "RenderThread2", (void *)&Data2);
+				renderSprite_LRUD_Scale_MT((void *)&Data1);
+			}
+			else if (inputBox->xFlip == -1 && inputBox->yFlip == 1)
+			{
+				Thread2 = SDL_CreateThread(renderSprite_RLUD_Scale_MT, "RenderThread2", (void *)&Data2);
+				renderSprite_RLUD_Scale_MT((void *)&Data1);
+			}
+			else if (inputBox->xFlip == 1 && inputBox->yFlip == -1)
+			{
+				Thread2 = SDL_CreateThread(renderSprite_RLDU_Scale_MT, "RenderThread2", (void *)&Data2);
+				renderSprite_LRDU_Scale_MT((void *)&Data1);
+			}
+			else
+			{
+				Thread2 = SDL_CreateThread(renderSprite_RLDU_Scale_MT, "RenderThread2", (void *)&Data2);
+				renderSprite_RLDU_Scale_MT((void *)&Data1);
+			}
+
+		} break;
+
+
+		case SCALE_FULL_ALPHA:
+		{
+			if (inputBox->xFlip == 1 && inputBox->yFlip == 1)
+			{
+				renderSprite_LRUD_Scale_Full_Alpha(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset, inputBox);
+			}
+			else if (inputBox->xFlip == -1 && inputBox->yFlip == 1)
+			{
+				renderSprite_RLUD_Scale_Full_Alpha(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset, inputBox);
+			}
+			else if (inputBox->xFlip == 1 && inputBox->yFlip == -1)
+			{
+				renderSprite_LRDU_Scale_Full_Alpha(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset, inputBox);
+			}
+			else
+			{
+				renderSprite_RLDU_Scale_Full_Alpha(screen, inputData, xDraw, xDraw2, yDraw, yDraw2, realXOffset, realYOffset, inputBox);
+			}
+
+		} break;
+
+		default:
+		return INVALID_DATA;
+		break;
+
+	}
+
+
+	SDL_WaitThread(Thread2, &thread2Result);
+
+
+	return 0;
+}
+
+
+int renderSprite_LRUD_FullAlpha(struct threadRenderData *Data)
+{
+	Sprite *spritePtr = Data->inputData->spriteBuffer;
 	uint32_t hexValue;
 
 	// Start render loop
-	int pixely = spritePtr->height - 1 - ((yDraw - yOffset + inputData->pixelYOffset) % spritePtr->height);
+	int pixely = spritePtr->height - 1 - ((Data->yDraw - Data->yOffset + Data->inputData->pixelYOffset) % spritePtr->height);
 
-	int startPixelx = ((xDraw - xOffset + inputData->pixelXOffset) % spritePtr->width);
+	int startPixelx = ((Data->xDraw - Data->xOffset + Data->inputData->pixelXOffset) % spritePtr->width);
 
-
-	for (int j = yDraw; j < yDraw2; j++)
+	
+	for (int j = Data->yDraw; j < Data->yDraw2; j++)
 	{
 		int pixelx = startPixelx;
 		int pixelYOffset = ((pixely << 2) * spritePtr->width);
 		int screenYOffset = j * screenWidth;
 
-		for (int i = xDraw; i < xDraw2; i++)
+		for (int i = Data->xDraw; i < Data->xDraw2; i++)
 		{
 			hexValue = spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 3] << 24 | 
 						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 2] << 16 | 
 						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 1] << 8 | 
 						spritePtr->spriteData[pixelYOffset + (pixelx << 2) ];
 
-			if (hexValue >> 24 == 0xFF)
+			if (hexValue >> 24 == 0xFF && Data->inputData->transparency > 254)
 			{
-				screen[screenYOffset + i] = hexValue;
+				Data->screen[screenYOffset + i] = hexValue;
 			}
 			else if (hexValue >> 24 != 0x00)
 			{
-				screen[screenYOffset + i] = blendPixel(screen[screenYOffset + i], hexValue);
+				Data->screen[screenYOffset + i] = blendPixel(Data->screen[screenYOffset + i], hexValue, Data->inputData->transparency);
 			}
 			
 
@@ -691,47 +946,46 @@ int renderSprite_LRUD_FullAlpha(uint32_t screen[], DisplayData *inputData, int x
 
 		if (pixely < 0)
 		{
-			pixely = spritePtr->height - 1;
+			pixely = spritePtr->height + pixely;
 		}
 
 	}
-
 
 	return 0;
 }
 
 
-int renderSprite_RLUD_FullAlpha(uint32_t screen[], DisplayData *inputData, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
+int renderSprite_RLUD_FullAlpha(struct threadRenderData *Data)
 {
-	size_t sizeOfPixel = sizeof(uint32_t);
-	Sprite *spritePtr = inputData->spriteBuffer;
+	Sprite *spritePtr = Data->inputData->spriteBuffer;
 	uint32_t hexValue;
 
 	// Start render loop
-	int pixely = spritePtr->height - 1 - ((yDraw - yOffset + inputData->pixelYOffset) % spritePtr->height);
+	int pixely = spritePtr->height - 1 - ((Data->yDraw - Data->yOffset + Data->inputData->pixelYOffset) % spritePtr->height);
 
-	int startPixelx = spritePtr->width - 1 - ((xDraw - xOffset + inputData->pixelXOffset) % spritePtr->width);
+	int startPixelx = spritePtr->width - 1 - ((Data->xDraw - Data->xOffset + Data->inputData->pixelXOffset) % spritePtr->width);
 
-	for (int j = yDraw; j < yDraw2; j++)
+
+	for (int j = Data->yDraw; j < Data->yDraw2; j++)
 	{
 		int pixelx = startPixelx;
 		int pixelYOffset = ((pixely << 2) * spritePtr->width);
 		int screenYOffset = j * screenWidth;
 
-		for (int i = xDraw; i < xDraw2; i++)
+		for (int i = Data->xDraw; i < Data->xDraw2; i++)
 		{
 			hexValue = spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 3] << 24 | 
 						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 2] << 16 | 
 						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 1] << 8 | 
 						spritePtr->spriteData[pixelYOffset + (pixelx << 2) ];
 
-			if (hexValue >> 24 == 0xFF)
+			if (hexValue >> 24 == 0xFF && Data->inputData->transparency > 254)
 			{
-				screen[screenYOffset + i] = hexValue;
+				Data->screen[screenYOffset + i] = hexValue;
 			}
 			else if (hexValue >> 24 != 0x00)
 			{
-				screen[screenYOffset + i] = blendPixel(screen[screenYOffset + i], hexValue);
+				Data->screen[screenYOffset + i] = blendPixel(Data->screen[screenYOffset + i], hexValue, Data->inputData->transparency);
 			}
 
 			pixelx--;
@@ -746,7 +1000,7 @@ int renderSprite_RLUD_FullAlpha(uint32_t screen[], DisplayData *inputData, int x
 
 		if (pixely < 0)
 		{
-			pixely = spritePtr->width - 1;
+			pixely = spritePtr->width + pixely;
 		}
 
 	}
@@ -756,37 +1010,36 @@ int renderSprite_RLUD_FullAlpha(uint32_t screen[], DisplayData *inputData, int x
 }
 
 
-int renderSprite_LRDU_FullAlpha(uint32_t screen[], DisplayData *inputData, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
+int renderSprite_LRDU_FullAlpha(struct threadRenderData *Data)
 {
-	size_t sizeOfPixel = sizeof(uint32_t);
-	Sprite *spritePtr = inputData->spriteBuffer;
+	Sprite *spritePtr = Data->inputData->spriteBuffer;
 	uint32_t hexValue;
 
 	// Start render loop
-	int pixely = ((yDraw - yOffset + inputData->pixelYOffset) % spritePtr->height);
+	int pixely = ((Data->yDraw - Data->yOffset + Data->inputData->pixelYOffset) % spritePtr->height);
 
-	int startPixelx = ((xDraw - xOffset + inputData->pixelXOffset) % spritePtr->width);
+	int startPixelx = ((Data->xDraw - Data->xOffset + Data->inputData->pixelXOffset) % spritePtr->width);
 
-	for (int j = yDraw; j < yDraw2; j++)
+	for (int j = Data->yDraw; j < Data->yDraw2; j++)
 	{
 		int pixelx = startPixelx;
 		int pixelYOffset = ((pixely << 2) * spritePtr->width);
 		int screenYOffset = j * screenWidth;
 
-		for (int i = xDraw; i < xDraw2; i++)
+		for (int i = Data->xDraw; i < Data->xDraw2; i++)
 		{
 			hexValue = spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 3] << 24 | 
 						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 2] << 16 | 
 						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 1] << 8 | 
 						spritePtr->spriteData[pixelYOffset + (pixelx << 2) ];
 
-			if (hexValue >> 24 == 0xFF)
+			if (hexValue >> 24 == 0xFF && Data->inputData->transparency > 254)
 			{
-				screen[screenYOffset + i] = hexValue;
+				Data->screen[screenYOffset + i] = hexValue;
 			}
 			else if (hexValue >> 24 != 0x00)
 			{
-				screen[screenYOffset + i] = blendPixel(screen[screenYOffset + i], hexValue);
+				Data->screen[screenYOffset + i] = blendPixel(Data->screen[screenYOffset + i], hexValue, Data->inputData->transparency);
 			}
 
 			pixelx++;
@@ -811,37 +1064,36 @@ int renderSprite_LRDU_FullAlpha(uint32_t screen[], DisplayData *inputData, int x
 }
 
 
-int renderSprite_RLDU_FullAlpha(uint32_t screen[], DisplayData *inputData, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset)
+int renderSprite_RLDU_FullAlpha(struct threadRenderData *Data)
 {
-	size_t sizeOfPixel = sizeof(uint32_t);
-	Sprite *spritePtr = inputData->spriteBuffer;
+	Sprite *spritePtr = Data->inputData->spriteBuffer;
 	uint32_t hexValue;
 
 	// Start render loop
-	int pixely = ((yDraw - yOffset + inputData->pixelYOffset) % spritePtr->height );
+	int pixely = ((Data->yDraw - Data->yOffset + Data->inputData->pixelYOffset) % spritePtr->height );
 
-	int startPixelx = spritePtr->width - 1 - ((xDraw - xOffset + inputData->pixelXOffset) % spritePtr->width);
+	int startPixelx = spritePtr->width - 1 - ((Data->xDraw - Data->xOffset + Data->inputData->pixelXOffset) % spritePtr->width);
 
-	for (int j = yDraw; j < yDraw2; j++)
+	for (int j = Data->yDraw; j < Data->yDraw2; j++)
 	{
 		int pixelx = startPixelx;
 		int pixelYOffset = ((pixely << 2) * spritePtr->width);
 		int screenYOffset = j * screenWidth;
 
-		for (int i = xDraw; i < xDraw2; i++)
+		for (int i = Data->xDraw; i < Data->xDraw2; i++)
 		{
 			hexValue = spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 3] << 24 | 
 						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 2] << 16 | 
 						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 1] << 8 | 
 						spritePtr->spriteData[pixelYOffset + (pixelx << 2) ];
 
-			if (hexValue >> 24 == 0xFF)
+			if (hexValue >> 24 == 0xFF && Data->inputData->transparency > 254)
 			{
-				screen[screenYOffset + i] = hexValue;
+				Data->screen[screenYOffset + i] = hexValue;
 			}
 			else if (hexValue >> 24 != 0x00)
 			{
-				screen[screenYOffset + i] = blendPixel(screen[screenYOffset + i], hexValue);
+				Data->screen[screenYOffset + i] = blendPixel(Data->screen[screenYOffset + i], hexValue, Data->inputData->transparency);
 			}
 
 			pixelx--;
@@ -866,15 +1118,252 @@ int renderSprite_RLDU_FullAlpha(uint32_t screen[], DisplayData *inputData, int x
 }
 
 
-uint32_t blendPixel(uint32_t screenPixel, uint32_t inputPixel)
+
+int renderSprite_LRUD_FullAlpha_MT(void *Data)
 {
-	float alpha = ((inputPixel & 0xFF000000) >> 24 ) / 255.0;
+	struct threadRenderData *trueData = (struct threadRenderData *)Data;
 
-	uint8_t red = (( ((screenPixel & 0x00FF0000) >> 16) * (1.0 - alpha)) + (((inputPixel & 0x00FF0000) >> 16) * alpha));; 
+	Sprite *spritePtr = trueData->inputData->spriteBuffer;
+	uint32_t hexValue;
 
-	uint8_t green = (( ((screenPixel & 0x0000FF00) >> 8) * (1.0 - alpha)) + (((inputPixel & 0x0000FF00) >> 8) * alpha));; 
+	int pixely = spritePtr->height - 1 - ((trueData->yDraw - trueData->yOffset + trueData->inputData->pixelYOffset) % spritePtr->height);
 
-	uint8_t blue = (( ((screenPixel & 0x000000FF)) * (1.0 - alpha)) + ((inputPixel & 0x000000FF) * alpha));; 
+	int startPixelx = ((trueData->xDraw - trueData->xOffset + trueData->inputData->pixelXOffset) % spritePtr->width);
+
+
+	for (int j = trueData->yDraw; j < trueData->yDraw2; j += 2)
+	{
+		int pixelx = startPixelx;
+		int pixelYOffset = ((pixely << 2) * spritePtr->width);
+		int screenYOffset = j * screenWidth;
+
+
+		for (int i = trueData->xDraw; i < trueData->xDraw2; i++)
+		{
+			hexValue = spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 3] << 24 | 
+						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 2] << 16 | 
+						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 1] << 8 | 
+						spritePtr->spriteData[pixelYOffset + (pixelx << 2) ];
+
+			if (hexValue >> 24 == 0xFF && trueData->inputData->transparency > 254)
+			{
+				trueData->screen[screenYOffset + i] = hexValue;
+			}
+			else if (hexValue >> 24 != 0x00)
+			{
+				trueData->screen[screenYOffset + i] = blendPixel(trueData->screen[screenYOffset + i], hexValue, trueData->inputData->transparency);
+			}
+			
+
+			pixelx++;
+
+			if (pixelx >= spritePtr->width)
+			{
+				pixelx = 0;
+			}
+		}
+
+		pixely -= 2;
+
+		if (pixely < 0)
+		{
+			pixely = spritePtr->height + pixely;
+		}
+
+	}
+
+	return 0;
+}
+
+
+int renderSprite_RLUD_FullAlpha_MT(void *Data)
+{
+	struct threadRenderData *trueData = (struct threadRenderData *)Data;
+
+	Sprite *spritePtr = trueData->inputData->spriteBuffer;
+	uint32_t hexValue;
+
+	int pixely = spritePtr->height - 1 - ((trueData->yDraw - trueData->yOffset + trueData->inputData->pixelYOffset) % spritePtr->height);
+
+	int startPixelx = spritePtr->width - 1 - ((trueData->xDraw - trueData->xOffset + trueData->inputData->pixelXOffset) % spritePtr->width);
+
+
+
+	for (int j = trueData->yDraw; j < trueData->yDraw2; j += 2)
+	{
+		int pixelx = startPixelx;
+		int pixelYOffset = ((pixely << 2) * spritePtr->width);
+		int screenYOffset = j * screenWidth;
+
+		for (int i = trueData->xDraw; i < trueData->xDraw2; i++)
+		{
+			hexValue = spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 3] << 24 | 
+						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 2] << 16 | 
+						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 1] << 8 | 
+						spritePtr->spriteData[pixelYOffset + (pixelx << 2) ];
+
+			if (hexValue >> 24 == 0xFF && trueData->inputData->transparency > 254)
+			{
+				trueData->screen[screenYOffset + i] = hexValue;
+			}
+			else if (hexValue >> 24 != 0x00)
+			{
+				trueData->screen[screenYOffset + i] = blendPixel(trueData->screen[screenYOffset + i], hexValue, trueData->inputData->transparency);
+			}
+
+			pixelx--;
+
+			if (pixelx < 0)
+			{
+				pixelx = spritePtr->width - 1;
+			}
+		}
+
+		pixely -= 2;
+
+		if (pixely < 0)
+		{
+			pixely = spritePtr->width + pixely;
+		}
+
+	}
+
+	return 0;
+}
+
+
+int renderSprite_LRDU_FullAlpha_MT(void *Data)
+{
+	struct threadRenderData *trueData = (struct threadRenderData *)Data;
+
+	Sprite *spritePtr = trueData->inputData->spriteBuffer;
+	uint32_t hexValue;
+
+	int pixely = ((trueData->yDraw - trueData->yOffset + trueData->inputData->pixelYOffset) % spritePtr->height);
+
+	int startPixelx = ((trueData->xDraw - trueData->xOffset + trueData->inputData->pixelXOffset) % spritePtr->width);
+
+
+	for (int j = trueData->yDraw; j < trueData->yDraw2; j += 2)
+	{
+		int pixelx = startPixelx;
+		int pixelYOffset = ((pixely << 2) * spritePtr->width);
+		int screenYOffset = j * screenWidth;
+
+
+		for (int i = trueData->xDraw; i < trueData->xDraw2; i++)
+		{
+			hexValue = spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 3] << 24 | 
+						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 2] << 16 | 
+						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 1] << 8 | 
+						spritePtr->spriteData[pixelYOffset + (pixelx << 2) ];
+
+			if (hexValue >> 24 == 0xFF && trueData->inputData->transparency > 254)
+			{
+				trueData->screen[screenYOffset + i] = hexValue;
+			}
+			else if (hexValue >> 24 != 0x00)
+			{
+				trueData->screen[screenYOffset + i] = blendPixel(trueData->screen[screenYOffset + i], hexValue, trueData->inputData->transparency);
+			}
+			
+
+			pixelx++;
+
+			if (pixelx >= spritePtr->width)
+			{
+				pixelx = 0;
+			}
+		}
+
+		pixely += 2;
+
+		if (pixely > spritePtr->height)
+		{
+			pixely = pixely - spritePtr->height;
+		}
+
+	}
+
+	return 0;
+}
+
+
+int renderSprite_RLDU_FullAlpha_MT(void *Data)
+{
+	struct threadRenderData *trueData = (struct threadRenderData *)Data;
+
+	Sprite *spritePtr = trueData->inputData->spriteBuffer;
+	uint32_t hexValue;
+
+	int pixely = ((trueData->yDraw - trueData->yOffset + trueData->inputData->pixelYOffset) % spritePtr->height);
+
+	int startPixelx = spritePtr->width - 1 - ((trueData->xDraw - trueData->xOffset + trueData->inputData->pixelXOffset) % spritePtr->width);
+
+
+
+	for (int j = trueData->yDraw; j < trueData->yDraw2; j += 2)
+	{
+		int pixelx = startPixelx;
+		int pixelYOffset = ((pixely << 2) * spritePtr->width);
+		int screenYOffset = j * screenWidth;
+
+		for (int i = trueData->xDraw; i < trueData->xDraw2; i++)
+		{
+			hexValue = spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 3] << 24 | 
+						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 2] << 16 | 
+						spritePtr->spriteData[pixelYOffset + (pixelx << 2) + 1] << 8 | 
+						spritePtr->spriteData[pixelYOffset + (pixelx << 2) ];
+
+			if (hexValue >> 24 == 0xFF && trueData->inputData->transparency > 254)
+			{
+				trueData->screen[screenYOffset + i] = hexValue;
+			}
+			else if (hexValue >> 24 != 0x00)
+			{
+				trueData->screen[screenYOffset + i] = blendPixel(trueData->screen[screenYOffset + i], hexValue, trueData->inputData->transparency);
+			}
+
+			pixelx--;
+
+			if (pixelx < 0)
+			{
+				pixelx = spritePtr->width - 1;
+			}
+		}
+
+		pixely += 2;
+
+		if (pixely > spritePtr->height)
+		{
+			pixely = pixely - spritePtr->height;
+		}
+
+	}
+
+	return 0;
+}
+
+
+
+uint32_t blendPixel(uint32_t screenPixel, uint32_t inputPixel, float transparency)
+{
+	float alpha = (((inputPixel & 0xFF000000) >> 24 ) * transparency) / 255.0;
+
+	uint8_t rSrc = ((inputPixel & 0x00FF0000) >> 16);
+	uint8_t rDest = ((screenPixel & 0x00FF0000) >> 16);
+
+	uint8_t gSrc = ( (inputPixel & 0x0000FF00) >> 8);
+	uint8_t gDest =  ((screenPixel & 0x0000FF00) >> 8);
+
+	uint8_t bSrc = (inputPixel & 0x000000FF);
+	uint8_t bDest = (screenPixel & 0x000000FF);
+
+	uint8_t red = ( (rSrc - rDest) * alpha) + rDest; 
+
+	uint8_t green = ( (gSrc - gDest) * alpha) + gDest;
+
+	uint8_t blue = ( (bSrc - bDest) * alpha) + bDest;
 
 	return (red << 16 | green << 8 | blue);
 }
@@ -1185,26 +1674,25 @@ int renderSprite_LRDU_TileFast(uint32_t screen[], DisplayData *inputData, int xD
 }
 
 
-int renderSprite_LRUD_Scale(uint32_t screen[], DisplayData *inputData, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, PhysicsRect *inputBox)
+int renderSprite_LRUD_Scale(struct threadRenderData *Data)
 {
-	int sizeOfPixel = sizeof(uint32_t);
-	Sprite *spritePtr = inputData->spriteBuffer;
+	Sprite *spritePtr = Data->inputData->spriteBuffer;
 
-	double xScale = (double)spritePtr->width/(double)inputBox->xSize;
-	double yScale = (double)spritePtr->height/(double)inputBox->ySize;
-	double xScale2 = (double)inputBox->xSize / (double)spritePtr->width;
+	double xScale = (double)spritePtr->width/(double)Data->inputBox->xSize;
+	double yScale = (double)spritePtr->height/(double)Data->inputBox->ySize;
+	double xScale2 = (double)Data->inputBox->xSize / (double)spritePtr->width;
 
-	double pixely = (inputBox->ySize - 1 - (yDraw - yOffset)) * yScale;
+	double pixely = (Data->inputBox->ySize - 1 - (Data->yDraw - Data->yOffset)) * yScale;
 
 
-	for (int i = yDraw; i < yDraw2; ++i)
+	for (int i = Data->yDraw; i < Data->yDraw2; i++)
 	{
 		unsigned int pixelx = 0;
 
 		int intPixelY = (((int)pixely << 2) * spritePtr->width);
 		int screenYOffset = i * screenWidth;
 
-		double k = xOffset;
+		double k = Data->xOffset;
 
 		if (k < 0.0)
 		{
@@ -1217,9 +1705,9 @@ int renderSprite_LRUD_Scale(uint32_t screen[], DisplayData *inputData, int xDraw
 
 			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
 			{
-				for (int j = xDraw; j < k; ++j)
+				for (int j = Data->xDraw; j < k; ++j)
 				{
-					memcpy(screen + screenYOffset + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
+					memcpy(Data->screen + screenYOffset + j, spritePtr->spriteData + intPixelY + (pixelx << 2), Data->sizeOfPixel);
 				}
 				
 			}
@@ -1227,13 +1715,13 @@ int renderSprite_LRUD_Scale(uint32_t screen[], DisplayData *inputData, int xDraw
 			pixelx++;
 		}
 
-		for (; (int)k < xDraw2 && pixelx < spritePtr->width; k += xScale2)
+		for (; (int)k < Data->xDraw2 && pixelx < spritePtr->width; k += xScale2)
 		{
 			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
 			{
-				for (int j = 0; j < xScale2 && (int)k + j < xDraw2; ++j)
+				for (int j = 0; j < xScale2 && (int)k + j < Data->xDraw2; ++j)
 				{
-					memcpy(screen + screenYOffset + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
+					memcpy(Data->screen + screenYOffset + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), Data->sizeOfPixel);
 				}
 				
 			}
@@ -1248,27 +1736,26 @@ int renderSprite_LRUD_Scale(uint32_t screen[], DisplayData *inputData, int xDraw
 }
 
 
-int renderSprite_RLUD_Scale(uint32_t screen[], DisplayData *inputData, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, PhysicsRect *inputBox)
+int renderSprite_RLUD_Scale(struct threadRenderData *Data)
 {
-	int sizeOfPixel = sizeof(uint32_t);
-	Sprite *spritePtr = inputData->spriteBuffer;
+	Sprite *spritePtr = Data->inputData->spriteBuffer;
 
-	double xScale = (double)spritePtr->width/(double)inputBox->xSize;
-	double yScale = (double)spritePtr->height/(double)inputBox->ySize;
-	double xScale2 = (double)inputBox->xSize / (double)spritePtr->width;
+	double xScale = (double)spritePtr->width/(double)Data->inputBox->xSize;
+	double yScale = (double)spritePtr->height/(double)Data->inputBox->ySize;
+	double xScale2 = (double)Data->inputBox->xSize / (double)spritePtr->width;
 
-	double pixely = (inputBox->ySize - 1 - (yDraw - yOffset)) * yScale;
+	double pixely = (Data->inputBox->ySize - 1 - (Data->yDraw - Data->yOffset)) * yScale;
 
 	int startPixelx = spritePtr->width - 1;
-	int screenYOffset = yDraw * screenWidth;
+	int screenYOffset = Data->yDraw * screenWidth;
 
-	for (int i = yDraw; i < yDraw2; ++i)
+	for (int i = Data->yDraw; i < Data->yDraw2; i++)
 	{
 		unsigned int pixelx = startPixelx;
 
 		int intPixelY = (((int)pixely << 2) * spritePtr->width);
 
-		double k = xOffset;
+		double k = Data->xOffset;
 
 
 		if (k < 0)
@@ -1282,9 +1769,9 @@ int renderSprite_RLUD_Scale(uint32_t screen[], DisplayData *inputData, int xDraw
 
 			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
 			{
-				for (int j = xDraw; j < k; ++j)
+				for (int j = Data->xDraw; j < k; ++j)
 				{
-					memcpy(screen + screenYOffset + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
+					memcpy(Data->screen + screenYOffset + j, spritePtr->spriteData + intPixelY + (pixelx << 2), Data->sizeOfPixel);
 				}
 				
 			}
@@ -1293,13 +1780,13 @@ int renderSprite_RLUD_Scale(uint32_t screen[], DisplayData *inputData, int xDraw
 		}
 		
 
-		for (; (int)k < xDraw2 && pixelx < spritePtr->width; k += xScale2)
+		for (; (int)k < Data->xDraw2 && pixelx < spritePtr->width; k += xScale2)
 		{
 			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
 			{
-				for (int j = 0; j < xScale2 && (int)k + j < xDraw2; ++j)
+				for (int j = 0; j < xScale2 && (int)k + j < Data->xDraw2; ++j)
 				{
-					memcpy(screen + screenYOffset + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
+					memcpy(Data->screen + screenYOffset + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), Data->sizeOfPixel);
 				}
 				
 			}
@@ -1315,24 +1802,23 @@ int renderSprite_RLUD_Scale(uint32_t screen[], DisplayData *inputData, int xDraw
 }
 
 
-int renderSprite_LRDU_Scale(uint32_t screen[], DisplayData *inputData, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, PhysicsRect *inputBox)
+int renderSprite_LRDU_Scale(struct threadRenderData *Data)
 {
-	int sizeOfPixel = sizeof(uint32_t);
-	Sprite *spritePtr = inputData->spriteBuffer;
+	Sprite *spritePtr = Data->inputData->spriteBuffer;
 
-	double xScale = (double)spritePtr->width/(double)inputBox->xSize;
-	double yScale = (double)spritePtr->height/(double)inputBox->ySize;
-	double xScale2 = (double)inputBox->xSize / (double)spritePtr->width;
+	double xScale = (double)spritePtr->width/(double)Data->inputBox->xSize;
+	double yScale = (double)spritePtr->height/(double)Data->inputBox->ySize;
+	double xScale2 = (double)Data->inputBox->xSize / (double)spritePtr->width;
 
-	double pixely = (yDraw - yOffset) * yScale;
+	double pixely = (Data->yDraw - Data->yOffset) * yScale;
 
 
-	for (int i = yDraw; i < yDraw2; i++)
+	for (int i = Data->yDraw; i < Data->yDraw2; i++)
 	{
 		int intPixelY = (((int)pixely << 2) * spritePtr->width);
 		unsigned int pixelx = 0;
 
-		double k = xOffset;
+		double k = Data->xOffset;
 
 
 		if (k < 0)
@@ -1346,9 +1832,9 @@ int renderSprite_LRDU_Scale(uint32_t screen[], DisplayData *inputData, int xDraw
 
 			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
 			{
-				for (int j = xDraw; j < k; j++)
+				for (int j = Data->xDraw; j < k; j++)
 				{
-					memcpy(screen + (i * screenWidth) + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
+					memcpy(Data->screen + (i * screenWidth) + j, spritePtr->spriteData + intPixelY + (pixelx << 2), Data->sizeOfPixel);
 				}
 				
 			}
@@ -1357,13 +1843,13 @@ int renderSprite_LRDU_Scale(uint32_t screen[], DisplayData *inputData, int xDraw
 		}
 		
 
-		for (; (int)k < xDraw2 && pixelx < spritePtr->width; k += xScale2)
+		for (; (int)k < Data->xDraw2 && pixelx < spritePtr->width; k += xScale2)
 		{
 			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
 			{
-				for (int j = 0; j < xScale2 && (int)k + j < xDraw2; j++)
+				for (int j = 0; j < xScale2 && (int)k + j < Data->xDraw2; j++)
 				{
-					memcpy(screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
+					memcpy(Data->screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), Data->sizeOfPixel);
 				}
 				
 			}
@@ -1378,26 +1864,25 @@ int renderSprite_LRDU_Scale(uint32_t screen[], DisplayData *inputData, int xDraw
 }
 
 
-int renderSprite_RLDU_Scale(uint32_t screen[], DisplayData *inputData, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, PhysicsRect *inputBox)
+int renderSprite_RLDU_Scale(struct threadRenderData *Data)
 {
-	int sizeOfPixel = sizeof(uint32_t);
-	Sprite *spritePtr = inputData->spriteBuffer;
+	Sprite *spritePtr = Data->inputData->spriteBuffer;
 
-	double xScale = (double)spritePtr->width/(double)inputBox->xSize;
-	double yScale = (double)spritePtr->height/(double)inputBox->ySize;
-	double xScale2 = (double)inputBox->xSize / (double)spritePtr->width;
+	double xScale = (double)spritePtr->width/(double)Data->inputBox->xSize;
+	double yScale = (double)spritePtr->height/(double)Data->inputBox->ySize;
+	double xScale2 = (double)Data->inputBox->xSize / (double)spritePtr->width;
 
-	double pixely = (yDraw - yOffset) * yScale;
+	double pixely = (Data->yDraw - Data->yOffset) * yScale;
 
 	int startPixelx = spritePtr->width - 1;
 
 
-	for (int i = yDraw; i < yDraw2; i++)
+	for (int i = Data->yDraw; i < Data->yDraw2; i++)
 	{
 		int intPixelY = (((int)pixely << 2) * spritePtr->width);
 		unsigned int pixelx = startPixelx;
 
-		double k = xOffset;
+		double k = Data->xOffset;
 
 
 		if (k < 0)
@@ -1411,9 +1896,9 @@ int renderSprite_RLDU_Scale(uint32_t screen[], DisplayData *inputData, int xDraw
 
 			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
 			{
-				for (int j = xDraw; j < k; j++)
+				for (int j = Data->xDraw; j < k; j++)
 				{
-					memcpy(screen + (i * screenWidth) + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
+					memcpy(Data->screen + (i * screenWidth) + j, spritePtr->spriteData + intPixelY + (pixelx << 2), Data->sizeOfPixel);
 				}
 				
 			}
@@ -1422,13 +1907,13 @@ int renderSprite_RLDU_Scale(uint32_t screen[], DisplayData *inputData, int xDraw
 		}
 		
 
-		for (; (int)k < xDraw2 && pixelx < spritePtr->width; k += xScale2)
+		for (; (int)k < Data->xDraw2 && pixelx < spritePtr->width; k += xScale2)
 		{
 			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
 			{
-				for (int j = 0; j < xScale2 && (int)(j + k) < xDraw2; j++)
+				for (int j = 0; j < xScale2 && (int)(j + k) < Data->xDraw2; j++)
 				{
-					memcpy(screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), sizeOfPixel);
+					memcpy(Data->screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), Data->sizeOfPixel);
 				}
 				
 			}
@@ -1441,6 +1926,278 @@ int renderSprite_RLDU_Scale(uint32_t screen[], DisplayData *inputData, int xDraw
 
 	return 0;
 }
+
+
+
+int renderSprite_LRUD_Scale_MT(void *Data)
+{
+	struct threadRenderData *trueData = (struct threadRenderData *)Data;
+
+	Sprite *spritePtr = trueData->inputData->spriteBuffer;
+
+	double xScale = (double)spritePtr->width/(double)trueData->inputBox->xSize;
+	double yScale = (double)spritePtr->height/(double)trueData->inputBox->ySize;
+	double xScale2 = (double)trueData->inputBox->xSize / (double)spritePtr->width;
+
+	double pixely = (trueData->inputBox->ySize - 1 - (trueData->yDraw - trueData->yOffset)) * yScale;
+
+
+	for (int i = trueData->yDraw; i < trueData->yDraw2; i += 2)
+	{
+		unsigned int pixelx = 0;
+
+		int intPixelY = (((int)pixely << 2) * spritePtr->width);
+		int screenYOffset = i * screenWidth;
+
+		double k = trueData->xOffset;
+
+		if (k < 0.0)
+		{
+			for (; k < 0; k += xScale2)
+			{
+				pixelx++;
+			}
+
+			pixelx--;
+
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
+			{
+				for (int j = trueData->xDraw; j < k; ++j)
+				{
+					memcpy(trueData->screen + screenYOffset + j, spritePtr->spriteData + intPixelY + (pixelx << 2), trueData->sizeOfPixel);
+				}
+				
+			}
+
+			pixelx++;
+		}
+
+		for (; (int)k < trueData->xDraw2 && pixelx < spritePtr->width; k += xScale2)
+		{
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
+			{
+				for (int j = 0; j < xScale2 && (int)k + j < trueData->xDraw2; ++j)
+				{
+					memcpy(trueData->screen + screenYOffset + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), trueData->sizeOfPixel);
+				}
+				
+			}
+
+			pixelx++;
+		}
+
+		pixely -= yScale;
+		pixely -= yScale;
+	}
+
+	return 0;
+}
+
+
+int renderSprite_RLUD_Scale_MT(void *Data)
+{
+	struct threadRenderData *trueData = (struct threadRenderData *)Data;
+
+	Sprite *spritePtr = trueData->inputData->spriteBuffer;
+
+	double xScale = (double)spritePtr->width/(double)trueData->inputBox->xSize;
+	double yScale = (double)spritePtr->height/(double)trueData->inputBox->ySize;
+	double xScale2 = (double)trueData->inputBox->xSize / (double)spritePtr->width;
+
+	double pixely = (trueData->inputBox->ySize - 1 - (trueData->yDraw - trueData->yOffset)) * yScale;
+
+	int startPixelx = spritePtr->width - 1;
+	int screenYOffset = trueData->yDraw * screenWidth;
+
+	for (int i = trueData->yDraw; i < trueData->yDraw2; i += 2)
+	{
+		unsigned int pixelx = startPixelx;
+
+		int intPixelY = (((int)pixely << 2) * spritePtr->width);
+
+		double k = trueData->xOffset;
+
+
+		if (k < 0)
+		{
+			for (; k < 0; k += xScale2)
+			{
+				pixelx--;
+			}
+
+			pixelx++;
+
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
+			{
+				for (int j = trueData->xDraw; j < k; ++j)
+				{
+					memcpy(trueData->screen + screenYOffset + j, spritePtr->spriteData + intPixelY + (pixelx << 2), trueData->sizeOfPixel);
+				}
+				
+			}
+
+			pixelx--;
+		}
+		
+
+		for (; (int)k < trueData->xDraw2 && pixelx < spritePtr->width; k += xScale2)
+		{
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
+			{
+				for (int j = 0; j < xScale2 && (int)k + j < trueData->xDraw2; ++j)
+				{
+					memcpy(trueData->screen + screenYOffset + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), trueData->sizeOfPixel);
+				}
+				
+			}
+
+			pixelx--;
+		}
+
+		screenYOffset += screenWidth << 1;
+		pixely -= yScale;
+		pixely -= yScale;
+	}
+
+	return 0;
+}
+
+
+
+int renderSprite_LRDU_Scale_MT(void *Data)
+{
+	struct threadRenderData *trueData = (struct threadRenderData *)Data;
+
+	Sprite *spritePtr = trueData->inputData->spriteBuffer;
+
+	double xScale = (double)spritePtr->width/(double)trueData->inputBox->xSize;
+	double yScale = (double)spritePtr->height/(double)trueData->inputBox->ySize;
+	double xScale2 = (double)trueData->inputBox->xSize / (double)spritePtr->width;
+
+	double pixely = (trueData->yDraw - trueData->yOffset) * yScale;
+
+
+	for (int i = trueData->yDraw; i < trueData->yDraw2; i += 2)
+	{
+		int intPixelY = (((int)pixely << 2) * spritePtr->width);
+		unsigned int pixelx = 0;
+
+		double k = trueData->xOffset;
+
+
+		if (k < 0)
+		{
+			for (; k < 0; k += xScale2)
+			{
+				pixelx++;
+			}
+
+			pixelx--;
+
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
+			{
+				for (int j = trueData->xDraw; j < k; j++)
+				{
+					memcpy(trueData->screen + (i * screenWidth) + j, spritePtr->spriteData + intPixelY + (pixelx << 2), trueData->sizeOfPixel);
+				}
+				
+			}
+
+			pixelx++;
+		}
+		
+
+		for (; (int)k < trueData->xDraw2 && pixelx < spritePtr->width; k += xScale2)
+		{
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
+			{
+				for (int j = 0; j < xScale2 && (int)k + j < trueData->xDraw2; j++)
+				{
+					memcpy(trueData->screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), trueData->sizeOfPixel);
+				}
+				
+			}
+
+			pixelx++;
+		}
+
+		pixely += yScale;
+		pixely += yScale;
+	}
+
+	return 0;
+}
+
+
+int renderSprite_RLDU_Scale_MT(void *Data)
+{
+	struct threadRenderData *trueData = (struct threadRenderData *)Data;
+
+	Sprite *spritePtr = trueData->inputData->spriteBuffer;
+
+	double xScale = (double)spritePtr->width/(double)trueData->inputBox->xSize;
+	double yScale = (double)spritePtr->height/(double)trueData->inputBox->ySize;
+	double xScale2 = (double)trueData->inputBox->xSize / (double)spritePtr->width;
+
+	double pixely = (trueData->yDraw - trueData->yOffset) * yScale;
+
+	int startPixelx = spritePtr->width - 1;
+
+
+	for (int i = trueData->yDraw; i < trueData->yDraw2; i += 2)
+	{
+		int intPixelY = (((int)pixely << 2) * spritePtr->width);
+		unsigned int pixelx = startPixelx;
+
+		double k = trueData->xOffset;
+
+
+		if (k < 0)
+		{
+			for (; k < 0; k += xScale2)
+			{
+				pixelx--;
+			}
+
+			pixelx++;
+
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
+			{
+				for (int j = trueData->xDraw; j < k; j++)
+				{
+					memcpy(trueData->screen + (i * screenWidth) + j, spritePtr->spriteData + intPixelY + (pixelx << 2), trueData->sizeOfPixel);
+				}
+				
+			}
+
+			pixelx--;
+		}
+		
+
+		for (; (int)k < trueData->xDraw2 && pixelx < spritePtr->width; k += xScale2)
+		{
+			if ((uint32_t)spritePtr->spriteData[intPixelY + (pixelx << 2) + 3] != 0x00)
+			{
+				for (int j = 0; j < xScale2 && (int)(j + k) < trueData->xDraw2; j++)
+				{
+					memcpy(trueData->screen + (i * screenWidth) + (int)k + j, spritePtr->spriteData + intPixelY + (pixelx << 2), trueData->sizeOfPixel);
+				}
+				
+			}
+
+			pixelx--;
+		}
+
+		pixely += yScale;
+		pixely += yScale;
+	}
+
+	return 0;
+}
+
+
+
+
 
 
 int renderSprite_LRUD_Scale_Full_Alpha(uint32_t screen[], DisplayData *inputData, int xDraw, int xDraw2, int yDraw, int yDraw2, int xOffset, int yOffset, PhysicsRect *inputBox)
@@ -1479,7 +2236,7 @@ int renderSprite_LRUD_Scale_Full_Alpha(uint32_t screen[], DisplayData *inputData
 			}
 			else if (hexValue >> 24 != 0x00)
 			{
-				screen[screenYOffset + i] = blendPixel(screen[screenYOffset + i], hexValue);
+				screen[screenYOffset + i] = blendPixel(screen[screenYOffset + i], hexValue, inputData->transparency);
 			}
 			
 
@@ -1530,7 +2287,7 @@ int renderSprite_RLUD_Scale_Full_Alpha(uint32_t screen[], DisplayData *inputData
 			}
 			else if (hexValue >> 24 != 0x00)
 			{
-				screen[screenYOffset + i] = blendPixel(screen[screenYOffset + i], hexValue);
+				screen[screenYOffset + i] = blendPixel(screen[screenYOffset + i], hexValue, inputData->transparency);
 			}
 			
 
@@ -1581,7 +2338,7 @@ int renderSprite_LRDU_Scale_Full_Alpha(uint32_t screen[], DisplayData *inputData
 			}
 			else if (hexValue >> 24 != 0x00)
 			{
-				screen[screenYOffset + i] = blendPixel(screen[screenYOffset + i], hexValue);
+				screen[screenYOffset + i] = blendPixel(screen[screenYOffset + i], hexValue, inputData->transparency);
 			}
 			
 
@@ -1632,7 +2389,7 @@ int renderSprite_RLDU_Scale_Full_Alpha(uint32_t screen[], DisplayData *inputData
 			}
 			else if (hexValue >> 24 != 0x00)
 			{
-				screen[screenYOffset + i] = blendPixel(screen[screenYOffset + i], hexValue);
+				screen[screenYOffset + i] = blendPixel(screen[screenYOffset + i], hexValue, inputData->transparency);
 			}
 			
 
@@ -1672,7 +2429,6 @@ int renderBackGroundSprite(uint32_t *screen, Camera inputCamera, World *gameWorl
 	int xDraw2, xDraw, yDraw2, yDraw;
 
 	size_t sizeOfPixel = sizeof(uint32_t);
-	int i, screenx;
 
 	int pixely = spritePtr->height - 1 - (((yDraw + yOffset) % spritePtr->height));
 	int pixelx = 0;
@@ -1689,7 +2445,7 @@ int renderBackGroundSprite(uint32_t *screen, Camera inputCamera, World *gameWorl
 		xDraw2 = clamp(spritePtr->width - xOffset, 0, screenWidth - 1);
 		yDraw2 = clamp(spritePtr->height - yOffset, 0, screenHeight - 1);
 
-		for (i = yDraw; i < yDraw2; i++)
+		for (int i = yDraw; i < yDraw2; i++)
 		{
 			pixelx = (((xDraw + xOffset) % spritePtr->width));
 
@@ -1713,17 +2469,18 @@ int renderBackGroundSprite(uint32_t *screen, Camera inputCamera, World *gameWorl
 	xDraw2 = screenWidth - 1;
 	yDraw2 = screenHeight - 1;
 
+	pixelx = ((xDraw + xOffset) % spritePtr->width);
+	int screenx = 0;
+
 
 	// Render sprite to screen
-	for (i = yDraw; i < yDraw2; i++)
+	for (int i = yDraw; i < yDraw2; i++)
 	{
-		if (spritePtr->RenderMode == BG_ROW_PARALLAX && (i + yOffset) % gameWorld->bgParallaxChunkSize == 0)
+		if (spritePtr->RenderMode == BG_ROW_PARALLAX && gameWorld->ParallaxRowCutOff < pixely && gameWorld->ParallaxRowStart >= pixely)
 		{
-			xOffset = inputCamera.CameraX * (gameWorld->bgParallax - (gameWorld->bgChunkParallax * (i + yOffset) ) );
+			xOffset = inputCamera.CameraX * (gameWorld->bgParallax - (gameWorld->bgRowParallax * (i + yOffset) ) );
+			pixelx = ((xDraw + xOffset) % spritePtr->width);
 		}
-		
-
-		pixelx = ((xDraw + xOffset) % spritePtr->width);
 
 		screenx = clamp((spritePtr->width - pixelx), 0, screenWidth);
 
