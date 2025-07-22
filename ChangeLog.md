@@ -166,10 +166,17 @@ New additions:
 
     -> Added the "SET_CAMMODE" level flag so that a level can start with a specific camera mode. (Following player, free roam, etc.)
 
+    -> Added the "transparency" variable to the displayData struct. Any objects rendered in xxx_Full_Alpha mode can now have
+    an additional transparency effect applied in real-time.
+
+    -> Partially added multi-threaded rendering enablable via the MULTITHREADED_ENABLED macro. 
+
 
 
 Bug fixes/Performance improvements:
 
     -> Objects are first evaluated using the checkBoxOverlapsBox function when checking for collision to save cpu time on unneccesary sine/cosine
     calculations where it is not neccessary. (This has noticably improved performance, especially when more than ~2000 objects are present.)
+
+    -> Optimised the Full-Alpha blending equation to improve xxx_Full_Alpha rendering performance. (~100 -> ~300 fps)
 
