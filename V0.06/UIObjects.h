@@ -43,17 +43,17 @@ int UpdateOptionButton(Object *Button);
 
 
 
-TextInstance* CreateText(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, Font font, TextBox textBox, int textDelay, int skipState, int xPos, int yPos, World *GameWorld);
+TextInstance* CreateText(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, Font font, TextBox textBox, int textDelayFrames, int skipState, int xPos, int yPos, World *GameWorld);
 
 
 // Helper function to allow for more control but automates x position, font and textbox
-TextInstance* CreateTextBasic(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, int textDelay, int skipState, int yPos, World *GameWorld);
+TextInstance* CreateTextBasic(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, int textDelayFrames, int skipState, int yPos, World *GameWorld);
 
 
 TextInstance* SayText(const char inputPhrase[], const char Portrait[], TextPreset inputPreset, World *GameWorld);
 
 
-TextInstance* CreateTextCutscene(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, Font font, TextBox textBox, int textDelay, int skipState, int xPos, int yPos, World *GameWorld, int PlayOnSceneTick, int SceneTickOnTextEnd);
+TextInstance* CreateTextCutscene(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, Font font, TextBox textBox, int textDelayFrames, int skipState, int xPos, int yPos, World *GameWorld, int PlayOnSceneTick, int SceneTickOnTextEnd);
 
 
 TextInstance* SayTextCutscene(const char inputPhrase[], const char Portrait[], TextPreset inputPreset, World *GameWorld, int PlayOnSceneTick, int SceneTickOnTextEnd);

@@ -25,6 +25,9 @@ int RenderEngine(World *GameWorld, uint32_t *screenBuffer);
 World* InitialiseGame();
 
 
+ObjectController* createObjectController(void);
+
+
 int LoadBackGroundSprites(World *GameWorld);
 
 

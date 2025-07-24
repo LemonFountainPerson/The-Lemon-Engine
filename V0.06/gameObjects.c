@@ -1096,9 +1096,9 @@ FunctionResult updateObjects(World *GameWorld, int keyboard[256])
 		return MISSING_DATA;
 	}
 
-	Object *currentObject;
 	int i = ObjectList->objectCount;
-	currentObject = ObjectList->firstObject;
+	Object *currentObject = ObjectList->firstObject;
+	ObjectList->depthCounter = 0;
 
 
 	while(currentObject != NULL && i > 0)
@@ -1951,7 +1951,7 @@ int UpdateEntityPhysics(Object *entity, PlayerData *Player, World *GameWorld)
 		return MISSING_DATA;
 	}
 
-	if (GameWorld->PhysicsType = PLATFORMER)
+	if (GameWorld->PhysicsType == PLATFORMER)
 	{
 		entity->ObjectBox->yVelocity += GameWorld->Gravity;
 	}
@@ -2514,19 +2514,13 @@ int OverlapsObjectAllSolids(ObjectController *ObjectList, Object *inputObject)
 }
 
 
-CollideType evaluateCollideMode(PhysicsRect *movingBox, PhysicsRect *collideBox, double movingVel)
+CollideType evaluateCollideMode(PhysicsRect *movingBox, PhysicsRect *collideBox)
 {
 	if (movingBox == NULL || collideBox == NULL)
 	{
 		return NO_COLLIDE_TYPE;
 	}
 
-	bool pushable = 0;
-
-	if (collideBox->solid == PUSHABLE_SOLID && fabs(movingVel) > PUSH_VEL_TOLERANCE)
-	{
-		pushable = 1;
-	}
 
 	if (movingBox->collideMode == PUSH || (collideBox->solid == PUSHABLE_SOLID && (movingBox->solid == ENTITY || movingBox->solid == PUSHABLE_SOLID)) )
 	{
@@ -2544,6 +2538,8 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 		return MISSING_DATA;
 	}
 	
+
+
 	if (fabs(movingBox->forwardVelocity) < 0.1)
 	{
 		return EXECUTION_UNNECESSARY;
@@ -2551,9 +2547,6 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 
 
 	// step and count set-up
-	double xStep, yStep;
-	int count = 0;
-
 	if (GameWorld->PhysicsType == PLATFORMER && movingBox->solid != UNSOLID)
 	{
 		checkIfGrounded(GameWorld, movingBox);
@@ -2582,77 +2575,87 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 		return 0;
 	}
 
-	xStep = orientation * sinVal;
-	yStep = orientation * cosVal;
-	count = 1 + (int)fabs(movingBox->forwardVelocity);
+	double xStep = orientation * sinVal;
+	double yStep = orientation * cosVal;
+	int travelCount = 1 + (int)fabs(movingBox->forwardVelocity);
 
 	Object *currentObject = NULL;
 
 
 	// regular collision
-	while (count > 0)
+	while (travelCount > 0)
 	{
 		movingBox->yPos += yStep;
 		movingBox->xPos += xStep;
 
-		count--;
+		travelCount--;
 
 		currentObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
 
-		// edge tolerance
-		if (currentObject != NULL)
+		int collideCycle = COLLISION_CYCLES;
+
+		while (collideCycle > 0 && currentObject != NULL)
 		{
-			int slopeClimb = 0;
+			collideCycle--;
+
+			// edge tolerance
+			int slopeClimb = 5;
 			double tempX = movingBox->xPos;
 			double tempY = movingBox->yPos;
 
-			while (slopeClimb < 3 && currentObject != NULL)
+			while (slopeClimb > 0 && CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
 			{
 				movingBox->yPos += sinVal;
 				movingBox->xPos -= cosVal;
-				slopeClimb++;
-				currentObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
+				slopeClimb--;
 			}
 
-			if (currentObject != NULL)
+			if (slopeClimb < 1)
 			{
 				movingBox->yPos = tempY;
 				movingBox->xPos = tempX;
 			}
-		}
-		
-		if (currentObject == NULL)
-		{
-			continue;
-		}
-
-		// Use PUSH_VEL_TOLERANCE so that all movements are valid
-		// necessary because steps are set to a velocity of 1 when recursively calling this function during push collisions
-		if (evaluateCollideMode(movingBox, currentObject->ObjectBox, PUSH_VEL_TOLERANCE + 1.0) == PUSH)
-		{
-			double tempDir = currentObject->ObjectBox->direction;
-			double tempVel = currentObject->ObjectBox->forwardVelocity;
-			currentObject->ObjectBox->direction = movingBox->direction;
-			currentObject->ObjectBox->forwardVelocity = orientation;
-
-			MoveForward(currentObject->ObjectBox, GameWorld);
-
-			currentObject->ObjectBox->direction = tempDir;
-			currentObject->ObjectBox->forwardVelocity = tempVel;
-
-
-			if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 0)
+			else
 			{
+				currentObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
 				continue;
 			}
+
+
+			if (evaluateCollideMode(movingBox, currentObject->ObjectBox) == PUSH && GameWorld->ObjectList->depthCounter < COLLISION_DEPTH)
+			{
+				GameWorld->ObjectList->depthCounter++;
+				WorldPhysics prevType = GameWorld->PhysicsType;
+				GameWorld->PhysicsType = TOP_DOWN;
+
+				double tempVelocity = currentObject->ObjectBox->forwardVelocity;
+				double tempDirection = currentObject->ObjectBox->direction;
+				currentObject->ObjectBox->forwardVelocity = orientation * travelCount;
+				currentObject->ObjectBox->direction = movingBox->direction;
+
+				MoveForward(currentObject->ObjectBox, GameWorld);
+
+				GameWorld->PhysicsType = prevType;
+
+				currentObject->ObjectBox->forwardVelocity = tempVelocity;
+				currentObject->ObjectBox->direction = tempDirection;
+
+
+				if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 0)
+				{
+					currentObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
+					continue;
+				}
+			}
+
+			movingBox->yPos -= yStep;
+			movingBox->xPos -= xStep;
+			ApplyForwardPhysics(movingBox, currentObject->ObjectBox);
+
+			return 0;
 		}
+
 		
-
-		movingBox->yPos -= yStep;
-		movingBox->xPos -= xStep;
-		ApplyForwardPhysics(movingBox, currentObject->ObjectBox);
-
-		return 0;
 	}
 
 	movingBox->forwardVelocity *= movingBox->friction;
@@ -2719,9 +2722,9 @@ int ResolveAllXCollision(PhysicsRect *movingBox, ObjectController *ObjectList)
 	Object *currentObject;
 	currentObject = GetCollidingObject(movingBox, ObjectList);
 
-	while (currentObject != NULL && count < COLLISION_DEPTH)
+	while (currentObject != NULL && count < COLLISION_CYCLES)
 	{
-		if (evaluateCollideMode(movingBox, currentObject->ObjectBox, movingBox->xVelocity) == PUSH)
+		if (evaluateCollideMode(movingBox, currentObject->ObjectBox) == PUSH)
 		{
 			ResolveXCollisionByPush(movingBox, currentObject->ObjectBox);
 
@@ -2908,9 +2911,9 @@ int ResolveAllYCollision(PhysicsRect *movingBox, ObjectController *ObjectList, i
 	Object *currentObject;
 	currentObject = GetCollidingObject(movingBox, ObjectList);
 
-	while (currentObject != NULL && count < COLLISION_DEPTH)
+	while (currentObject != NULL && count < COLLISION_CYCLES)
 	{
-		if (evaluateCollideMode(movingBox, currentObject->ObjectBox, movingBox->yVelocity) == PUSH)
+		if (evaluateCollideMode(movingBox, currentObject->ObjectBox) == PUSH)
 		{
 			ResolveYCollisionByPush(movingBox, currentObject->ObjectBox);
 

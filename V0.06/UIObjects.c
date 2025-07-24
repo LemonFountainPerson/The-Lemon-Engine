@@ -39,6 +39,10 @@ int InitialiseUIElement(World *GameWorld, Object *UIElement)
 			UIElement->ObjectDisplay->transparency = 0;
 			UIElement->arg2 = 0;
 			switchSpriteByName("FadeOut", 0, UIElement->ObjectDisplay);
+			if (UIElement->prevObject != NULL && UIElement->prevObject->ObjectID == UI_ELEMENT && UIElement->prevObject->arg1 == FADEOUT)
+			{
+				MarkObjectForDeletion(UIElement);
+			}
 		break;
 
 
@@ -445,7 +449,7 @@ TextInstance* SayText(const char inputPhrase[], const char Portrait[], TextPrese
 	int xPos = (screenWidth >> 1) - 580;
 	int yPos = 240;
 	TextBox textBox = BASIC_BLACK;
-	int textDelay = 3;
+	int textDelayFrames = 3;
 	int skipState = 1;
 	VoiceMode voiceMode = PLAY_EACH_CHARACTER;
 
@@ -484,13 +488,13 @@ TextInstance* SayText(const char inputPhrase[], const char Portrait[], TextPrese
 	}
 
 
-	TextInstance *newText = CreateText(inputPhrase, Portrait, voice, voiceMode, font, textBox, textDelay, skipState, xPos, yPos, GameWorld);
+	TextInstance *newText = CreateText(inputPhrase, Portrait, voice, voiceMode, font, textBox, textDelayFrames, skipState, xPos, yPos, GameWorld);
 
 	return newText;
 }
 
 
-TextInstance* CreateText(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, Font font, TextBox textBox, int textDelay, int skipState, int xPos, int yPos, World *GameWorld)
+TextInstance* CreateText(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, Font font, TextBox textBox, int textDelayFrames, int skipState, int xPos, int yPos, World *GameWorld)
 {
 	if (GameWorld == NULL || inputPhrase == NULL || inputPhrase[0] < 9)
 	{
@@ -546,7 +550,7 @@ TextInstance* CreateText(const char inputPhrase[], const char Portrait[], const 
 	newText->SceneTickOnTextEnd = 0;
 	newText->voiceMode = voiceMode;
 
-	newText->textDelay = clamp(textDelay, 0, 60);
+	newText->textDelayFrames = clamp(textDelayFrames, 0, 60);
 	newText->font = clamp(font, 0, 999);
 	newText->textBoxSprite = clamp(textBox, 0, 999);
 
@@ -594,22 +598,22 @@ TextInstance* SayTextCutscene(const char inputPhrase[], const char Portrait[], T
 }
 
 
-TextInstance* CreateTextBasic(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, int textDelay, int skipState, int yPos, World *GameWorld)
+TextInstance* CreateTextBasic(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, int textDelayFrames, int skipState, int yPos, World *GameWorld)
 {
 	if (GameWorld == NULL || GameWorld->ObjectList == NULL)
 	{
 		return NULL;
 	}
 
-	TextInstance *newText = CreateText(inputPhrase, Portrait, Voice, voiceMode, PIXEL_REGULAR, BASIC_BLACK, textDelay, skipState, 60, yPos, GameWorld);
+	TextInstance *newText = CreateText(inputPhrase, Portrait, Voice, voiceMode, PIXEL_REGULAR, BASIC_BLACK, textDelayFrames, skipState, 60, yPos, GameWorld);
 	
 	return newText;
 }
 
 
-TextInstance* CreateTextCutscene(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, Font font, TextBox textBox, int textDelay, int skipState, int xPos, int yPos, World *GameWorld, int PlayOnSceneTick, int SceneTickOnTextEnd)
+TextInstance* CreateTextCutscene(const char inputPhrase[], const char Portrait[], const char Voice[], VoiceMode voiceMode, Font font, TextBox textBox, int textDelayFrames, int skipState, int xPos, int yPos, World *GameWorld, int PlayOnSceneTick, int SceneTickOnTextEnd)
 {
-	TextInstance *newText = CreateText(inputPhrase, Portrait, Voice, voiceMode, font, textBox, textDelay, skipState, xPos, yPos, GameWorld);
+	TextInstance *newText = CreateText(inputPhrase, Portrait, Voice, voiceMode, font, textBox, textDelayFrames, skipState, xPos, yPos, GameWorld);
 
 	if (newText != NULL)
 	{
@@ -668,7 +672,7 @@ int updateText(World *GameWorld, int keyboard[256])
 
 		while (currentText->currentChar > 0)
 		{
-			GameWorld->TextQueue->Counter = currentText->textDelay;
+			GameWorld->TextQueue->Counter = currentText->textDelayFrames;
 			displayNextCharacter(currentText, GameWorld);
 		}
 	}
@@ -691,7 +695,7 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 
 	inputText->Counter++;
 
-	if (!(inputText->Counter >= inputText->textDelay || inputText->currentChar == 0))
+	if (!(inputText->Counter >= inputText->textDelayFrames|| inputText->currentChar == 0))
 	{
 		return ACTION_DISABLED;
 	}

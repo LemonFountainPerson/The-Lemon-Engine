@@ -27,6 +27,12 @@ Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int y
 Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int objectID);
 
 
+void resetPhysicsRect(PhysicsRect inputRect, SolidType inputSolid);
+
+
+void resetDisplayData(PhysicsRect inputRect, RenderMode startRenderMode);
+
+
 PhysicsRect* createPhysicsRect(SolidType inputSolid);
 
 
@@ -234,7 +240,7 @@ int OverlapsObjectAllSolids(ObjectController *objectList, Object *inputObject);
 int OverlapsObject(Object *inputObject, Object *otherObject);
 
 
-CollideType evaluateCollideMode(PhysicsRect *movingBox, PhysicsRect *collideBox, double movingVel);
+CollideType evaluateCollideMode(PhysicsRect *movingBox, PhysicsRect *collideBox);
 
 
 

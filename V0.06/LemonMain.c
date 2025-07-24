@@ -361,7 +361,7 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 		//deleteAllObjects(GameWorld->ObjectList);
 		//loadLevel(GameWorld, 1);
 
-		printf("Object size: %d\n", sizeof(Object) + sizeof(PhysicsRect) + sizeof(DisplayData));
+		printf(" %d\n", GameWorld->PhysicsType);
 
 		saveLevel(GameWorld);
 		AddObject(GameWorld, UI_ELEMENT, 0, 0, 0, 0, FADEOUT, 0, 0, 0, 0);
@@ -479,7 +479,7 @@ World* InitialiseGame()
 
 	
 	// Object controller creation
-	ObjectController *objController = malloc(sizeof(ObjectController));
+	ObjectController *objController = createObjectController();
 
 	if (objController == NULL)
 	{
@@ -487,15 +487,6 @@ World* InitialiseGame()
 		free(GameWorld);
 		return NULL;
 	}
-
-	objController->lastObject = NULL;
-	objController->firstObject = NULL;
-	objController->objectCount = 0;
-	objController->spriteSetCount = 0;
-	objController->startSpriteSetPtr = NULL;
-	objController->cachedFirstObject = NULL;
-	objController->cachedLastObject = NULL;
-	objController->cachedCount = 0;
 
 	GameWorld->ObjectList = objController;
 
@@ -520,6 +511,28 @@ World* InitialiseGame()
 	fflush(stdout);
 
 	return GameWorld;
+}
+
+
+ObjectController* createObjectController(void)
+{
+	ObjectController *newController = malloc(sizeof(ObjectController));
+
+	if (newController == NULL)
+	{
+		return NULL;
+	}
+
+	newController->lastObject = NULL;
+	newController->firstObject = NULL;
+	newController->objectCount = 0;
+	newController->spriteSetCount = 0;
+	newController->startSpriteSetPtr = NULL;
+	newController->cachedFirstObject = NULL;
+	newController->cachedLastObject = NULL;
+	newController->cachedCount = 0;
+
+	return newController;
 }
 
 

@@ -166,7 +166,7 @@ int saveLevel(World *GameWorld)
 	// BROKEN
 	FILE *fPtr;
 
-	char path[40] = "LemonData/LevelData/Level0DataTEST.txt";
+	char path[40] = "LemonData/LevelData/Level0DataLOG.txt";
 	path[25] = GameWorld->level + 48;
 
 	fPtr = fopen(path, "wb");

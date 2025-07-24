@@ -18,3 +18,4 @@ AddSprite:	RenderQuality_Option	Objects		SINGLE
 AddSprite:	Volume_Option		Objects		SINGLE
 AddSprite:	Test_Option		Objects		SINGLE
 	
+AddSprite:	FadeOut			Objects		SINGLE_FULL_ALPHA

@@ -241,7 +241,7 @@ int drawObjects(uint32_t *screen, Camera inputCamera, World *gameWorld)
 			// Drawing routine - max objects on screen is defined as Macro
 			renderObjectSprite(screen, inputCamera, gameWorld, currentObject, drawLayer);
 
-			if (gameWorld->drawHitboxes == 1 && currentObject->ObjectID != UI_ELEMENT)
+			if (gameWorld->drawHitboxes == 1)
 			{
 				renderObjectHitbox(screen, inputCamera, gameWorld, currentObject, drawLayer);
 			}
@@ -262,7 +262,7 @@ int drawObjects(uint32_t *screen, Camera inputCamera, World *gameWorld)
 
 int renderObjectHitbox(uint32_t *screen, Camera inputCamera, World *gameWorld, Object *currentObject, Layer drawLayer)
 {
-	if (currentObject == NULL)
+	if (currentObject == NULL || currentObject->ObjectBox == NULL || currentObject->ObjectDisplay == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -270,6 +270,11 @@ int renderObjectHitbox(uint32_t *screen, Camera inputCamera, World *gameWorld, O
 	if (drawLayer != currentObject->layer || currentObject->ObjectBox->xSize < 0 || currentObject->ObjectBox->ySize < 0 || gameWorld->drawHitboxes == 0)
 	{
 		return ACTION_DISABLED;
+	}
+
+	if (currentObject->ObjectDisplay->spriteBuffer != NULL && (currentObject->ObjectID == UI_ELEMENT || currentObject->ObjectID == UI_TEXT))
+	{
+		return EXECUTION_UNNECESSARY;
 	}
 
 
@@ -357,7 +362,7 @@ int renderObjectSprite(uint32_t *screen, Camera inputCamera, World *gameWorld, O
 	// main render loop, even extremely similar ones. This was done to squeeze out performance (at the expense of a bit of memory)
 	// As such, readability was sacrificed somewhat. Continue at your own risk!
 
-	if (currentObject == NULL || gameWorld == NULL || currentObject->ObjectDisplay == NULL || currentObject->ObjectDisplay->spriteBuffer == NULL)
+	if (currentObject == NULL || gameWorld == NULL || currentObject->ObjectDisplay == NULL || currentObject->ObjectDisplay->spriteBuffer == NULL || currentObject->ObjectBox == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -756,7 +761,6 @@ int renderSpriteInRenderMode_MultiThreaded(uint32_t *screen, DisplayData *inputD
 	Data2.xOffset = realXOffset;
 	Data2.yOffset = realYOffset;
 
-
 	SDL_Thread *Thread2 = NULL;
 	int thread2Result = 0;
 
@@ -1131,7 +1135,7 @@ int renderSprite_LRUD_FullAlpha_MT(void *Data)
 	int startPixelx = ((trueData->xDraw - trueData->xOffset + trueData->inputData->pixelXOffset) % spritePtr->width);
 
 
-	for (int j = trueData->yDraw; j < trueData->yDraw2; j += 2)
+	for (int j = trueData->yDraw; j < trueData->yDraw2; j += 3)
 	{
 		int pixelx = startPixelx;
 		int pixelYOffset = ((pixely << 2) * spritePtr->width);
@@ -1163,7 +1167,7 @@ int renderSprite_LRUD_FullAlpha_MT(void *Data)
 			}
 		}
 
-		pixely -= 2;
+		pixely -= 3;
 
 		if (pixely < 0)
 		{

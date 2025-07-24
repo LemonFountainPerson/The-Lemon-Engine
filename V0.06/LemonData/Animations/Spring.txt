@@ -1,5 +1,5 @@
 V0.06-ANIMATION
-AddSprite: 	Spring		Objects		TILE
+AddSprite: 	Spring		Objects		TILE_FULL_ALPHA
 AddSprite: 	Spring2		Objects		TILE
 AddSprite: 	Spring3		Objects		TILE
 AddSprite: 	Spring4		Objects		TILE

@@ -62,7 +62,8 @@
 //								Physics values
 //-------------------------------------------------------------------------------------------------
 #define PUSH_VEL_TOLERANCE 3.0
-#define COLLISION_DEPTH 7
+#define COLLISION_CYCLES 6
+#define COLLISION_DEPTH 10
 //-------------------------------------------------------------------------------------------------
 
 
@@ -566,6 +567,8 @@ struct ObjectController
 
 	struct spriteSet *startSpriteSetPtr;
 	int spriteSetCount;
+
+	short depthCounter;
 };
 
 
@@ -602,7 +605,7 @@ struct TextInstance
 	char Portrait[MAX_LEN];
 	int font;
 	int textBoxSprite;
-	int textDelay;
+	int textDelayFrames;
 	int Skippable;
 	VoiceMode voiceMode;
 
