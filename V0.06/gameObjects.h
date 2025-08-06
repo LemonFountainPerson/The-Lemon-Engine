@@ -33,6 +33,12 @@ void resetPhysicsRect(PhysicsRect inputRect, SolidType inputSolid);
 void resetDisplayData(PhysicsRect inputRect, RenderMode startRenderMode);
 
 
+int ResetPhysicsRect(PhysicsRect *inputRect, SolidType inputSolid);
+
+
+int ResetDisplayData(DisplayData *inputDisplay, RenderMode startRenderMode);
+
+
 PhysicsRect* createPhysicsRect(SolidType inputSolid);
 
 
@@ -107,7 +113,7 @@ int UpdateEntityPhysics(Object *entity, PlayerData *Player, World *GameWorld);
 int moveObjectX(Object *inputObject, World *GameWorld);
 
 
-int moveObjectY(Object *inputObject, World *GameWorld);
+int moveObjectY(Object *inputObject, World *GameWorld, int *jumpProgressPtr);
 
 
 int SetObjectXPosition(Object *inputObject, double newXPos, ObjectController *ObjectList);
@@ -126,7 +132,11 @@ int ChangeObjectYSizeBy(int change, Object *inputObject, ObjectController *Objec
 int MoveForward(PhysicsRect *movingBox, World *GameWorld);
 
 
+int AdjustDirection(World *GameWorld, PhysicsRect *movingBox);
+
+
 int ApplyForwardPhysics(PhysicsRect *inputBox, PhysicsRect *physicsBox);
+
 
 
 int ResolveAllXCollision(PhysicsRect *movingBox, ObjectController *ObjectList);
@@ -174,6 +184,9 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256]);
 
 
 int UpdateObjectDisplay(World *GameWorld, Object *inputObject);
+
+
+int UpdateParentChildLink(Object *inputObject);
 
 
 int UpdateParticle(World *GameWorld, Object *particle);

@@ -21,6 +21,8 @@ int StopAudioInChannel(ChannelName channel);
 int cleanUpAudioData(void);
 
 
+int SetChannelVolume(ChannelName channel, float newVolume);
+
 int MuteChannel(ChannelName channel);
 
 int UnmuteChannel(ChannelName channel);

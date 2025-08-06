@@ -43,19 +43,31 @@ int ClearKeyboardInput(int keyboard[]);
 void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player);
 
 
+int clearDebugString(World *GameWorld);
+
+
+int putStringIntoDebug(World *GameWorld, char input[]);
+
+
+int putIntegerIntoDebug(World *GameWorld, int input);
+
+
 void frameRate(int milliseconds, clock_t gameTick);
 
 
 void clearGameData(World *GameWorld, uint32_t screen[]);
 
 
-int RenderSDL(World *GameWorld, uint32_t *screenBuffer, SDL_Window *Window, SDL_Surface *destSurface, SDL_Surface *screenSurface);
+int RenderSDL(World *GameWorld, uint32_t *screenBuffer, SDL_Window *Window, SDL_Renderer *Renderer, SDL_Texture *Texture);
 
 
-int cleanUpWindowRenderer(SDL_Window *Window, SDL_Surface *destSurface, SDL_Surface *screenSurface);
+int cleanUpSDLRenderer(SDL_Window *Window, SDL_Renderer *Renderer, SDL_Texture *Texture);
 
 
 int clamp(int input, int lowerBound, int upperBound);
+
+
+int dClamp(double input, double lowerBound, double upperBound);
 
 
 int modulo(int x, int N);

@@ -117,7 +117,7 @@ int EndCutscene(World *GameWorld)
 
 	while (currentObject != NULL)
 	{
-		if (currentObject->State == ACTOR)
+		if (currentObject->State == ACTOR && currentObject != GameWorld->Player->PlayerPtr)
 		{
 			MarkObjectForDeletion(currentObject);
 		}

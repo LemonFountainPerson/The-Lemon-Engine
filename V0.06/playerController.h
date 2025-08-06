@@ -39,21 +39,11 @@ int HandlePlayerInteract(World *GameWorld, int keyboard[]);
 int PlayerInteractingWithBox(PlayerData *Player, PhysicsRect *inputBox);
 
 
-int animatePlayer(PlayerData *Player);
-
-
-
-int MovePlayerForward(PlayerData *Player, World *GameWorld);
-
-
-int MovePlayerX(PlayerData *Player, World *GameWorld);
-
-
-int MovePlayerY(PlayerData *Player, World *GameWorld);
-
-
 int checkIfGrounded(World *GameWorld, PhysicsRect *inputBox);
 
+
+
+int animatePlayer(PlayerData *Player);
 
 
 int switchPlayerSprite(int spriteID, DisplayData *PlayerDisplay);

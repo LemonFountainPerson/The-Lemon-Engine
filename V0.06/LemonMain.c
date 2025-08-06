@@ -2,11 +2,15 @@
 
 int gameRunning = 1;
 
+SoundChannel SoundChannels[CHANNEL_COUNT];
+
 int screenWidth = H_RESOLUTION;
 
 int screenHeight = V_RESOLUTION;
 
 int frameThrottle = 0;
+
+int enableDebugText = 0;
 
 
 // Lemon Engine main - SDL
@@ -20,23 +24,27 @@ int RunLemonEngine(void)
 	}
 
     SDL_Window *Window = NULL;
-	SDL_Surface *screenSurface = NULL;
-	SDL_Surface *destSurface = NULL;
-    SDL_FRect destRect;
-    destRect.x = screenWidth>>1;
-    destRect.y = screenHeight>>1;
-    destRect.w = screenWidth;
-    destRect.h = screenHeight;
+    SDL_Renderer *Renderer;
+	SDL_Texture *Texture;
 
-	Window = SDL_CreateWindow("Lemon Engine", screenWidth, screenHeight, 0);
-	destSurface = SDL_GetWindowSurface(Window);
+	Window = SDL_CreateWindow("Lemon Engine", screenWidth - 1, screenHeight - 1, SDL_WINDOW_BORDERLESS);
+
+	Renderer = SDL_CreateRenderer(Window, NULL);
+	  
+	Texture = SDL_CreateTexture(Renderer, 
+			      SDL_PIXELFORMAT_ARGB8888, 
+			      SDL_TEXTUREACCESS_STREAMING, 
+			      screenWidth, 
+			      screenHeight);
+
 
 	// Check that the window was successfully created
-    if (Window == NULL) 
+    if (Window == NULL || Texture == NULL || Renderer == NULL) 
 	{
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
         return 1;
     }
+
 
 	initialiseAudio();
 
@@ -99,25 +107,31 @@ int RunLemonEngine(void)
         {
 			GameTick(GameWorld, keyboard);
 
-            gameTick = 0;
+            gameTick = gameTick % TICK_DELTA;
         }
+
+        HandleGameWorldEvents(GameWorld, keyboard, &screenBuffer);
 
 
 		// Render screen
-		RenderSDL(GameWorld, screenBuffer, Window, destSurface, screenSurface);
+		RenderSDL(GameWorld, screenBuffer, Window, Renderer, Texture);
 
 		// Process sound
 		IterateAudio();
 
 
 		// Framerate control
-    	frameRate(60, gameTick);
+		if (frameThrottle == 1)
+		{
+			frameRate(60, gameTick);
        
+		}
+    	
       	if (((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) > 0.99)
 	    {
             if (GameWorld->GamePaused == 0)
             {
-                printf("%d at %lf\n", windowsFrames, ((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) );
+                printf("\n%d at %lf", windowsFrames, ((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) );
             }
            
    		    windowsFrames = 0;
@@ -140,7 +154,7 @@ int RunLemonEngine(void)
 
 	cleanUpAudioData();
 
-	cleanUpWindowRenderer(Window, destSurface, screenSurface);
+	cleanUpSDLRenderer(Window, Renderer, Texture);
 
     SDL_Quit();
 
@@ -170,34 +184,33 @@ int GameTick(World *GameWorld, int keyboard[256])
 
 	updateText(GameWorld, keyboard);
 
-	HandleGameWorldEvents(GameWorld, keyboard);
-
 	return 0;
 }
 
 
-int RenderSDL(World *GameWorld, uint32_t *screenBuffer, SDL_Window *Window, SDL_Surface *destSurface, SDL_Surface *screenSurface)
+int RenderSDL(World *GameWorld, uint32_t *screenBuffer, SDL_Window *Window, SDL_Renderer *Renderer, SDL_Texture *Texture)
 {
-	if (GameWorld == NULL || screenBuffer == NULL || Window == NULL || destSurface == NULL || screenSurface == NULL)
+	if (GameWorld == NULL || screenBuffer == NULL || Window == NULL || Renderer == NULL || Texture == NULL)
 	{
 		return MISSING_DATA;
 	}
 
+	int pitch = screenWidth * sizeof(uint32_t);
+
+
+	SDL_LockTexture(Texture, NULL, (void **)&screenBuffer, &pitch);
+
 	RenderEngine(GameWorld, screenBuffer);
 
-	screenSurface = SDL_CreateSurfaceFrom(screenWidth, screenHeight, SDL_PIXELFORMAT_BGRA32, screenBuffer, screenWidth * sizeof(uint32_t));
-
-	if (!screenSurface)
-	{
-		printf("Couldnt load surface: %s\n", SDL_GetError());
-	}
-
-	SDL_FlipSurface(screenSurface, SDL_FLIP_VERTICAL);
-	SDL_BlitSurface(screenSurface, NULL, destSurface, NULL);
-	SDL_UpdateWindowSurface(Window);
+	SDL_UnlockTexture(Texture);
 
 
-	return 0;
+	SDL_RenderClear(Renderer);
+  	SDL_RenderTextureRotated(Renderer, Texture, NULL, NULL, 0.0, NULL, SDL_FLIP_VERTICAL);
+  	SDL_RenderPresent(Renderer);
+
+
+	return LEMON_SUCCESS;
 }
 
 
@@ -208,8 +221,10 @@ int RenderEngine(World *GameWorld, uint32_t *screenBuffer)
 		return MISSING_DATA;
 	}
 
-	cleanRenderer(GameWorld, screenBuffer);
-
+	GameWorld->drawnObjects = 0;
+	GameWorld->drawnParticles = 0;
+	GameWorld->drawnHudElements = 0;
+	
 	renderBackGroundSprite(screenBuffer, GameWorld->MainCamera, GameWorld);
 
 	drawObjects(screenBuffer, GameWorld->MainCamera, GameWorld);
@@ -219,12 +234,12 @@ int RenderEngine(World *GameWorld, uint32_t *screenBuffer)
 
 
 // SDL Functions
-int cleanUpWindowRenderer(SDL_Window *Window, SDL_Surface *destSurface, SDL_Surface *screenSurface)
+int cleanUpSDLRenderer(SDL_Window *Window, SDL_Renderer *Renderer, SDL_Texture *Texture)
 {
 	// Close Renderer/Window
-	SDL_DestroySurface(screenSurface);
+	SDL_DestroyTexture(Texture);
 
-	SDL_DestroySurface(destSurface);
+	SDL_DestroyRenderer(Renderer);
 
     SDL_DestroyWindow(Window);
 
@@ -351,7 +366,9 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 	{
     	keyboard['T'] = 2;
     	frameThrottle = (frameThrottle + 1) % 2;
-    	printf("Toggling framerate throttle: %d\n", frameThrottle);
+
+    	putStringIntoDebug(GameWorld, "\nToggling framerate throttle: ");
+    	putIntegerIntoDebug(GameWorld, frameThrottle);
 	}
 
 
@@ -359,12 +376,16 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 	{
 		//clearGameData(GameWorld, player);
 		//deleteAllObjects(GameWorld->ObjectList);
-		//loadLevel(GameWorld, 1);
+		//saveLevel(GameWorld);
 
-		printf(" %d\n", GameWorld->PhysicsType);
+		//AddObject(GameWorld, UI_ELEMENT, 0, 0, 0, 0, FADEOUT, 0, 0, 0, 0);
 
-		saveLevel(GameWorld);
-		AddObject(GameWorld, UI_ELEMENT, 0, 0, 0, 0, FADEOUT, 0, 0, 0, 0);
+		if (GameWorld->TextQueue != NULL)
+		{
+			GameWorld->TextQueue->boxPtr->ObjectBox->yPos += 6;
+		}
+
+		enableDebugText = (enableDebugText + 1) % 2;
 
 		keyboard['Y'] = 2;
 	}
@@ -414,10 +435,87 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 	{
     	printf("Player: X: %.2lf Y: %.2lf xVel: %lf yVel: %lf \nDirection: %lf forwardVelocity: %lf PhysicsX: %lf PhysicsY: %lf\n\n", 
 			player->PlayerBox->xPos, player->PlayerBox->yPos, player->PlayerBox->xVelocity, player->PlayerBox->yVelocity, player->PlayerBox->direction, player->PlayerBox->forwardVelocity,
-		player->PlayerBox->PhysicsXVelocity, player->PlayerBox->PhysicsYVelocity);
+			player->PlayerBox->PhysicsXVelocity, player->PlayerBox->PhysicsYVelocity);
 	}
 
+	if (enableDebugText == 1 && GameWorld->debugString[0] > 9)
+	{
+		printf("\n---------------------------------------");
+		printf("\nDebug Info:\n");
+		printf(GameWorld->debugString);
+		printf("\n---------------------------------------\n");
+	}
+
+	clearDebugString(GameWorld);
+
     return;
+}
+
+
+int clearDebugString(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	memset(GameWorld->debugString, 0, sizeof(char) * DEBUG_STRING_LENGTH);
+
+	return 0;
+}
+
+
+int putStringIntoDebug(World *GameWorld, char input[])
+{
+	if (GameWorld == NULL || input[0] < 9)
+	{
+		return MISSING_DATA;
+	}
+
+	int stringIndex = 0;
+
+	while (stringIndex < DEBUG_STRING_LENGTH && GameWorld->debugString[stringIndex] != 0)
+	{
+		stringIndex++;
+	}
+
+	if (stringIndex >= DEBUG_STRING_LENGTH)
+	{
+		return END_OF_FILE;
+	}
+
+	int stringLength = DEBUG_STRING_LENGTH - stringIndex;
+	stringIndex = 0;
+
+	while (stringIndex < stringLength && input[stringIndex] != 0)
+	{
+		stringIndex++;
+	}
+
+
+	if (stringIndex >= stringLength)
+	{
+		return INVALID_DATA;
+	}
+
+	strcat(GameWorld->debugString, input);
+
+	return LEMON_SUCCESS;
+}
+
+
+int putIntegerIntoDebug(World *GameWorld, int input)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	char buffer[30] = {0};
+
+	convertIntToStr(buffer, input);
+
+	return putStringIntoDebug(GameWorld, buffer);
 }
 
 
@@ -440,6 +538,7 @@ World* InitialiseGame()
 		return NULL;
 	}
 
+	clearDebugString(GameWorld);
 	GameWorld->MainCamera.CameraX = 1000;
 	GameWorld->MainCamera.minCameraX = 0;
 	GameWorld->MainCamera.maxCameraX = 32768;
@@ -452,6 +551,7 @@ World* InitialiseGame()
 	GameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;
 
 	GameWorld->level = 0;
+	GameWorld->GameEvent = NO_EVENT;
 	GameWorld->CurrentCutscene = EMPTY_CUTSCENE;
 	GameWorld->SceneTick = 0;
 	GameWorld->PlayingText = 0;
@@ -638,6 +738,22 @@ int ClearKeyboardInput(int keyboard[])
 
 // Utility functions
 int clamp(int input, int lowerBound, int upperBound)
+{
+	if (input < lowerBound)
+	{
+		return lowerBound;
+	}
+
+	if (input > upperBound)
+	{
+		return upperBound;
+	}
+
+	return input;
+}
+
+
+int dClamp(double input, double lowerBound, double upperBound)
 {
 	if (input < lowerBound)
 	{

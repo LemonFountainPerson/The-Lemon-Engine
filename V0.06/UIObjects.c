@@ -34,9 +34,11 @@ int InitialiseUIElement(World *GameWorld, Object *UIElement)
 
 
 		case FADEOUT:
-			UIElement->ObjectBox->xPos = screenWidth >> 1;
+			UIElement->ObjectBox->xPos = 50 + screenWidth >> 1;
 			UIElement->ObjectBox->yPos = screenHeight >> 1;
-			UIElement->ObjectDisplay->transparency = 0;
+			UIElement->ObjectDisplay->transparencyEffect = 1.0;
+			UIElement->ObjectBox->xFlip = -1;
+			UIElement->ObjectBox->yFlip = -1;
 			UIElement->arg2 = 0;
 			switchSpriteByName("FadeOut", 0, UIElement->ObjectDisplay);
 			if (UIElement->prevObject != NULL && UIElement->prevObject->ObjectID == UI_ELEMENT && UIElement->prevObject->arg1 == FADEOUT)
@@ -70,7 +72,7 @@ int InitialiseUIElement(World *GameWorld, Object *UIElement)
 			Object *createdOption = NULL;
 
 
-			createdOption = AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, 0, 0, 0, 0, PAUSE_BACKGROUND, 0, 0, 0, 0);
+			//createdOption = AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, 0, 0, 0, 0, PAUSE_BACKGROUND, 0, 0, 0, 0);
 
 			createdOption = AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, 5 * X_TILESCALE, screenHeight - (Y_TILESCALE * 4), 200, 40, PAUSE_HEADER, 0, 0, 0, 0);
 			
@@ -177,6 +179,7 @@ int InitialiseUIText(World *GameWorld, Object *UIText)
 		switchSpriteByName("Text_0", 0, UIText->ObjectDisplay);
 		switchSprite(UIText->ObjectDisplay->currentSprite + UIText->arg3, 0, UIText->ObjectDisplay);
 		mapTextToCharacter(UIText);
+		UIText->ParentLink = POSITION_LINK;
 		break;
 
 		default:
@@ -251,17 +254,17 @@ int UpdateUIElement(World *GameWorld, Object *UIElement, int keyboard[256])
 		case FADEOUT:
 			if (UIElement->arg2 == 0)
 			{
-				UIElement->ObjectDisplay->transparency+=0.06;
-				if (UIElement->ObjectDisplay->transparency > 0.99)
+				UIElement->ObjectDisplay->transparencyEffect -= 0.03;
+				if (UIElement->ObjectDisplay->transparencyEffect < 0.01)
 				{
-					UIElement->ObjectDisplay->transparency = 1.0;
+					UIElement->ObjectDisplay->transparencyEffect = 0.0;
 					UIElement->arg2 = 1;
 				}
 			}
-			else if (UIElement->arg2 > 30)
+			else if (UIElement->arg2 > 130)
 			{
-				UIElement->ObjectDisplay->transparency-=0.05;
-				if (UIElement->ObjectDisplay->transparency < 0.01)
+				UIElement->ObjectDisplay->transparencyEffect += 0.04;
+				if (UIElement->ObjectDisplay->transparencyEffect > 0.99)
 				{
 					MarkObjectForDeletion(UIElement);
 				}
@@ -536,12 +539,13 @@ TextInstance* CreateText(const char inputPhrase[], const char Portrait[], const 
 	
 
 	newText->nextText = NULL;
-	newText->firstChar = NULL;
+	newText->boxPtr = NULL;
 	strcpy(newText->textPhrase, inputPhrase);
 	strcpy(newText->voice, Voice);
 	strcpy(newText->Portrait, Portrait);
 	newText->textPhrase[MAX_TEXT_LENGTH - 1];
 	newText->xOffset = xPos;
+	newText->textXPosition = xPos;
 	newText->yOffset = yPos;
 	newText->currentChar = 0;
 	newText->Counter = 0;
@@ -715,18 +719,24 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 
 	// Start text
 	char currentChar = inputText->textPhrase[inputText->currentChar];
-	bool spaceCharacter = true;
 
 	if (inputText->currentChar == 0)
 	{
 		// create text box
-		Object *TextBox = AddObject(GameWorld, UI_TEXT, inputText->xOffset - 30, inputText->yOffset - 190, 1214, 260, TEXT_BOX, inputText->textBoxSprite, 0, 0, 0);
+		inputText->boxPtr = AddObject(GameWorld, UI_TEXT, inputText->xOffset - 30, inputText->yOffset - 190, 1214, 260, TEXT_BOX, inputText->textBoxSprite, 0, 0, 0);
 
+		if (inputText->boxPtr == NULL)
+		{
+			endTextInstance(GameWorld);
+			return ERROR;
+		}
+
+	
 		// Create portrait
 		Object *portrait = NULL;
 		if (inputText->Portrait[0] != 0)
 		{
-			portrait = AddObject(GameWorld, UI_TEXT, inputText->xOffset, inputText->yOffset - 160, 200, 200, BASIC_GRAPHIC, 0, 0, 0, 0);
+			portrait = AddObjectWithParent(GameWorld, inputText->boxPtr, UI_TEXT, inputText->xOffset, inputText->yOffset - 160, 200, 200, BASIC_GRAPHIC, 0, 0, 0, 0);
 
 			if (portrait != NULL)
 			{
@@ -736,37 +746,21 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 			inputText->xOffset += 230;
 		}
 
+
 		// create first character
-		inputText->firstChar = AddObject(GameWorld, UI_TEXT, inputText->xOffset, inputText->yOffset, 40, 40, TEXT_CHARACTER, currentChar, inputText->font, 0, 0);
-
-		if (inputText->firstChar == NULL)
-		{
-			MarkObjectForDeletion(portrait);
-			MarkObjectForDeletion(TextBox);
-			endTextInstance(GameWorld);
-			return ERROR;
-		}
-
-		if (portrait != NULL)
-		{
-			portrait->ParentObject = inputText->firstChar;
-		}
-
-		if (TextBox != NULL)
-		{
-			TextBox->ParentObject = inputText->firstChar;
-		}
+		Object *firstChar = AddObjectWithParent(GameWorld, inputText->boxPtr, UI_TEXT, inputText->xOffset, inputText->yOffset, 40, 40, TEXT_CHARACTER, currentChar, inputText->font, 0, 0);
+		inputText->textXPosition = inputText->xOffset;
+		inputText->xOffset += getCharacterSpacing(currentChar);
 
 		GameWorld->PlayingText = 1;
 	}
 	else
 	{
 		// Spawn next character		
-		if (inputText->xOffset + 100 > (screenWidth >> 1) + 600 || currentChar == 10)
+		if (inputText->xOffset + 40 > (screenWidth >> 1) + 500 || currentChar == 10)
 		{
-			inputText->xOffset = inputText->firstChar->ObjectBox->xPos;
+			inputText->xOffset = inputText->textXPosition;
 			inputText->yOffset -= 50;
-			spaceCharacter = false;
 		}
 
 		switch(currentChar)
@@ -789,14 +783,15 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 
 		if (currentChar > 32 && currentChar < 123)
 		{
-			AddObjectWithParent(GameWorld, inputText->firstChar, UI_TEXT, inputText->xOffset, inputText->yOffset, 40, 40, TEXT_CHARACTER, currentChar, inputText->font, 0, 0);
+			AddObjectWithParent(GameWorld, inputText->boxPtr, UI_TEXT, inputText->xOffset, inputText->yOffset, 40, 40, TEXT_CHARACTER, currentChar, inputText->font, 0, 0);
+		}
+
+		if (currentChar > 31 && currentChar < 123)
+		{
+			inputText->xOffset += getCharacterSpacing(currentChar);
 		}
 	}
 
-	if (spaceCharacter == true)
-	{
-		inputText->xOffset += getCharacterSpacing(currentChar);
-	}
 	
 	inputText->currentChar++;
 
@@ -824,7 +819,7 @@ int endTextInstance(World *GameWorld)
 		GameWorld->SceneTick = GameWorld->TextQueue->SceneTickOnTextEnd;
 	}
 
-	MarkObjectForDeletion(GameWorld->TextQueue->firstChar);
+	MarkObjectForDeletion(GameWorld->TextQueue->boxPtr);
 
 	TextInstance *textToDelete = GameWorld->TextQueue;
 

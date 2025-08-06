@@ -127,6 +127,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             gameTick = gameTick % TICK_DELTA;
         }
 
+        HandleGameWorldEvents(GameWorld, keyboard, &frame.screen);
+
 
 	    // Render screen
 	    RenderEngine(GameWorld, frame.screen);
@@ -150,7 +152,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	    {
             if (GameWorld->GamePaused == 0)
             {
-                printf("%d at %lf\n", windowsFrames, ((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) );
+                printf("\n%d at %lf", windowsFrames, ((double)(clock() - lastSecond) / (double)CLOCKS_PER_SEC) );
             }
            
    		    windowsFrames = 0;

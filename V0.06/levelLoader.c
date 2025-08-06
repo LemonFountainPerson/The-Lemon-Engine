@@ -799,6 +799,9 @@ int loadRepeatingObject(World *GameWorld, FILE *fPtr)
 		return returnMsg;
 	}
 
+	args[0] = clamp(args[0], 1, 64);
+	args[1] = clamp(args[1], 1, 64);
+
 
 	unsigned long objectPosition = ftell(fPtr);
 			

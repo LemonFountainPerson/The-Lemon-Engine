@@ -19,6 +19,7 @@
 //-------------------------------------------------------------------------------------------------
 #define MULTITHREADED_ENABLED 0
 
+#define DEBUG_STRING_LENGTH 256
 #define MAX_LEN 80
 #define ENCRYPT_OFFSET 600
 
@@ -34,7 +35,8 @@
 #define TICKS_PER_SECOND 60
 #define TICK_DELTA (int)((1.0/60.0) * 1000)
 
-#define MAX_OBJECTS 5000
+#define MAX_OBJECTS 6000
+#define RESERVED_OBJECTS 500
 #define PRESERVED_SPRITESETS 5
 
 #define MAX_OBJECTS_RENDER 150
@@ -63,7 +65,7 @@
 //-------------------------------------------------------------------------------------------------
 #define PUSH_VEL_TOLERANCE 3.0
 #define COLLISION_CYCLES 6
-#define COLLISION_DEPTH 10
+#define COLLISION_DEPTH 6
 //-------------------------------------------------------------------------------------------------
 
 
@@ -200,11 +202,18 @@ enum LemonGameState {
 	CLOSE_GAME = -1,
 	EMPTY_GAME = 0,
 	LOADING = 1,
-	SWITCHING_LEVEL = 2,
-	GAMEPLAY = 3,
-	CUTSCENE = 4,
-	IN_MENU = 5,
+	GAMEPLAY = 2,
+	CUTSCENE = 3,
+	IN_MENU = 4,
 	UNDEFINED_GAME_STATE
+};
+
+
+enum LemonGameEvent {
+	NO_EVENT = 0,
+	SWITCH_LEVEL,
+	CHANGE_SCREEN_SIZE,
+	UNDEFINED_EVENT
 };
 
 
@@ -242,6 +251,17 @@ enum CurrentAction {
 	FLEEING,
 	DEFEATED,
 	UNDEFINED_ACTION
+};
+
+
+enum ParentType {
+	DEFAULT_LINK 		= 0b00000000,
+	POSITION_LINK 		= 0b00000001,
+	VELOCITY_LINK 		= 0b00000010,
+	SPRITE_LINK 		= 0b00000100,
+	ANIMATION_LINK 		= 0b00001000,
+	TRANSPARENCY_LINK	= 0b00010000
+
 };
 
 
@@ -356,10 +376,12 @@ typedef enum TextPreset TextPreset;
 typedef enum RenderMode RenderMode;
 typedef enum Layer Layer;
 typedef enum LemonGameState LemonGameState;
+typedef enum LemonGameEvent LemonGameEvent;
 typedef enum CutsceneID CutsceneID;
 typedef enum CameraState CameraState;
 typedef enum CurrentAction CurrentAction;
 typedef enum ObjectState ObjectState;
+typedef enum ParentType ParentType;
 typedef enum SolidType SolidType;
 typedef enum CollideType CollideType;
 typedef enum WorldPhysics WorldPhysics;
@@ -483,6 +505,12 @@ struct displayData
 	int currentSprite;
 	struct sprite *spriteBuffer;
 
+	int currentAnimation;
+	struct animationFrame *frameBuffer;
+	struct animation *animationBuffer;
+	int animationTick;
+	short animationLoopCount;
+
 	struct spriteSet *spriteSetSource;
 
 	RenderMode RenderModeOverride;
@@ -490,14 +518,7 @@ struct displayData
 	int spriteYOffset;
 	int pixelXOffset;
 	int pixelYOffset;
-	float transparency;
-
-	int currentAnimation;
-	int animationTick;
-	short animationLoopCount;
-
-	struct animationFrame *frameBuffer;
-	struct animation *animationBuffer;
+	float transparencyEffect;
 };
 
 
@@ -507,6 +528,8 @@ struct physicsRect
 	double yPos;
 	double xPosRight;
 	double yPosTop;
+	double prevXPos;
+	double prevYPos;
 
 	unsigned int xSize;
 	unsigned int ySize;
@@ -540,7 +563,11 @@ struct Object
 
 	struct Object *nextObject;
 	struct Object *prevObject;
+
 	struct Object *ParentObject;
+	ParentType ParentLink;
+	double ParentXOffset;
+	double ParentYOffset;
 
 	struct physicsRect *ObjectBox;
 	struct displayData *ObjectDisplay;
@@ -567,8 +594,6 @@ struct ObjectController
 
 	struct spriteSet *startSpriteSetPtr;
 	int spriteSetCount;
-
-	short depthCounter;
 };
 
 
@@ -598,16 +623,17 @@ struct TextInstance
 {
 	struct TextInstance *nextText;
 
-	struct Object *firstChar;
+	struct Object *boxPtr;
 
 	char textPhrase[MAX_TEXT_LENGTH];
-	char voice[MAX_LEN];
 	char Portrait[MAX_LEN];
 	int font;
 	int textBoxSprite;
 	int textDelayFrames;
 	int Skippable;
+	char voice[MAX_LEN];
 	VoiceMode voiceMode;
+	int textXPosition;
 
 	int currentChar;
 	int Counter;
@@ -635,6 +661,7 @@ struct Camera
 };
 
 
+
 // Memory allocated struct that controls camera, holds the Object list and level data
 struct world
 {
@@ -645,6 +672,15 @@ struct world
 	struct playerData *Player;
 
 	struct TextInstance *TextQueue;
+
+	int GamePaused;
+	int level;
+	LemonGameState GameState;
+	LemonGameEvent GameEvent;
+
+	CutsceneID CurrentCutscene;
+	int SceneTick;
+	int PlayingText;
 
 	struct spriteSet *BackGrounds;
 	struct sprite *bgSpriteBuffer;
@@ -664,16 +700,12 @@ struct world
 	short drawUI;
 	short drawParticles;
 	short drawObjects;
-
-	LemonGameState GameState;
-	CutsceneID CurrentCutscene;
-	int SceneTick;
-	int PlayingText;
-	int GamePaused;
-	int level;
+	char debugString[DEBUG_STRING_LENGTH];
 
 	WorldPhysics PhysicsType;
 	float Gravity;
+
+	short depthCounter;
 };
 
 
@@ -693,7 +725,7 @@ typedef struct world World;
 typedef struct animation Animation;
 typedef struct animationFrame AnimationFrame;
 
-static SoundChannel SoundChannels[CHANNEL_COUNT];
+extern SoundChannel SoundChannels[CHANNEL_COUNT];
 
 extern int screenWidth;
 
@@ -702,3 +734,5 @@ extern int screenHeight;
 extern int gameRunning;
 
 extern int frameThrottle;
+
+extern int enableDebugText;
