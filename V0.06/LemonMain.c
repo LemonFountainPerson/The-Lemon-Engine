@@ -374,16 +374,10 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 
 	if (keyboard['Y'] == 1)
 	{
-		//clearGameData(GameWorld, player);
-		//deleteAllObjects(GameWorld->ObjectList);
-		//saveLevel(GameWorld);
-
 		//AddObject(GameWorld, UI_ELEMENT, 0, 0, 0, 0, FADEOUT, 0, 0, 0, 0);
 
-		if (GameWorld->TextQueue != NULL)
-		{
-			GameWorld->TextQueue->boxPtr->ObjectBox->yPos += 6;
-		}
+		GameWorld->Player->PlayerPtr->Action = DAMAGED;
+		GameWorld->Player->PlayerDisplay->invincibilityFrames = 200;
 
 		enableDebugText = (enableDebugText + 1) % 2;
 
@@ -395,7 +389,8 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 	{
 		keyboard['U'] = 2;
 		GameWorld->drawHitboxes = (GameWorld->drawHitboxes + 1) % 2;
-		printf("Toggling draw Hitboxes:\n");
+		putStringIntoDebug(GameWorld, "\nToggling draw hitboxes: ");
+    	putIntegerIntoDebug(GameWorld, GameWorld->drawHitboxes);
 	}
 
 
@@ -403,7 +398,8 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 	{
 		keyboard['I'] = 2;
 		GameWorld->drawBackGround = (GameWorld->drawBackGround + 1) % 2;
-		printf("Toggling draw background:\n");
+		putStringIntoDebug(GameWorld, "\nToggling draw background: ");
+    	putIntegerIntoDebug(GameWorld, GameWorld->drawBackGround);
 	}
 
 
@@ -411,7 +407,8 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 	{
     	keyboard['O'] = 2;
     	GameWorld->drawSprites = (GameWorld->drawSprites + 1) % 2;
-    	printf("Toggling Draw Sprites:\n");
+    	putStringIntoDebug(GameWorld, "\nToggling Draw Sprites: ");
+    	putIntegerIntoDebug(GameWorld, GameWorld->drawSprites);
 	}
 
 
@@ -419,7 +416,8 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 	{
     	keyboard['P'] = 2;
     	displayPlayerData = (displayPlayerData + 1) % 2;
-    	printf("Toggling Player data display: %d\n", displayPlayerData);
+    	putStringIntoDebug(GameWorld, "\nToggling Player data display: ");
+    	putIntegerIntoDebug(GameWorld, displayPlayerData);
 	}
 
 
@@ -427,8 +425,9 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 	{
     	GameWorld->GamePaused = (GameWorld->GamePaused + 1) % 2;
 		keyboard['0'] = 2;
-    	printf("Toggling Pause:\n");
-	}
+		putStringIntoDebug(GameWorld, "\nToggling Pause: ");
+    	putIntegerIntoDebug(GameWorld, GameWorld->GamePaused);
+    }
 
 
 	if (player->PlayerBox != NULL && displayPlayerData == 1 && GameWorld->GamePaused == 0)

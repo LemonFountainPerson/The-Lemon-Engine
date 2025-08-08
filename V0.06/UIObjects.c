@@ -182,6 +182,10 @@ int InitialiseUIText(World *GameWorld, Object *UIText)
 		UIText->ParentLink = POSITION_LINK;
 		break;
 
+		case TEXT_PORTRAIT:
+		UIText->ParentLink = POSITION_LINK;
+		break;
+
 		default:
 		break;
 	}
@@ -736,7 +740,7 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 		Object *portrait = NULL;
 		if (inputText->Portrait[0] != 0)
 		{
-			portrait = AddObjectWithParent(GameWorld, inputText->boxPtr, UI_TEXT, inputText->xOffset, inputText->yOffset - 160, 200, 200, BASIC_GRAPHIC, 0, 0, 0, 0);
+			portrait = AddObjectWithParent(GameWorld, inputText->boxPtr, UI_TEXT, inputText->xOffset, inputText->yOffset - 160, 200, 200, TEXT_PORTRAIT, 0, 0, 0, 0);
 
 			if (portrait != NULL)
 			{

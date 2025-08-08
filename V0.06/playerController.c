@@ -59,8 +59,6 @@ PlayerData* InitialisePlayerData(World *GameWorld)
 	}
 
 	// Player set-up
-	Player->maxXVel = 15.0;
-	Player->maxYVel = 32.0;
 	Player->inAir = 0;
 	Player->jumpProgress = 0;
 	Player->jumpHeld = 0;
@@ -283,14 +281,14 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld, int keyboard[2
 	// Gravity
 	PlayerBox->yVelocity += GameWorld->Gravity;
 
-	if (fabs(PlayerBox->forwardVelocity) > Player->maxXVel)
+	if (fabs(PlayerBox->forwardVelocity) > MAX_FORWARD_VELOCITY)
 	{
-		PlayerBox->forwardVelocity = (PlayerBox->forwardVelocity/fabs(PlayerBox->forwardVelocity)) * (Player->maxXVel);
+		PlayerBox->forwardVelocity = (PlayerBox->forwardVelocity/fabs(PlayerBox->forwardVelocity)) * MAX_FORWARD_VELOCITY;
 	}
 
-	if (fabs(PlayerBox->yVelocity) > Player->maxYVel)
+	if (fabs(PlayerBox->yVelocity) > MAX_Y_VELOCITY)
 	{
-		PlayerBox->yVelocity = (PlayerBox->yVelocity/fabs(PlayerBox->yVelocity)) * (Player->maxYVel);
+		PlayerBox->yVelocity = (PlayerBox->yVelocity/fabs(PlayerBox->yVelocity)) * MAX_Y_VELOCITY;
 	}
 
 
@@ -413,14 +411,14 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld, int keyboard[256]
 	}
 
 
-	if (fabs(PlayerBox->xVelocity) > Player->maxXVel)
+	if (fabs(PlayerBox->forwardVelocity) > MAX_X_VELOCITY)
 	{
-		PlayerBox->xVelocity = (PlayerBox->xVelocity/fabs(PlayerBox->xVelocity)) * (Player->maxXVel);
+		PlayerBox->forwardVelocity = (PlayerBox->forwardVelocity/fabs(PlayerBox->forwardVelocity)) * MAX_X_VELOCITY;
 	}
 
-	if (fabs(PlayerBox->yVelocity) > Player->maxYVel)
+	if (fabs(PlayerBox->yVelocity) > MAX_Y_VELOCITY)
 	{
-		PlayerBox->yVelocity = (PlayerBox->yVelocity/fabs(PlayerBox->yVelocity)) * (Player->maxYVel);
+		PlayerBox->yVelocity = (PlayerBox->yVelocity/fabs(PlayerBox->yVelocity)) * MAX_Y_VELOCITY;
 	}
 
 

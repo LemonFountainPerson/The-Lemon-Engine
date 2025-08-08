@@ -161,7 +161,7 @@ int ConvertEntryToObjectID(char entry[MAX_LEN])
 }
 
 
-int saveLevel(World *GameWorld)
+int logLevel(World *GameWorld)
 {
 	// BROKEN
 	FILE *fPtr;

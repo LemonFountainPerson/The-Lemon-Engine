@@ -489,6 +489,7 @@ DisplayData* createDisplayData(RenderMode startRenderMode)
 	newDisplay->animationTick = 0;
 	newDisplay->animationLoopCount = 0;
 	newDisplay->transparencyEffect = 0.0;
+	newDisplay->invincibilityFrames = 0;
 
 	return newDisplay;
 }
@@ -1268,7 +1269,6 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 	}
 
 
-
 	// Move object
 	moveObjectX(inputObject, GameWorld);
 
@@ -1276,6 +1276,7 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 
 	MoveForward(inputObject->ObjectBox, GameWorld);
 		
+
 	return 0;
 }
 
@@ -1287,6 +1288,13 @@ int UpdateObjectDisplay(World *GameWorld, Object *inputObject)
 	if (GameWorld->GamePaused == 1 && inputObject->ObjectID != UI_ELEMENT || inputObject->State < DEFAULT)
 	{
 		return ACTION_DISABLED;
+	}
+
+
+	if (inputObject->Action == DAMAGED)
+	{
+		DamagedFrames(inputObject);
+		return EXECUTION_UNNECESSARY;
 	}
 
 
@@ -1352,6 +1360,41 @@ int UpdateParentChildLink(Object *inputObject)
 		inputObject->ObjectBox->direction = ParentBox->direction;
 		inputObject->ObjectBox->forwardVelocity = ParentBox->forwardVelocity;
 	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int DamagedFrames(Object *inputObject)
+{
+	DisplayData *inputData = inputObject->ObjectDisplay;
+
+
+	inputData->invincibilityFrames--;
+
+	if (inputData->invincibilityFrames < 1)
+	{
+		inputObject->Action = IDLE;
+		inputData->RenderModeOverride = DEFAULT_TO_SPRITE;
+		return ACTION_DISABLED;
+	}
+
+
+	if (inputData->invincibilityFrames % 20 != 0)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	if (inputData->RenderModeOverride == DEFAULT_TO_SPRITE)
+	{
+		inputData->RenderModeOverride = DO_NOT_RENDER;
+		inputData->invincibilityFrames -= 4;
+	}
+	else
+	{
+		inputData->RenderModeOverride = DEFAULT_TO_SPRITE;
+	}
+	
 
 	return LEMON_SUCCESS;
 }
@@ -2295,17 +2338,13 @@ Object* GetCollidingObject(PhysicsRect *inputBox, ObjectController *ObjectList)
 
 	while (currentObject != NULL)
 	{
-		int result = 0;
-
 		if (currentObject->ObjectBox->solid == UNSOLID || checkBoxOverlapsBox(inputBox, currentObject->ObjectBox) == 0)
 		{
 			currentObject = currentObject->nextObject;
 			continue;
 		}
 
-		result = CheckBoxCollidesBox(inputBox, currentObject->ObjectBox);
-
-		if (result == 1)
+		if (CheckBoxCollidesBox(inputBox, currentObject->ObjectBox) == 1)
 		{
 			return currentObject;
 		}
@@ -2659,7 +2698,7 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 	}
 
 
-	if (GameWorld->depthCounter < 1)
+	if (GameWorld->depthCounter < 1 && movingBox->solid != UNSOLID)
 	{
 		AdjustDirection(GameWorld, movingBox);
 	}
@@ -2686,7 +2725,7 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 		movingBox->xPos += movingBox->forwardVelocity * sinVal;
 		movingBox->yPos += movingBox->forwardVelocity * cosVal;
 		movingBox->forwardVelocity *= movingBox->friction;
-		return 0;
+		return LEMON_SUCCESS;
 	}
 
 	double xStep = orientation * sinVal;
@@ -2705,8 +2744,6 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 		movingBox->yPos += yStep;
 		movingBox->xPos += xStep;
 
-		travelCount--;
-
 		currentObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
 
 		collideCycle = COLLISION_CYCLES;
@@ -2717,57 +2754,68 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 		{
 			collideCycle--;
 
-			// edge tolerance
-			int slopeClimb = 5;
-
-			while (slopeClimb > 0 && CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
-			{
-				movingBox->yPos += sinVal;
-				movingBox->xPos -= cosVal;
-				slopeClimb--;
-			}
-
-			if (slopeClimb < 1)
-			{
-				movingBox->yPos = tempY;
-				movingBox->xPos = tempX;
-			}
-			else
-			{
-				currentObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
-				continue;
-			}
-
-
+			// using (travelcount - 1) result in pixel perfect collision but erroneous extra collisions when on slope
+			// using (travelcount) results in more smooth slope interactions but creates a 1 pixel gap
 			if (evaluateCollideMode(movingBox, currentObject->ObjectBox) == PUSH && GameWorld->depthCounter < COLLISION_DEPTH)
 			{
 				GameWorld->depthCounter++;
 
 				double tempVelocity = currentObject->ObjectBox->forwardVelocity;
 				double tempDirection = currentObject->ObjectBox->direction;
+				SolidType prevSolidType = movingBox->solid;
+				movingBox->solid = UNSOLID;
+
 				currentObject->ObjectBox->forwardVelocity = orientation * travelCount;
 				currentObject->ObjectBox->direction = movingBox->direction;
 
-				MoveForward(currentObject->ObjectBox, GameWorld);
+				int result = MoveForward(currentObject->ObjectBox, GameWorld);
 
 				currentObject->ObjectBox->forwardVelocity = tempVelocity;
 				currentObject->ObjectBox->direction = tempDirection;
+				movingBox->solid = prevSolidType;
 
-
-				if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 0)
+				if (result != LEMON_SUCCESS || CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
 				{
-					currentObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
-					continue;
+					movingBox->yPos = tempY;
+					movingBox->xPos = tempX;
+
+					movingBox->yPos -= yStep;
+					movingBox->xPos -= xStep;
+					ApplyForwardPhysics(movingBox, currentObject->ObjectBox);
+
+					return TASK_FAILED;
 				}
 			}
+			else
+			{
+				// edge tolerance
+				int slopeClimb = 5;
 
-			movingBox->yPos -= yStep;
-			movingBox->xPos -= xStep;
-			ApplyForwardPhysics(movingBox, currentObject->ObjectBox);
+				while (slopeClimb > 0 && CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
+				{
+					movingBox->yPos += sinVal;
+					movingBox->xPos -= cosVal;
+					slopeClimb--;
+				}
 
-			return 0;
+				if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
+				{
+					movingBox->yPos = tempY;
+					movingBox->xPos = tempX;
+
+					movingBox->yPos -= yStep;
+					movingBox->xPos -= xStep;
+					ApplyForwardPhysics(movingBox, currentObject->ObjectBox);
+
+					return TASK_FAILED;
+				}
+				
+			}
+
+			currentObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
 		}
 
+		travelCount--;
 	}
 
 	movingBox->forwardVelocity *= movingBox->friction;

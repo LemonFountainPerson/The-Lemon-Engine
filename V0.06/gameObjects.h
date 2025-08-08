@@ -27,12 +27,6 @@ Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int y
 Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int objectID);
 
 
-void resetPhysicsRect(PhysicsRect inputRect, SolidType inputSolid);
-
-
-void resetDisplayData(PhysicsRect inputRect, RenderMode startRenderMode);
-
-
 int ResetPhysicsRect(PhysicsRect *inputRect, SolidType inputSolid);
 
 
@@ -189,6 +183,9 @@ int UpdateObjectDisplay(World *GameWorld, Object *inputObject);
 int UpdateParentChildLink(Object *inputObject);
 
 
+int DamagedFrames(Object *inputObject);
+
+
 int UpdateParticle(World *GameWorld, Object *particle);
 
 
@@ -227,11 +224,10 @@ int UpdateCoin(Object *coin, World *GameWorld);
 
 
 
+Object* GetCollidingObject(PhysicsRect *inputBox, ObjectController *ObjectList);
+
 
 int CheckBoxCollidesBox(PhysicsRect *inputBox, PhysicsRect *compareBox);
-
-
-Object* GetCollidingObject(PhysicsRect *inputBox, ObjectController *ObjectList);
 
 
 int checkBoxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox);

@@ -39,7 +39,7 @@
 #define RESERVED_OBJECTS 500
 #define PRESERVED_SPRITESETS 5
 
-#define MAX_OBJECTS_RENDER 150
+#define MAX_OBJECTS_RENDER 128
 #define MAX_PARTICLES_RENDER 64
 #define MAX_HUD_ELEMENTS_RENDER 128
 
@@ -65,7 +65,11 @@
 //-------------------------------------------------------------------------------------------------
 #define PUSH_VEL_TOLERANCE 3.0
 #define COLLISION_CYCLES 6
-#define COLLISION_DEPTH 6
+#define COLLISION_DEPTH 9
+
+#define MAX_Y_VELOCITY 50.0
+#define MAX_X_VELOCITY 50.0
+#define MAX_FORWARD_VELOCITY 50.0
 //-------------------------------------------------------------------------------------------------
 
 
@@ -95,6 +99,7 @@ enum FunctionResult{
 	LEMON_SUCCESS = 0,
 	ACTION_DISABLED = 1,
 	EXECUTION_UNNECESSARY = 2,
+	TASK_FAILED = 3,
 	END_OF_FILE = 9
 };
 
@@ -246,10 +251,11 @@ enum ObjectState {
 
 enum CurrentAction {
 	IDLE = 0,
+	DAMAGED,
+	DEFEATED,
 	CHASING,
 	ATTACKING,
 	FLEEING,
-	DEFEATED,
 	UNDEFINED_ACTION
 };
 
@@ -356,6 +362,7 @@ enum UISubType {
 	PLAYER_HUD_CONTROLLER,
 	TEXT_BOX,
 	TEXT_CHARACTER,
+	TEXT_PORTRAIT,
 	UNDEFINED_UI_ELEMENT
 };
 
@@ -424,23 +431,6 @@ struct renderFrame
 	int width;
 	int height;
 	uint32_t *screen;
-};
-
-
-struct threadRenderData
-{
-	struct displayData *inputData;
-	struct physicsRect *inputBox;
-	int xDraw;
-	int xDraw2; 
-	int yDraw;
-	int yDraw2;
-	int xOffset;
-	int yOffset;
-	uint32_t *screen;
-	size_t sizeOfPixel;
-
-	int thread;
 };
 
 
@@ -519,6 +509,7 @@ struct displayData
 	int pixelXOffset;
 	int pixelYOffset;
 	float transparencyEffect;
+	int invincibilityFrames;
 };
 
 
@@ -607,9 +598,6 @@ struct playerData
 	struct physicsRect *InteractBox;
 
 	// These variables can be freely modified according to your modified player controller
-	double maxYVel;
-	double maxXVel;
-
 	int inAir;
 	int jumpHeld;
 	int jumpProgress;

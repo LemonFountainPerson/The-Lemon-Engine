@@ -426,12 +426,12 @@ int iterateAnimation(DisplayData *inputData)
 	// loop count decrements every time animation loops; if == 0, then animation value is 0, which stops the animation. 
 	// If value is stareted on <= 0, then on animation end value will be less than 0, and it will loop indefinitely
 
-	if (inputData == NULL || inputData->animationBuffer == NULL || inputData->spriteSetSource == NULL)
+	if (inputData == NULL || inputData->spriteSetSource == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (inputData->currentAnimation < 1)
+	if (inputData->currentAnimation < 1 || inputData->animationBuffer == NULL)
 	{
 		return ACTION_DISABLED;
 	}
@@ -476,6 +476,7 @@ int iterateAnimation(DisplayData *inputData)
 
 	inputData->spriteBuffer = inputData->frameBuffer->frameSprite;
 	inputData->currentSprite = inputData->spriteBuffer->spriteID;
+
 	
 	return 0;
 }
