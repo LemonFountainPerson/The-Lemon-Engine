@@ -169,8 +169,15 @@ New additions:
     -> Added the "transparency" variable to the displayData struct. Any objects rendered in xxx_Full_Alpha mode can now have
     an additional transparency effect applied in real-time.
 
-    -> Partially added multi-threaded rendering enablable via the MULTITHREADED_ENABLED macro. 
+    -> Added the "ParentLink" variable to control how child objects react to parent objects. (Position link, Sprite link,
+    Velocity link, etc.) This can be added to an object by bitwise ORing each desired trait together as defined in the enum.
+    Any part can be turned on or off.
 
+    -> Added "invincibilityFrames" to the displayData struct to accomodate the new damaged object action; objects in this state
+    will count down the invincibilityFrames variables until 0 and will revert to IDLE when reached. It will also be
+    accompanied by a flashing animation independent of the animation system.
+
+    
 
 
 Bug fixes/Performance improvements:
