@@ -177,7 +177,9 @@ New additions:
     will count down the invincibilityFrames variables until 0 and will revert to IDLE when reached. It will also be
     accompanied by a flashing animation independent of the animation system.
 
-    
+    -> Added "ApplyGravity" and "SetGravity" functions to handle applying gravity to objects and modifying the gravity value(s)
+    respectively. SetGravity allows for a force and direction to be supplied, generating a vector via the GlobalGravityX and
+    GlobalGravityY variables in the World structure.
 
 
 Bug fixes/Performance improvements:
