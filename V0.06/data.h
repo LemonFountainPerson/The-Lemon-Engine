@@ -691,7 +691,8 @@ struct world
 	char debugString[DEBUG_STRING_LENGTH];
 
 	WorldPhysics PhysicsType;
-	float Gravity;
+	float GlobalGravityY;
+	float GlobalGravityX;
 
 	short depthCounter;
 };

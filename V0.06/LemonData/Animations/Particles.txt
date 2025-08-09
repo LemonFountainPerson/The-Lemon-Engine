@@ -6,3 +6,12 @@ AddSprite: 	Sparkle4	Particles	SINGLE
 AddSprite: 	Sparkle5	Particles	SINGLE
 AddSprite: 	Sparkle6	Particles	SINGLE
 AddSprite: 	Sparkle7	Particles	SINGLE
+
+NewAnimation: 	Sparkle		30
+AddFrame:	Sparkle1
+AddFrame:	Sparkle2
+AddFrame:	Sparkle3
+AddFrame:	Sparkle4
+AddFrame:	Sparkle5
+AddFrame:	Sparkle6
+AddFrame:	Sparkle7

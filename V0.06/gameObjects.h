@@ -21,7 +21,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 Object* AddObjectWithParent(World *GameWorld, Object *ParentObject, int objectID, int xPos, int yPos, int xSize, int ySize, int arg1, int arg2, int arg3, int arg4, int arg5);
 
 
-Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int yPos, int repeatCount, int frameRate, int particleLifeTime);
+Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int yPos, int repeatCount, int particleLifeTime);
 
 
 // Initialises a new empty object to the object list
@@ -44,7 +44,7 @@ DisplayData* createDisplayData(RenderMode startRenderMode);
 Object* InitialiseMovingPlatform(Object *inputObject, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer);
 
 
-int InitialiseParticle(Object *particle, int animation, int repeatCount, int frameRate, int particleLifeTime);
+int InitialiseParticle(Object *particle, int animation, int repeatCount, int particleLifeTime);
 
 
 // Attempts to create object sprite set if it does not already exist

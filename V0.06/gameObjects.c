@@ -188,7 +188,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 
 		case PARTICLE:
 			// Do not modify! (Unless you wish to alter rendermode)
-			InitialiseParticle(newObject, arg1, arg2, arg3, arg4);
+			InitialiseParticle(newObject, arg1, arg2, arg3);
 			break;
 
 
@@ -339,9 +339,9 @@ Object* AddObjectWithParent(World *GameWorld, Object *ParentObject, int objectID
 }
 
 
-Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int yPos, int repeatCount, int frameRate, int particleLifeTime)
+Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int yPos, int repeatCount, int particleLifeTime)
 {
-	return AddObject(GameWorld, PARTICLE, xPos, yPos, 0, 0, animation, repeatCount, frameRate, particleLifeTime, 0);
+	return AddObject(GameWorld, PARTICLE, xPos, yPos, 0, 0, animation, repeatCount, particleLifeTime, 0, 0);
 }
 
 
@@ -1412,7 +1412,7 @@ int UpdateCoin(Object *coin, World *GameWorld)
 	if (checkBoxOverlapsBox(PlayerBox, coin->ObjectBox) == 1)
 	{
 		GameWorld->Player->coinCount++;
-		AddParticle(GameWorld, SPARKLE, coin->ObjectBox->xPos, coin->ObjectBox->yPos, 1, 0, 0);
+		AddParticle(GameWorld, SPARKLE, coin->ObjectBox->xPos, coin->ObjectBox->yPos, 1, 0);
 		MarkObjectForDeletion(coin);
 		LemonPlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.75);
 	}
@@ -1447,32 +1447,21 @@ int UpdateSpring(Object *spring, World *GameWorld)
 }
 
 
-int InitialiseParticle(Object *particle, int animation, int repeatCount, int frameRate, int particleLifeTime)
+int InitialiseParticle(Object *particle, int animation, int repeatCount, int particleLifeTime)
 {
 	if (particle == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (frameRate < 1 || frameRate > 999)
-	{
-		frameRate = 30;
-	}
-
 	particle->layer = PARTICLES;
 	particle->ObjectBox->solid = UNSOLID;
 	particle->ObjectDisplay->currentAnimation = animation;
-	particle->arg2 = 60 / frameRate;
-	particle->arg3 = particleLifeTime;
-	particle->arg4 = 0;
-	particle->arg5 = 0;
+	particle->arg1 = particleLifeTime;
+	particle->arg2 = 0;
+	particle->arg3 = 0;
 
-	// Assign particle sprite
-	particle->arg1 = 1;
-	LoopParticleAnimation(particle);
-
-	// Set repeat count after function call as it may decrement arg1
-	particle->arg1 = repeatCount;
+	PlayAnimationByIndex(animation, repeatCount, particle->ObjectDisplay);
 
 
 	switch (animation)
@@ -1488,9 +1477,8 @@ int InitialiseParticle(Object *particle, int animation, int repeatCount, int fra
 int UpdateParticle(World *GameWorld, Object *particle)
 {
 	// currentAnimation: which particle animation to play
-	// arg1: number of times to repeat animation
-	// arg2: How many ticks before a frame change
-	// arg3: particle max lifetime	(0 to simply default to deleting as soon as repeat count has been reached)
+	// arg1: particle max lifetime	(0 to simply default to deleting as soon as animation ends)
+	// arg2: current particle lifetime
 
 	if (particle == NULL)
 	{
@@ -1498,27 +1486,16 @@ int UpdateParticle(World *GameWorld, Object *particle)
 	}
 
 
-	// Animation
-	particle->ObjectDisplay->animationTick++;
-
-	if (particle->ObjectDisplay->animationTick > 9999 || particle->ObjectDisplay->animationTick < 0)
-	{
-		particle->ObjectDisplay->animationTick = 0;
-	}
-
-	LoopParticleAnimation(particle);
-
-
+	particle->arg2++;
 	CustomParticleBehaviour(GameWorld, particle);
 
 
-	// If repeat count is reached or animationTick exceeds maximum lifetime, mark for deletion
-	if (particle->arg3 < 1 && particle->arg1 < 1)
+	// If animationTick exceeds maximum lifetime, mark for deletion
+	if (particle->arg1 > 0 && particle->arg2 > particle->arg1)
 	{
 		MarkObjectForDeletion(particle);
 	}
-
-	if (particle->arg3 > 0 && particle->ObjectDisplay->animationTick > particle->arg3)
+	else if (particle->arg1 < 1 && particle->ObjectDisplay->currentAnimation == 0)
 	{
 		MarkObjectForDeletion(particle);
 	}
