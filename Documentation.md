@@ -612,10 +612,14 @@ a PUSHABLE_SOLID it is not forced to be pushed, only when an ENTITY hits the PUS
 **Particles**
 
 The Lemon engine has a built-in particle system; although basic it provides an easy-to-use template for 2D animated effects to be created. All particles use the 
-PARTICLE object ID (5) and each different particle is defined simply by their animation number as defined in the currentAnimation variable. (E.g: animation 0 
+PARTICLE object ID (7) and each different particle is defined simply by their animation number as defined in the currentAnimation variable. (E.g: animation 1 
 corresponds to the coin sparkle particle effect.) 
 
-Next, in the LoadParticleSprites function, you will add the sprites to be loaded for the particle here. 
+In order to load sprites and subsequent animations, they should be placed in the LoadParticleSprites function, or via the 
+animation file when being loaded from a external file. The only issue with this system is that all the created animations
+must be loaded in the order of their index as defined by the ParticleSubType enum. For example, the Sparkle animation has an 
+index of 1, so it should be loaded first. The animation that you desire to add after this would have an index of 2, so it 
+must be loaded second, and so on. 
 
 ```
 
@@ -633,6 +637,8 @@ int LoadParticleSprites(SpriteSet *newSet)
 	// New particle sprites
 	//.....
 
+	// And/Or from an external file
+	loadAnimationsFromFile("Particles", newSet);
 
 	return 0;
 }
@@ -641,6 +647,10 @@ int LoadParticleSprites(SpriteSet *newSet)
 
 A limitation of this implementation is that particles will only support one animation at a time, so multiple particles will need to be created for different 
 animations, however they can share the same sprite data as they all share a spriteset.
+
+
+To make particles do more interesting things, custom behaviour can be defined via the CustomParticleBehaviour function.
+Here, you can manipulate each particle just as you would a regular object.
 
 
 # Audio
