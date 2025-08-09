@@ -356,7 +356,6 @@ void MasterControls(World *GameWorld, int keyboard[256], PlayerData *player)
 		return;
 	}
 
-
 	 // Debug Variables
 	static int displayPlayerData = 0;
 	static int frames = 0;
@@ -603,8 +602,11 @@ World* InitialiseGame()
 
 	GameWorld->Player = InitialisePlayerData(GameWorld);
 
-	GameWorld->Gravity = -1.0;
+	GameWorld->GlobalGravityX = 0.0;
+	GameWorld->GlobalGravityY = 0.0;
 	GameWorld->PhysicsType = PLATFORMER;
+
+	SetGravity(GameWorld, 1.0, 180.0);
 
 	printf("Initialised World\n");
 	fflush(stdout);
@@ -699,6 +701,37 @@ void clearGameData(World *GameWorld, uint32_t screen[])
 	free(Player);
 
 	return;
+}
+
+
+int SetGravity(World *GameWorld, float force, double directionDegrees)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+
+	double directionRadian = directionDegrees * (M_PI / 180);
+
+	double sinVal = sin(directionRadian);
+	double cosVal = cos(directionRadian);
+
+	GameWorld->GlobalGravityX = force * sinVal;
+	GameWorld->GlobalGravityY = force * cosVal;
+
+	if (fabs(GameWorld->GlobalGravityX) < 0.01)
+	{
+		GameWorld->GlobalGravityX = 0.0;
+	}
+
+	if (fabs(GameWorld->GlobalGravityY) < 0.01)
+	{
+		GameWorld->GlobalGravityY = 0.0;
+	}
+
+
+	return LEMON_SUCCESS;
 }
 
 

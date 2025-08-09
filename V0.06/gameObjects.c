@@ -1255,12 +1255,12 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 
 
 		case BASIC_ENEMY:
-			UpdateEntityPhysics(inputObject, GameWorld->Player, GameWorld);
+			ApplyGravity(inputObject, GameWorld);
 			break;
 
 
 		case PUSHABLE_BOX:
-			UpdateEntityPhysics(inputObject, GameWorld->Player, GameWorld);
+			ApplyGravity(inputObject, GameWorld);
 			break;
 
 
@@ -1380,7 +1380,7 @@ int DamagedFrames(Object *inputObject)
 	}
 
 
-	if (inputData->invincibilityFrames % 20 != 0)
+	if (inputData->invincibilityFrames % 18 != 0)
 	{
 		return EXECUTION_UNNECESSARY;
 	}
@@ -2074,21 +2074,43 @@ int UpdateLevelDoor(PlayerData *Player, Object *Door, World *GameWorld)
 } 
 
 
-int UpdateEntityPhysics(Object *entity, PlayerData *Player, World *GameWorld)
+int ApplyGravity(Object *entity, World *GameWorld)
 {
 	if (entity == NULL || entity->ObjectBox == NULL || GameWorld == NULL)
 	{
 		return MISSING_DATA;
 	}
 
+	PhysicsRect *EntityBox = entity->ObjectBox;
+
 	if (GameWorld->PhysicsType == PLATFORMER)
 	{
-		entity->ObjectBox->yVelocity += GameWorld->Gravity;
+		EntityBox->yVelocity += GameWorld->GlobalGravityY;
+		EntityBox->xVelocity += GameWorld->GlobalGravityX;
 	}
 
-	if (entity->ObjectBox->yVelocity < -32.0)
+	if (fabs(EntityBox->yVelocity) > MAX_Y_VELOCITY)
 	{
-		entity->ObjectBox->yVelocity = -32.0;
+		if (EntityBox->yVelocity > 0.0) 
+		{
+			EntityBox->yVelocity = MAX_Y_VELOCITY;
+		}
+		else
+		{
+			EntityBox->yVelocity = -MAX_Y_VELOCITY;
+		}
+	}
+
+	if (fabs(EntityBox->xVelocity) > MAX_X_VELOCITY)
+	{
+		if (EntityBox->xVelocity > 0.0) 
+		{
+			EntityBox->xVelocity = MAX_X_VELOCITY;
+		}
+		else
+		{
+			EntityBox->xVelocity = -MAX_X_VELOCITY;
+		}
 	}
 
 	return 0;
@@ -2657,28 +2679,30 @@ int AdjustDirection(World *GameWorld, PhysicsRect *movingBox)
 	Object *detectedObject;
 	detectedObject = GameWorld->ObjectList->firstObject;
 
-	int i = 0;
-	int result = 0;
+	double sinVal = 2 * sin(movingBox->direction);
+	double cosVal = 2 * cos(movingBox->direction);
 
 
-	movingBox->yPos += GameWorld->Gravity;
+	movingBox->yPos += sinVal;
+	movingBox->xPos -= cosVal;
 
 	detectedObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
 
-	movingBox->yPos -= GameWorld->Gravity;
+	movingBox->yPos -= sinVal;
+	movingBox->xPos += cosVal;
 
 
 	if (detectedObject == NULL)
 	{
 		movingBox->direction = RADIAN_90;
 
-		return 0;
+		return LEMON_SUCCESS;
 	}
 
 	AssignDirection(movingBox, detectedObject->ObjectBox);
 
 
-	return 0;
+	return LEMON_SUCCESS;
 }
 
 
@@ -2697,8 +2721,22 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 		return EXECUTION_UNNECESSARY;
 	}
 
+	// Unsolid objects do not have to do collision detection so it skips the rest of the function by moving all steps instantly
+	if (movingBox->solid == UNSOLID)
+	{
+		movingBox->xPos += movingBox->forwardVelocity * sin(movingBox->direction);
+		movingBox->yPos += movingBox->forwardVelocity * cos(movingBox->direction);
 
-	if (GameWorld->depthCounter < 1 && movingBox->solid != UNSOLID)
+		if (movingBox->friction < 0.999)
+		{
+			movingBox->forwardVelocity *= movingBox->friction;
+		}
+		
+		return LEMON_SUCCESS;
+	}
+
+
+	if (GameWorld->depthCounter < 1)
 	{
 		AdjustDirection(GameWorld, movingBox);
 	}
@@ -2717,15 +2755,6 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 	if (fabs(cosVal) < 0.1)
 	{
 		cosVal = 0.0;
-	}
-
-	// Unsolid objects do not have to do collision detection so it skips the rest of the function by moving all steps instantly
-	if (movingBox->solid == UNSOLID)
-	{
-		movingBox->xPos += movingBox->forwardVelocity * sinVal;
-		movingBox->yPos += movingBox->forwardVelocity * cosVal;
-		movingBox->forwardVelocity *= movingBox->friction;
-		return LEMON_SUCCESS;
 	}
 
 	double xStep = orientation * sinVal;
@@ -2785,6 +2814,13 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 
 					return TASK_FAILED;
 				}
+
+				double subX = fabs(movingBox->xPos) - floor(fabs(movingBox->xPos));
+				double subY = fabs(movingBox->yPos) - floor(fabs(movingBox->yPos));
+
+				currentObject->ObjectBox->xPos = floor(currentObject->ObjectBox->xPos) + subX;
+				currentObject->ObjectBox->yPos = floor(currentObject->ObjectBox->yPos) + subY;
+
 			}
 			else
 			{
@@ -2818,8 +2854,11 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 		travelCount--;
 	}
 
-	movingBox->forwardVelocity *= movingBox->friction;
 
+	if (movingBox->friction < 0.999)
+	{
+		movingBox->forwardVelocity *= movingBox->friction;
+	}
 
 	return LEMON_SUCCESS;
 }

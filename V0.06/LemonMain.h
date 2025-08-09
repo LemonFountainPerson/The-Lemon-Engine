@@ -55,6 +55,9 @@ int putIntegerIntoDebug(World *GameWorld, int input);
 void frameRate(int milliseconds, clock_t gameTick);
 
 
+int SetGravity(World *GameWorld, float force, double directionDegrees);
+
+
 void clearGameData(World *GameWorld, uint32_t screen[]);
 
 

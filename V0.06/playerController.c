@@ -279,17 +279,7 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld, int keyboard[2
 
 
 	// Gravity
-	PlayerBox->yVelocity += GameWorld->Gravity;
-
-	if (fabs(PlayerBox->forwardVelocity) > MAX_FORWARD_VELOCITY)
-	{
-		PlayerBox->forwardVelocity = (PlayerBox->forwardVelocity/fabs(PlayerBox->forwardVelocity)) * MAX_FORWARD_VELOCITY;
-	}
-
-	if (fabs(PlayerBox->yVelocity) > MAX_Y_VELOCITY)
-	{
-		PlayerBox->yVelocity = (PlayerBox->yVelocity/fabs(PlayerBox->yVelocity)) * MAX_Y_VELOCITY;
-	}
+	ApplyGravity(Player->PlayerPtr, GameWorld);
 
 
 	// collision detection
@@ -572,11 +562,11 @@ int checkIfGrounded(World *GameWorld, PhysicsRect *inputBox)
 	int result = 0;
 
 
-	inputBox->yPos += GameWorld->Gravity * 2;
+	inputBox->yPos += GameWorld->GlobalGravityY * 2;
 
 	detectedObject = GetCollidingObject(inputBox, GameWorld->ObjectList);
 
-	inputBox->yPos -= GameWorld->Gravity * 2;
+	inputBox->yPos -= GameWorld->GlobalGravityY * 2;
 
 
 	if (detectedObject == NULL)
