@@ -241,6 +241,7 @@ enum ObjectState {
 	EMPTY_OBJECT = -2,
 	TO_BE_DELETED = -1,
 	DEFAULT = 0,
+	STATIC,
 	PAUSE_BEHAVIOUR,
 	ACTOR,
 	BEING_CARRIED,
@@ -552,17 +553,17 @@ struct Object
 	ObjectState State;
 	CurrentAction Action;
 
-	struct Object *nextObject;
-	struct Object *prevObject;
+	struct physicsRect *ObjectBox;
+	struct displayData *ObjectDisplay;
+	Layer layer;
 
 	struct Object *ParentObject;
 	ParentType ParentLink;
 	double ParentXOffset;
 	double ParentYOffset;
 
-	struct physicsRect *ObjectBox;
-	struct displayData *ObjectDisplay;
-	Layer layer;
+	struct Object *nextObject;
+	struct Object *prevObject;
 
 	// Multi-purpose args
 	int arg1;
@@ -655,9 +656,9 @@ struct world
 {
 	struct Camera MainCamera;
 
-	struct ObjectController *ObjectList;
-
 	struct playerData *Player;
+
+	struct ObjectController *ObjectList;
 
 	struct TextInstance *TextQueue;
 

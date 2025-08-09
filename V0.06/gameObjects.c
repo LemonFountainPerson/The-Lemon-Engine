@@ -76,7 +76,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 		case SOLID_BLOCK:
 			newObject->ObjectBox->xSize = xSize * X_TILESCALE;
 			newObject->ObjectBox->ySize = ySize * Y_TILESCALE;
-			newObject->ObjectDisplay->transparencyEffect = 0.9;
+			newObject->State = STATIC;
 			if (arg1 >= 0)
 			{
 				switchObjectSprite(arg1, newObject, ObjectList);
@@ -794,6 +794,11 @@ int UnmarkObjectForDeletion(Object *inputObject, ObjectController *ObjectList)
 }
 
 
+// These functions can be safely called from anywhere, however due to the fact that they modify the order of the object list itself they may
+// produce unintended behaviour. Eg: incrementing skips an object in the list, decrementing repeats the previous object, SetToBack 
+// skips the rest of the objects in the list and essentially ends that frame's behaviour excecution and SetToFront repeats execution for all objects.
+// This may or may not be significant, so when wanting to modify what is rendered above, it is recommended to simplify modify the layer variable
+// BASICALLY, unless you know what your doing, avoid using these functions if possible
 void IncrementDrawPriority(ObjectController *ObjectList, Object *input)
 {
 	if (ObjectList == NULL || input == NULL)
@@ -1177,7 +1182,7 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 		return MISSING_DATA;
 	}
 
-	if (GameWorld->GamePaused == 1 && inputObject->ObjectID != UI_ELEMENT || inputObject->State < DEFAULT)
+	if (GameWorld->GamePaused == 1 && inputObject->ObjectID != UI_ELEMENT || inputObject->State == STATIC || inputObject->State < DEFAULT)
 	{
 		return EXECUTION_UNNECESSARY;
 	}
