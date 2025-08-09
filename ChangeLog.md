@@ -189,3 +189,4 @@ Bug fixes/Performance improvements:
 
     -> Optimised the Full-Alpha blending equation to improve xxx_Full_Alpha rendering performance. (~100 -> ~300 fps)
 
+    -> Rewrote the particle system to utilise the new animation system to make it easier to use and create new particles.

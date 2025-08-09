@@ -99,7 +99,10 @@ struct world
 	int level;
 
 	WorldPhysics PhysicsType;
-	float Gravity;
+	float GlobalGravityY;
+	float GlobalGravityX;
+
+	int depthCounter;
 };
 ```
 
@@ -131,9 +134,6 @@ struct playerData
 	struct physicsRect *InteractBox;
 
 	// These variables can be freely modified according to your modified player controller
-	double maxYVel;
-	double maxXVel;
-
 	int inAir;
 	int jumpHeld;
 	int jumpProgress;
@@ -511,7 +511,11 @@ struct object
 
 	struct Object *nextObject;
 	struct Object *prevObject;
+
 	struct Object *ParentObject;
+	ParentType ParentLink;
+	double ParentXOffset;
+	double ParentYOffset;
 
 	struct physicsRect *ObjectBox;
 	struct displayData *ObjectDisplay;
@@ -609,41 +613,9 @@ a PUSHABLE_SOLID it is not forced to be pushed, only when an ENTITY hits the PUS
 
 The Lemon engine has a built-in particle system; although basic it provides an easy-to-use template for 2D animated effects to be created. All particles use the 
 PARTICLE object ID (5) and each different particle is defined simply by their animation number as defined in the currentAnimation variable. (E.g: animation 0 
-corresponds to the coin sparkle particle effect.) Its position, velocity, amount of animation loops, framerate, animation direction and particle lifetime can all 
-be defined when spawning a particle but have default values if left at 0. For example, if particle lifetime is left at 0, the particle will default to deleting 
-itself when it has run through all its loops. If additional effects such as movement are required, you should simply add the behaviour logic to the 
-updateParticles function as you would in the updateObjects function. Although, by default only two integer arg variables are available for free use.
+corresponds to the coin sparkle particle effect.) 
 
-```
-	// Arg1: particle sub type (SPARKLE)
-	// Arg2: # of times to loop (1)
-	// Arg3: Framerate (0) 					(eg. 0 or 1 for each frame, 3 for every 3 frames, etc.)
-	// Arg4: Particle maximum lifetime (0) 			(e.g: 0 will default to deleting as soon as loops finish)
-
-	AddObject(gameWorld->objectList, PARTICLE, ObjXPos, ObjYPos, SPARKLE, 1, 0, 0, 0);
-
-	MarkObjectForDeletion(currentObject);
-	player->coinCount++;
-	LemonPlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.8);
-	// ...
-```
-
-To add a new particle, only three or four additions are required. (Other than the sprites added to the objects folder,
-and any animations necessary to the spriteSet.)
-
-First, its identifier should be added to the ParticleType enum.
-
-```
-enum ParticleSubType {
-	EMPTY = 0,
-	SPARKLE = 1,
-	NEW_PARTICLE = 2,
-	UNDEFINED_PARTICLE
-};
-```
-
-Next, in the LoadParticleSprites function, you will add the sprites to be loaded for the particle here. The only restriction is that without edits the particle 
-object only supports animating with sprites that are all next to each other in the sprite set. Ergo, you should load your frames one after another, in order.
+Next, in the LoadParticleSprites function, you will add the sprites to be loaded for the particle here. 
 
 ```
 
@@ -666,73 +638,6 @@ int LoadParticleSprites(SpriteSet *newSet)
 }
 ```
 
-Finally, the first and last sprites for your particle to use should be defined in the LoopParticleAnimation function as a case in its switch statement. In 
-addition, the animateType variable can be modified to specify a type of animation the particle will use. (0/1 for forwards then loop, -1 for backwards then loop, 
-etc.)
-
-```
-int LoopParticleAnimation(Object *particle)
-{
-	int firstSprite = 1;
-	int lastSprite = 1;
-	int animateType = 1;
-
-	// Add a new case whenever you make a new particle here
-	switch(particle->currentAnimation)
-	{
-		case SPARKLE:
-		lastSprite = 7;
-		break;
-
-		default:
-		break;
-	}
-	//....
-}
-```
-
-An optional step is to define your own animateType in the subsequent switch statement. If done so, keep in mind that the particle's arg1 variable is how many 
-loops are remaining to be performed, and so whenever a "loop" of your new animation type occurs, this variable should be decremented.
-
-```
-// Add a new case for specific animation sequences
-switch (animateType)
-{
-	case 2:
-	{
-		// ...
-	} break;
-
-
-	case -2:
-	{
-		// ...
-	} break;
-
-
-	case -1:
-	{
-		// ...
-	} break;
-
-	case 3:
-	// New animation type!
-	break;
-
-	default:
-	{
-		particle->currentSprite++;
-
-		if (particle->currentSprite > lastSprite || particle->currentSprite < firstSprite)
-		{
-			particle->arg1--;
-
-			particle->currentSprite = firstSprite;
-		}
-
-	} break;
-}
-```
 
 A limitation of this implementation is that particles will only support one animation at a time, so multiple particles will need to be created for different 
 animations, however they can share the same sprite data as they all share a spriteset.
