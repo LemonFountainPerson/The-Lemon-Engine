@@ -1,0 +1,23 @@
+V0.07-ANIMATION
+AddSprite: 	OBJ_Missing 		Objects		TILE
+AddSprite:	OptionCursor		Objects		SINGLE
+AddSprite:	BackButton		Objects		SINGLE
+
+AddSprite: 	GamePaused_Background 	Objects		SINGLE
+AddSprite:	GamePaused_Header	Objects		SINGLE
+AddSprite:	ResumeGame		Objects		SINGLE
+AddSprite:	ResumeGame_Highlighted	Objects		SINGLE
+AddSprite: 	Settings 		Objects		SINGLE
+AddSprite:	Settings_Highlighted	Objects		SINGLE
+AddSprite:	QuitGame		Objects		SINGLE
+AddSprite:	QuitGame_Highlighted	Objects		SINGLE
+
+AddSprite:	Settings_Background	Objects		SINGLE
+AddSprite: 	Settings_Header 	Objects		SINGLE
+AddSprite:	RenderQuality_Option	Objects		SINGLE
+AddSprite:	Volume_Option		Objects		SINGLE
+AddSprite:	Test_Option		Objects		SINGLE
+	
+AddSprite:	FadeOut			Objects		SINGLE_FULL_ALPHA
+
+AddSprite:	MouseCursor		Objects		SINGLE_FULL_ALPHA 

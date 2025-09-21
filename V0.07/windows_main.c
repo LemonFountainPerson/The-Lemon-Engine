@@ -1,0 +1,382 @@
+#include <Windows.h>
+
+#include "LemonMain.h"
+
+
+// Global variables
+const char ClassName[] = "myWindowClass";
+
+static BITMAPINFO frame_bitmap_info;
+static HBITMAP frame_bitmap = 0;
+static HDC frame_device_context = 0;
+
+int Running_In_Windows_Mode = 1;
+int WindowsProcessRunning = 1;
+
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+
+int resizeWin32Window(HWND handle);
+
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+	// Window Initialisation
+	printf("Windows API initialised!\n\n");
+	fflush(stdout);
+
+
+    WNDCLASSEX wc;
+    HWND handle;
+    MSG Msg = { 0 };
+
+    // Registering the Window Class
+    wc.cbSize        = sizeof(WNDCLASSEX);
+    wc.style         = 0;
+    wc.lpfnWndProc   = WndProc;
+    wc.cbClsExtra    = 0;
+    wc.cbWndExtra    = 0;
+    wc.hInstance     = hInstance;
+    wc.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wc.lpszMenuName  = NULL;
+    wc.lpszClassName = ClassName;
+    wc.hIconSm       = LoadIcon(NULL, IDI_APPLICATION);
+
+    if(!RegisterClassEx(&wc))
+    {
+        MessageBox(NULL, "Window Registration Failed!", "Error!",
+            MB_ICONEXCLAMATION | MB_OK);
+        return 0;
+    }
+
+    // Creating screen
+    frame_bitmap_info.bmiHeader.biSize = sizeof(frame_bitmap_info.bmiHeader);
+    frame_bitmap_info.bmiHeader.biPlanes = 1;
+    frame_bitmap_info.bmiHeader.biBitCount = 32;
+    frame_bitmap_info.bmiHeader.biCompression = BI_RGB;
+    frame_device_context = CreateCompatibleDC(0);
+
+    // Creating the Window
+    handle = CreateWindowEx(
+        WS_EX_CLIENTEDGE,
+        ClassName,
+        "The Lemon Engine",
+        WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME | WS_VISIBLE,
+        CW_USEDEFAULT, CW_USEDEFAULT, screenWidth, screenHeight,
+        NULL, NULL, hInstance, NULL);
+
+    if(handle == NULL)
+    {
+        MessageBox(NULL, "Window Creation Failed!", "Error!",
+            MB_ICONEXCLAMATION | MB_OK);
+        return 0;
+    }
+
+    while(PeekMessage(&Msg, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&Msg); }
+    SetCapture(handle);
+
+
+	// SDL initialisation
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) == 0)
+	{
+		printf("Failed to initialise SDL\n");
+		return -1;
+	}
+
+
+	// Core engine variables/data
+	int gameTick = 0;
+	int renderRefresh = 0;
+	int timeElapsed = 0;
+    clock_t lastFrameTime = 0;
+
+
+    // Game initialisation
+    World GameWorld;
+    InitialiseGame(&GameWorld);
+    initialiseAudio();
+
+    lastFrameTime = clock();
+
+	StartGame(&GameWorld);
+    
+	printf("\nLoaded %d object(s) in %lf seconds\n", GameWorld.ObjectList->objectCount, ((double)(clock() - lastFrameTime) / (double)CLOCKS_PER_SEC) );
+
+    lastFrameTime = clock();
+
+
+    // Game Loop
+   while(GameWorld.GameState != CLOSE_GAME && WindowsProcessRunning == 1)
+   {
+        // Window messages
+        while(PeekMessage(&Msg, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&Msg); }
+ 
+		// Timing
+        timeElapsed = ((clock() - lastFrameTime) / (double)CLOCKS_PER_SEC) * 10000;
+
+        lastFrameTime = clock();
+
+        gameTick += timeElapsed;
+        renderRefresh += timeElapsed;
+
+
+	    // World updates
+	    while (gameTick >= TickDelta)
+        {
+        	gameTick -= TickDelta;
+			GameTick(&GameWorld);
+	    }
+
+        GameFrame(&GameWorld);
+
+
+	    // Render screen
+	    if (renderRefresh >= RenderDelta)
+	    {
+	    	renderRefresh = renderRefresh % RenderDelta;
+	    	
+		    RenderEngine(&GameWorld);
+		}
+
+
+		// Process sound
+	    IterateAudio();
+
+		
+        // Force window to update frame
+        InvalidateRect(handle, NULL, FALSE);
+        UpdateWindow(handle);   
+    }
+
+
+	// Clear game data and cleanup
+	clearGameData(&GameWorld);
+
+	cleanUpAudioData();
+
+    SDL_Quit();
+
+	printf("Closed Successfully!");
+	fflush(stdout);
+
+
+    return Msg.wParam;
+}
+
+
+int resizeWin32Window(HWND handle)
+{
+	// TO BE IMPLEMENTED
+
+	return LEMON_SUCCESS;
+}
+
+
+// Window functions
+LRESULT CALLBACK WndProc(HWND handle, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	static int hasFocus = 1;
+	HDC hdc;
+
+    switch(msg)
+    {
+    	case WM_LBUTTONDOWN:
+    	MouseInput.LeftButton = 1;
+		keyboard[LMN_INTERACT] = 1;
+		break;
+
+		case WM_LBUTTONUP:
+    	MouseInput.LeftButton = 0;
+		keyboard[LMN_INTERACT] = keyboard['E'] || keyboard['Z'];
+		break;
+
+		case WM_RBUTTONDOWN:
+    	MouseInput.RightButton = 1;
+		keyboard[LMN_INTERACT2] = 1;
+		break;
+
+		case WM_RBUTTONUP:
+    	MouseInput.RightButton = 0;
+		keyboard[LMN_INTERACT2] = keyboard['Q'] || keyboard['X'];
+		break;
+
+		case WM_MBUTTONDOWN:
+    	MouseInput.MiddleButton = 1;
+		keyboard[LMN_INTERACT3] = 1;
+		break;
+
+		case WM_MBUTTONUP:
+    	MouseInput.MiddleButton = 0;
+		keyboard[LMN_INTERACT3] = keyboard['R'] || keyboard['C'];
+		break;
+
+		case WM_MOUSEMOVE:
+			MouseInput.xPos = (float)GET_X_LPARAM(lParam) - (screenWidth >> 1); 
+			MouseInput.yPos = (float)(screenHeight - GET_Y_LPARAM(lParam)) - (screenHeight >> 1);
+		break;
+		                	
+        case WM_KEYDOWN:
+    	case WM_KEYUP:
+    	{
+    		if (hasFocus == 1)
+    		{
+    			static int keyIsDown, keyWasDown;
+
+    			keyIsDown = ((lParam & (1 << 31)) == 0);
+    			keyWasDown = ((lParam & (1 << 30)) != 0);
+
+    			if (keyIsDown != keyWasDown)
+    			{
+                    int keyCode = 0;
+
+                    switch ((int)wParam)
+	                {
+		                case VK_ESCAPE:
+			                keyCode = LMN_ESCAPE;
+			                break;
+
+		                case VK_SPACE:
+			                keyCode = LMN_SPACE;
+			                break;
+
+		                case VK_LEFT:
+			                keyCode = LMN_LEFTARROW;
+			                break;
+
+		                case VK_RIGHT:
+			                keyCode = LMN_RIGHTARROW;
+			                break;
+
+		                case VK_UP:
+			                keyCode = LMN_UPARROW;
+			                break;
+
+		                case VK_DOWN:
+			                keyCode = LMN_DOWNARROW;
+			                break;
+
+			            case VK_RETURN:
+			            	keyCode = LMN_ENTER;
+			            	break;
+
+		                default:
+                            keyCode = (int)wParam;
+			                break;
+	                }
+
+	                if (keyCode < 0)
+	                {
+	                	break;
+	                }
+
+                    keyboard[keyCode] = keyIsDown;
+
+					switch(keyCode)
+					{
+						case 'A':
+						case LMN_LEFTARROW:
+						keyboard[LMN_LEFT] = keyboard['A'] || keyboard[LMN_LEFTARROW];
+						break;
+
+
+						case 'D':
+						case LMN_RIGHTARROW:
+						keyboard[LMN_RIGHT] = keyboard['D'] || keyboard[LMN_RIGHTARROW];
+						break;
+
+						case 'W':
+						case LMN_UPARROW:
+						keyboard[LMN_UP] = keyboard['W'] || keyboard[LMN_UPARROW];
+						break;
+
+						case 'S':
+						case LMN_DOWNARROW:
+						keyboard[LMN_DOWN] = keyboard['S'] || keyboard[LMN_DOWNARROW];
+						break;
+
+						case LMN_SPACE:
+						keyboard[LMN_JUMP] = keyboard[LMN_SPACE];
+						break;
+
+						case 'E':
+						case 'Z':
+						keyboard[LMN_INTERACT] = keyboard['E'] || keyboard['Z'];
+						break;
+
+						case 'Q':
+						case 'X':
+						keyboard[LMN_INTERACT2] = keyboard['Q'] || keyboard['X'];
+						break;
+
+						case 'R':
+						case 'C':
+						keyboard[LMN_INTERACT3] = keyboard['R'] || keyboard['C'];
+						break;
+
+						default:
+						break;
+					}
+    			}
+    		}
+    	} break;
+
+
+    	case WM_KILLFOCUS:
+    	{
+    		hasFocus = 0;
+    		memset(keyboard, 0, sizeof(keyboard[0]));
+    	} break;
+
+    	case WM_SETFOCUS:
+    		hasFocus = 1;
+    		break;
+
+        case WM_CLOSE:
+            DestroyWindow(handle);
+        break;
+
+        case WM_DESTROY:
+			WindowsProcessRunning = 0;
+            PostQuitMessage(0);
+        break;
+
+        case WM_PAINT:
+                {
+                	static PAINTSTRUCT paint;
+                	static HDC device_context;
+                	device_context = BeginPaint(handle, &paint);
+
+                	BitBlt(device_context,
+                			paint.rcPaint.left, paint.rcPaint.top,
+        					paint.rcPaint.right - paint.rcPaint.left, paint.rcPaint.bottom - paint.rcPaint.top,
+        					frame_device_context,
+        					paint.rcPaint.left, paint.rcPaint.top,
+        					SRCCOPY);
+							
+                	EndPaint(handle, &paint);
+                } break;
+
+        case WM_SIZE:
+        {
+        	frame_bitmap_info.bmiHeader.biWidth = screenWidth;
+			frame_bitmap_info.bmiHeader.biHeight = screenHeight;
+
+			if (frame_bitmap)
+			{
+				DeleteObject(frame_bitmap);
+			}
+
+			frame_bitmap = CreateDIBSection(NULL, &frame_bitmap_info, DIB_RGB_COLORS, (void**)&screenBuffer, 0, 0);
+			SelectObject(frame_device_context, frame_bitmap);
+        } break;
+
+
+        default:
+            return DefWindowProc(handle, msg, wParam, lParam);
+    }
+    return 0;
+}
+

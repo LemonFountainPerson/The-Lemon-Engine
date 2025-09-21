@@ -3,7 +3,7 @@
 _________________________________________________
 
 
-Current Version: 0.06
+Current Version: 0.07
 
 Currently only supported on windows. 
 
@@ -126,15 +126,11 @@ struct playerData
 {
 	struct Object *PlayerPtr;
 
-	struct physicsRect *PlayerBox;
+	struct PhysicsRect *PlayerBox;
 	struct displayData *PlayerDisplay;
-	struct physicsRect *InteractBox;
+	struct PhysicsRect *InteractBox;
 
 	// These variables can be freely modified according to your modified player controller
-	double maxYVel;
-	double maxXVel;
-
-	int inAir;
 	int jumpHeld;
 	int jumpProgress;
 
@@ -148,26 +144,29 @@ struct physicsRect
 	double yPos;
 	double xPosRight;
 	double yPosTop;
+	double prevXPos;
+	double prevYPos;
 
-	unsigned int xSize;
-	unsigned int ySize;
+	int xSize;
+	int ySize;
 
 	double forwardVelocity;
 	double yVelocity;
 	double xVelocity;
 
+	int inAir;
 	double PhysicsXVelocity;
 	double PhysicsYVelocity;
+	struct PhysicsRect *GroundBox;
 
 	SolidType solid;
 	CollideType collideMode;
+	Layer collideLayer;
 
 	double direction;
 	short xFlip;
 	short yFlip;
-	short crouch;
-
-	float friction;
+	int crouch;
 };
 
 
@@ -176,26 +175,26 @@ struct displayData
 	int currentSprite;
 	struct sprite *spriteBuffer;
 
+	float animationTick;
+	int currentAnimation;
+	short animationLoopCount;
+	struct animationFrame *frameBuffer;
+	struct animation *animationBuffer;
+
 	struct spriteSet *spriteSetSource;
 
 	RenderMode RenderModeOverride;
+	double direction;
 	int spriteXOffset;
 	int spriteYOffset;
 	int pixelXOffset;
 	int pixelYOffset;
 
-	short currentAnimation;
-	int animationTick;
-	short animationLoopCount;
-
-	struct animationFrame *frameBuffer;
-	struct animation *animationBuffer;
+	float transparencyEffect;
+	int invincibilityFrames;
 };
 ```
 
-The screen of the engine is comprised of a struct called a RenderFrame that contains a pointer to the Uint32_t pixel data of the frame, and the 
-screen's intended width and height. This frame is used by the drawing routines as a buffer to render all items for the game's scene. This frame 
-is then taken by the window renderer (windows API for windows_main) and displayed to the window.
 
 
 # Main game loop
@@ -219,8 +218,6 @@ Player and GameWorld initialisation.
 The main structure of the game loop is as follows: 
 First, the Game Tick function is called, which comprises of all functions responsible for updating the state of the game. This function runs as 
 follows;
-
-MasterControls is run to take input from the keyboard and run any debug commands that can be used for ease of development.
 
 PlayCutscene is run to operate the currently playing cutscene, if the GameWorld's GameState is set to "CUTSCENE".
 
@@ -262,7 +259,16 @@ enum CameraState {
 
 UpdateText is run to update any playing dialogue/text boxes and is responsible for operating the textQueue itself. (More on this later.)
 
+
+The second part of the main game loop is the GameFrame function which is responsible for operating any updates that should happen every frame,
+instead of every tick. Here, the following functions are called:
+
+UpdateObjectsFrame is called to run any per-frame custom code execution for objects that be defined via the "AddFrameUpdateFunction" function.
+
 HandleGameWorldEvents is called to handle more abstract game events such as pausing, level loading, etc.
+
+MasterControls is run to take input from the keyboard and run any debug commands that can be used for ease of development.
+
 
 
 **Rendering**
@@ -915,6 +921,8 @@ To create an animation, two functions are used; initialiseNewAnimation and addSp
 pointer to a newly allocated animation struct, and automatically assigns it to the provided spriteSet. The addSpriteToAnimation function is 
 used to add a new sprite to the animation. In order to create an animation, the desired frames should be sequentially added via this function 
 in the order of the animation. Any created animations should be done within the LoadAnimations function in animations.c.
+
+Frames can be created with additional arguements to allow for dynamic position offsetting or rotation.
 
 ```
 Animation* initialiseNewAnimation(const char animationName[], int frameRate, SpriteSet *inputSet)

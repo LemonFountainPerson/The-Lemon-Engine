@@ -180,3 +180,106 @@ Bug fixes/Performance improvements:
 
     -> Optimised the Full-Alpha blending equation to improve xxx_Full_Alpha rendering performance. (~100 -> ~300 fps)
 
+
+
+# v0.07
+21/09/25
+
+New Features:
+
+-> The Lemon Engine is now 64 bit! Along with some internal changes, this has increased perfomance slightly across the board.
+
+-> Added full sprite rotation for non-tiled rendermodes, via the direction variable in the displayData struct.
+
+-> Added the ability to define custom code execution on a per-frame basis instead of per-Tick - represented as a linked list of FrameUpdateFunction structs.
+Object types can create multiple instances, and all instances associated with a specific object will be deleted when that object is deleted.
+
+-> Added full Mouse Input: x, y co-ords, Left mouse button, Right mouse button, Middle mouse button, etc.
+
+-> Added convenience functions for adding different types of strings to the debug string.
+
+-> Animation frames can now store a rotation offset in degrees that is applied dynamically.
+
+-> Added a built-in "invincibility frames" function that can be used on any object.
+
+
+Structure Changes:
+
+-> Objects on the HUD layer now render relative to the CENTER of the screen, (0, 0) is now the center instead of the bottom left corner. 
+For example, x: -500 y: 20 would be on the left edge near the middle of the screen (on 1280 x 720).
+
+-> The screenBuffer, keyboard and MouseInput are now all global variables/structs accessible from wherever in the project.
+
+-> As a consequence of the new per-frame custom behaviour functions, all engine updates are now split between two functions: GameTick for events that require to be timed
+or synced to real-time such as movement, animations, cutscenes, etc. and GameFrame for events that should happen on each available frame. 
+
+-> Removed FrameThrottle functionality.
+
+-> Rendering frequency can now be controlled independently of the GameTick frequency via the RendersPerSecond/RenderDelta variables and the RENDERS_PER_SECOND macro.
+
+-> All object velocity movement is now run via the moveObject function, to simplify the functionality.
+
+-> All objects are now explicitly bound to the "WorldBoundX/Y" co-ords that are held in the EngineSettings struct. This means there is a modifiable, but finite and 
+defined boundary for the game scene.
+
+-> Sound instances are now created via the createEmptySoundInstance function. 
+
+-> Added the "GroundBox" pointer to the PhysicsRect which is used to keep track of the ground that the object is on when gravity is applied.
+
+-> Text box portraits can now be moved relative to the box and creating a text instance is much more streamlined through a total of 3 functions. (Instead of 7.)
+
+
+Bug fixes/Improvements:
+
+-> Fixed the blendPixel's formula for blending the additional transparencyEffect - it is now correctly rendered in the SDL renderer.
+
+-> Restructured some systems to not rely on as many pre-processor defined constants, to allow for dynamic setting adjustment. (Pre-processor constants are now treated as
+default settings.) Such data includes Max sounds per channel, max rendered objects/particles/UIElements, ticks per second, renders per second, etc.
+
+-> The data inside the World struct pertaining to backgrounds is now part of a self-contained struct that now has more clearly labelled variables.
+
+-> GameRunning is no longer a global variable - shutting down the game should be done via the GameState variable in the World struct. (GameWorld->GameState = CLOSE_GAME)
+
+-> The functions responsible for magnetising objects to objects in motion have been replaced with an automatic updatePhysicsState function. This functionality can be
+enabled by simply calling the ApplyGravity function within the ObjectBehaviour function. Any future physics functionality should be added via the updatePhysicsState 
+function.
+
+-> Rendering objects with sizes less than 1 (on either the PhysicsRect's x/y axis or Sprite's width/height axis) no longer causes unintended effects.
+
+-> Errors encountered when loading a level will now point out the line where the error occured on, if applicable.
+
+-> Object load commands can now be strung together without length limitation in the same way other arguements can be added (seperating different commands with a space or a comma).
+
+-> The inAir variable of the physicsRects are now updated via the applyGravity function and also after the object moves via the
+moveObject function. (This means it is now up-to-date at essentially all times.)
+
+-> Animation file loading can now continue reading past a malformed entry/incorrect data instead of giving up as soon as it encounters an error.
+
+-> The "getNextArg" function used to read data from files can no longer index out of bounds, assuming provided capacity value is correctly set to the capacity of the array
+passed in or less.
+
+-> Fixed the "iterateSound" function to no longer create ambiguity between a 32 bit int and a 32/64 bit pointer.
+
+-> Code reorganisation has made the "prevXPos" and "prevYPos" variables within the PhysicsRect structs more reliable as they now always track the Boxes' position exactly one #
+game tick ago.
+
+-> The Parent link "POSITION_LINK" no longer relies on two volitile variables to control a child object's position relative to the parent; instead the difference between the
+previous position and current position is used.
+
+-> Textboxes have been overhauled internally; this results in mostly unchanged functionality but easier-to-read code.
+
+-> The debug hitbox view has been changed to show outlines to be more visually clear.
+
+
+
+PLANNED UPCOMING FEATURES IN V0.08:
+
+-> Better application management; Dynamic Window resizing, window title/icon editing, improved SDL compatibility, etc.
+
+-> New pre-defined objects
+
+-> Dialog box option prompts
+
+-> A better cutscene manager that can work in tandem with the new dialog option prompts
+
+-> Optimisations to various systems
