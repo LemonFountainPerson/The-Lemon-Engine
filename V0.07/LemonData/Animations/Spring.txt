@@ -1,0 +1,15 @@
+V0.07-ANIMATION
+AddSprite: 	Spring		Objects		SINGLE
+AddSprite: 	Spring2		Objects		SINGLE
+AddSprite: 	Spring3		Objects		SINGLE
+AddSprite: 	Spring4		Objects		SINGLE
+AddSprite: 	Spring5		Objects		SINGLE
+
+NewAnimation: 	Bounce 		30
+AddFrame: 	Spring3	
+AddFrame: 	Spring4	
+AddFrame:	Spring5	
+AddFrame: 	Spring4
+AddFrame: 	Spring3
+AddFrame: 	Spring2
+AddFrame: 	Spring
