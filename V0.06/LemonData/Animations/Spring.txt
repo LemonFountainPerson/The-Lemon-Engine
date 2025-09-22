@@ -5,7 +5,7 @@ AddSprite: 	Spring3		Objects		TILE
 AddSprite: 	Spring4		Objects		TILE
 AddSprite: 	Spring5		Objects		TILE
 
-NewAnimation: Bounce 	30
+NewAnimation: 	Bounce 		30
 AddFrame: 	Spring3
 AddFrame: 	Spring4
 AddFrame:	Spring5

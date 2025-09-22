@@ -258,9 +258,23 @@ int UnmuteChannel(ChannelName channel)
 	{
 		SDL_SetAudioStreamGain(currentSound->stream, currentSound->volume * SoundChannels[channel].channelVolume);
 
-		printf("%f\n", currentSound->volume * SoundChannels[channel].channelVolume);
 		currentSound = currentSound->nextSound;
 	}
+	
+	return LEMON_SUCCESS;
+}
+
+
+int SetChannelVolume(ChannelName channel, float newVolume)
+{
+	if (channel >= CHANNEL_COUNT || channel < 0)
+	{
+		return INVALID_DATA;
+	}
+
+	SoundChannels[channel].channelVolume = newVolume;
+
+	UnmuteChannel(channel);
 	
 	return LEMON_SUCCESS;
 }

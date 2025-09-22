@@ -9,10 +9,13 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 		return NULL;
 	}
 
-	if (GameWorld->ObjectList->objectCount + GameWorld->ObjectList->cachedCount >= MAX_OBJECTS)
+	int maxObjects = (GameWorld->GameState == LOADING) ? (MAX_OBJECTS - RESERVED_OBJECTS) : MAX_OBJECTS;
+
+	if (GameWorld->ObjectList->objectCount + GameWorld->ObjectList->cachedCount >= maxObjects)
 	{
 		return NULL;
 	}
+
 
 	if (objectID >= UNDEFINED_OBJECT || objectID < LEVEL_FLAG_OBJ)
 	{
@@ -73,10 +76,14 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 		case SOLID_BLOCK:
 			newObject->ObjectBox->xSize = xSize * X_TILESCALE;
 			newObject->ObjectBox->ySize = ySize * Y_TILESCALE;
-			newObject->ObjectDisplay->transparency = 0.9;
-			if (arg1 > 0)
+			newObject->State = STATIC;
+			if (arg1 >= 0)
 			{
 				switchObjectSprite(arg1, newObject, ObjectList);
+			}
+			else
+			{
+				newObject->ObjectDisplay->RenderModeOverride = DO_NOT_RENDER;
 			}
 			break;
 
@@ -181,7 +188,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 
 		case PARTICLE:
 			// Do not modify! (Unless you wish to alter rendermode)
-			InitialiseParticle(newObject, arg1, arg2, arg3, arg4);
+			InitialiseParticle(newObject, arg1, arg2, arg3);
 			break;
 
 
@@ -288,7 +295,7 @@ int LoadSpriteSet(SpriteSet *newSet, int ObjectID)
 
 		default:
 		{
-			loadObjectSprite("OBJ_Missing", newSet, TILE);
+			loadSpriteIntoSpriteSet("Missing", NULL, newSet, TILE);
 		} break;
 	}
 
@@ -324,15 +331,17 @@ Object* AddObjectWithParent(World *GameWorld, Object *ParentObject, int objectID
 	if (newObject != NULL)
 	{
 		newObject->ParentObject = ParentObject;
+		newObject->ParentXOffset = newObject->ObjectBox->xPos - ParentObject->ObjectBox->xPos;
+		newObject->ParentYOffset = newObject->ObjectBox->yPos - ParentObject->ObjectBox->yPos;
 	}
 
 	return newObject;
 }
 
 
-Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int yPos, int repeatCount, int frameRate, int particleLifeTime)
+Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int yPos, int repeatCount, int particleLifeTime)
 {
-	return AddObject(GameWorld, PARTICLE, xPos, yPos, 0, 0, animation, repeatCount, frameRate, particleLifeTime, 0);
+	return AddObject(GameWorld, PARTICLE, xPos, yPos, 0, 0, animation, repeatCount, particleLifeTime, 0, 0);
 }
 
 
@@ -402,14 +411,15 @@ Object* createNewObject(ObjectController *ObjectList, int xPos, int yPos, int ob
 	newObject->State = DEFAULT;
 	newObject->Action = IDLE;
 	newObject->layer = MIDDLEGROUND;
+	newObject->ParentLink = DEFAULT_LINK;
 
 	newObject->ObjectBox->xSize = X_TILESCALE;
 	newObject->ObjectBox->ySize = Y_TILESCALE;
 	newObject->ObjectBox->xPosRight = newObject->ObjectBox->xPos + newObject->ObjectBox->xSize;
 	newObject->ObjectBox->yPosTop = newObject->ObjectBox->xPos + newObject->ObjectBox->xSize;
 
-	if (objectID == UI_ELEMENT || objectID == UI_TEXT)
-	{
+
+	if (objectID == UI_ELEMENT || objectID == UI_TEXT){
 		newObject->ObjectBox->xPos = xPos;
 		newObject->ObjectBox->yPos = yPos;
 	}
@@ -436,6 +446,8 @@ PhysicsRect* createPhysicsRect(SolidType inputSolid)
 
 	newRect->xPos = 0.0;
 	newRect->yPos = 0.0;
+	newRect->prevXPos = 0.0;
+	newRect->prevYPos = 0.0;
 	newRect->xPosRight = 0.0;
 	newRect->yPosTop = 0.0;
 	newRect->xSize = 0;
@@ -476,7 +488,8 @@ DisplayData* createDisplayData(RenderMode startRenderMode)
 	newDisplay->animationBuffer = NULL;
 	newDisplay->animationTick = 0;
 	newDisplay->animationLoopCount = 0;
-	newDisplay->transparency = 1.0;
+	newDisplay->transparencyEffect = 0.0;
+	newDisplay->invincibilityFrames = 0;
 
 	return newDisplay;
 }
@@ -781,8 +794,18 @@ int UnmarkObjectForDeletion(Object *inputObject, ObjectController *ObjectList)
 }
 
 
+// These functions can be safely called from anywhere, however due to the fact that they modify the order of the object list itself they may
+// produce unintended behaviour. Eg: incrementing skips an object in the list, decrementing repeats the previous object, SetToBack 
+// skips the rest of the objects in the list and essentially ends that frame's behaviour excecution and SetToFront repeats execution for all objects.
+// This may or may not be significant, so when wanting to modify what is rendered above, it is recommended to simplify modify the layer variable
+// BASICALLY, unless you know what your doing, avoid using these functions if possible
 void IncrementDrawPriority(ObjectController *ObjectList, Object *input)
 {
+	if (ObjectList == NULL || input == NULL)
+	{
+		return;
+	}
+
 	Object *nextPtr;
 	nextPtr = input->nextObject;
 
@@ -830,6 +853,11 @@ void IncrementDrawPriority(ObjectController *ObjectList, Object *input)
 
 void DecrementDrawPriority(ObjectController *ObjectList, Object *input)
 {
+	if (ObjectList == NULL || input == NULL)
+	{
+		return;
+	}
+
 	Object *nextPtr;
 	nextPtr = input->nextObject;
 
@@ -877,6 +905,11 @@ void DecrementDrawPriority(ObjectController *ObjectList, Object *input)
 
 void SetDrawPriorityToFront(ObjectController *ObjectList, Object *input)
 {
+	if (ObjectList == NULL || input == NULL)
+	{
+		return;
+	}
+
 	Object *nextPtr;
 	nextPtr = input->nextObject;
 
@@ -922,6 +955,11 @@ void SetDrawPriorityToFront(ObjectController *ObjectList, Object *input)
 
 void SetDrawPriorityToBack(ObjectController *ObjectList, Object *input)
 {
+	if (ObjectList == NULL || input == NULL)
+	{
+		return;
+	}
+	
 	Object *nextPtr;
 	nextPtr = input->nextObject;
 
@@ -1098,9 +1136,8 @@ FunctionResult updateObjects(World *GameWorld, int keyboard[256])
 
 	int i = ObjectList->objectCount;
 	Object *currentObject = ObjectList->firstObject;
-	ObjectList->depthCounter = 0;
 
-
+	// Update Behaviour
 	while(currentObject != NULL && i > 0)
 	{
 		i--;
@@ -1108,29 +1145,31 @@ FunctionResult updateObjects(World *GameWorld, int keyboard[256])
 		if (currentObject != GameWorld->Player->PlayerPtr)
 		{
 			ObjectBehaviour(GameWorld, currentObject, keyboard);
-
-			UpdateObjectDisplay(GameWorld, currentObject);
 		}
 
 		currentObject = currentObject->nextObject;
 	}
 
 
-	// delete objects that have been marked for deletion
+	// Update object state - animations, parent-child links, deletion, etc.
 	currentObject = ObjectList->lastObject;
 	Object *toDelete;
 
 	while (currentObject != NULL)
 	{
+		UpdateObjectDisplay(GameWorld, currentObject);
+
+		UpdateParentChildLink(currentObject);
+
 		toDelete = currentObject;
 		currentObject = currentObject->prevObject;
-		
-		if (toDelete->State == TO_BE_DELETED)
+
+		if (toDelete->State == TO_BE_DELETED || toDelete->ObjectBox == NULL || toDelete->ObjectDisplay == NULL)
 		{
-			// If object has been deleted, pointer will be incremented
 			deleteObject(&toDelete, ObjectList);
 		}
 	}
+
 
 	return LEMON_SUCCESS;
 }
@@ -1138,12 +1177,12 @@ FunctionResult updateObjects(World *GameWorld, int keyboard[256])
 
 int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 {
-	if (GameWorld->Player == NULL || GameWorld->Player->PlayerPtr == NULL)
+	if (inputObject == NULL || inputObject->ObjectBox == NULL || inputObject->ObjectDisplay == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (GameWorld->GamePaused == 1 && inputObject->ObjectID != UI_ELEMENT || inputObject->State < DEFAULT)
+	if (GameWorld->GamePaused == 1 && inputObject->ObjectID != UI_ELEMENT || inputObject->State == STATIC || inputObject->State < DEFAULT)
 	{
 		return EXECUTION_UNNECESSARY;
 	}
@@ -1152,6 +1191,8 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 	{
 		return ACTION_DISABLED;
 	}
+
+	GameWorld->depthCounter = 0;
 	
 
 	switch (inputObject->ObjectID)
@@ -1219,12 +1260,12 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 
 
 		case BASIC_ENEMY:
-			UpdateEntityPhysics(inputObject, GameWorld->Player, GameWorld);
+			ApplyGravity(inputObject, GameWorld);
 			break;
 
 
 		case PUSHABLE_BOX:
-			UpdateEntityPhysics(inputObject, GameWorld->Player, GameWorld);
+			ApplyGravity(inputObject, GameWorld);
 			break;
 
 
@@ -1233,30 +1274,32 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256])
 	}
 
 
-	if (inputObject->State == TO_BE_DELETED)
-	{
-		return EXECUTION_UNNECESSARY;
-	}
-
-
 	// Move object
 	moveObjectX(inputObject, GameWorld);
 
-	moveObjectY(inputObject, GameWorld);
+	moveObjectY(inputObject, GameWorld, NULL);
 
 	MoveForward(inputObject->ObjectBox, GameWorld);
 		
+
 	return 0;
 }
 
 
 int UpdateObjectDisplay(World *GameWorld, Object *inputObject)
 {
-	if (GameWorld == NULL || inputObject == NULL)	{ return MISSING_DATA; }
+	if (GameWorld == NULL || inputObject == NULL || inputObject->ObjectDisplay == NULL)	{ return MISSING_DATA; }
 
 	if (GameWorld->GamePaused == 1 && inputObject->ObjectID != UI_ELEMENT || inputObject->State < DEFAULT)
 	{
 		return ACTION_DISABLED;
+	}
+
+
+	if (inputObject->Action == DAMAGED)
+	{
+		DamagedFrames(inputObject);
+		return EXECUTION_UNNECESSARY;
 	}
 
 
@@ -1265,6 +1308,98 @@ int UpdateObjectDisplay(World *GameWorld, Object *inputObject)
 	// Assign Sprite   (0 means do not change spriteset)
 	switchSprite(inputObject->ObjectDisplay->currentSprite, 0, inputObject->ObjectDisplay);
 
+
+	return LEMON_SUCCESS;
+}
+
+
+int UpdateParentChildLink(Object *inputObject)
+{
+	if (inputObject->ParentObject == NULL)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	DisplayData *ParentDisplay = inputObject->ParentObject->ObjectDisplay;
+	PhysicsRect *ParentBox = inputObject->ParentObject->ObjectBox;
+
+	if (ParentDisplay == NULL || ParentBox == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+
+	if ((inputObject->ParentLink & SPRITE_LINK) != 0)
+	{
+		inputObject->ObjectDisplay->spriteBuffer = ParentDisplay->spriteBuffer;
+		inputObject->ObjectDisplay->currentSprite = ParentDisplay->spriteBuffer->spriteID;
+	}
+
+
+	if ((inputObject->ParentLink & ANIMATION_LINK) != 0)
+	{
+		inputObject->ObjectDisplay->animationBuffer = ParentDisplay->animationBuffer;
+		inputObject->ObjectDisplay->frameBuffer = ParentDisplay->frameBuffer;
+		inputObject->ObjectDisplay->currentAnimation = ParentDisplay->currentAnimation;
+	}
+
+	if ((inputObject->ParentLink & TRANSPARENCY_LINK) != 0)
+	{
+		inputObject->ObjectDisplay->transparencyEffect = ParentDisplay->transparencyEffect;
+	}
+
+
+	if ((inputObject->ParentLink & POSITION_LINK) != 0)
+	{
+		inputObject->ObjectBox->xPos = ParentBox->xPos + inputObject->ParentXOffset;
+		inputObject->ObjectBox->xPosRight = inputObject->ObjectBox->xPos + inputObject->ObjectBox->xSize;
+
+		inputObject->ObjectBox->yPos = ParentBox->yPos + inputObject->ParentYOffset;
+		inputObject->ObjectBox->yPosTop = inputObject->ObjectBox->yPos + inputObject->ObjectBox->ySize;
+	}
+
+	if ((inputObject->ParentLink & VELOCITY_LINK) != 0)
+	{
+		inputObject->ObjectBox->xVelocity = ParentBox->xVelocity;
+		inputObject->ObjectBox->yVelocity = ParentBox->yVelocity;
+		inputObject->ObjectBox->direction = ParentBox->direction;
+		inputObject->ObjectBox->forwardVelocity = ParentBox->forwardVelocity;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int DamagedFrames(Object *inputObject)
+{
+	DisplayData *inputData = inputObject->ObjectDisplay;
+
+
+	inputData->invincibilityFrames--;
+
+	if (inputData->invincibilityFrames < 1)
+	{
+		inputObject->Action = IDLE;
+		inputData->RenderModeOverride = DEFAULT_TO_SPRITE;
+		return ACTION_DISABLED;
+	}
+
+
+	if (inputData->invincibilityFrames % 18 != 0)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	if (inputData->RenderModeOverride == DEFAULT_TO_SPRITE)
+	{
+		inputData->RenderModeOverride = DO_NOT_RENDER;
+		inputData->invincibilityFrames -= 4;
+	}
+	else
+	{
+		inputData->RenderModeOverride = DEFAULT_TO_SPRITE;
+	}
+	
 
 	return LEMON_SUCCESS;
 }
@@ -1282,9 +1417,9 @@ int UpdateCoin(Object *coin, World *GameWorld)
 	if (checkBoxOverlapsBox(PlayerBox, coin->ObjectBox) == 1)
 	{
 		GameWorld->Player->coinCount++;
-		AddParticle(GameWorld, SPARKLE, coin->ObjectBox->xPos, coin->ObjectBox->yPos, 1, 0, 0);
+		AddParticle(GameWorld, SPARKLE, coin->ObjectBox->xPos, coin->ObjectBox->yPos, 1, 0);
 		MarkObjectForDeletion(coin);
-		LemonPlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.8);
+		LemonPlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.75);
 	}
 
 	return 0;
@@ -1317,32 +1452,21 @@ int UpdateSpring(Object *spring, World *GameWorld)
 }
 
 
-int InitialiseParticle(Object *particle, int animation, int repeatCount, int frameRate, int particleLifeTime)
+int InitialiseParticle(Object *particle, int animation, int repeatCount, int particleLifeTime)
 {
 	if (particle == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (frameRate < 1 || frameRate > 999)
-	{
-		frameRate = 30;
-	}
-
 	particle->layer = PARTICLES;
 	particle->ObjectBox->solid = UNSOLID;
 	particle->ObjectDisplay->currentAnimation = animation;
-	particle->arg2 = 60 / frameRate;
-	particle->arg3 = particleLifeTime;
-	particle->arg4 = 0;
-	particle->arg5 = 0;
+	particle->arg1 = particleLifeTime;
+	particle->arg2 = 0;
+	particle->arg3 = 0;
 
-	// Assign particle sprite
-	particle->arg1 = 1;
-	LoopParticleAnimation(particle);
-
-	// Set repeat count after function call as it may decrement arg1
-	particle->arg1 = repeatCount;
+	PlayAnimationByIndex(animation, repeatCount, particle->ObjectDisplay);
 
 
 	switch (animation)
@@ -1358,9 +1482,8 @@ int InitialiseParticle(Object *particle, int animation, int repeatCount, int fra
 int UpdateParticle(World *GameWorld, Object *particle)
 {
 	// currentAnimation: which particle animation to play
-	// arg1: number of times to repeat animation
-	// arg2: How many ticks before a frame change
-	// arg3: particle max lifetime	(0 to simply default to deleting as soon as repeat count has been reached)
+	// arg1: particle max lifetime	(0 to simply default to deleting as soon as animation ends)
+	// arg2: current particle lifetime
 
 	if (particle == NULL)
 	{
@@ -1368,27 +1491,16 @@ int UpdateParticle(World *GameWorld, Object *particle)
 	}
 
 
-	// Animation
-	particle->ObjectDisplay->animationTick++;
-
-	if (particle->ObjectDisplay->animationTick > 9999 || particle->ObjectDisplay->animationTick < 0)
-	{
-		particle->ObjectDisplay->animationTick = 0;
-	}
-
-	LoopParticleAnimation(particle);
-
-
+	particle->arg2++;
 	CustomParticleBehaviour(GameWorld, particle);
 
 
-	// If repeat count is reached or animationTick exceeds maximum lifetime, mark for deletion
-	if (particle->arg3 < 1 && particle->arg1 < 1)
+	// If animationTick exceeds maximum lifetime, mark for deletion
+	if (particle->arg1 > 0 && particle->arg2 > particle->arg1)
 	{
 		MarkObjectForDeletion(particle);
 	}
-
-	if (particle->arg3 > 0 && particle->ObjectDisplay->animationTick > particle->arg3)
+	else if (particle->arg1 < 1 && particle->ObjectDisplay->currentAnimation == 0)
 	{
 		MarkObjectForDeletion(particle);
 	}
@@ -1736,7 +1848,7 @@ Object* InitialiseMovingPlatform(Object *inputObject, int objectID, int xPos, in
 	
 	inputObject->arg4 = 1;
 	inputObject->arg5 = abs(timer);
-	inputObject->ObjectBox->solid = ENTITY_SOLID;
+	inputObject->ObjectBox->solid = JUMP_THROUGH;
 	inputObject->ObjectBox->collideMode = PUSH;
 
 
@@ -1934,7 +2046,7 @@ int UpdateLevelDoor(PlayerData *Player, Object *Door, World *GameWorld)
 
 		if (Door->arg2 > 1)
 		{
-			GameWorld->GameState = SWITCHING_LEVEL;
+			GameWorld->GameEvent = SWITCH_LEVEL;
 			GameWorld->level = Door->arg1;
 			Door->arg2 = 0;
 		}
@@ -1944,21 +2056,43 @@ int UpdateLevelDoor(PlayerData *Player, Object *Door, World *GameWorld)
 } 
 
 
-int UpdateEntityPhysics(Object *entity, PlayerData *Player, World *GameWorld)
+int ApplyGravity(Object *entity, World *GameWorld)
 {
 	if (entity == NULL || entity->ObjectBox == NULL || GameWorld == NULL)
 	{
 		return MISSING_DATA;
 	}
 
+	PhysicsRect *EntityBox = entity->ObjectBox;
+
 	if (GameWorld->PhysicsType == PLATFORMER)
 	{
-		entity->ObjectBox->yVelocity += GameWorld->Gravity;
+		EntityBox->yVelocity += GameWorld->GlobalGravityY;
+		EntityBox->xVelocity += GameWorld->GlobalGravityX;
 	}
 
-	if (entity->ObjectBox->yVelocity < -32.0)
+	if (fabs(EntityBox->yVelocity) > MAX_Y_VELOCITY)
 	{
-		entity->ObjectBox->yVelocity = -32.0;
+		if (EntityBox->yVelocity > 0.0) 
+		{
+			EntityBox->yVelocity = MAX_Y_VELOCITY;
+		}
+		else
+		{
+			EntityBox->yVelocity = -MAX_Y_VELOCITY;
+		}
+	}
+
+	if (fabs(EntityBox->xVelocity) > MAX_X_VELOCITY)
+	{
+		if (EntityBox->xVelocity > 0.0) 
+		{
+			EntityBox->xVelocity = MAX_X_VELOCITY;
+		}
+		else
+		{
+			EntityBox->xVelocity = -MAX_X_VELOCITY;
+		}
 	}
 
 	return 0;
@@ -1969,14 +2103,16 @@ int moveObjectX(Object *inputObject, World *GameWorld)
 {
 	if (inputObject == NULL || inputObject->State < DEFAULT || GameWorld == NULL)	{ return  MISSING_DATA; }
 
+	inputObject->ObjectBox->prevXPos = inputObject->ObjectBox->xPos;
+	inputObject->ObjectBox->prevYPos = inputObject->ObjectBox->yPos;
+
+
 	if (fabs(inputObject->ObjectBox->xVelocity) < 0.1)
 	{
 		inputObject->ObjectBox->xVelocity = 0.0;
 		return EXECUTION_UNNECESSARY;
 	}
 
-
-	double prevObjXPos = inputObject->ObjectBox->xPos;
 
 	inputObject->ObjectBox->xPos += (inputObject->ObjectBox->xVelocity);
 	inputObject->ObjectBox->xPosRight = inputObject->ObjectBox->xPos + inputObject->ObjectBox->xSize;
@@ -2002,23 +2138,27 @@ int moveObjectX(Object *inputObject, World *GameWorld)
 	}
 
 
+	inputObject->ObjectBox->xPosRight = inputObject->ObjectBox->xPos + inputObject->ObjectBox->xSize;
+
+
 	return 0;
 }
 
 
 
-int moveObjectY(Object *inputObject, World *GameWorld)
+int moveObjectY(Object *inputObject, World *GameWorld, int *jumpProgressPtr)
 {
 	if (inputObject == NULL || inputObject->State < DEFAULT || GameWorld == NULL)	{ return  MISSING_DATA; }
+
+	inputObject->ObjectBox->prevXPos = inputObject->ObjectBox->xPos;
+	inputObject->ObjectBox->prevYPos = inputObject->ObjectBox->yPos;
+
 
 	if (fabs(inputObject->ObjectBox->yVelocity) < 0.1)
 	{
 		inputObject->ObjectBox->yVelocity = 0.0;
 		return EXECUTION_UNNECESSARY;
 	}
-
-	double prevObjYPos = inputObject->ObjectBox->yPos;
-	double prevObjYPosTop = inputObject->ObjectBox->yPos + inputObject->ObjectBox->ySize;
 
 	inputObject->ObjectBox->yPos += (inputObject->ObjectBox->yVelocity);
 	inputObject->ObjectBox->yPosTop = inputObject->ObjectBox->yPos + inputObject->ObjectBox->ySize;
@@ -2035,14 +2175,16 @@ int moveObjectY(Object *inputObject, World *GameWorld)
 	}
 
 
-	ResolveAllYCollision(inputObject->ObjectBox, GameWorld->ObjectList, NULL);
+	ResolveAllYCollision(inputObject->ObjectBox, GameWorld->ObjectList, jumpProgressPtr);
 
 
 	if (GameWorld->PhysicsType == PLATFORMER)
 	{
 		magnetiseObjectsY(inputObject->ObjectBox, GameWorld->ObjectList);
 	}
-	
+
+
+	inputObject->ObjectBox->yPosTop = inputObject->ObjectBox->yPos + inputObject->ObjectBox->ySize;
 
 	return 0;
 }
@@ -2200,17 +2342,13 @@ Object* GetCollidingObject(PhysicsRect *inputBox, ObjectController *ObjectList)
 
 	while (currentObject != NULL)
 	{
-		int result = 0;
-
 		if (currentObject->ObjectBox->solid == UNSOLID || checkBoxOverlapsBox(inputBox, currentObject->ObjectBox) == 0)
 		{
 			currentObject = currentObject->nextObject;
 			continue;
 		}
 
-		result = CheckBoxCollidesBox(inputBox, currentObject->ObjectBox);
-
-		if (result == 1)
+		if (CheckBoxCollidesBox(inputBox, currentObject->ObjectBox) == 1)
 		{
 			return currentObject;
 		}
@@ -2239,28 +2377,12 @@ int CheckBoxCollidesBox(PhysicsRect *inputBox, PhysicsRect *compareBox)
 	int inputXRight = inputBox->xPos + inputBox->xSize;
 	int inputY = inputBox->yPos;
 	int inputYTop = inputBox->yPos + inputBox->ySize;
-	int prevInputY = inputY - (inputBox->yVelocity * sin(inputBox->direction));
-
-	double inputCosVal = cos(inputBox->direction);
-
-	if (fabs(inputCosVal) > 0.001)
-	{
-		prevInputY -= inputCosVal * inputBox->xVelocity;
-	}
 
 
 	int compareX = compareBox->xPos;
 	int compareXRight = compareBox->xPos + compareBox->xSize;
 	int compareY = compareBox->yPos;
 	int compareYTop = compareBox->yPos + compareBox->ySize;
-	int prevCompareY = compareY - (compareBox->yVelocity * sin(compareBox->direction));
-
-	double compareCosVal = cos(compareBox->direction);
-
-	if (fabs(compareCosVal) > 0.001)
-	{
-		prevCompareY -= compareCosVal * compareBox->xVelocity;
-	}
 
 
 	switch(inputBox->solid)
@@ -2273,21 +2395,19 @@ int CheckBoxCollidesBox(PhysicsRect *inputBox, PhysicsRect *compareBox)
 			}
 			else
 			{
-				inputYTop = ((inputBox->xSize - (compareBox->xPos - inputBox->xPos)) * ((double)inputBox->ySize/(double)inputBox->xSize));
+				inputYTop = ((inputBox->xSize - compareBox->xPos + inputBox->xPos) * ((double)inputBox->ySize/(double)inputBox->xSize));
 			}
 			
 
-			if (inputYTop > inputBox->ySize)
-			{
-				inputYTop = inputBox->ySize;
-			}
+			inputYTop = dClamp(inputYTop, 0.0, (double)inputBox->ySize);
+			
 
 			inputYTop += inputBox->yPos;
 		} break;
 			
 		case JUMP_THROUGH:
 		{
-			if (compareBox->yVelocity > 0.0 || compareBox->crouch == 1 || prevCompareY < inputY - 2)
+			if (compareBox->yVelocity > 0.0 || compareBox->crouch == 1 || compareBox->prevYPos < inputYTop - 2)
 			{
 				return 0;
 			}
@@ -2338,7 +2458,7 @@ int CheckBoxCollidesBox(PhysicsRect *inputBox, PhysicsRect *compareBox)
 
 		case JUMP_THROUGH:
 		{
-			if (inputBox->yVelocity > 0.0 || inputBox->crouch == 1 || prevInputY < compareYTop - 2)
+			if (inputBox->yVelocity > 0.0 || inputBox->crouch == 1 || inputBox->prevYPos < compareYTop - 2)
 			{
 				return 0;
 			}
@@ -2435,7 +2555,7 @@ int OverlapsObjectType(ObjectController *ObjectList, int overlapObjectID, Object
 
 	while(currentObject != NULL && i > 0)
 	{
-		if (currentObject->layer == inputObject->layer && currentObject->ObjectID == overlapObjectID && currentObject != inputObject)
+		if (currentObject->ObjectBox->collideLayer == inputObject->ObjectBox->collideLayer && currentObject->ObjectID == overlapObjectID && currentObject != inputObject)
 		{
 			if (CheckBoxCollidesBox(inputObject->ObjectBox, currentObject->ObjectBox) == 1)
 			{
@@ -2466,7 +2586,7 @@ int OverlapsObjectSolid(ObjectController *ObjectList, int solidID, Object *input
 
 	while(currentObject != NULL && i > 0)
 	{
-		if (currentObject->layer == inputObject->layer && currentObject->ObjectBox->solid == solidID && currentObject != inputObject)
+		if (currentObject->ObjectBox->collideLayer == inputObject->ObjectBox->collideLayer && currentObject->ObjectBox->solid == solidID && currentObject != inputObject)
 		{
 			if (CheckBoxCollidesBox(inputObject->ObjectBox, currentObject->ObjectBox) == 1)
 			{
@@ -2497,7 +2617,7 @@ int OverlapsObjectAllSolids(ObjectController *ObjectList, Object *inputObject)
 
 	while(currentObject != NULL && i > 0)
 	{
-		if (currentObject->layer == inputObject->layer && currentObject->ObjectBox->solid > 0 && currentObject != inputObject)
+		if (currentObject->ObjectBox->collideLayer == inputObject->ObjectBox->collideLayer && currentObject->ObjectBox->solid > 0 && currentObject != inputObject)
 		{
 			if (CheckBoxCollidesBox(inputObject->ObjectBox, currentObject->ObjectBox) == 1)
 			{
@@ -2531,6 +2651,43 @@ CollideType evaluateCollideMode(PhysicsRect *movingBox, PhysicsRect *collideBox)
 }
 
 
+int AdjustDirection(World *GameWorld, PhysicsRect *movingBox)
+{	
+	if (GameWorld == NULL || GameWorld->ObjectList == NULL || movingBox == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	Object *detectedObject;
+	detectedObject = GameWorld->ObjectList->firstObject;
+
+	double sinVal = 2 * sin(movingBox->direction);
+	double cosVal = 2 * cos(movingBox->direction);
+
+
+	movingBox->yPos += sinVal;
+	movingBox->xPos -= cosVal;
+
+	detectedObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
+
+	movingBox->yPos -= sinVal;
+	movingBox->xPos += cosVal;
+
+
+	if (detectedObject == NULL)
+	{
+		movingBox->direction = RADIAN_90;
+
+		return LEMON_SUCCESS;
+	}
+
+	AssignDirection(movingBox, detectedObject->ObjectBox);
+
+
+	return LEMON_SUCCESS;
+}
+
+
 int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 {
 	if (movingBox == NULL || GameWorld == NULL || GameWorld->ObjectList == NULL)
@@ -2538,23 +2695,39 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 		return MISSING_DATA;
 	}
 	
-
+	movingBox->prevXPos = movingBox->xPos;
+	movingBox->prevYPos = movingBox->yPos;
 
 	if (fabs(movingBox->forwardVelocity) < 0.1)
 	{
 		return EXECUTION_UNNECESSARY;
 	}
 
-
-	// step and count set-up
-	if (GameWorld->PhysicsType == PLATFORMER && movingBox->solid != UNSOLID)
+	// Unsolid objects do not have to do collision detection so it skips the rest of the function by moving all steps instantly
+	if (movingBox->solid == UNSOLID)
 	{
-		checkIfGrounded(GameWorld, movingBox);
+		movingBox->xPos += movingBox->forwardVelocity * sin(movingBox->direction);
+		movingBox->yPos += movingBox->forwardVelocity * cos(movingBox->direction);
+
+		if (movingBox->friction < 0.999)
+		{
+			movingBox->forwardVelocity *= movingBox->friction;
+		}
+		
+		return LEMON_SUCCESS;
 	}
 
+
+	if (GameWorld->depthCounter < 1)
+	{
+		AdjustDirection(GameWorld, movingBox);
+	}
+
+
+	// step and count set-up
+	double orientation = (movingBox->forwardVelocity)/fabs(movingBox->forwardVelocity);
 	double sinVal = sin(movingBox->direction);
 	double cosVal = cos(movingBox->direction);
-	double orientation = (movingBox->forwardVelocity)/fabs(movingBox->forwardVelocity);
 
 	if (fabs(sinVal) < 0.1)
 	{
@@ -2566,21 +2739,15 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 		cosVal = 0.0;
 	}
 
-	// Unsolid objects do not have to do collision detection so it skips the rest of the function by moving all steps instantly
-	if (movingBox->solid == UNSOLID)
-	{
-		movingBox->xPos += movingBox->forwardVelocity * sinVal;
-		movingBox->yPos += movingBox->forwardVelocity * cosVal;
-		movingBox->forwardVelocity *= movingBox->friction;
-		return 0;
-	}
-
 	double xStep = orientation * sinVal;
 	double yStep = orientation * cosVal;
 	int travelCount = 1 + (int)fabs(movingBox->forwardVelocity);
 
-	Object *currentObject = NULL;
+	int collideCycle = COLLISION_CYCLES;
+	double tempX = movingBox->xPos;
+	double tempY = movingBox->yPos;
 
+	Object *currentObject = NULL;
 
 	// regular collision
 	while (travelCount > 0)
@@ -2588,78 +2755,92 @@ int MoveForward(PhysicsRect *movingBox, World *GameWorld)
 		movingBox->yPos += yStep;
 		movingBox->xPos += xStep;
 
-		travelCount--;
-
 		currentObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
 
-		int collideCycle = COLLISION_CYCLES;
+		collideCycle = COLLISION_CYCLES;
+		tempX = movingBox->xPos;
+		tempY = movingBox->yPos;
 
 		while (collideCycle > 0 && currentObject != NULL)
 		{
 			collideCycle--;
 
-			// edge tolerance
-			int slopeClimb = 5;
-			double tempX = movingBox->xPos;
-			double tempY = movingBox->yPos;
-
-			while (slopeClimb > 0 && CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
+			// using (travelcount - 1) result in pixel perfect collision but erroneous extra collisions when on slope
+			// using (travelcount) results in more smooth slope interactions but creates a 1 pixel gap
+			if (evaluateCollideMode(movingBox, currentObject->ObjectBox) == PUSH && GameWorld->depthCounter < COLLISION_DEPTH)
 			{
-				movingBox->yPos += sinVal;
-				movingBox->xPos -= cosVal;
-				slopeClimb--;
-			}
-
-			if (slopeClimb < 1)
-			{
-				movingBox->yPos = tempY;
-				movingBox->xPos = tempX;
-			}
-			else
-			{
-				currentObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
-				continue;
-			}
-
-
-			if (evaluateCollideMode(movingBox, currentObject->ObjectBox) == PUSH && GameWorld->ObjectList->depthCounter < COLLISION_DEPTH)
-			{
-				GameWorld->ObjectList->depthCounter++;
-				WorldPhysics prevType = GameWorld->PhysicsType;
-				GameWorld->PhysicsType = TOP_DOWN;
+				GameWorld->depthCounter++;
 
 				double tempVelocity = currentObject->ObjectBox->forwardVelocity;
 				double tempDirection = currentObject->ObjectBox->direction;
+				SolidType prevSolidType = movingBox->solid;
+				movingBox->solid = UNSOLID;
+
 				currentObject->ObjectBox->forwardVelocity = orientation * travelCount;
 				currentObject->ObjectBox->direction = movingBox->direction;
 
-				MoveForward(currentObject->ObjectBox, GameWorld);
-
-				GameWorld->PhysicsType = prevType;
+				int result = MoveForward(currentObject->ObjectBox, GameWorld);
 
 				currentObject->ObjectBox->forwardVelocity = tempVelocity;
 				currentObject->ObjectBox->direction = tempDirection;
+				movingBox->solid = prevSolidType;
 
-
-				if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 0)
+				if (result != LEMON_SUCCESS || CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
 				{
-					currentObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
-					continue;
+					movingBox->yPos = tempY;
+					movingBox->xPos = tempX;
+
+					movingBox->yPos -= yStep;
+					movingBox->xPos -= xStep;
+					ApplyForwardPhysics(movingBox, currentObject->ObjectBox);
+
+					return TASK_FAILED;
 				}
+
+				double subX = fabs(movingBox->xPos) - floor(fabs(movingBox->xPos));
+				double subY = fabs(movingBox->yPos) - floor(fabs(movingBox->yPos));
+
+				currentObject->ObjectBox->xPos = floor(currentObject->ObjectBox->xPos) + subX;
+				currentObject->ObjectBox->yPos = floor(currentObject->ObjectBox->yPos) + subY;
+
+			}
+			else
+			{
+				// edge tolerance
+				int slopeClimb = 5;
+
+				while (slopeClimb > 0 && CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
+				{
+					movingBox->yPos += sinVal;
+					movingBox->xPos -= cosVal;
+					slopeClimb--;
+				}
+
+				if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
+				{
+					movingBox->yPos = tempY;
+					movingBox->xPos = tempX;
+
+					movingBox->yPos -= yStep;
+					movingBox->xPos -= xStep;
+					ApplyForwardPhysics(movingBox, currentObject->ObjectBox);
+
+					return TASK_FAILED;
+				}
+				
 			}
 
-			movingBox->yPos -= yStep;
-			movingBox->xPos -= xStep;
-			ApplyForwardPhysics(movingBox, currentObject->ObjectBox);
-
-			return 0;
+			currentObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
 		}
 
-		
+		travelCount--;
 	}
 
-	movingBox->forwardVelocity *= movingBox->friction;
 
+	if (movingBox->friction < 0.999)
+	{
+		movingBox->forwardVelocity *= movingBox->friction;
+	}
 
 	return LEMON_SUCCESS;
 }
@@ -2709,6 +2890,40 @@ int ApplyForwardPhysics(PhysicsRect *inputBox, PhysicsRect *physicsBox)
 }
 
 
+int ResolveVectorCollision(PhysicsRect *movingBox, PhysicsRect *compareBox)
+{
+	if (movingBox == NULL || compareBox == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	double movingVectorX = movingBox->xPos - movingBox->prevXPos;
+	double movingVectorY = movingBox->yPos - movingBox->prevYPos;
+
+	double movingMagnitude = sqrt((movingVectorX * movingVectorX) + (movingVectorY * movingVectorY));
+
+	if (fabs(movingMagnitude) < 0.1)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	double movingNormalX = movingVectorX / movingMagnitude;
+	double movingNormalY = movingVectorY / movingMagnitude;
+
+	int count = (int)movingMagnitude + 1;	
+
+	while (CheckBoxCollidesBox(movingBox, compareBox) == 1 & count > 0)
+	{
+		movingBox->xPos -= movingNormalX;
+		movingBox->yPos -= movingNormalY;
+
+		count--;
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
 
 int ResolveAllXCollision(PhysicsRect *movingBox, ObjectController *ObjectList)
 {
@@ -2716,11 +2931,11 @@ int ResolveAllXCollision(PhysicsRect *movingBox, ObjectController *ObjectList)
 	{
 		return MISSING_DATA;
 	}
-	
+
+
 	int count = 0;
 
-	Object *currentObject;
-	currentObject = GetCollidingObject(movingBox, ObjectList);
+	Object *currentObject = GetCollidingObject(movingBox, ObjectList);
 
 	while (currentObject != NULL && count < COLLISION_CYCLES)
 	{
@@ -2752,7 +2967,6 @@ int ResolveAllXCollision(PhysicsRect *movingBox, ObjectController *ObjectList)
 		currentObject = GetCollidingObject(movingBox, ObjectList);
 
 		count++;
-
 	}
 
 
@@ -2767,8 +2981,7 @@ int ResolveXCollision(PhysicsRect *movingBox, PhysicsRect *compareBox, ObjectCon
 		return MISSING_DATA;
 	}
 
-
-	double prevXPos = movingBox->xPos - movingBox->xVelocity - movingBox->PhysicsXVelocity;
+	
 	int objX = compareBox->xPos;
 	int objY = compareBox->yPos;
 	int objXRight = objX + compareBox->xSize;
@@ -2783,26 +2996,46 @@ int ResolveXCollision(PhysicsRect *movingBox, PhysicsRect *compareBox, ObjectCon
 		{
 			if (compareBox->xFlip == 1)
 			{
-				if ((int)prevXPos >= objXRight)
+				if ((int)movingBox->prevXPos >= objXRight)
 				{
 					movingBox->xPos = objXRight;
 					ApplyXPhysics(movingBox, compareBox);
-					break;
+					return 0;
 				}
 			}
 			else
 			{
-				if ((int)prevXPos + movingBox->xSize <= objX)
+				if ((int)movingBox->prevXPos + movingBox->xSize <= objX)
 				{
 					movingBox->xPos = objX - movingBox->xSize;
 					ApplyXPhysics(movingBox, compareBox);
-					break;
+					return 0;
 				}
 			}
 
-			movingBox->xPos = prevXPos;
+			double slope = ((double)compareBox->ySize/(double)compareBox->xSize);
+			double slopeFloor;
 
-			ClimbSlope(movingBox, compareBox, ObjectList);
+			if (compareBox->xFlip == 1)
+			{
+				slopeFloor = (movingBox->xPos + movingBox->xSize - objX) * slope;
+			}
+			else
+			{
+				slopeFloor = (compareBox->xSize - movingBox->xPos + objX) * slope;
+			}
+
+			slopeFloor = clamp(slopeFloor, 0, compareBox->ySize);
+
+			movingBox->yPos = slopeFloor + objY; 
+
+
+			if (GetCollidingObject(movingBox, ObjectList) != NULL)
+			{
+				ClimbSlope(movingBox, compareBox, ObjectList);
+			}
+
+
 		} break;
 
 
@@ -2813,7 +3046,7 @@ int ResolveXCollision(PhysicsRect *movingBox, PhysicsRect *compareBox, ObjectCon
 
 		default:
 		{
-			if (prevXPos < ObjXCenter)
+			if (movingBox->prevXPos < ObjXCenter)
 			{
 				movingBox->xPos = objX - movingBox->xSize;
 			}
@@ -2905,8 +3138,7 @@ int ResolveAllYCollision(PhysicsRect *movingBox, ObjectController *ObjectList, i
 		return MISSING_DATA;
 	}
 	
-	movingBox->PhysicsYVelocity = 0.0;
-	
+
 	int count = 0;
 	Object *currentObject;
 	currentObject = GetCollidingObject(movingBox, ObjectList);
@@ -2942,6 +3174,7 @@ int ResolveAllYCollision(PhysicsRect *movingBox, ObjectController *ObjectList, i
 		count++;
 	}
 
+
 	return LEMON_SUCCESS;
 }
 
@@ -2972,7 +3205,7 @@ int ResolveYCollision(PhysicsRect *movingBox, PhysicsRect *compareBox, int *jump
 	{
 		case FLAT_SLOPE:
 		{
-			if ((int)prevYPos < objY - 8)
+			if ((int)prevYPos + movingBox->ySize < objY)
 			{
 				movingBox->yPos = (objY - movingBox->ySize);
 				jumpProgressBuffer = 100;
@@ -2987,16 +3220,16 @@ int ResolveYCollision(PhysicsRect *movingBox, PhysicsRect *compareBox, int *jump
 
 			if (compareBox->xFlip == 1)
 			{
-				slopeFloor = ((movingBox->xPos + movingBox->xSize - objX) * slope);
+				slopeFloor = (movingBox->xPos + movingBox->xSize - objX) * slope;
 			}
 			else
 			{
-				slopeFloor = ((compareBox->xSize - (movingBox->xPos - objX)) * slope);
+				slopeFloor = (compareBox->xSize - movingBox->xPos + objX) * slope;
 			}
 
 			slopeFloor = clamp(slopeFloor, 0, compareBox->ySize);
 
-			movingBox->yPos = slopeFloor + objY;
+			movingBox->yPos = slopeFloor + objY; 
 
 			jumpProgressBuffer = 0;
 					
@@ -3305,6 +3538,8 @@ int ClimbSlope(PhysicsRect *inputBox, PhysicsRect *compareBox, ObjectController 
 		return MISSING_DATA;
 	}
 
+	inputBox->xPos = inputBox->prevXPos;
+
 	double velocity = inputBox->xVelocity + inputBox->PhysicsXVelocity;
 
 	if (fabs(velocity) < 0.1)
@@ -3312,40 +3547,31 @@ int ClimbSlope(PhysicsRect *inputBox, PhysicsRect *compareBox, ObjectController 
 		return 0;
 	}
 
-	double step = velocity/fabs(velocity) * sin(inputBox->direction);
-
 	AssignDirection(inputBox, compareBox);
+
+	double step = velocity/fabs(velocity) * sin(inputBox->direction);
 
 	double slope = ((double)compareBox->ySize/(double)compareBox->xSize);
 	Object *objectCheck = NULL;
-	int i = 0;
+	int i = round(fabs(velocity));
 
 
-	while (objectCheck == NULL && i < round(fabs(velocity)) )
+	while (objectCheck == NULL && i > 0 )
 	{
 		// Move inputBox forward
 		inputBox->xPos += step; 
-		i++;
+		i--;
 
-		// Check for any obstructions
+		double slopeTop = (compareBox->xFlip == 1) ? (slope * (inputBox->xPos + inputBox->xSize - compareBox->xPos)) : (slope * (compareBox->xSize - inputBox->xPos + compareBox->xPos));
+
+		slopeTop = dClamp(slopeTop, 0.0, (double)compareBox->ySize) + compareBox->yPos;
+
+		inputBox->yPos = slopeTop;
+
+
 		objectCheck = GetCollidingObject(inputBox, ObjectList);
-
-		// Move up until no longer colliding or until reached slopeclimb limit
-		int slopeClimb = 0;
-		while (objectCheck != NULL && slopeClimb < 6)
-		{
-			inputBox->yPos++;
-			slopeClimb++;
-			objectCheck = GetCollidingObject(inputBox, ObjectList);
-		}
-
-		// If couldnt climb over obstacle under climb limit, move back down 
-		if (objectCheck != NULL)
-		{
-			inputBox->yPos -= slopeClimb;
-		}
-		
 	}
+
 
 	if (objectCheck != NULL)
 	{
@@ -3354,23 +3580,13 @@ int ClimbSlope(PhysicsRect *inputBox, PhysicsRect *compareBox, ObjectController 
 
 		ApplyXPhysics(inputBox, compareBox);
 
-		if (CheckBoxCollidesBox(inputBox, compareBox) == 0)
-		{
-			return EXECUTION_UNNECESSARY;
-		}
+		double slopeTop = (compareBox->xFlip == 1) ? (slope * (inputBox->xPos + inputBox->xSize - compareBox->xPos)) : (slope * (compareBox->xSize - inputBox->xPos + compareBox->xPos));
 
-		// Move up if collided with floor
-		int slopeClimb = 0;
-		while (objectCheck != NULL && slopeClimb < 6)
-		{
-			inputBox->yPos++;
-			slopeClimb++;
-			objectCheck = GetCollidingObject(inputBox, ObjectList);
-		}
+		slopeTop = dClamp(slopeTop, 0.0, (double)compareBox->ySize) + compareBox->yPos;
 
-		return LEMON_SUCCESS;
+		inputBox->yPos = slopeTop;
 	}	
 
-					
+				
 	return LEMON_SUCCESS;
 }

@@ -12,10 +12,10 @@ int LoadAnimations(SpriteSet *newSet, int ObjectID);
 int loadAnimationsFromFile(const char FileName[], SpriteSet *destSet);
 
 
-int LoopParticleAnimation(Object *particle);
-
-
 int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputData);
+
+
+int PlayAnimationByIndex(int index, int loopCount, DisplayData *inputData);
 
 
 int PlayNewAnimation(const char desiredName[], int loopCount, DisplayData *inputData);

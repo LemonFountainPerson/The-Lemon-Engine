@@ -1,8 +1,0 @@
-V0.07-ANIMATION
-AddSprite: 	Grass_Block		Objects		TILE_FAST
-AddSprite: 	Dirt_Block		Objects		TILE_FAST
-AddSprite: 	Bottom_Block		Objects		TILE_FAST
-AddSprite: 	CornerEdge_Left_Block	Objects		TILE_FAST
-AddSprite: 	CornerEdge_Right_Block	Objects		TILE_FAST
-AddSprite: 	Mud_Block		Objects		TILE_FAST
-AddSprite: 	Snow_Block		Objects		TILE_FAST

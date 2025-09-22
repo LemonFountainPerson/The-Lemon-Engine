@@ -85,7 +85,7 @@ int loadAnimationsFromFile(const char FileName[], SpriteSet *destSet)
 	{
 		getNextArg(fPtr, argBuffer, MAX_LEN);
 
-		if (strcmp(argBuffer, "NewAnimation:") == 0)
+		if (strcmp(argBuffer, "NewAnimation:") == 0 || strcmp(argBuffer, "AddAnimation:") == 0)
 		{
 			int result = getNextArg(fPtr, argBuffer, MAX_LEN);
 
@@ -175,141 +175,6 @@ int loadAnimationsFromFile(const char FileName[], SpriteSet *destSet)
 }
 
 
-int LoopParticleAnimation(Object *particle)
-{
-	if (particle == NULL || particle->ObjectDisplay == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	DisplayData *particleDisplay = particle->ObjectDisplay;
-
-	if (particle->arg1 < 1 || particleDisplay->animationTick < particle->arg2)
-	{
-		return EXECUTION_UNNECESSARY;
-	}
-
-	particleDisplay->animationTick = 0;
-
-	int firstSprite = 1;
-	int lastSprite = 1;
-	int animateType = 1;
-
-	// Add a new case whenever you make a new particle here
-	switch(particleDisplay->currentAnimation)
-	{
-		case SPARKLE:
-		lastSprite = 7;
-		break;
-
-		default:
-		break;
-	}
-
-	if (lastSprite < firstSprite)
-	{
-		return INVALID_DATA;
-	}
-
-	if (particle->arg2 < 1 || particle->arg2 > 999)
-	{
-		particle->arg2 = 3;
-	}
-
-	// Add a new case for specific animation sequences
-	switch (animateType)
-	{
-		case 2:
-		{
-			int onOddLoop = 1 - ( particleDisplay->animationTick / ((lastSprite - firstSprite + 1) * particle->arg2) ) % 2;
-
-			if (onOddLoop == 1)
-			{
-				particleDisplay->currentSprite++;
-			}
-			else
-			{
-				particleDisplay->currentSprite--;
-			}
-
-			if (particleDisplay->currentSprite > lastSprite || particleDisplay->currentSprite < firstSprite)
-			{
-				particle->arg1--;
-
-				if (onOddLoop == 1)
-				{
-					particleDisplay->currentSprite = lastSprite;
-				}
-				else
-				{
-					particleDisplay->currentSprite = firstSprite;
-				}
-			}
-
-		} break;
-
-
-		case -2:
-		{
-			int onOddLoop = 1 - ( particleDisplay->animationTick / ((lastSprite - firstSprite + 1) * particle->arg2) ) % 2;
-
-			if (onOddLoop == 1)
-			{
-				particleDisplay->currentSprite--;
-			}
-			else
-			{
-				particleDisplay->currentSprite++;
-			}
-
-
-			if (particleDisplay->currentSprite > lastSprite || particleDisplay->currentSprite < firstSprite)
-			{
-				particle->arg1--;
-
-				if (onOddLoop == 1)
-				{
-					particleDisplay->currentSprite = firstSprite;
-				}
-				else
-				{
-					particleDisplay->currentSprite = lastSprite;
-				}
-			}
-
-		} break;
-
-
-		case -1:
-		{
-			particleDisplay->currentSprite--;
-
-			if (particleDisplay->currentSprite > lastSprite || particleDisplay->currentSprite < firstSprite)
-			{
-				particle->arg1--;
-
-				particleDisplay->currentSprite = lastSprite;
-			}
-
-		} break;
-
-		default:
-		{
-			particleDisplay->currentSprite++;
-
-			if (particleDisplay->currentSprite > lastSprite || particleDisplay->currentSprite < firstSprite)
-			{
-				particle->arg1--;
-
-				particleDisplay->currentSprite = firstSprite;
-			}
-
-		} break;
-	}
-
-	return 0;
-}
-
 
 int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputData)
 {
@@ -327,6 +192,48 @@ int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputDat
 	Animation *currentAnimation = inputData->spriteSetSource->Animations;
 
 	while (currentAnimation != NULL && strcmp(currentAnimation->name, desiredName) != 0)
+	{
+		currentAnimation = currentAnimation->nextAnimation;
+	}
+
+	if (currentAnimation == NULL || currentAnimation->animationData == NULL)
+	{
+		return MISSING_DATA;
+	}
+	
+	inputData->spriteBuffer = currentAnimation->animationData->frameSprite;
+	inputData->frameBuffer = currentAnimation->animationData;
+	inputData->animationBuffer = currentAnimation;
+
+	inputData->currentAnimation = currentAnimation->animationID;
+	inputData->animationTick = -1;
+	inputData->animationLoopCount = loopCount;
+
+	if (inputData->spriteBuffer != NULL)
+	{
+		inputData->currentSprite = inputData->spriteBuffer->spriteID;
+	}
+
+	return 0;
+}
+
+
+int PlayAnimationByIndex(int index, int loopCount, DisplayData *inputData)
+{
+	if (inputData == NULL || inputData->spriteSetSource == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (inputData->spriteSetSource->Animations == NULL)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+
+	Animation *currentAnimation = inputData->spriteSetSource->Animations;
+
+	while (currentAnimation != NULL && index != currentAnimation->animationID)
 	{
 		currentAnimation = currentAnimation->nextAnimation;
 	}
@@ -426,12 +333,12 @@ int iterateAnimation(DisplayData *inputData)
 	// loop count decrements every time animation loops; if == 0, then animation value is 0, which stops the animation. 
 	// If value is stareted on <= 0, then on animation end value will be less than 0, and it will loop indefinitely
 
-	if (inputData == NULL || inputData->animationBuffer == NULL || inputData->spriteSetSource == NULL)
+	if (inputData == NULL || inputData->spriteSetSource == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (inputData->currentAnimation < 1)
+	if (inputData->currentAnimation < 1 || inputData->animationBuffer == NULL)
 	{
 		return ACTION_DISABLED;
 	}
@@ -476,6 +383,7 @@ int iterateAnimation(DisplayData *inputData)
 
 	inputData->spriteBuffer = inputData->frameBuffer->frameSprite;
 	inputData->currentSprite = inputData->spriteBuffer->spriteID;
+
 	
 	return 0;
 }

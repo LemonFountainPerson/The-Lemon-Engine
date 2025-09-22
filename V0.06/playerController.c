@@ -59,8 +59,6 @@ PlayerData* InitialisePlayerData(World *GameWorld)
 	}
 
 	// Player set-up
-	Player->maxXVel = 15.0;
-	Player->maxYVel = 32.0;
 	Player->inAir = 0;
 	Player->jumpProgress = 0;
 	Player->jumpHeld = 0;
@@ -281,25 +279,15 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld, int keyboard[2
 
 
 	// Gravity
-	PlayerBox->yVelocity += GameWorld->Gravity;
-
-	if (fabs(PlayerBox->forwardVelocity) > Player->maxXVel)
-	{
-		PlayerBox->forwardVelocity = (PlayerBox->forwardVelocity/fabs(PlayerBox->forwardVelocity)) * (Player->maxXVel);
-	}
-
-	if (fabs(PlayerBox->yVelocity) > Player->maxYVel)
-	{
-		PlayerBox->yVelocity = (PlayerBox->yVelocity/fabs(PlayerBox->yVelocity)) * (Player->maxYVel);
-	}
+	ApplyGravity(Player->PlayerPtr, GameWorld);
 
 
 	// collision detection
 	MoveForward(PlayerBox, GameWorld);
 
-	MovePlayerX(Player, GameWorld);
+	moveObjectX(Player->PlayerPtr, GameWorld);
 
-	MovePlayerY(Player, GameWorld);
+	moveObjectY(Player->PlayerPtr, GameWorld, &Player->jumpProgress);
 	
 
 
@@ -355,7 +343,7 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld, int keyboard[256]
 
 
 	float acceleration = 0.92;
-	float decceleration = 0.85;
+	float decceleration = 0.8;
 	float speed = 0.88;
 
 	int hAxis = 0;
@@ -376,11 +364,11 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld, int keyboard[256]
 
 	if (hAxis != 0 || vAxis != 0)
 	{
-		PlayerBox->direction = atan2((double)hAxis, (double)vAxis);
+		PlayerBox->direction = fabs(atan2((double)hAxis, (double)vAxis));
 	}
 
 	// Movement velocity acceleration/decceleration
-	PlayerBox->xVelocity += speed * abs(hAxis) * sin(PlayerBox->direction);
+	PlayerBox->xVelocity += speed * hAxis * sin(PlayerBox->direction);
 	
 
 	PlayerBox->yVelocity += speed * abs(vAxis) * cos(PlayerBox->direction);
@@ -413,14 +401,14 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld, int keyboard[256]
 	}
 
 
-	if (fabs(PlayerBox->xVelocity) > Player->maxXVel)
+	if (fabs(PlayerBox->forwardVelocity) > MAX_X_VELOCITY)
 	{
-		PlayerBox->xVelocity = (PlayerBox->xVelocity/fabs(PlayerBox->xVelocity)) * (Player->maxXVel);
+		PlayerBox->forwardVelocity = (PlayerBox->forwardVelocity/fabs(PlayerBox->forwardVelocity)) * MAX_X_VELOCITY;
 	}
 
-	if (fabs(PlayerBox->yVelocity) > Player->maxYVel)
+	if (fabs(PlayerBox->yVelocity) > MAX_Y_VELOCITY)
 	{
-		PlayerBox->yVelocity = (PlayerBox->yVelocity/fabs(PlayerBox->yVelocity)) * (Player->maxYVel);
+		PlayerBox->yVelocity = (PlayerBox->yVelocity/fabs(PlayerBox->yVelocity)) * MAX_Y_VELOCITY;
 	}
 
 
@@ -429,15 +417,10 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld, int keyboard[256]
 	double prevYPos = PlayerBox->yPos;
 
 
-	MovePlayerX(Player, GameWorld);
+	moveObjectX(Player->PlayerPtr, GameWorld);
 
-	PlayerBox->yPos = prevYPos;
+	moveObjectY(Player->PlayerPtr, GameWorld, &Player->jumpProgress);
 
-	MovePlayerY(Player, GameWorld);
-
-
-	PlayerBox->xPosRight = PlayerBox->xPos + PlayerBox->xSize;
-	PlayerBox->yPosTop = PlayerBox->yPos + PlayerBox->ySize;
 
 	Player->InteractBox->xPosRight = Player->InteractBox->xPos + Player->InteractBox->xSize;
 	Player->InteractBox->yPosTop = Player->InteractBox->yPos + Player->InteractBox->ySize;
@@ -565,34 +548,6 @@ int animatePlayer(PlayerData *Player)
 }
 
 
-int MovePlayerX(PlayerData *Player, World *GameWorld)
-{
-	PhysicsRect *PlayerBox = Player->PlayerBox;
-	double prevXPos = PlayerBox->xPos;
-
-	PlayerBox->xPos += PlayerBox->xVelocity;
-
-
-	ResolveAllXCollision(PlayerBox, GameWorld->ObjectList);
-
-	return 0;
-}
-
-
-int MovePlayerY(PlayerData *Player, World *GameWorld)
-{
-	PhysicsRect *PlayerBox = Player->PlayerBox;
-	double prevYPos = PlayerBox->yPos;
-
-	PlayerBox->yPos += PlayerBox->yVelocity;
-	
-
-	ResolveAllYCollision(PlayerBox, GameWorld->ObjectList, &Player->jumpProgress);
-
-	return 0;
-}
-
-
 int checkIfGrounded(World *GameWorld, PhysicsRect *inputBox)
 {
 	if (GameWorld == NULL || GameWorld->ObjectList == NULL || inputBox == NULL)
@@ -607,11 +562,11 @@ int checkIfGrounded(World *GameWorld, PhysicsRect *inputBox)
 	int result = 0;
 
 
-	inputBox->yPos += GameWorld->Gravity * 2;
+	inputBox->yPos += GameWorld->GlobalGravityY * 2;
 
 	detectedObject = GetCollidingObject(inputBox, GameWorld->ObjectList);
 
-	inputBox->yPos -= GameWorld->Gravity * 2;
+	inputBox->yPos -= GameWorld->GlobalGravityY * 2;
 
 
 	if (detectedObject == NULL)
@@ -623,8 +578,6 @@ int checkIfGrounded(World *GameWorld, PhysicsRect *inputBox)
 
 	inputBox->PhysicsXVelocity = detectedObject->ObjectBox->xVelocity;
 	inputBox->PhysicsYVelocity = detectedObject->ObjectBox->yVelocity;
-
-	AssignDirection(inputBox, detectedObject->ObjectBox);
 
 
 	return 1;

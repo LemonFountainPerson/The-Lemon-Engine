@@ -19,7 +19,7 @@ int clearCurrentlyLoadedLevelData(World *GameWorld);
 
 int loadLevel(World *GameWorld, int level);
 
-int saveLevel(World *GameWorld);
+int logLevel(World *GameWorld);
 
 int lemon_Modulo(int x, int N);
 

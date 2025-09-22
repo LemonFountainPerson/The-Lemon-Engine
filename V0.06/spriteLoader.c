@@ -160,7 +160,7 @@ int loadSpriteFromPath(Sprite *inputSprite, char path[])
 	printf("Image load failed! (%s)\n", path, n);
 	fflush(stdout);
 
-	inputSprite->spriteData = stbi_load("LemonData/sprites/Objects/OBJ_Missing.png", &inputSprite->width, &inputSprite->height, &n, 4);
+	inputSprite->spriteData = stbi_load("LemonData/sprites/Missing.png", &inputSprite->width, &inputSprite->height, &n, 4);
 
 
 	if (inputSprite->spriteData != NULL)
@@ -416,9 +416,12 @@ int loadSpriteIntoSpriteSet(const char spriteName[], const char folderName[], Sp
 
 	strcpy(path, "LemonData/sprites/");
 
-	strcat(path, folderName);
+	if (folderName != NULL)
+	{
+		strcat(path, folderName);
 
-	strcat(path, "/");
+		strcat(path, "/");
+	}
 
 	strcat(path, spriteName);
 
@@ -487,6 +490,7 @@ int switchSprite(int spriteID, int spriteSet, DisplayData *inputData)
 	{
 		return MISSING_DATA;
 	}
+
 
 	if (inputData->spriteSetSource->setID == spriteSet && inputData->spriteBuffer != NULL && inputData->spriteBuffer->spriteID == spriteID)
 	{

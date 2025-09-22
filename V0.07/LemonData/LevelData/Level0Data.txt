@@ -1,8 +1,0 @@
-V0.07-LEVELDATA
-////> Player
-////OBJECT- 4
-////> Level data
-////OBJECT- 1, 100, 32, 480, 1, 1
-////OBJECT- 17, 800, 64, 64, 196, 1
-////OBJECT-	UIElement, 	0, 	0, 	0, 	0, 	9	
-////ENDFILE

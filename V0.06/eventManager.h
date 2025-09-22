@@ -12,7 +12,7 @@
 int StartGame(World *GameWorld);
 
 
-int HandleGameWorldEvents(World *GameWorld, int keyboard[256]);
+int HandleGameWorldEvents(World *GameWorld, int keyboard[256], uint32_t **screenBuffer);
 
 
 int PauseGame(World *GameWorld, int keyboard[256]);

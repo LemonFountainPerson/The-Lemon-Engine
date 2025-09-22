@@ -11,25 +11,45 @@ int StartGame(World *GameWorld)
 	// Logic for handle flow of menus and levels, etc can go here for game start
 	loadLevel(GameWorld, 1);
 
-	//SayText("Hello World!", NO_PORTRAIT, DEFAULT_TOP, GameWorld);
-	//SayText("This is a test message on the top!", NO_PORTRAIT, DEFAULT_TOP, GameWorld);
-	//SayText("And now i'm spookily inverted! oooooooooooo~! And a portrait!", "Test_Face", INVERTED_BOTTOM, GameWorld);
+	SayText("Hello World!", NO_PORTRAIT, DEFAULT_TOP, GameWorld);
+	SayText("This is a test message on the top!", NO_PORTRAIT, DEFAULT_TOP, GameWorld);
+	SayText("And now i'm spookily inverted! oooooooooooo~! And a portrait!", "Test_Face", INVERTED_BOTTOM, GameWorld);
 
 	return 0;
 }
 
 
-int HandleGameWorldEvents(World *GameWorld, int keyboard[256])
+int HandleGameWorldEvents(World *GameWorld, int keyboard[256], uint32_t **screenBuffer)
 {
 	if (GameWorld == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (GameWorld->GameState == SWITCHING_LEVEL)
+	switch (GameWorld->GameEvent )
 	{
+	case SWITCH_LEVEL:
 		loadLevel(GameWorld, GameWorld->level);
-		return 0;
+		break;
+
+
+	case CHANGE_SCREEN_SIZE:
+		{
+			/*
+			if (screenBuffer == NULL)
+			{
+				break;
+			}
+			uint32_t *toDelete = (*screenBuffer);
+			(*screenBuffer) = malloc(sizeof(uint32_t) * screenWidth * screenHeight);
+			free(toDelete);
+			*/
+		}
+		break;
+
+
+	default:
+		break;
 	}
 
 
@@ -46,6 +66,9 @@ int HandleGameWorldEvents(World *GameWorld, int keyboard[256])
 			ResumeGame(GameWorld);
 		}
 	}
+
+
+	GameWorld->GameEvent = NO_EVENT;
 
 	return 0;
 }

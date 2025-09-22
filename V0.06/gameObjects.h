@@ -13,6 +13,7 @@
 #endif
 
 
+//Object Creation
 // Creates new instance of an object and puts at the end of the object list
 Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize, int ySize, int arg1, int arg2, int arg3, int arg4, int arg5);
 
@@ -20,17 +21,17 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 Object* AddObjectWithParent(World *GameWorld, Object *ParentObject, int objectID, int xPos, int yPos, int xSize, int ySize, int arg1, int arg2, int arg3, int arg4, int arg5);
 
 
-Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int yPos, int repeatCount, int frameRate, int particleLifeTime);
+Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int yPos, int repeatCount, int particleLifeTime);
 
 
 // Initialises a new empty object to the object list
 Object* createNewObject(ObjectController *objectList, int xPos, int yPos, int objectID);
 
 
-void resetPhysicsRect(PhysicsRect inputRect, SolidType inputSolid);
+int ResetPhysicsRect(PhysicsRect *inputRect, SolidType inputSolid);
 
 
-void resetDisplayData(PhysicsRect inputRect, RenderMode startRenderMode);
+int ResetDisplayData(DisplayData *inputDisplay, RenderMode startRenderMode);
 
 
 PhysicsRect* createPhysicsRect(SolidType inputSolid);
@@ -43,7 +44,7 @@ DisplayData* createDisplayData(RenderMode startRenderMode);
 Object* InitialiseMovingPlatform(Object *inputObject, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer);
 
 
-int InitialiseParticle(Object *particle, int animation, int repeatCount, int frameRate, int particleLifeTime);
+int InitialiseParticle(Object *particle, int animation, int repeatCount, int particleLifeTime);
 
 
 // Attempts to create object sprite set if it does not already exist
@@ -56,15 +57,14 @@ int LoadSpriteSet(SpriteSet *newSet, int ObjectID);
 int LoadParticleSprites(SpriteSet *newSet);
 
 
-// Loads a new sprite to the sprite buffer in the object struct
+
+// Object Attribute Modifiers
 int switchObjectSprite(int spriteID, Object *inputObject, ObjectController *objectList);
 
 
 int switchObjectSpriteName(char spriteName[], Object *inputObject, ObjectController *objectList);
 
 
-// deletes an object from the object list based on pointer provided and shifts surrounding objecs to fill
-// empty space. Pointer given will subsequently be turned NULL, and should not be used
 void deleteObject(Object **input, ObjectController *objController);
 
 
@@ -75,7 +75,6 @@ int UnmarkObjectForDeletion(Object *inputObject, ObjectController *ObjectList);
 
 
 void deleteAllObjects(ObjectController *objectList);
-
 
 
 void IncrementDrawPriority(ObjectController *objectList, Object *input);
@@ -101,15 +100,7 @@ int cacheObjects(ObjectController *ObjectList, PhysicsRect *boundingBox, PlayerD
 
 
 
-int UpdateEntityPhysics(Object *entity, PlayerData *Player, World *GameWorld);
-
-
-int moveObjectX(Object *inputObject, World *GameWorld);
-
-
-int moveObjectY(Object *inputObject, World *GameWorld);
-
-
+// Convenience Functions
 int SetObjectXPosition(Object *inputObject, double newXPos, ObjectController *ObjectList);
 
 
@@ -123,50 +114,7 @@ int ChangeObjectYSizeBy(int change, Object *inputObject, ObjectController *Objec
 
 
 
-int MoveForward(PhysicsRect *movingBox, World *GameWorld);
-
-
-int ApplyForwardPhysics(PhysicsRect *inputBox, PhysicsRect *physicsBox);
-
-
-int ResolveAllXCollision(PhysicsRect *movingBox, ObjectController *ObjectList);
-
-
-int ResolveXCollision(PhysicsRect *movingBox, PhysicsRect *compareBox, ObjectController *ObjectList);
-
-
-int magnetiseObjectsX(PhysicsRect *movingBox, ObjectController *ObjectList);
-
-
-int ApplyXPhysics(PhysicsRect *inputBox, PhysicsRect *physicsBox);
-
-
-int ResolveAllYCollision(PhysicsRect *movingBox, ObjectController *ObjectList, int *JumpProgressPtr);
-
-
-int ResolveYCollision(PhysicsRect *movingBox, PhysicsRect *compareBox, int *jumpProgressPtr);
-
-
-int magnetiseObjectsY(PhysicsRect *movingBox, ObjectController *ObjectList);
-
-
-int ApplyYPhysics(PhysicsRect *inputBox, PhysicsRect *physicsBox);
-
-
-int ResolveXCollisionByPush(PhysicsRect *movingBox, PhysicsRect *compareBox);
-
-
-int ResolveYCollisionByPush(PhysicsRect *movingBox, PhysicsRect *compareBox);
-
-
-int ResolveAllXCollisionsByPush(PhysicsRect *movingBox, ObjectController *ObjectList);
-
-
-int ResolveAllYCollisionsByPush(PhysicsRect *movingBox, ObjectController *ObjectList);
-
-
-
-// Run every fram to operate objects that can move or be interacted with, etc.
+// Core Object Functionality
 FunctionResult updateObjects(World *GameWorld, int keyboard[256]);
 
 
@@ -176,6 +124,23 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject, int keyboard[256]);
 int UpdateObjectDisplay(World *GameWorld, Object *inputObject);
 
 
+int UpdateParentChildLink(Object *inputObject);
+
+
+int DamagedFrames(Object *inputObject);
+
+
+int moveObjectX(Object *inputObject, World *GameWorld);
+
+
+int moveObjectY(Object *inputObject, World *GameWorld, int *jumpProgressPtr);
+
+
+int MoveForward(PhysicsRect *movingBox, World *GameWorld);
+
+
+
+// Object Behaviour
 int UpdateParticle(World *GameWorld, Object *particle);
 
 
@@ -213,12 +178,16 @@ int UpdateCoin(Object *coin, World *GameWorld);
 
 
 
+// Components
+int ApplyGravity(Object *entity, World *GameWorld);
+
+
+
+// Collision Detection
+Object* GetCollidingObject(PhysicsRect *inputBox, ObjectController *ObjectList);
 
 
 int CheckBoxCollidesBox(PhysicsRect *inputBox, PhysicsRect *compareBox);
-
-
-Object* GetCollidingObject(PhysicsRect *inputBox, ObjectController *ObjectList);
 
 
 int checkBoxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox);
@@ -227,13 +196,12 @@ int checkBoxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox);
 int checkBoxOverlapsBoxBottom(PhysicsRect *inputBox, PhysicsRect *compareBox);
 
 
-// Checks for object overlap with a specific object ID
 int OverlapsObjectType(ObjectController *objectList, int overlapObjectID, Object *inputObject);
 
-// Checks for overlap with a specific object solid type
+
 int OverlapsObjectSolid(ObjectController *objectList, int solidID, Object *inputObject);
 
-// Checks for overlap with any solid objects
+
 int OverlapsObjectAllSolids(ObjectController *objectList, Object *inputObject);
 
 
@@ -242,6 +210,49 @@ int OverlapsObject(Object *inputObject, Object *otherObject);
 
 CollideType evaluateCollideMode(PhysicsRect *movingBox, PhysicsRect *collideBox);
 
+
+
+// Collision Resolution
+int ResolveAllXCollision(PhysicsRect *movingBox, ObjectController *ObjectList);
+
+
+int ResolveXCollision(PhysicsRect *movingBox, PhysicsRect *compareBox, ObjectController *ObjectList);
+
+
+int magnetiseObjectsX(PhysicsRect *movingBox, ObjectController *ObjectList);
+
+
+int ApplyXPhysics(PhysicsRect *inputBox, PhysicsRect *physicsBox);
+
+
+int ResolveAllYCollision(PhysicsRect *movingBox, ObjectController *ObjectList, int *JumpProgressPtr);
+
+
+int ResolveYCollision(PhysicsRect *movingBox, PhysicsRect *compareBox, int *jumpProgressPtr);
+
+
+int magnetiseObjectsY(PhysicsRect *movingBox, ObjectController *ObjectList);
+
+
+int ApplyYPhysics(PhysicsRect *inputBox, PhysicsRect *physicsBox);
+
+
+int ResolveXCollisionByPush(PhysicsRect *movingBox, PhysicsRect *compareBox);
+
+
+int ResolveYCollisionByPush(PhysicsRect *movingBox, PhysicsRect *compareBox);
+
+
+int ResolveAllXCollisionsByPush(PhysicsRect *movingBox, ObjectController *ObjectList);
+
+
+int ResolveAllYCollisionsByPush(PhysicsRect *movingBox, ObjectController *ObjectList);
+
+
+int ApplyForwardPhysics(PhysicsRect *inputBox, PhysicsRect *physicsBox);
+
+
+int AdjustDirection(World *GameWorld, PhysicsRect *movingBox);
 
 
 int AssignDirection(PhysicsRect *inputBox, PhysicsRect *compareBox);
