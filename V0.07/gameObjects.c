@@ -1338,6 +1338,7 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject)
 
 		case VERTICAL_GATE:
 			UpdateVerticalGate(inputObject, GameWorld);
+			printf("\n%lf %lf\n", inputObject->ObjectBox->xVelocity, inputObject->ObjectBox->forwardVelocity);
 			break;
 
 
@@ -1472,12 +1473,18 @@ int UpdatePhysicsState(Object *inputObject, World *GameWorld)
 	PhysicsRect *inputBox = inputObject->ObjectBox;
 	PhysicsRect *GroundBox = inputBox->GroundBox;
 
-	if (GroundBox == NULL || GroundBox == inputBox)
+	if (GroundBox == NULL)
 	{
-		inputBox->GroundBox = NULL;
-		return EXECUTION_UNNECESSARY;
+		return ACTION_DISABLED;
 	}
 
+	if (GroundBox == inputBox)
+	{
+		inputBox->GroundBox = NULL;
+		//CheckForGround(inputBox, GameWorld);
+		
+		return EXECUTION_UNNECESSARY;
+	}
 	
 	// Apply magnetisation
 	double savedXVelocity = inputBox->xVelocity;
@@ -2133,7 +2140,7 @@ Object* InitialiseMovingPlatform(Object *inputObject, int objectID, int xPos, in
 	// Default settings
 	inputObject->layer = MIDDLEGROUND;
 	inputObject->ObjectBox->ySize = Y_TILESCALE;
-	inputObject->ObjectBox->xSize = X_TILESCALE * 5;
+	inputObject->ObjectBox->xSize = X_TILESCALE * 3;
 	inputObject->arg1 = bound1;
 	inputObject->arg2 = bound2;
 
@@ -2440,10 +2447,11 @@ int ApplyFriction(PhysicsRect *inputBox, double forwardFriction, double xFrictio
 
 Object* CheckForGround(PhysicsRect *movingBox, World *GameWorld)
 {
-	if (GameWorld == NULL || movingBox == NULL)
+	if (GameWorld == NULL || movingBox == NULL || movingBox->solid == UNSOLID)
 	{
 		return NULL;
 	}
+
 
 	movingBox->yPos += GameWorld->GlobalGravityY * 2.0;
 	movingBox->xPos += GameWorld->GlobalGravityX * 2.0;
@@ -3349,11 +3357,6 @@ int MoveObject(Object *inputObject, World *GameWorld)
 	moveObjectX(inputBox, ObjectList);
 	moveObjectY(inputBox, ObjectList);
 	moveObjectForward(inputBox, ObjectList);
-
-	if (GameWorld->PhysicsType == PLATFORMER && inputBox->solid != UNSOLID)
-	{
-		CheckForGround(inputObject->ObjectBox, GameWorld);
-	}
 
 	inputBox->xPos = dClamp(inputBox->xPos, -EngineSettings.WorldBoundX, EngineSettings.WorldBoundX);	
 	inputBox->yPos = dClamp(inputBox->yPos, -EngineSettings.WorldBoundY, EngineSettings.WorldBoundY);

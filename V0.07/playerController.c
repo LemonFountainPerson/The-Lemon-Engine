@@ -16,8 +16,6 @@ int InitialisePlayerObject(Object *Player, World *GameWorld)
 	Player->ObjectBox->yPosTop = 100 + PLAYERHEIGHT;
 	Player->ObjectBox->solid = ENTITY;
 
-	//Player->ObjectDisplay->spriteYOffset = 14;
-
 	GameWorld->Player->PlayerPtr = Player;
 	GameWorld->Player->PlayerBox = Player->ObjectBox;
 	GameWorld->Player->PlayerDisplay = Player->ObjectDisplay;
@@ -27,7 +25,7 @@ int InitialisePlayerObject(Object *Player, World *GameWorld)
 	ResetPlayer(GameWorld->Player);
 
 
-	return 0;
+	return LEMON_SUCCESS;
 }
 
 
@@ -84,7 +82,7 @@ int LoadPlayerSprites(SpriteSet *inputSet)
 	loadSprite("Idle.png", "Player", &inputSet, PLAYER_OBJECT, SINGLE);
 	loadSprite("Spin.png", "Player", &inputSet, PLAYER_OBJECT, SINGLE);
 
-	return 0;
+	return LEMON_SUCCESS;
 }
 
 
@@ -109,7 +107,7 @@ int ResetPlayer(PlayerData *Player)
 	Player->jumpHeld = 0;
 
 
-	return 0;
+	return LEMON_SUCCESS;
 }
 
 
@@ -217,30 +215,6 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 		PlayerBox->xFlip = hAxis;
 	}
 
-	if (vAxis < 0 && PlayerBox->inAir < 1)
-	{
-		PlayerBox->crouch = 1;
-	}
-	else if (PlayerBox->inAir < 1)
-	{
-		PlayerBox->crouch = 0;
-	}
-
-	PlayerBox->yPos += 4.0;
-	int againstCeiling = (GetCollidingObject(PlayerBox, GameWorld->ObjectList) != NULL);
-	PlayerBox->yPos -= 4.0;
-
-	if (againstCeiling == 0 && jump == 1 && ((PlayerBox->inAir < 6 && Player->jumpHeld == 0) || (PlayerBox->yVelocity > 12.0 && Player->jumpProgress > 0) ))
-	{
-		PlayerJump(Player, hAxis, vAxis);
-	}
-
-	if (Player->jumpProgress < 10 && jump == 0 && PlayerBox->yVelocity > 12.0 && Player->jumpProgress > 0)
-	{
-		PlayerBox->yVelocity = 12.0;
-		Player->jumpProgress = 99;
-	}
-
 
 	// Movement velocity acceleration/decceleration
 	double forwardFriction = 1.0;
@@ -286,13 +260,33 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 	// Gravity
 	ApplyGravity(Player->PlayerPtr, GameWorld);
 
-	// collision detection
-	MoveObject(Player->PlayerPtr, GameWorld);
-
-
 	if (PlayerBox->inAir < 1)
 	{
 		Player->jumpProgress = 0;
+	}
+
+	if (vAxis < 0 && PlayerBox->inAir < 1)
+	{
+		PlayerBox->crouch = 1;
+	}
+	else if (PlayerBox->inAir < 1)
+	{
+		PlayerBox->crouch = 0;
+	}
+
+	PlayerBox->yPos += 4.0;
+	int againstCeiling = (GetCollidingObject(PlayerBox, GameWorld->ObjectList) != NULL);
+	PlayerBox->yPos -= 4.0;
+
+	if (againstCeiling == 0 && jump == 1 && ((PlayerBox->inAir < 6 && Player->jumpHeld == 0) || (PlayerBox->yVelocity > 12.0 && Player->jumpProgress > 0) ))
+	{
+		PlayerJump(Player, hAxis, vAxis);
+	}
+
+	if (Player->jumpProgress < 10 && jump == 0 && PlayerBox->yVelocity > 12.0 && Player->jumpProgress > 0)
+	{
+		PlayerBox->yVelocity = 12.0;
+		Player->jumpProgress = 99;
 	}
 
 	if (PlayerBox->inAir > 20 && PlayerBox->crouch == 1)
@@ -301,7 +295,12 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 	}
 
 
+	// collision detection
+	MoveObject(Player->PlayerPtr, GameWorld);
+
+
 	HandlePlayerInteract(GameWorld);
+
 
 	return LEMON_SUCCESS;
 }
@@ -391,7 +390,7 @@ int PlayerJump(PlayerData *Player, int hAxis, int vAxis)
 
 	if (Player->jumpProgress > 9)
 	{
-		return 0;
+		return LEMON_SUCCESS;
 	}
 
 	Player->PlayerBox->yVelocity = 16.0;
@@ -403,7 +402,7 @@ int PlayerJump(PlayerData *Player, int hAxis, int vAxis)
 
 	Player->jumpHeld = 1;
 
-	return 0;
+	return LEMON_SUCCESS;
 }
 
 
@@ -485,7 +484,7 @@ int animatePlayer(PlayerData *Player)
 		PlayNewAnimation("Stand", 0, PlayerDisplay);
 	}
 
-	return 0;
+	return LEMON_SUCCESS;
 }
 
 
@@ -577,7 +576,7 @@ int switchPlayerSprite(int spriteID, DisplayData *PlayerDisplay)
 	PlayerDisplay->spriteBuffer = currentSprite;
 	PlayerDisplay->currentSprite = spriteID;
 
-	return 0;
+	return LEMON_SUCCESS;
 }
 
 
@@ -617,6 +616,6 @@ int switchPlayerSpriteName(char spriteName[MAX_LEN], DisplayData *PlayerDisplay)
 	PlayerDisplay->spriteBuffer = currentSprite;
 	PlayerDisplay->currentSprite = currentSprite->spriteID;
 
-	return 0;
+	return LEMON_SUCCESS;
 }
 
