@@ -1,0 +1,4 @@
+V0.08-ANIMATION
+AddSprite: 	BG_Water	Backgrounds	TILE_BACKGROUND
+AddSprite:	BG_GreenHill	Backgrounds	SINGLE_BACKGROUND
+
