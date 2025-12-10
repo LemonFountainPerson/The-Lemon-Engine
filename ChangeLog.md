@@ -1,3 +1,94 @@
+# v0.08
+
+
+New Features:
+
+-> Added a new cutscene manager that allows for events and actions to be "scheduled" for playback using easy to understand functions much like the textbox system.
+All text boxes also work with the cutscene manager, and they can be scheduled for playback much like any other action, and can be paired with option prompts to create 
+branching scene structures. See "Test_Scene" in cutsceneManger.c for an example of its use.
+
+-> Added the ability to alter the camera's zoom via SET_SCREEN_ZOOM and CHANGE_SCREEN_ZOOM LemonGameEvents (does not affect the HUD layer).
+
+-> Added the ability to change the main window's size via the LemonGameEvent system.
+
+-> Added the ability to toggle fullscreen via the LemonGameEvent system.
+
+-> Added "DebugText" which allows for text to be drawn to the screen without using objects, primarily for debug purposes. (DebugString was also renamed to
+ConsoleString for clarity.) A pre-implemented use for the DebugText is to display obect info on screen in real time. Refer to the 'MasterControls' function 
+or section by the same name in the Documentation for a full set of bindings.
+
+-> Added the ability to modify a sound's playback speed. (via Lemon_PlaySoundSpeed)
+
+-> Added the ability to hide/show objects via the DisplayData's "hidden" boolean variable.
+
+-> Added the ability to create textbox "option prompts" with triggerable functions and configurable options. (See UpdateDoor in gameObjects.c for an example.)
+
+-> Added the ability to modify the size of displayed sprites using the 'size' variable within the displaydata struct and a few convinience functions. Works with
+SINGLE and SCALE render modes; for SINGLE, it will act as a scale based on the size of the original image, for SCALE it is simply an additional scale factor which
+can size the sprite independent of the physicsRect attached; although it can only increase the size on both axis' equally, instead of on either axis independently.
+
+
+
+Structure Changes:
+
+-> Rendering is now handled via the SDL texture renderer, meaning rendering is now hardware accelerated and there is improved scaling functionality.
+
+-> Added the LemonGameEventData structure to the GameWorld, a union which will contain information required for any game event being triggered, e.g:
+width/height dimensions to change the screen size to.
+
+-> Changed the way input is received/acknowledged by the engine; input values above 0 indicate the button is being held down, and for one-time inputs
+"AcknowledgeHeldButtons" can be used to set all inputs being held to a value other than 1, which can be used to differentiate between new inputs. All held buttons
+automatically get set to 2 or above when the first game tick ends after they are pressed.
+
+-> Objects that attempt to switch to a sprite that it cannot find will no longer still be visible with an incorrect sprite, and instead will render using
+the default texture contained within the EngineSettings (EngineData) struct.
+
+-> Redid how the background is rendered (Due to new SDL rendering method); Background struct now has a renderMode value that is used to determine rendering mode.
+Added new rendermodes specifically for backgrounds. Any type that is not a Background render mode used on the background struct is treated as DEFAULT_TO_SPRITE 
+or DO_NOT_RENDER. 
+
+-> SINGLE and SCALE modes no longer tile at all, even when manipulated with the pixel offsets. Pixel offsets on TILE mode cannot allow the tiled image to itself tile.
+(Any offset that exceeds the bounds of the sprite will no longer tile, but instead be clamped to the edges.) However, when rendering in TILE mode the scale of the 
+tiling effect can be modified via "size" in the displayData.
+
+-> Removed the BG_ROW_PARRALAX rendermode (mainly because of difficulty to implement it with the SDL renderer, but also because of its niche use case).
+
+-> Changed all object position and velocity variables to use floats instead of doubles (for effeciency reasons) and the Camera's position values to floats instead of 
+integers (for compatibility). Direction values will remain as doubles for precision, but with most variables set as floats this should improve interoperability and 
+ease of use.
+
+-> The windows-only version is no longer supported.
+
+
+
+Bug fixes/Improvements:
+
+-> Fixed a crashing issue related to scaled objects being rendered beyond the scope of the screen buffer.
+
+-> The ObjectController's (ObjectList) object count is now decremented when objects are deleted. (This variable is now always up-to-date.)
+
+-> Any detected incorrect/corrupt animation files are now properly aborted from loading data.
+
+-> Textbox presets have new names for their enums to make it clearer what each does.
+
+-> All files read for data are now more consistent; leveldata files uses new lines to indicate new entries but is still backwards-compatible with the 
+four slashes method, animation files can now use '>' for comments and ENDFILE to denote when the file should stop being read. 
+
+-> The camera and objects in the game scene are no longer restricted to positive x, y values. (You can place objects at negative values.)
+
+-> In the event of a fatal error, the SDL version will now create a dialog box to explain the error before the program ends.
+
+-> Fixed a bug with deleting objects where parent child links that were in backwards order within the object list caused a crash.
+
+-> Scaled rendermodes now no longer crash the game when there is a pixel[x/y] offset, and now renders correctly.
+
+-> Animations with only one frame and set to playback indefinitely will automatically halt until a new animation is played for optimisation.
+
+-> Renamed/retooled some functions to make them easier to understand or more consistent with other functions in the codebase.
+
+
+
+
 # v0.07
 21/09/25
 
@@ -76,7 +167,7 @@ moveObject function. (This means it is now up-to-date at essentially all times.)
 -> The "getNextArg" function used to read data from files can no longer index out of bounds, assuming provided capacity value is correctly set to the capacity of the array
 passed in or less.
 
--> Fixed the "iterateSound" function to no longer create ambiguity between a 32 bit int and a 32/64 bit pointer.
+-> Fixed the "iterateSound" function to no longer create ambiguity between a 32 bit int and a 64 bit pointer.
 
 -> Code reorganisation has made the "prevXPos" and "prevYPos" variables within the PhysicsRect structs more reliable as they now always track the Boxes' position exactly one #
 game tick ago.
