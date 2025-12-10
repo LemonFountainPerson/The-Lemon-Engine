@@ -17,6 +17,8 @@ branching scene structures. See "Test_Scene" in cutsceneManger.c for an example 
 ConsoleString for clarity.) A pre-implemented use for the DebugText is to display obect info on screen in real time. Refer to the 'MasterControls' function 
 or section by the same name in the Documentation for a full set of bindings.
 
+-> Added the ability to set the window title and icon.
+
 -> Added the ability to modify a sound's playback speed. (via Lemon_PlaySoundSpeed)
 
 -> Added the ability to hide/show objects via the DisplayData's "hidden" boolean variable.
