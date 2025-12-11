@@ -21,6 +21,7 @@ int StartGame(World *GameWorld)
 }
 
 
+// Its unrecommended to use the change_screen_size, enable_fullscreen, etc commands interchangably with their SCALE counterparts, but it is possible
 int HandleGameWorldEvents(World *GameWorld, RenderFrame *ScreenData)
 {
 	if (GameWorld == NULL)
@@ -61,180 +62,59 @@ int HandleGameWorldEvents(World *GameWorld, RenderFrame *ScreenData)
 
 		case SET_SCREEN_ZOOM:
 			{
-				if (ScreenData == NULL || ScreenData->Window == NULL || Running_In_Windows_Mode == 1)
-				{
-					break;
-				}
-
-				if (EventData->zoomScales[1] < 0.01 || EventData->zoomScales[0] < 0.01 || screenWidth < MINIMUM_SCREEN_WIDTH || screenHeight < MINIMUM_SCREEN_HEIGHT)
-				{
-					break;
-				}
-
-				float oldScaleX = ((float)ScreenData->windowWidth/(float)screenWidth);
-				float oldScaleY = ((float)ScreenData->windowHeight/(float)screenHeight);
-
-				float newZoomX = EventData->zoomScales[0];
-				float newZoomY = EventData->zoomScales[1];
-
-				if (newZoomX < MINIMUM_ZOOM || newZoomY < MINIMUM_ZOOM)
-				{
-					break;
-				}
-
-				ScreenData->zoomX = newZoomX;
-				ScreenData->zoomY = newZoomY;
-				
-				SDL_SetRenderScale(ScreenData->Renderer, newZoomX * oldScaleX, newZoomY * oldScaleY);
-
-				validateZoom(ScreenData);
-			}
-			break;
-
+				setScreenZoom(EventData->zoomScales[0], EventData->zoomScales[1], ScreenData);
+			} break;
 
 		case CHANGE_SCREEN_ZOOM:
 			{
-				if (ScreenData == NULL || ScreenData->Window == NULL || Running_In_Windows_Mode == 1)
+				if (ScreenData == NULL)
 				{
 					break;
 				}
 
-				if (screenWidth < MINIMUM_SCREEN_WIDTH || screenHeight < MINIMUM_SCREEN_HEIGHT)
-				{
-					break;
-				}
-
-				float oldScaleX = ((float)ScreenData->windowWidth/(float)screenWidth);
-				float oldScaleY = ((float)ScreenData->windowHeight/(float)screenHeight);
-
-				float newZoomX = (ScreenData->zoomX + EventData->zoomScales[0]);
-				float newZoomY = (ScreenData->zoomY + EventData->zoomScales[1]);
-
-				if (newZoomX < MINIMUM_ZOOM || newZoomY < MINIMUM_ZOOM)
-				{
-					break;
-				}
-
-				ScreenData->zoomX = newZoomX;
-				ScreenData->zoomY = newZoomY;
-				
-				SDL_SetRenderScale(ScreenData->Renderer, newZoomX * oldScaleX, newZoomY * oldScaleY);
-
-				validateZoom(ScreenData);
-			}
-			break;
+				setScreenZoom((ScreenData->zoomX + EventData->zoomScales[0]), (ScreenData->zoomY + EventData->zoomScales[1]), ScreenData);
+			} break;
 
 		case CHANGE_SCREEN_SIZE:
 			{	
-				if (ScreenData == NULL || ScreenData->Window == NULL || Running_In_Windows_Mode == 1)
-				{
-					break;
-				}
-
-				float newWidth = EventData->screenDimensions[0];
-				float newHeight = EventData->screenDimensions[1];
-
-				if (newWidth < MINIMUM_SCREEN_WIDTH || newHeight < MINIMUM_SCREEN_HEIGHT)
-				{
-					break;
-				}
-
-				float ScaleX = ((float)screenWidth/(float)ScreenData->windowWidth);
-				float ScaleY = ((float)screenHeight/(float)ScreenData->windowHeight);
-
-				SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
-				SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
-
-				screenWidth = ScreenData->windowWidth * ScaleX;
-				screenHeight = ScreenData->windowHeight * ScaleY;
-			}
-			break;
+				setScreenSize(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
+			} break;
 
 		case CHANGE_SCREEN_SIZE_SCALE:
 			{
-				if (ScreenData == NULL || ScreenData->Window == NULL || Running_In_Windows_Mode == 1)
-				{
-					break;
-				}
-
-				if (screenWidth < MINIMUM_SCREEN_WIDTH || screenHeight < MINIMUM_SCREEN_HEIGHT)
-				{
-					break;
-				}
-
-				if (EventData->screenDimensions[0] < MINIMUM_SCREEN_WIDTH || EventData->screenDimensions[1] < MINIMUM_SCREEN_HEIGHT)
-				{
-					break;
-				}
-
-				SDL_SetWindowSize(ScreenData->Window, EventData->screenDimensions[0], EventData->screenDimensions[1]);
-				SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
-
-				float newWidth = ScreenData->zoomX * (float)ScreenData->windowWidth/(float)screenWidth;
-				float newHeight = ScreenData->zoomY * (float)ScreenData->windowHeight/(float)screenHeight;
-
-				SDL_SetRenderScale(ScreenData->Renderer, newWidth, newHeight);
-			}
-			break;
+				setScreenSizeScale(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
+			} break;
 
 		case ENABLE_FULLSCREEN:
 			{
-				if (ScreenData == NULL || ScreenData->Window == NULL || Running_In_Windows_Mode == 1)
-				{
-					break;
-				}
-
-				SDL_SetWindowFullscreen(ScreenData->Window, true);
-				SDL_MaximizeWindow(ScreenData->Window);
-				SDL_SyncWindow(ScreenData->Window);
-
-				SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
-				screenWidth = ScreenData->windowWidth;
-				screenHeight = ScreenData->windowHeight;
-				ScreenData->Fullscreen = true;
-			}
-			break;
+				enableFullscreen(ScreenData);
+			} break;
 
 		case DISABLE_FULLSCREEN:
 			{
-				if (ScreenData == NULL || ScreenData->Window == NULL || Running_In_Windows_Mode == 1)
-				{
-					break;
-				}
-
-				SDL_SetWindowFullscreen(ScreenData->Window, false);
-				SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
-				screenWidth = ScreenData->windowWidth;
-				screenHeight = ScreenData->windowHeight;
-
-				SDL_SetRenderScale(ScreenData->Renderer, ScreenData->zoomX, ScreenData->zoomY);
-				ScreenData->Fullscreen = false;
-			} 
-			break;
+				disableFullscreen(ScreenData);
+			} break;
 
 		case ENABLE_FULLSCREEN_SCALE:
 			{
-				if (ScreenData == NULL || ScreenData->Window == NULL || Running_In_Windows_Mode == 1)
+				if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 				{
 					break;
 				}
 
-				if (screenWidth < MINIMUM_SCREEN_WIDTH || screenHeight < MINIMUM_SCREEN_HEIGHT || ScreenData->Fullscreen == true)
+				if (Running_In_Windows_Mode == 1 || ScreenData->Fullscreen == true)
 				{
 					break;
 				}
+
+				validateScreenDimensions(ScreenData);
 
 				SDL_SetWindowFullscreen(ScreenData->Window, true);
 				SDL_SyncWindow(ScreenData->Window);
-
 				SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
-				float newWidth = ScreenData->zoomX * (float)ScreenData->windowWidth/(float)screenWidth;
-				float newHeight = ScreenData->zoomY * (float)ScreenData->windowHeight/(float)screenHeight;
 
-				SDL_SetRenderScale(ScreenData->Renderer, newWidth, newHeight);
 				ScreenData->Fullscreen = true;
-			}
-			break;
+			} break;
 
 		default:
 			break;
@@ -249,23 +129,179 @@ int HandleGameWorldEvents(World *GameWorld, RenderFrame *ScreenData)
 }
 
 
+int setScreenZoom(float newZoomX, float newZoomY, RenderFrame *ScreenData)
+{
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (Running_In_Windows_Mode == 1)
+	{
+		return ACTION_DISABLED;
+	}
+
+	if (newZoomX < MINIMUM_ZOOM || newZoomY < MINIMUM_ZOOM || screenWidth < MINIMUM_SCREEN_WIDTH || screenHeight < MINIMUM_SCREEN_HEIGHT)
+	{
+		return INVALID_DATA;
+	}
+
+	ScreenData->zoomX = newZoomX;
+	ScreenData->zoomY = newZoomY;
+	
+	SDL_SetRenderScale(ScreenData->Renderer, newZoomX, newZoomY);
+
+	validateZoom(ScreenData);
+
+	return LEMON_SUCCESS;
+}
+
+
+int setScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData)
+{
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (ScreenData->Fullscreen == true || Running_In_Windows_Mode == 1)
+	{
+		return ACTION_DISABLED;
+	}
+
+	if (newWidth < MINIMUM_SCREEN_WIDTH || newHeight < MINIMUM_SCREEN_HEIGHT)
+	{
+		return INVALID_DATA;
+	}
+
+	validateScreenDimensions(ScreenData);
+
+	float ScaleX = ((float)screenWidth/(float)ScreenData->windowWidth);
+	float ScaleY = ((float)screenHeight/(float)ScreenData->windowHeight);
+
+	SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+
+	screenWidth = ScreenData->windowWidth * ScaleX;
+	screenHeight = ScreenData->windowHeight * ScaleY;
+
+	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+	
+	return LEMON_SUCCESS;
+}
+
+
+int setScreenSizeScale(int newWidth, int newHeight, RenderFrame *ScreenData)
+{
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (ScreenData->Fullscreen == true || Running_In_Windows_Mode == 1)
+	{
+		return ACTION_DISABLED;
+	}
+
+	if (newWidth < MINIMUM_SCREEN_WIDTH || newHeight < MINIMUM_SCREEN_HEIGHT)
+	{
+		return INVALID_DATA;
+	}
+
+	validateScreenDimensions(ScreenData);
+
+	SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+
+	return LEMON_SUCCESS;
+}
+
+
+int enableFullscreen(RenderFrame *ScreenData)
+{
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (Running_In_Windows_Mode == 1 || ScreenData->Fullscreen == true)
+	{
+		return ACTION_DISABLED;
+	}
+
+	SDL_SetWindowFullscreen(ScreenData->Window, true);
+	SDL_SyncWindow(ScreenData->Window);
+
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+	screenWidth = ScreenData->windowWidth;
+	screenHeight = ScreenData->windowHeight;
+	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+
+	ScreenData->Fullscreen = true;
+
+	return LEMON_SUCCESS;
+}
+
+
+int disableFullscreen(RenderFrame *ScreenData)
+{
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (Running_In_Windows_Mode == 1)
+	{
+		return ACTION_DISABLED;
+	}
+
+	SDL_SetWindowFullscreen(ScreenData->Window, false);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+	screenWidth = ScreenData->windowWidth;
+	screenHeight = ScreenData->windowHeight;
+
+	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+	ScreenData->Fullscreen = false;
+
+	return LEMON_SUCCESS;
+}
+
+
+int validateScreenDimensions(RenderFrame *ScreenData)
+{
+	if (ScreenData->windowWidth < MINIMUM_SCREEN_WIDTH || ScreenData->windowHeight < MINIMUM_SCREEN_HEIGHT || screenWidth < MINIMUM_SCREEN_WIDTH || screenHeight < MINIMUM_SCREEN_HEIGHT)
+	{
+		ScreenData->windowWidth = H_RESOLUTION;
+		ScreenData->windowHeight = V_RESOLUTION;
+		screenWidth = H_RESOLUTION;
+		screenHeight = V_RESOLUTION;
+
+		SDL_SetWindowSize(ScreenData->Window, screenWidth, screenHeight);
+
+		SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+
+		return LEMON_ERROR;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
 int validateZoom(RenderFrame *ScreenData)
 {
 	// panic script if zoom is invalid for whatever reason
-	if (ScreenData->zoomX < 0.01 || ScreenData->zoomY < 0.01)
+	if (ScreenData->zoomX < MINIMUM_ZOOM || ScreenData->zoomY < MINIMUM_ZOOM)
 	{
 		ScreenData->zoomX = 1.0;
 		ScreenData->zoomY = 1.0;
 
-		if (ScreenData->windowWidth > MINIMUM_SCREEN_WIDTH && ScreenData->windowHeight > MINIMUM_SCREEN_HEIGHT && screenWidth > 1 && screenHeight > 1)
-		{
-			SDL_SetRenderScale(ScreenData->Renderer, (float)ScreenData->windowWidth/(float)screenWidth, (float)ScreenData->windowHeight/(float)screenHeight);
-		}
-		else
+		if (ScreenData->windowWidth < MINIMUM_SCREEN_WIDTH || ScreenData->windowHeight < MINIMUM_SCREEN_HEIGHT || screenWidth < 1 || screenHeight < 1)
 		{
 			putConsoleString("\nERROR: Screen/window set as invalid sizes. (Something's gone wrong!)");
 			SDL_SetRenderScale(ScreenData->Renderer, 1.0, 1.0);
 		}
+
+		return LEMON_ERROR;
 	}
 
 	return LEMON_SUCCESS;

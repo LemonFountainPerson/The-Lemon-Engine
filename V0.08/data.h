@@ -69,20 +69,21 @@
 
 //								Engine constants
 //-------------------------------------------------------------------------------------------------
+// Avoid editing these values, as it may cause issues/performance loss
+#define OBJECT_NAME_LENGTH 15
+#define MAX_SPRITE_SIZE 3000
+
 #define CONSOLE_STRING_LENGTH 512
 #define MAX_DEBUG_TEXTS 32
 #define DEBUG_TEXT_MAX_LENGTH 400
 
 #define MAX_LEN 80
-#define ENCRYPT_OFFSET 600
 
-#define MAX_SPRITE_SIZE 3000
+#define ENCRYPT_OFFSET 600	
 
 #define MINIMUM_SCREEN_WIDTH 144
 #define MINIMUM_SCREEN_HEIGHT 144
-#define MINIMUM_ZOOM 0.4
-
-#define OBJECT_NAME_LENGTH 15
+#define MINIMUM_ZOOM 0.4  		 // Do not set this value to 0.1 or below
 
 //-------------------------------------------------------------------------------------------------
 

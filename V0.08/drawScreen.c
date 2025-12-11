@@ -175,13 +175,6 @@ int drawObjects(Camera inputCamera, World *GameWorld, RenderFrame ScreenData)
 	Object *currentObject = NULL;
 	int result = LEMON_SUCCESS;
 
-	float oldScaleX = 1.0;
-	float oldScaleY = 1.0;
-	SDL_GetRenderScale(Screen, &oldScaleX, &oldScaleY);
-
-	float renderRatioX = oldScaleX / ScreenData.zoomX;
-	float renderRatioY = oldScaleY / ScreenData.zoomY;
-
 	Camera hudCam = {0};
 
 	for (Layer drawLayer = BACKGROUND; drawLayer < LAYER_COUNT; drawLayer++)
@@ -190,7 +183,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, RenderFrame ScreenData)
 
 		if (drawLayer == HUD)
 		{
-			SDL_SetRenderScale(Screen, renderRatioX, renderRatioY);
+			SDL_SetRenderScale(Screen, 1.0, 1.0);
 
 			while(currentObject != NULL)
 			{
@@ -205,7 +198,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, RenderFrame ScreenData)
 				currentObject = currentObject->nextObject;
 			}
 
-			SDL_SetRenderScale(Screen, oldScaleX, oldScaleY);
+			SDL_SetRenderScale(Screen, ScreenData.zoomY, ScreenData.zoomY);
 		}
 		else
 		{
@@ -245,21 +238,15 @@ int drawHitboxes(Camera inputCamera, World *GameWorld, RenderFrame ScreenData)
 	Object *currentObject = GameWorld->ObjectList->firstObject;
 	Camera hudCamera = {0};
 
-	float oldScaleX = 1.0;
-	float oldScaleY = 1.0;
-	SDL_GetRenderScale(Screen, &oldScaleX, &oldScaleY);
-	float renderRatioX = oldScaleX / ScreenData.zoomX;
-	float renderRatioY = oldScaleY / ScreenData.zoomY;
-
 	while(currentObject != NULL)
 	{
 		if (currentObject->layer == HUD)
 		{
-			SDL_SetRenderScale(Screen, renderRatioX, renderRatioY);
+			SDL_SetRenderScale(Screen, 1.0, 1.0);
 
 			renderHitbox(hudCamera, GameWorld, currentObject->ObjectBox, Screen);
 
-			SDL_SetRenderScale(Screen, oldScaleX, oldScaleY);
+			SDL_SetRenderScale(Screen, ScreenData.zoomX, ScreenData.zoomY);
 		}
 		else
 		{
@@ -477,7 +464,6 @@ int renderObjectSprite(Camera inputCamera, DisplayData inputData, PhysicsRect in
 	yOffset2 = realYOffset + inputBox.ySize;
 
 	Skip_Render_Effects:
-
 
 	if (realXOffset >= screenWidth || xOffset2 < 0 || yOffset2 < 0 || realYOffset >= screenHeight || realXOffset >= xOffset2 || realYOffset >= yOffset2)
 	{

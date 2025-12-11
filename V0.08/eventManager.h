@@ -15,6 +15,18 @@ int StartGame(World *GameWorld);
 
 int HandleGameWorldEvents(World *GameWorld, RenderFrame *ScreenData);
 
+int setScreenZoom(float newZoomX, float newZoomY, RenderFrame *ScreenData);
+
+int setScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData);
+
+int setScreenSizeScale(int newWidth, int newHeight, RenderFrame *ScreenData);
+
+int enableFullscreen(RenderFrame *ScreenData);
+
+int disableFullscreen(RenderFrame *ScreenData);
+
+int validateScreenDimensions(RenderFrame *ScreenData);
+
 int validateZoom(RenderFrame *ScreenData);
 
 

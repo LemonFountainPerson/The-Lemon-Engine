@@ -584,15 +584,15 @@ int VideoSettingsControl(Object *MenuController, World *GameWorld)
 				break;
 
 			case 2:
-				GameWorld->GameEvent = SET_SCREEN_ZOOM;
-				GameWorld->GameEventData.zoomScales[0] = 2.0;	
-				GameWorld->GameEventData.zoomScales[1] = 2.0;	
+				GameWorld->GameEvent = CHANGE_SCREEN_SIZE;
+				GameWorld->GameEventData.screenDimensions[0] = 640;	
+				GameWorld->GameEventData.screenDimensions[1] = 360;	
 				break;
 
 			case 3:
-				GameWorld->GameEvent = SET_SCREEN_ZOOM;
-				GameWorld->GameEventData.zoomScales[0] = 1.0;	
-				GameWorld->GameEventData.zoomScales[1] = 1.0;	
+				GameWorld->GameEvent = CHANGE_SCREEN_SIZE;
+				GameWorld->GameEventData.screenDimensions[0] = 1280;	
+				GameWorld->GameEventData.screenDimensions[1] = 720;	
 				break;
 
 			default:

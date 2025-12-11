@@ -773,6 +773,7 @@ int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullsc
 	}
 
 
+	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
 	SetWindowTitle("Lemon Engine");							// Initial window title
 	SetWindowIcon("MissingIcon");							// Initial window icon
 
