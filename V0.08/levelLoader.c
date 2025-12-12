@@ -295,7 +295,7 @@ int lemon_Modulo(int x, int N)
 	return ((x % N) + N) % N;
 }
 
-
+/*
 FILE* convertTxtToLem(char FileName[MAX_LEN], FILE *txtPtr)
 {
 	if (txtPtr == NULL)
@@ -420,6 +420,7 @@ FILE* convertLemToTxt(char fileName[MAX_LEN + 4], FILE *lemPtr)
 
 	return newTextFile;
 }
+*/
 
 
 int checkFileHeader(FILE *fPtr, const char FileType[])
@@ -533,7 +534,7 @@ int loadLevelData(World *GameWorld, int level)
 	}
 	else
 	{
-		fPtr = convertLemToTxt(charBuffer, fPtr);
+		//fPtr = convertLemToTxt(charBuffer, fPtr);
 
 		if (fPtr == NULL)
 		{

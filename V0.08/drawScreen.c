@@ -279,8 +279,8 @@ int renderHitbox(Camera inputCamera, World *gameWorld, PhysicsRect *inputBox, SD
 	
 	SDL_FRect Hitbox;
 
-	Hitbox.x = floor((float)((screenWidth >> 1) + inputBox->xPos - inputCamera.CameraX));
-	Hitbox.y = floor((float)((screenHeight >> 1) - inputBox->yPos + inputCamera.CameraY - inputBox->ySize));
+	Hitbox.x = (float)((screenWidth >> 1) + inputBox->xPos - inputCamera.CameraX);
+	Hitbox.y = (float)((screenHeight >> 1) - inputBox->yPos + inputCamera.CameraY - inputBox->ySize);
 	Hitbox.h = (float)inputBox->ySize;
 
 	if (DebugSettings.HitboxOutlineThickness > 99)
