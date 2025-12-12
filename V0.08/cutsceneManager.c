@@ -47,7 +47,7 @@ int StartCutscene(CutsceneID inputID, World *GameWorld)
 		SayText("The player should have moved now.", NO_PORTRAIT, BASIC_TOP, GameWorld);
 		SetActorDirection("MainPlayer", 90.0, GameWorld);
 
-		SceneAction_ChangeZoom(0.005, 0.025, 100, GameWorld);
+		WaitUntil(SceneAction_ChangeZoom(0.005, 0.025, 100, GameWorld));
 		SayTextOption("Play new cutscene?", NO_PORTRAIT, BASIC_FADE, GameWorld, 3, 
 				"Test scene", 	&StartCutscene, TEST_SCENE, 
 				"Test scene 2", &StartCutscene, TEST_SCENE_2,

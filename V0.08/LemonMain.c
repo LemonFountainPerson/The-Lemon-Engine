@@ -230,30 +230,26 @@ int GameFrame(World *GameWorld)
 }
 
 
-int RenderEngine(World *GameWorld, RenderFrame ScreenData)
+int RenderEngine(World *GameWorld, Camera renderCamera, RenderFrame ScreenData)
 {
 	if (GameWorld == NULL || ScreenData.Renderer == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	RenderSettings.drawnObjects = 0;
-	RenderSettings.drawnParticles = 0;
-	RenderSettings.drawnHudElements = 0;
+	float camXCorrection = (float)((screenWidth - renderCamera.zoomedWidth) >> 1);
+	float camYCorrection = (float)((renderCamera.zoomedHeight - screenHeight) >> 1);
 
-	float camXCorrection = (screenWidth - (screenWidth / ScreenData.zoomX)) / 2;
-	float camYCorrection = ((screenHeight / ScreenData.zoomY) - screenHeight) / 2;
-
-	GameWorld->MainCamera.CameraX += camXCorrection;
-	GameWorld->MainCamera.CameraY += camYCorrection;
+	renderCamera.CameraX += camXCorrection;
+	renderCamera.CameraY += camYCorrection;
 	
-	renderBackGroundSprite(GameWorld->MainCamera, GameWorld->WorldBackground, ScreenData);
+	renderBackGroundSprite(renderCamera, GameWorld->WorldBackground, ScreenData);
 
-	drawObjects(GameWorld->MainCamera, GameWorld, ScreenData);
+	drawObjects(renderCamera, GameWorld, ScreenData);
 
 	if (RenderSettings.drawHitboxes == 1)
 	{
-		drawHitboxes(GameWorld->MainCamera, GameWorld, ScreenData);
+		drawHitboxes(renderCamera, GameWorld, ScreenData);
 	}
 
 	if (DebugSettings.DebugTextDisplayMode != DEBUG_TEXT_DISABLED)
@@ -263,8 +259,8 @@ int RenderEngine(World *GameWorld, RenderFrame ScreenData)
 
     FPSCounter();
 
-    GameWorld->MainCamera.CameraX -= camXCorrection;
-	GameWorld->MainCamera.CameraY -= camYCorrection;
+    renderCamera.CameraX -= camXCorrection;
+	renderCamera.CameraY -= camYCorrection;
 
 	return LEMON_SUCCESS;
 }
@@ -566,14 +562,14 @@ int updateMouse(void)
 }
 
 // Get mouse position corrected for zoom (HUD layer is immune to zoom already, so this is only for other layers)
-float getMouseXZoom(void)
+float getMouseXZoom(Camera inputCamera)
 {
-	return MouseInput.xPos / ScreenData.zoomX;
+	return MouseInput.xPos / inputCamera.zoomX;
 }
 
-float getMouseYZoom(void)
+float getMouseYZoom(Camera inputCamera)
 {
-	return MouseInput.yPos / ScreenData.zoomY;
+	return MouseInput.yPos / inputCamera.zoomY;
 }
 
 
@@ -737,8 +733,6 @@ int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullsc
 	ScreenData->Fullscreen = false;
 	ScreenData->FramesElapsed = 0;
 	ScreenData->lastSecond = 0;
-	ScreenData->zoomX = 1.0;
-	ScreenData->zoomY = 1.0;
 
 	// Any additional flags such as borderless or moveable can be applied here
 	SDL_WindowFlags windowFlag = 0;
@@ -829,7 +823,7 @@ int RenderSDL(World *GameWorld)
 	SDL_SetRenderDrawColor(ScreenData.Renderer, 0, 0, 0, 0xFF);
 	SDL_RenderClear(ScreenData.Renderer);
 	
-	RenderEngine(GameWorld, ScreenData);
+	RenderEngine(GameWorld, GameWorld->MainCamera, ScreenData);
 
 	if (DebugSettings.DebugTextDisplayMode != DEBUG_TEXT_DISABLED)
 	{
@@ -1231,6 +1225,10 @@ int ResetCamera(Camera *inputCam)
 	inputCam->CameraYBuffer = 0;
 	inputCam->CameraMode = FOLLOW_PLAYER;
 
+	inputCam->zoomX = 1.0;
+	inputCam->zoomY = 1.0;
+	inputCam->zoomedWidth = screenWidth;
+	inputCam->zoomedHeight = screenHeight;
 
 	return LEMON_SUCCESS;
 }

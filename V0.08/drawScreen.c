@@ -176,6 +176,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, RenderFrame ScreenData)
 	int result = LEMON_SUCCESS;
 
 	Camera hudCam = {0};
+	ResetCamera(&hudCam);
 
 	for (Layer drawLayer = BACKGROUND; drawLayer < LAYER_COUNT; drawLayer++)
 	{
@@ -198,7 +199,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, RenderFrame ScreenData)
 				currentObject = currentObject->nextObject;
 			}
 
-			SDL_SetRenderScale(Screen, ScreenData.zoomY, ScreenData.zoomY);
+			SDL_SetRenderScale(Screen, inputCamera.zoomY, inputCamera.zoomY);
 		}
 		else
 		{
@@ -236,7 +237,9 @@ int drawHitboxes(Camera inputCamera, World *GameWorld, RenderFrame ScreenData)
 
 	SDL_Renderer *Screen = ScreenData.Renderer;
 	Object *currentObject = GameWorld->ObjectList->firstObject;
+
 	Camera hudCamera = {0};
+	ResetCamera(&hudCamera);
 
 	while(currentObject != NULL)
 	{
@@ -246,7 +249,7 @@ int drawHitboxes(Camera inputCamera, World *GameWorld, RenderFrame ScreenData)
 
 			renderHitbox(hudCamera, GameWorld, currentObject->ObjectBox, Screen);
 
-			SDL_SetRenderScale(Screen, ScreenData.zoomX, ScreenData.zoomY);
+			SDL_SetRenderScale(Screen, inputCamera.zoomX, inputCamera.zoomY);
 		}
 		else
 		{
@@ -256,7 +259,7 @@ int drawHitboxes(Camera inputCamera, World *GameWorld, RenderFrame ScreenData)
 		currentObject = currentObject->nextObject;
 	}
 
-	drawPlayerHitboxes(GameWorld->MainCamera, GameWorld, Screen);
+	drawPlayerHitboxes(inputCamera, GameWorld, Screen);
 
 
 	return LEMON_SUCCESS;
@@ -465,7 +468,7 @@ int renderObjectSprite(Camera inputCamera, DisplayData inputData, PhysicsRect in
 
 	Skip_Render_Effects:
 
-	if (realXOffset >= screenWidth || xOffset2 < 0 || yOffset2 < 0 || realYOffset >= screenHeight || realXOffset >= xOffset2 || realYOffset >= yOffset2)
+	if (realXOffset >= inputCamera.zoomedWidth || xOffset2 < 0 || yOffset2 < 0 || realYOffset >= inputCamera.zoomedHeight || realXOffset >= xOffset2 || realYOffset >= yOffset2)
 	{
 		return INVALID_DATA;
 	}
@@ -560,17 +563,17 @@ int renderBackGroundSprite(Camera inputCamera, BackgroundData WorldBackground, R
 	case SINGLE_BACKGROUND:
 		renderTarget.w = (float)backGround->width;
 		renderTarget.h = (float)backGround->height;
-		renderTarget.x = ((screenWidth >> 1) / ScreenData.zoomX) - inputCamera.CameraX * WorldBackground.bgParallax - (backGround->width >> 1);
-		renderTarget.y = inputCamera.CameraY * WorldBackground.bgParallax + ((screenHeight >> 1) / ScreenData.zoomY) - (backGround->height >> 1);
+		renderTarget.x = (inputCamera.zoomedWidth >> 1) - inputCamera.CameraX * WorldBackground.bgParallax - (backGround->width >> 1);
+		renderTarget.y = inputCamera.CameraY * WorldBackground.bgParallax + (inputCamera.zoomedHeight >> 1) - (backGround->height >> 1);
 
 		SDL_RenderTexture(Screen, backGround->texture, NULL, &renderTarget);
 		break;
 
 	case TILE_BACKGROUND:
-		renderTarget.w = (float)screenWidth * 2 / ScreenData.zoomX;
-		renderTarget.h = (float)screenHeight * 2 / ScreenData.zoomY;
-		renderTarget.x = (float)modulo(((screenWidth >> 1) / ScreenData.zoomX) - inputCamera.CameraX * WorldBackground.bgParallax - (backGround->width >> 1), backGround->width) - backGround->width;
-		renderTarget.y = (float)modulo(inputCamera.CameraY * WorldBackground.bgParallax + ((screenHeight >> 1) / ScreenData.zoomY) - (backGround->height >> 1), backGround->height) - backGround->height;
+		renderTarget.w = (float)(inputCamera.zoomedWidth << 1);
+		renderTarget.h = (float)(inputCamera.zoomedHeight << 1);
+		renderTarget.x = (float)modulo((inputCamera.zoomedWidth >> 1) - inputCamera.CameraX * WorldBackground.bgParallax - (backGround->width >> 1), backGround->width) - backGround->width;
+		renderTarget.y = (float)modulo(inputCamera.CameraY * WorldBackground.bgParallax + (inputCamera.zoomedHeight >> 1) - (backGround->height >> 1), backGround->height) - backGround->height;
 
 		SDL_RenderTextureTiled(Screen, backGround->texture, NULL, 1.0, &renderTarget);
 		break;
@@ -823,8 +826,8 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, World *GameWorld)
 			}
 			else
 			{
-				sprintf(buffer, "\nAnimation in buffer: %s", inputDisplay->animationBuffer->name);
-				strcat(text, buffer);
+				strcat(text, "\nAnimation in buffer: ");
+				strcat(text, inputDisplay->animationBuffer->name);
 			}
 
 			sprintf(buffer, "\nHidden: %d", inputDisplay->hidden);
@@ -891,7 +894,7 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, World *GameWorld)
 			sprintf(buffer, "\nCurrent Animation ID: %d", inputDisplay->currentAnimation);
 			strcat(text, buffer);
 
-			sprintf(buffer, "\nFrameRate: %.2f", EngineSettings.GameTicksPerSecond / inputDisplay->animationBuffer->frameRate);
+			sprintf(buffer, "\nFrameRate: %.2f", (float)EngineSettings.GameTicksPerSecond / inputDisplay->animationBuffer->frameRate);
 			strcat(text, buffer);
 
 			sprintf(buffer, "\nAnimation Tick: %f", inputDisplay->animationTick);

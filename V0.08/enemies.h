@@ -1,7 +1,7 @@
 #ifndef IS_DEFINED
 #include "data.h"
 #include "gameObjects.h"
-#include "spriteloader.h"
+#include "spriteLoader.h"
 #include "LemonMain.h"
 #include "levelLoader.h"
 #include "UIObjects.h"

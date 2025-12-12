@@ -358,11 +358,8 @@ int UpdateCursor(Object *Cursor, World *GameWorld)
 		return MISSING_DATA;
 	}
 
-	//Cursor->ObjectDisplay->pixelXOffset = (int)(MouseInput.xPos / 2.0);
-	Cursor->ObjectDisplay->pixelYOffset = (int)(MouseInput.yPos);
-
-	Cursor->ObjectBox->xPos = getMouseXZoom() - (Cursor->ObjectBox->xSize >> 1) + GameWorld->MainCamera.CameraX;
-	Cursor->ObjectBox->yPos = getMouseYZoom() - (Cursor->ObjectBox->ySize >> 1) + GameWorld->MainCamera.CameraY;
+	Cursor->ObjectBox->xPos = getMouseXZoom(GameWorld->MainCamera) - (Cursor->ObjectBox->xSize >> 1) + GameWorld->MainCamera.CameraX;
+	Cursor->ObjectBox->yPos = getMouseYZoom(GameWorld->MainCamera) - (Cursor->ObjectBox->ySize >> 1) + GameWorld->MainCamera.CameraY;
 
 	if (Cursor->nextObject != NULL)
 	{

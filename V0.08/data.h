@@ -16,11 +16,6 @@
 #include <SDL3_image/SDL_image.h>
 
 
-#include <Windows.h>
-#include <mmsystem.h>
-#include <windowsx.h>
-#define WIN32_LEAN_AND_MEAN
-
 
 
 //								Engine Settings (Can be modified via variables)
@@ -31,7 +26,7 @@
 #define H_RESOLUTION 1280
 
 #define TICKS_PER_SECOND 60
-#define RENDERS_PER_SECOND 240
+#define RENDERS_PER_SECOND 6000
 
 #define MAX_OBJECTS_RENDER 200
 #define MAX_PARTICLES_RENDER 64
@@ -303,6 +298,7 @@ typedef enum LemonGameEvent
 	NO_EVENT = 0,
 	SWITCH_LEVEL,
 	CHANGE_SCREEN_SIZE,
+	SET_SCREEN_AND_RENDERER_SIZE,
 	ENABLE_FULLSCREEN,
 	DISABLE_FULLSCREEN,
 	CHANGE_SCREEN_SIZE_SCALE,
@@ -609,8 +605,6 @@ struct RenderFrame
 	SDL_Renderer *Renderer;
 
 	bool Fullscreen;
-	float zoomX;
-	float zoomY;
 
 	int FramesElapsed;
 	clock_t lastSecond;
@@ -921,6 +915,11 @@ struct Camera
 	float CameraYBuffer;
 	short CameraLatch;
 	CameraState CameraMode;
+
+	float zoomX;
+	float zoomY;
+	int zoomedWidth;
+	int zoomedHeight;
 };
 
 

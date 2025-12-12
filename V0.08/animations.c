@@ -506,7 +506,7 @@ Animation* initialiseNewAnimation(const char animationName[], double frameRate, 
 	newAnimation->animationData = NULL;
 
 	frameRate = dClamp(frameRate, 0.1, 1000.0);	
-	newAnimation->frameRate = ((float)TICKS_PER_SECOND / (float)frameRate);
+	newAnimation->frameRate = ((float)EngineSettings.GameTicksPerSecond / (float)frameRate);
 	newAnimation->frameRate = ceil(newAnimation->frameRate * 100) / 100;
 
 	newAnimation->animationID = i;

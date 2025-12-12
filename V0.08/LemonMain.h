@@ -37,7 +37,7 @@ int GameTick(World *GameWorld);
 int GameFrame(World *GameWorld);
 
 
-int RenderEngine(World *GameWorld, RenderFrame ScreenData);
+int RenderEngine(World *GameWorld, Camera renderCamera, RenderFrame ScreenData);
 
 
 int FPSCounter(void);
@@ -60,9 +60,9 @@ int getExternalInput(World *GameWorld);
 
 int updateMouse(void);
 
-float getMouseXZoom(void);
+float getMouseXZoom(Camera inputCamera);
 
-float getMouseYZoom(void);
+float getMouseYZoom(Camera inputCamera);
 
 int getMouseInput(SDL_MouseButtonEvent event);
 

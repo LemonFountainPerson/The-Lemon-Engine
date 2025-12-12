@@ -62,17 +62,17 @@ int HandleGameWorldEvents(World *GameWorld, RenderFrame *ScreenData)
 
 		case SET_SCREEN_ZOOM:
 			{
-				setScreenZoom(EventData->zoomScales[0], EventData->zoomScales[1], ScreenData);
+				setCameraZoom(EventData->zoomScales[0], EventData->zoomScales[1], &GameWorld->MainCamera, ScreenData);
 			} break;
 
 		case CHANGE_SCREEN_ZOOM:
 			{
-				if (ScreenData == NULL)
-				{
-					break;
-				}
+				setCameraZoom((GameWorld->MainCamera.zoomX + EventData->zoomScales[0]), (GameWorld->MainCamera.zoomY + EventData->zoomScales[1]), &GameWorld->MainCamera, ScreenData);
+			} break;
 
-				setScreenZoom((ScreenData->zoomX + EventData->zoomScales[0]), (ScreenData->zoomY + EventData->zoomScales[1]), ScreenData);
+		case SET_SCREEN_AND_RENDERER_SIZE:
+			{
+				setScreenAndRendererSize(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
 			} break;
 
 		case CHANGE_SCREEN_SIZE:
@@ -129,9 +129,9 @@ int HandleGameWorldEvents(World *GameWorld, RenderFrame *ScreenData)
 }
 
 
-int setScreenZoom(float newZoomX, float newZoomY, RenderFrame *ScreenData)
+int setCameraZoom(float newZoomX, float newZoomY, Camera *inputCamera, RenderFrame *ScreenData)
 {
-	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL || inputCamera == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -146,13 +146,46 @@ int setScreenZoom(float newZoomX, float newZoomY, RenderFrame *ScreenData)
 		return INVALID_DATA;
 	}
 
-	ScreenData->zoomX = newZoomX;
-	ScreenData->zoomY = newZoomY;
+	inputCamera->zoomX = newZoomX;
+	inputCamera->zoomY = newZoomY;
+	inputCamera->zoomedWidth = screenWidth / newZoomX;
+	inputCamera->zoomedHeight = screenHeight / newZoomY;
 	
 	SDL_SetRenderScale(ScreenData->Renderer, newZoomX, newZoomY);
 
-	validateZoom(ScreenData);
+	validateZoom(inputCamera, ScreenData);
 
+	return LEMON_SUCCESS;
+}
+
+
+int setScreenAndRendererSize(int newWidth, int newHeight, RenderFrame *ScreenData)
+{
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (ScreenData->Fullscreen == true || Running_In_Windows_Mode == 1)
+	{
+		return ACTION_DISABLED;
+	}
+
+	if (newWidth < MINIMUM_SCREEN_WIDTH || newHeight < MINIMUM_SCREEN_HEIGHT)
+	{
+		return INVALID_DATA;
+	}
+
+	validateScreenDimensions(ScreenData);
+
+	SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+
+	screenWidth = ScreenData->windowWidth;
+	screenHeight = ScreenData->windowHeight;
+
+	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+	
 	return LEMON_SUCCESS;
 }
 
@@ -287,13 +320,13 @@ int validateScreenDimensions(RenderFrame *ScreenData)
 }
 
 
-int validateZoom(RenderFrame *ScreenData)
+int validateZoom(Camera *inputCamera, RenderFrame *ScreenData)
 {
 	// panic script if zoom is invalid for whatever reason
-	if (ScreenData->zoomX < MINIMUM_ZOOM || ScreenData->zoomY < MINIMUM_ZOOM)
+	if (inputCamera->zoomX < MINIMUM_ZOOM || inputCamera->zoomY < MINIMUM_ZOOM)
 	{
-		ScreenData->zoomX = 1.0;
-		ScreenData->zoomY = 1.0;
+		inputCamera->zoomX = 1.0;
+		inputCamera->zoomY = 1.0;
 
 		if (ScreenData->windowWidth < MINIMUM_SCREEN_WIDTH || ScreenData->windowHeight < MINIMUM_SCREEN_HEIGHT || screenWidth < 1 || screenHeight < 1)
 		{
