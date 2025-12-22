@@ -252,15 +252,35 @@ int RenderEngine(World *GameWorld, Camera renderCamera, RenderFrame ScreenData)
 		drawHitboxes(renderCamera, GameWorld, ScreenData);
 	}
 
+    renderCamera.CameraX -= camXCorrection;
+	renderCamera.CameraY -= camYCorrection;
+
 	if (DebugSettings.DebugTextDisplayMode != DEBUG_TEXT_DISABLED)
     {
     	DisplayDebugInfo(GameWorld, DebugSettings.DebugTextDisplayMode);
+
+		RenderDebugText(renderCamera, ScreenData);	
     }
 
     FPSCounter();
 
-    renderCamera.CameraX -= camXCorrection;
-	renderCamera.CameraY -= camYCorrection;
+	return LEMON_SUCCESS;
+}
+
+
+int RenderSDL(World *GameWorld)
+{
+	if (GameWorld == NULL || ScreenData.Window == NULL || ScreenData.Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	SDL_SetRenderDrawColor(ScreenData.Renderer, 0, 0, 0, 0xFF);
+	SDL_RenderClear(ScreenData.Renderer);
+	
+	RenderEngine(GameWorld, GameWorld->MainCamera, ScreenData);
+	
+	SDL_RenderPresent(ScreenData.Renderer);
 
 	return LEMON_SUCCESS;
 }
@@ -813,29 +833,6 @@ bool SetWindowTitle(const char newTitle[])
 }
 
 
-int RenderSDL(World *GameWorld)
-{
-	if (GameWorld == NULL || ScreenData.Window == NULL || ScreenData.Renderer == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	SDL_SetRenderDrawColor(ScreenData.Renderer, 0, 0, 0, 0xFF);
-	SDL_RenderClear(ScreenData.Renderer);
-	
-	RenderEngine(GameWorld, GameWorld->MainCamera, ScreenData);
-
-	if (DebugSettings.DebugTextDisplayMode != DEBUG_TEXT_DISABLED)
-	{
-		RenderDebugText(GameWorld, ScreenData);		
-	}
-	
-	SDL_RenderPresent(ScreenData.Renderer);
-
-	return LEMON_SUCCESS;
-}
-
-
 int setTickRate(int desiredTickRate)
 {
 	if (desiredTickRate > 200 || desiredTickRate < 0)
@@ -910,7 +907,7 @@ void MasterControls(World *GameWorld, PlayerData *player)
 		{
 			keyboard['3'] = 2;
 
-			DebugSettings.CameraInfo = (DebugSettings.CameraInfo + 1) % 3;
+			DebugSettings.CameraInfo = (DebugSettings.CameraInfo + 1) % 4;
 		}
 
 		if (keyboard['4'] == 1)

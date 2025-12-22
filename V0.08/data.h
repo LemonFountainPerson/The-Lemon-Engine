@@ -579,8 +579,8 @@ struct soundInstance
 
 	char name[MAX_LEN];
 	float volume;
+	short repeatTimes;
 
-	int channelID;
 	struct soundInstance *nextSound;
 	struct soundInstance *prevSound;
 };

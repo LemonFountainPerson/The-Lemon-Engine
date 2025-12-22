@@ -34,11 +34,15 @@ int validateZoom(Camera *inputCamera, RenderFrame *ScreenData);
 
 int PauseGame(World *GameWorld);
 
-
 int ResumeGame(World *GameWorld);
 
 
 int InitialiseLevelFlag(Object *inputObject, ObjectController *ObjectList);
+
+bool detectPlayer(Object* inputObject, PlayerData *Player);
+
+bool detectCamera(Object* inputObject, Camera inputCamera);
+
 
 
 int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld);

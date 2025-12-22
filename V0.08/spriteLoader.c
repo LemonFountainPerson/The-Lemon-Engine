@@ -1063,14 +1063,14 @@ int deleteSpriteSet(SpriteSet *inputSet, ObjectController *ObjectList)
 	while (inputSet->firstSprite != NULL && check < 9999)
 	{
 		check++;
-		//deleteSprite(inputSet, inputSet->firstSprite);
+		deleteSprite(inputSet, inputSet->firstSprite);
 	}
 
 	check = 0;
 	while (inputSet->Animations != NULL && check < 9999)
 	{
 		check++;
-		//deleteAnimation(inputSet, inputSet->Animations);
+		deleteAnimation(inputSet, inputSet->Animations);
 	}
 
 	SpriteSet *prevSet = inputSet->prevSet;

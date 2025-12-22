@@ -72,7 +72,7 @@ SoundInstance* InitSound(const char *pathPtr, ChannelName channel, float volume)
 	if (!SDL_LoadWAV(pathPtr, &spec, &newSound->wav_data, &newSound->wav_data_len))
 	{
 		putConsoleStrStr("\nCouldn't load audio file: ", SDL_GetError());
-		deleteSoundInstance(newSound);
+		deleteSoundInstance(newSound, channel);
 		return NULL;
 	}
 
@@ -84,7 +84,7 @@ SoundInstance* InitSound(const char *pathPtr, ChannelName channel, float volume)
 	{
 		putConsoleStrIntStr("\nCouldn't create audio stream ", audio_device, ": ");
 		putConsoleString(SDL_GetError());
-		deleteSoundInstance(newSound);
+		deleteSoundInstance(newSound, channel);
 		return NULL;
 	}
 
@@ -93,7 +93,7 @@ SoundInstance* InitSound(const char *pathPtr, ChannelName channel, float volume)
 	{
 		putConsoleStrIntStr("\nCouldn't bind audio stream ", audio_device, ": ");
 		putConsoleString(SDL_GetError());
-		deleteSoundInstance(newSound);
+		deleteSoundInstance(newSound, channel);
 		return NULL;
 	}
 
@@ -107,8 +107,8 @@ SoundInstance* InitSound(const char *pathPtr, ChannelName channel, float volume)
 
 	if (channel != LOOP_CHANNEL)
 	{
-		SDL_free(newSound->wav_data);
-		newSound->wav_data = NULL;
+		//SDL_free(newSound->wav_data);
+		//newSound->wav_data = NULL;
 	}
 
 	return newSound;
@@ -174,35 +174,38 @@ SoundInstance* getSoundInstance(const char soundName[], ChannelName channel)
 int IterateAudio(void)
 {
 	lastPlayedSound[0] = 0;
+	SoundInstance *currentSound;
+	SoundInstance *updateSound;
 
-	for (int i = 0; i < CHANNEL_COUNT; i++)
+	for (int channel = 0; channel < CHANNEL_COUNT; channel++)
 	{
-		SoundInstance *currentSound;
-		currentSound = SoundChannels[i].firstSound;
+		currentSound = SoundChannels[channel].firstSound;
 		
 		int k = 0;
 
 		while (currentSound != NULL && k < EngineSettings.MaxSoundsPerChannel)
 		{
 			k++;
+			updateSound = currentSound;
+			currentSound = currentSound->nextSound;
 
-			int streamResult = SDL_GetAudioStreamAvailable(currentSound->stream);
+			int streamResult = SDL_GetAudioStreamAvailable(updateSound->stream);
 
-			if (i != LOOP_CHANNEL && streamResult < 1)
+			if (streamResult > 0)
 			{
-				SoundInstance *deleteSound = currentSound;
-				currentSound = currentSound->nextSound;
-				deleteSoundInstance(deleteSound);
 				continue;
 			}
-			
 
-			if (i == LOOP_CHANNEL && streamResult < ( (int)currentSound->wav_data_len) )
-			{		
-				SDL_PutAudioStreamData(currentSound->stream, currentSound->wav_data, (int)currentSound->wav_data_len);
+			updateSound->repeatTimes--;
+
+			if (updateSound->repeatTimes < 1 && channel != LOOP_CHANNEL)
+			{
+				deleteSoundInstance(updateSound, channel);
 			}
-
-			currentSound = currentSound->nextSound;
+			else
+			{
+				SDL_PutAudioStreamData(updateSound->stream, updateSound->wav_data, (int)updateSound->wav_data_len);
+			}
 		}
 	}
 	
@@ -335,19 +338,12 @@ int StopAudioInChannel(ChannelName channel)
 		return INVALID_DATA;
 	}
 
-	SoundInstance *currentSound;
-	SoundInstance *deleteSound;
-	currentSound = SoundChannels[channel].firstSound;
 	int i = 0;
 
-	while (currentSound != NULL && i < EngineSettings.MaxSoundsPerChannel)
+	while (SoundChannels[channel].firstSound != NULL && i < EngineSettings.MaxSoundsPerChannel)
 	{
-		deleteSound = currentSound;
-
-		currentSound = currentSound->nextSound;
+		deleteSoundInstance(SoundChannels[channel].firstSound, channel); 
 		i++;
-
-		deleteSoundInstance(deleteSound);
 	}
 	
 	return LEMON_SUCCESS;
@@ -502,8 +498,7 @@ SoundInstance* createEmptySoundInstance(ChannelName Channel)
 	newSound->stream = NULL;
 	newSound->format = 0;
 	memset(newSound->name, 0, MAX_LEN * sizeof(char));
-
-	newSound->channelID = Channel;
+	newSound->repeatTimes = 1;
 
 	int count = 0;
 
@@ -542,18 +537,7 @@ int cleanUpAudioData(void)
 	// Close Audio devices
 	for (int i = 0; i < CHANNEL_COUNT; i++) 
 	{
-		SoundInstance *currentSound;
-		currentSound = SoundChannels[i].firstSound;
-
-		int k = 0;
-		while (SoundChannels[i].firstSound != NULL)
-		{
-			SoundInstance *deleteSound;
-			deleteSound = currentSound;
-			currentSound = currentSound->nextSound;
-			deleteSoundInstance(deleteSound);
-		}
-
+		StopAudioInChannel(i);
     }
 
 	SDL_CloseAudioDevice(audio_device);
@@ -562,9 +546,9 @@ int cleanUpAudioData(void)
 }
 
 
-int deleteSoundInstance(SoundInstance *inputSound)
+int deleteSoundInstance(SoundInstance *inputSound, ChannelName channel)	// somewhat unsafe as it assumes the channel value is correct
 {
-	if (inputSound == NULL)
+	if (inputSound == NULL || channel >= CHANNEL_COUNT || channel < 0)
 	{
 		return INVALID_DATA;
 	}
@@ -584,16 +568,16 @@ int deleteSoundInstance(SoundInstance *inputSound)
 	}
 	else
 	{
-		SoundChannels[inputSound->channelID].firstSound = nextSound;
+		SoundChannels[channel].firstSound = nextSound;
 	}
 	
-	if (SoundChannels[inputSound->channelID].firstSound == NULL)
+	if (SoundChannels[channel].firstSound == NULL)
 	{
-		SoundChannels[inputSound->channelID].soundCount = 0;
+		SoundChannels[channel].soundCount = 0;
 	}
 	else
 	{
-		SoundChannels[inputSound->channelID].soundCount--;
+		SoundChannels[channel].soundCount--;
 	}
 
 

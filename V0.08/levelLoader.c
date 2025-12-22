@@ -1047,14 +1047,13 @@ int getNextArg(FILE *fPtr, char buffer[], int capacity)
 
 		if (buffer[i] < 33)
 		{
-			fseek(fPtr, -1 * sizeof(char), SEEK_CUR);
+			fseek(fPtr, (int)-sizeof(char), SEEK_CUR);
 		}
 
 		if (buffer[i] == ',' || buffer[i] < 33) 
 		{
 			buffer[i] = 0;
 			i = capacity;
-			printf("  %d %d %d", i, capacity, i < capacity);
 			continue;
 		}
 
@@ -1067,7 +1066,7 @@ int getNextArg(FILE *fPtr, char buffer[], int capacity)
 		i++;
 	}
 
-	printf("%d %s\n", capacity, buffer);
+	//printf("%d %s\n", capacity, buffer);
 
 	return LEMON_SUCCESS;
 }

@@ -19,7 +19,7 @@ int initialiseAudio(void);
 
 SoundInstance* createEmptySoundInstance(ChannelName Channel);
 
-int deleteSoundInstance(SoundInstance *inputSound);
+int deleteSoundInstance(SoundInstance *inputSound, ChannelName channel);
 
 int StopAudioInChannel(ChannelName channel);
 

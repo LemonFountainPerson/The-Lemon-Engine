@@ -56,4 +56,4 @@ int RemoveDebugText(int index);
 int RemoveAllDebugTexts();
 
 
-int RenderDebugText(World *GameWorld, RenderFrame ScreenData);
+int RenderDebugText(Camera inputCamera, RenderFrame ScreenData);

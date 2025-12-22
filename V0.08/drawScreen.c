@@ -279,8 +279,10 @@ int renderHitbox(Camera inputCamera, World *gameWorld, PhysicsRect *inputBox, SD
 	
 	SDL_FRect Hitbox;
 
-	Hitbox.x = (float)((screenWidth >> 1) + inputBox->xPos - inputCamera.CameraX);
-	Hitbox.y = (float)((screenHeight >> 1) - inputBox->yPos + inputCamera.CameraY - inputBox->ySize);
+	float xCoord = (float)((screenWidth >> 1) + inputBox->xPos - inputCamera.CameraX);
+	float yCoord = (float)((screenHeight >> 1) - inputBox->yPos + inputCamera.CameraY - inputBox->ySize);
+	Hitbox.x = xCoord;
+	Hitbox.y = yCoord;
 	Hitbox.h = (float)inputBox->ySize;
 
 	if (DebugSettings.HitboxOutlineThickness > 99)
@@ -297,7 +299,7 @@ int renderHitbox(Camera inputCamera, World *gameWorld, PhysicsRect *inputBox, SD
 	Hitbox.x += (float)(inputBox->xSize - clamp(DebugSettings.HitboxOutlineThickness, 0, inputBox->xSize));
 	SDL_RenderFillRect(Screen, &Hitbox);
 
-	Hitbox.x = floor((float)((screenWidth >> 1) + inputBox->xPos - inputCamera.CameraX));
+	Hitbox.x = xCoord;
 	Hitbox.w = (float)inputBox->xSize;
 	Hitbox.h = (float)clamp(DebugSettings.HitboxOutlineThickness, 0, inputBox->ySize);
 	SDL_RenderFillRect(Screen, &Hitbox);
@@ -646,6 +648,12 @@ int DisplayDebugInfo(World *GameWorld, DebugTextMode debugTextMode)
 	case 2: 
 		sprintf(text, "Camera X: %.2f  Camera Y: %.2f \nCameraLatch: %d \nBuffer X: %.2f  Buffer Y: %.2f", 
 			GameWorld->MainCamera.CameraX, GameWorld->MainCamera.CameraY, GameWorld->MainCamera.CameraLatch, GameWorld->MainCamera.CameraXBuffer, GameWorld->MainCamera.CameraYBuffer);
+		AddDebugText(text, SCREEN_RELATIVE, -140, (screenHeight >> 1), 0);
+		break;
+
+	case 3: 
+		sprintf(text, "Camera X: %.2f  Camera Y: %.2f \nX zoom: %.2f \nY zoom X: %.2f", 
+			GameWorld->MainCamera.CameraX, GameWorld->MainCamera.CameraY, GameWorld->MainCamera.zoomX, GameWorld->MainCamera.zoomY);
 		AddDebugText(text, SCREEN_RELATIVE, -140, (screenHeight >> 1), 0);
 		break;
 
@@ -1165,17 +1173,17 @@ int AddDebugText(char inputPhrase[], DebugTextFormatting format, int x, int y, i
     if (format == SCREEN_LIST_FORMAT)
     {
     	TextsArray[index].Location.y = (float)(index + 1) * 20;
-    	TextsArray[index].Location.x = (float)(screenWidth >> 1) + x;
+    	TextsArray[index].Location.x = (float)x;
     }
     else if (format == SCREEN_SOUND_FORMAT)
     {
     	TextsArray[index].Location.y = (float)50 + (y * 20);
-    	TextsArray[index].Location.x = (float)screenWidth - x;
+    	TextsArray[index].Location.x = (float)-x;
     }
     else
     {
-    	TextsArray[index].Location.x = (float)(screenWidth >> 1) + x;
-    	TextsArray[index].Location.y = (float)(screenHeight >> 1) - y;
+    	TextsArray[index].Location.x = (float)x;
+    	TextsArray[index].Location.y = (float)-y;
     }
 
     TextsArray[index].Location.w = text->w;
@@ -1215,7 +1223,7 @@ int RemoveAllDebugTexts()
 }
 
 
-int RenderDebugText(World *GameWorld, RenderFrame ScreenData)
+int RenderDebugText(Camera inputCamera, RenderFrame ScreenData)
 {
 	int i = 0;
 	SDL_Texture *TextPtr = NULL;
@@ -1232,9 +1240,16 @@ int RenderDebugText(World *GameWorld, RenderFrame ScreenData)
 
 			if (TextsArray[i].CameraRelative == true)
 			{
-				CorrectedDestination.x -= GameWorld->MainCamera.CameraX;
-				CorrectedDestination.y += GameWorld->MainCamera.CameraY;
+				CorrectedDestination.x -= inputCamera.CameraX;
+				CorrectedDestination.y += inputCamera.CameraY;
 			}
+			else
+			{
+				
+			}
+
+			CorrectedDestination.x += inputCamera.zoomedWidth >> 1;
+			CorrectedDestination.y += inputCamera.zoomedHeight >> 1;
 
 			SDL_RenderTexture(ScreenData.Renderer, TextPtr, NULL, &CorrectedDestination);
 

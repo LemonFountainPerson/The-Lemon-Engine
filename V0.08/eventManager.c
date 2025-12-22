@@ -415,6 +415,77 @@ int InitialiseLevelFlag(Object *inputObject, ObjectController *ObjectList)
 }
 
 
+bool detectPlayer(Object* inputObject, PlayerData *Player)
+{
+	if (Player == NULL || Player->PlayerBox == NULL || inputObject == NULL)
+	{
+		return false;
+	}
+
+
+	int touchingPlayer = checkBoxOverlapsBoxBroad(Player->PlayerBox, inputObject->ObjectBox);
+
+	if (touchingPlayer == 1 && inputObject->Action == 0)
+	{
+		inputObject->Action = 1;
+		return true;
+	}
+
+	if (touchingPlayer == 0)
+	{
+		if (inputObject->Action == 2)
+		{
+			inputObject->Action = -1;
+		}
+		else 
+		{
+			inputObject->Action = 0; 
+		}
+	}
+
+
+	return false;
+}
+
+
+bool detectCamera(Object* inputObject, Camera inputCamera)
+{
+	if (inputObject == NULL)
+	{
+		return false;
+	}
+
+	PhysicsRect camBox = {0};
+	camBox.xPos = inputCamera.CameraX;
+	camBox.yPos = inputCamera.CameraY;
+	camBox.xSize = 1;
+	camBox.ySize = 1;
+
+	int touchingCamBox = checkBoxOverlapsBoxBroad(&camBox, inputObject->ObjectBox);
+
+	if (touchingCamBox == 1 && inputObject->Action == 0)
+	{
+		inputObject->Action = 1;
+		return true;
+	}
+
+	if (touchingCamBox == 0)
+	{
+		if (inputObject->Action == 2)
+		{
+			inputObject->Action = -1;
+		}
+		else 
+		{
+			inputObject->Action = 0; 
+		}
+	}
+
+	return false;
+}
+
+
+
 int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld)
 {
 	if (GameWorld == NULL || GameWorld->ObjectList == NULL || Player == NULL || Player->PlayerBox == NULL || inputObject == NULL)
@@ -427,65 +498,44 @@ int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld)
 		return ACTION_DISABLED;
 	}
 
-	int touchingPlayer = checkBoxOverlapsBoxBroad(Player->PlayerBox, inputObject->ObjectBox);
-
-	if (touchingPlayer == 1 && inputObject->Action == 0)
-	{
-		inputObject->Action = 1;
-	}
-
-	if (touchingPlayer == 0)
-	{
-		if (inputObject->Action == 2)
-		{
-			inputObject->Action = -1;
-		}
-		else
-		{
-			inputObject->Action = 0;
-		}
-	}
 
 	switch (inputObject->arg1)
 	{
 		case CACHE_TRIGGER:
-			if (inputObject->Action == 1)
-			{
-				PhysicsRect boundingBox;
-				boundingBox.xPos = inputObject->arg2;
-				boundingBox.xSize = inputObject->arg3 - inputObject->arg2;
-				boundingBox.xPosRight = inputObject->arg3;
-				boundingBox.yPos = inputObject->arg4;
-				boundingBox.ySize = inputObject->arg5 - inputObject->arg4;
-				boundingBox.yPosTop = inputObject->arg5;
+		if (detectCamera(inputObject, GameWorld->MainCamera))
+		{
+			PhysicsRect boundingBox;
+			boundingBox.xPos = inputObject->arg2;
+			boundingBox.xSize = inputObject->arg3 - inputObject->arg2;
+			boundingBox.xPosRight = inputObject->arg3;
+			boundingBox.yPos = inputObject->arg4;
+			boundingBox.ySize = inputObject->arg5 - inputObject->arg4;
+			boundingBox.yPosTop = inputObject->arg5;
 
-				cacheObjects(GameWorld->ObjectList, boundingBox);
-				inputObject->Action = 2;
-			}
-			break;
+			cacheObjects(GameWorld->ObjectList, boundingBox);
+			inputObject->Action = 2;
+		} break;
 
 
 		case CUTSCENE_TRIGGER:
-		if (inputObject->Action == 1)
+		if (detectPlayer(inputObject, Player))
 		{
 			StartCutscene(inputObject->arg2, GameWorld);
 			MarkObjectForDeletion(inputObject);
 			inputObject->Action = 2;
-		}
-		break;
+		} break;
 
 
 		case SET_BACKGROUND_TRIGGER:
-		if (inputObject->Action == 1)
+		if (detectCamera(inputObject, GameWorld->MainCamera))
 		{
 			switchBackGroundSprite(inputObject->arg2, inputObject->arg3, &GameWorld->WorldBackground);
 			inputObject->Action = 2;
-		}
-		break;
+		} break;
 
 
 		case SET_CAMBOX_TRIGGER:
-		if (inputObject->Action == 1)
+		if (detectCamera(inputObject, GameWorld->MainCamera))
 		{
 			if (inputObject->arg2 > -1)
 			{
@@ -508,8 +558,7 @@ int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld)
 			}	
 
 			inputObject->Action = 2;
-		}
-		break;
+		} break;
 
 
 		default:
