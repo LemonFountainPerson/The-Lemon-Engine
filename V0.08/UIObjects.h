@@ -92,6 +92,8 @@ int applyCharacterSpacing(TextInstance *inputText);
 
 int endTextInstance(World *GameWorld);
 
+int deleteTextInstance(TextInstance *input, World *GameWorld);
+
 int clearTextQueue(World *GameWorld);
 
 

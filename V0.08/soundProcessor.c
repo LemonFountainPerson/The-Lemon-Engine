@@ -6,21 +6,21 @@ static SDL_AudioDeviceID audio_device = 0;
 static char lastPlayedSound[MAX_LEN] = {0};
 
 
-int Lemon_PlaySound(const char fileName[], const char folderName[], ChannelName channel, float volume)
+SoundInstance* Lemon_PlaySound(const char fileName[], const char folderName[], ChannelName channel, float volume)
 {
 	if (channel < 0 || channel >= CHANNEL_COUNT || fileName == NULL)
 	{
-		return INVALID_DATA;
+		return NULL;
 	}
 
 	if (SoundChannels[channel].soundCount >= EngineSettings.MaxSoundsPerChannel || SoundChannels[channel].Pause == 1 || strcmp(fileName, lastPlayedSound) == 0)
 	{
-		return ACTION_DISABLED;
+		return NULL;
 	}
 
 	if (strlen(fileName) > MAX_LEN || (folderName != NULL && strlen(folderName) > MAX_LEN) )
 	{
-		return INVALID_DATA;
+		return NULL;
 	}
 
 	// Construct audio file path
@@ -43,7 +43,7 @@ int Lemon_PlaySound(const char fileName[], const char folderName[], ChannelName 
 
 	if (newSnd == NULL)
 	{
-		return FILE_NOT_FOUND;
+		return NULL;
 	}
 	
 
@@ -51,7 +51,7 @@ int Lemon_PlaySound(const char fileName[], const char folderName[], ChannelName 
 	strcpy(newSnd->name, fileName);
 
 
-	return LEMON_SUCCESS;
+	return newSnd;
 }
 
 
@@ -105,10 +105,10 @@ SoundInstance* InitSound(const char *pathPtr, ChannelName channel, float volume)
 
 	SDL_PutAudioStreamData(newSound->stream, newSound->wav_data, (int)newSound->wav_data_len);
 
-	if (channel != LOOP_CHANNEL)
+	if (channel != LOOP_CHANNEL && newSound->repeatTimes < 2)
 	{
-		//SDL_free(newSound->wav_data);
-		//newSound->wav_data = NULL;
+		SDL_free(newSound->wav_data);
+		newSound->wav_data = NULL;
 	}
 
 	return newSound;
@@ -117,14 +117,35 @@ SoundInstance* InitSound(const char *pathPtr, ChannelName channel, float volume)
 
 int Lemon_PlaySoundSpeed(const char fileName[], const char folderName[], ChannelName channel, float volume, float speed)
 {
-	Lemon_PlaySound(fileName, folderName, channel, volume);
-
-	SoundInstance *newSound = getSoundInstance(fileName, channel);
-
-	SetSoundSpeed(newSound, speed);
-
+	SetSoundSpeed(Lemon_PlaySound(fileName, folderName, channel, volume), speed);
 
 	return LEMON_SUCCESS;
+}
+
+
+int Lemon_PlaySoundRepeat(const char fileName[], const char folderName[], ChannelName channel, float volume, int repeatTimes)
+{
+	RepeatSound(Lemon_PlaySound(fileName, folderName, channel, volume), repeatTimes);
+
+	return LEMON_SUCCESS;
+}
+
+
+SoundInstance* RepeatSound(SoundInstance *input, int repeatTimes)
+{
+	if (input == NULL)
+	{
+		return NULL;
+	}
+
+	if (repeatTimes < 1 || repeatTimes > 32000)
+	{
+		return NULL;
+	}
+
+	input->repeatTimes = repeatTimes;
+
+	return input;
 }
 
 
@@ -282,6 +303,21 @@ int SetChannelVolume(ChannelName channel, float newVolume)
 }
 
 
+int ChangeChannelVolume(ChannelName channel, float changeVolume)
+{
+	if (channel >= CHANNEL_COUNT || channel < 0)
+	{
+		return INVALID_DATA;
+	}
+
+	SoundChannels[channel].channelVolume = SoundChannels[channel].channelVolume + changeVolume;
+
+	UpdateChannelGain(channel);
+	
+	return LEMON_SUCCESS;
+}
+
+
 int SetAllVolume(float newVolume)
 {
 	for (int i = 0; i < CHANNEL_COUNT; i++)
@@ -294,18 +330,30 @@ int SetAllVolume(float newVolume)
 }
 
 
-int SetSoundSpeed(SoundInstance *inputSound, float newSpeed)
+int ChangeAllVolume(float changeVolume)
+{
+	for (int i = 0; i < CHANNEL_COUNT; i++)
+	{
+		ChangeChannelVolume(i, changeVolume);
+	}
+
+	
+	return LEMON_SUCCESS;
+}
+
+
+SoundInstance* SetSoundSpeed(SoundInstance *inputSound, float newSpeed)
 {
 	if (inputSound == NULL)
 	{
-		return MISSING_DATA;
+		return NULL;
 	}
 
 	newSpeed = fClamp(newSpeed, 0.1, 16.0);
 
 	SDL_SetAudioStreamFrequencyRatio(inputSound->stream, newSpeed);
 
-	return LEMON_SUCCESS;
+	return inputSound;
 }
 
 
@@ -537,7 +585,10 @@ int cleanUpAudioData(void)
 	// Close Audio devices
 	for (int i = 0; i < CHANNEL_COUNT; i++) 
 	{
-		StopAudioInChannel(i);
+		while (SoundChannels[i].firstSound != NULL)
+		{
+			deleteSoundInstance(SoundChannels[i].firstSound,i);
+		}
     }
 
 	SDL_CloseAudioDevice(audio_device);

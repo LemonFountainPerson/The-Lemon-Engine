@@ -2479,7 +2479,7 @@ int UpdateDoor(PlayerData Player, Object *Door, World *GameWorld)
 			SayTextOption("Enter the Door?", "Test_Face", BASIC_FADE, GameWorld, 3, 
 				"Yes", &TeleportPlayerToExitDoor, Door, 
 				"No", NULL, NULL,
-				"hm... lemme think aout it", &StartCutscene, TEST_SCENE);
+				"hm... lemme think aout it", &StartCutscene, TEST_SCENE_2);
 		}
 
 		GoTo(Player.PlayerPtr, savedXPos, savedYPos);

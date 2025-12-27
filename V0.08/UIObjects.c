@@ -826,6 +826,14 @@ int UpdateUIText(World *GameWorld, Object *UIText)
 			UIText->ObjectBox->xPos = currentText->boxPtr->ObjectBox->xPos + currentText->boxOffsetX;
 			UIText->ObjectBox->yPos = optionPrompt->OptionYPositions[option] + currentText->boxPtr->ObjectBox->yPos;
 			UIText->arg2 = option;
+			playTextVoice(currentText);
+		}
+		break;
+
+	case TEXT_CHARACTER:
+		if (GameWorld->TextQueue == NULL)
+		{
+			MarkObjectForDeletion(UIText);
 		}
 		break;
 
@@ -1175,7 +1183,7 @@ int updateText(World *GameWorld)
 
 bool textSceneActionPresent(TextInstance *inputText, World *GameWorld)
 {
-	if (inputText == NULL || GameWorld == NULL || GameWorld->SceneActionList == NULL)
+	if (inputText == NULL || inputText->currentChar != 0 || GameWorld == NULL || GameWorld->SceneActionList == NULL)
 	{
 		return true;
 	}
@@ -1309,13 +1317,11 @@ int handleOptionPrompt(TextInstance *inputText, World *GameWorld)
 	if (keyboard[LMN_LEFT] == 1 || keyboard[LMN_UP] == 1)
 	{
 		optionData->SelectedOption = clamp(optionData->SelectedOption - 1, 0, optionData->numberOfOptions - 1);
-		playTextVoice(inputText);
 	}
 
 	if (keyboard[LMN_RIGHT] == 1 || keyboard[LMN_DOWN] == 1)
 	{
 		optionData->SelectedOption = clamp(optionData->SelectedOption + 1, 0, optionData->numberOfOptions - 1);
-		playTextVoice(inputText);
 	}
 
 	if (keyboard[LMN_TEXT_CONFIRM] == 1 || optionData->numberOfOptions < 1)
@@ -1553,12 +1559,31 @@ int endTextInstance(World *GameWorld)
 	}
 	
 
+	deleteTextInstance(textToDelete, GameWorld);
+
+	return LEMON_SUCCESS;
+}
+
+
+// this function works this way (taking a pointer that it doesnt trust when it has access to the start of the text queue via gameworld)
+// to avoid the case where in the process of ending a text instance, it executes a function that deletes itself before it reaches the actual line that was supposed to delete it.
+// In this case, without this check it would simply delete the first text of whatever else was loaded/remains
+// By including the pointer it can check whether it still is at the start of the queue or not so it knows it's deleting the correct thing
+int deleteTextInstance(TextInstance *input, World *GameWorld)
+{
+	if (GameWorld == NULL || GameWorld->TextQueue == NULL || input != GameWorld->TextQueue)
+	{
+		return MISSING_DATA;
+	}
+
+	TextInstance *textToDelete = GameWorld->TextQueue;
+
 	MarkObjectForDeletion(textToDelete->boxPtr);
 
 	DeleteTextSceneAction(textToDelete, GameWorld);
 
 	GameWorld->TextQueue = textToDelete->nextText;
-
+	
 	free(textToDelete);
 
 	if (GameWorld->TextQueue == NULL)
@@ -1578,11 +1603,13 @@ int clearTextQueue(World *GameWorld)
 
 	while (i < EngineSettings.MaxTextQueueLength && GameWorld->TextQueue != NULL)
 	{
-		endTextInstance(GameWorld);
+		deleteTextInstance(GameWorld->TextQueue, GameWorld);
 		i++;
 	}
 
 	if (GameWorld->TextQueue != NULL) { return LEMON_ERROR; }
+
+	GameWorld->PlayingText = 0;
 
 	return LEMON_SUCCESS;
 }

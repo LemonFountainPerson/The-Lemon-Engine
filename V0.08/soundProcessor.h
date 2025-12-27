@@ -4,9 +4,13 @@
 #endif
 
 
-int Lemon_PlaySound(const char fileName[], const char folderName[], ChannelName channel, float volume);
+SoundInstance* Lemon_PlaySound(const char fileName[], const char folderName[], ChannelName channel, float volume);
 
 int Lemon_PlaySoundSpeed(const char fileName[], const char folderName[], ChannelName channel, float volume, float speed);
+
+int Lemon_PlaySoundRepeat(const char fileName[], const char folderName[], ChannelName channel, float volume, int repeatTimes);
+
+SoundInstance* RepeatSound(SoundInstance *input, int repeatTimes);
 
 SoundInstance* InitSound(const char *pathPtr, ChannelName channel, float volume);
 
@@ -30,9 +34,13 @@ int UpdateChannelGain(ChannelName channel);
 
 int SetChannelVolume(ChannelName channel, float newVolume);
 
+int ChangeChannelVolume(ChannelName channel, float changeVolume);
+
 int SetAllVolume(float newVolume);
 
-int SetSoundSpeed(SoundInstance *inputSound, float newSpeed);
+int ChangeAllVolume(float changeVolume);
+
+SoundInstance* SetSoundSpeed(SoundInstance *inputSound, float newSpeed);
 
 int SetChannelSpeed(ChannelName channel, float newSpeed);
 

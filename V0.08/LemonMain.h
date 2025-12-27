@@ -145,3 +145,8 @@ float fModulo(float x, float N);
 
 
 void stringToLower(char input[]);
+
+
+int PickRandomIntBetween(int low, int high);
+
+float PickRandomFloatBetween(float low, float high);

@@ -2,6 +2,10 @@
 #define END_SCENE_HERE createSceneAction(SCENE_END, GameWorld)
 
 
+// global variables for cutscenes
+static int flags[16] = {0};
+
+
 // Define cutscene playback here
 int StartCutscene(CutsceneID inputID, World *GameWorld)
 {
@@ -15,11 +19,14 @@ int StartCutscene(CutsceneID inputID, World *GameWorld)
 		return INVALID_DATA;
 	}
 
-	// end current cutscene if one is already playing
-	if (GameWorld->CurrentCutscene != NO_CUTSCENE)
-	{
-		EndCutscene(GameWorld);
-	}
+	deleteAllSceneActions(GameWorld);
+	clearTextQueue(GameWorld);		
+	// I have to do this terribleness because deleting the text associated with a scene action when the
+	// scene action is deleted was too much of a hassle and could cause bad pointer behaviour;
+	// was easier to just clear the whole queue 
+	// Ideally this shouldn't matter, but if for some reason theres a text box you want to persist across a cutscene 
+	// you cannot because it gets deleted here
+
 
 	GameWorld->CurrentCutscene = inputID;
 	GameWorld->GameState = CUTSCENE;
@@ -34,31 +41,38 @@ int StartCutscene(CutsceneID inputID, World *GameWorld)
 		SayText("A test cutscene, huh?", NO_PORTRAIT, BASIC_TEXT, GameWorld);
 		Wait(1.5, GameWorld);
 		SayText("How fantastic.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
-		AnimateActor("MainPlayer", "Jump", 10, GameWorld);
-		SayText("The player should animate now.", NO_PORTRAIT, BASIC_TOP, GameWorld);
-
-		SwitchActorSprite("MainPlayer", "StickMan", GameWorld);
-		SayText("The player should be standing now.", NO_PORTRAIT, BASIC_TOP, GameWorld);
-
-		MoveActor("MainPlayer", 5.0, 2.0, 120, GameWorld);
-		SceneAction_MoveCameraSmooth(3200.0, 300.0, 8.0, GameWorld);
-		WaitUntil(RotateActor("MainPlayer", 10.0, 120, GameWorld));
 	
-		SayText("The player should have moved now.", NO_PORTRAIT, BASIC_TOP, GameWorld);
-		SetActorDirection("MainPlayer", 90.0, GameWorld);
-
-		WaitUntil(SceneAction_ChangeZoom(0.005, 0.025, 100, GameWorld));
 		SayTextOption("Play new cutscene?", NO_PORTRAIT, BASIC_FADE, GameWorld, 3, 
 				"Test scene", 	&StartCutscene, TEST_SCENE, 
 				"Test scene 2", &StartCutscene, TEST_SCENE_2,
 				"No", NULL, NULL);
-		SceneAction_SetZoom(1.0, 1.0, GameWorld);
 		break;
 
 	case TEST_SCENE_2:
-		SayText("Dialogue test", NO_PORTRAIT, BASIC_TEXT, GameWorld);
-		Wait(1.0, GameWorld);
+		// always happens at the start
+		flags[0]++;
+
+		ifGreaterThan(&flags[0], 1, TEST_SCENE_2_AGAIN, GameWorld);
 		SayText("A small tomato is really just a \ncherry.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
+		break;
+
+	case TEST_SCENE_2_AGAIN:
+		SayText("Wait a second..... \nyou've been here before.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
+		SayTextOption("Do you remember the thing about the cherries?", NO_PORTRAIT, BASIC_FADE, GameWorld, 3, 
+				"No", 	NULL, NULL, 
+				"Yes, they're ugly", &StartCutscene, TEST_SCENE_2_WRONG,
+				"Yes, they're small tomatoes", &StartCutscene, TEST_SCENE_2_CORRECT);
+		SayText("Oh... ok nevermind then.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
+		break;
+
+	case TEST_SCENE_2_CORRECT:
+		SayText("You're right! Nice job.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
+		break;
+
+	case TEST_SCENE_2_WRONG:
+		SayText("You're wrong! hmmmm....", NO_PORTRAIT, BASIC_TEXT, GameWorld);
+		SayText("Get lost.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
+		SetActorPosition("MainPlayer", 100000.0, 96.0, GameWorld);
 		break;
 
 	default:
@@ -99,6 +113,11 @@ int UpdateCutscene(World *GameWorld)
 	}
 	
 
+	if (GameWorld->TextQueue != NULL)
+	{
+		//printf("\n%s", GameWorld->TextQueue->textPhrase);
+	}
+
 	return LEMON_SUCCESS;
 }
 
@@ -114,8 +133,10 @@ int updateSceneActions(World *GameWorld)
 
 	while (ActionPtr != NULL)
 	{
-		// execute code
-		RunSceneAction(ActionPtr, GameWorld);
+		if (RunSceneAction(ActionPtr, GameWorld) == DATA_CLEARED)
+		{
+			return EXECUTION_UNNECESSARY;
+		}
 
 		if (ActionPtr->repeatTimes < 1)
 		{
@@ -156,6 +177,117 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 		case SCENE_END:
 		GameWorld->CurrentCutscene = END_CUTSCENE;
 		break;
+
+		case SCENE_IF_EQUALS:
+		{
+			struct ifIntData *branchData = &inputAction->ActionData.branchDataInt;
+
+			if (branchData == NULL || branchData->variable == NULL)
+			{
+				break;
+			}
+
+			if (*(branchData->variable) == branchData->comparisonValue)
+			{
+				StartCutscene(branchData->ifTrue, GameWorld);
+				return DATA_CLEARED;
+			}
+			else if (branchData->elseBranchPresent)
+			{
+				StartCutscene(branchData->ifFalse, GameWorld);
+				return DATA_CLEARED;
+			}
+
+			// returning 'DATA_CLEARED' is neccessary here to avoid incorrect pointer access
+		} break;
+
+		case SCENE_IF_NOT_EQUALS:
+		{
+			struct ifIntData *branchData = &inputAction->ActionData.branchDataInt;
+
+			if (branchData == NULL || branchData->variable == NULL)
+			{
+				break;
+			}
+
+			if (*(branchData->variable) != branchData->comparisonValue)
+			{
+				StartCutscene(branchData->ifTrue, GameWorld);
+				return DATA_CLEARED;
+			}
+			else if (branchData->elseBranchPresent)
+			{
+				StartCutscene(branchData->ifFalse, GameWorld);
+				return DATA_CLEARED;
+			}
+
+			// returning 'DATA_CLEARED' is neccessary here to avoid incorrect pointer access
+		} break;
+
+		case SCENE_IF_LESS_THAN:
+		{
+			struct ifIntData *branchData = &inputAction->ActionData.branchDataInt;
+
+			if (branchData == NULL || branchData->variable == NULL)
+			{
+				break;
+			}
+
+			if (*(branchData->variable) < branchData->comparisonValue)
+			{
+				StartCutscene(branchData->ifTrue, GameWorld);
+				return DATA_CLEARED;
+			}
+			else if (branchData->elseBranchPresent)
+			{
+				StartCutscene(branchData->ifFalse, GameWorld);
+				return DATA_CLEARED;
+			}
+		} break;
+
+		case SCENE_IF_GREATER_THAN:
+		{
+			struct ifIntData *branchData = &inputAction->ActionData.branchDataInt;
+
+			if (branchData == NULL || branchData->variable == NULL)
+			{
+				break;
+			}
+
+			if (*(branchData->variable) > branchData->comparisonValue)
+			{
+				StartCutscene(branchData->ifTrue, GameWorld);
+				return DATA_CLEARED;
+			}
+			else if (branchData->elseBranchPresent)
+			{
+				StartCutscene(branchData->ifFalse, GameWorld);
+				return DATA_CLEARED;
+			}
+		} break;
+
+		case SCENE_FLOAT_IF_EQUALS:
+		{
+			struct ifFloatData *branchData = &inputAction->ActionData.branchDataFloat;
+
+			if (branchData == NULL || branchData->variable == NULL)
+			{
+				break;
+			}
+
+			if (fabs(*(branchData->variable) - branchData->comparisonValue) < 0.0001)
+			{
+				StartCutscene(branchData->ifTrue, GameWorld);
+				return DATA_CLEARED;
+			}
+			else if (branchData->elseBranchPresent)
+			{
+				StartCutscene(branchData->ifFalse, GameWorld);
+				return DATA_CLEARED;
+			}
+
+			// returning 'DATA_CLEARED' is neccessary here to avoid incorrect pointer access
+		} break;
 
 		case SCENE_ANIMATE_ACTOR:
 		{
@@ -270,22 +402,44 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 		case SCENE_CREATE_ACTOR:
 		{
-			struct ObjectMeta *loadedData = &inputAction->ActionData.objectInfo;
-			Object *newActor = AddNamedObject(GameWorld, loadedData->name, loadedData->objectID, loadedData->xPos, loadedData->yPos);
-			if (newActor != NULL)
+			inputAction->repeatTimes = 0;
+			if (inputAction->ActorObject == NULL || inputAction->ActorObject->ObjectDisplay == NULL)
 			{
-				newActor->State = ACTOR;
+				break;
+			}
+			
+			inputAction->ActorObject->State = ACTOR;
+			inputAction->ActorObject->ObjectDisplay->RenderModeOverride = DEFAULT_TO_SPRITE;
+		} break;
+
+		case SCENE_SET_ACTOR_LAYER:
+		{
+			inputAction->repeatTimes = 0;
+			printf("Layer: %d", inputAction->ActionData.layer);
+
+			if (inputAction->ActorObject == NULL)
+			{
+				break;
 			}
 
-			inputAction->repeatTimes = 0;
+			inputAction->ActorObject->layer = inputAction->ActionData.layer;
 		} break;
 
 		case SCENE_PLAY_SOUND:
+		{
 			struct SoundMeta *loadedData = &inputAction->ActionData.soundData;
 
 			Lemon_PlaySound(loadedData->soundName, loadedData->folderName, loadedData->channel, loadedData->volume);
 			inputAction->repeatTimes = 0;
-			break;
+		} break;
+
+		case SCENE_PLAY_SOUND_REPEAT:
+		{
+			struct SoundMeta *loadedData = &inputAction->ActionData.soundData;
+
+			RepeatSound(Lemon_PlaySound(loadedData->soundName, loadedData->folderName, loadedData->channel, loadedData->volume), inputAction->repeatTimes);
+			inputAction->repeatTimes = 0;
+		} break;
 
 		case SCENE_SET_CAMERA_POS:
 			GameWorld->MainCamera.CameraX = inputAction->ActionData.CameraData[0];
@@ -348,6 +502,16 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 			GameWorld->GameEvent = CHANGE_SCREEN_ZOOM;
 			GameWorld->GameEventData.zoomScales[0] = zoomX;
 			GameWorld->GameEventData.zoomScales[1] = zoomY;
+		} break;
+
+		case SCENE_SET_CHANNEL_VOL:
+		{
+			SetChannelVolume(inputAction->ActionData.soundData.channel, inputAction->ActionData.soundData.volume);
+		} break;
+
+		case SCENE_FADE_CHANNEL_VOL:
+		{
+			ChangeChannelVolume(inputAction->ActionData.soundData.channel, inputAction->ActionData.soundData.volume);
 		} break;
 
 		default:
@@ -476,6 +640,266 @@ SceneAction* Wait(float seconds, World *GameWorld)
 }
 
 
+SceneAction* ifEquals(int* variable, int value, CutsceneID cutsceneToTrigger, World *GameWorld)
+{
+	if (variable == NULL || GameWorld == NULL || cutsceneToTrigger <= NO_CUTSCENE || cutsceneToTrigger >= UNDEFINED_CUTSCENE)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_IF_EQUALS, GameWorld);
+
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->repeatTimes = 1;
+	newAction->parallelAction = false;	// in case it doesnt immediately delete, it wont execute potentially incorrect actions after itself
+	newAction->ActionData.branchDataInt.elseBranchPresent = false;
+	newAction->ActionData.branchDataInt.ifTrue = cutsceneToTrigger;
+	newAction->ActionData.branchDataInt.ifFalse = NO_CUTSCENE;
+	newAction->ActionData.branchDataInt.variable = variable;
+	newAction->ActionData.branchDataInt.comparisonValue = value;
+
+	return newAction;
+}
+
+
+SceneAction* ifEqualsElse(int* variable, int value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld)
+{
+	if (variable == NULL || GameWorld == NULL || cutsceneIfElse <= NO_CUTSCENE || cutsceneIfElse >= UNDEFINED_CUTSCENE)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_IF_EQUALS, GameWorld);
+
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->repeatTimes = 1;
+	newAction->parallelAction = false;	// in case it doesnt immediately delete, it wont execute potentially incorrect actions after itself
+	newAction->ActionData.branchDataInt.elseBranchPresent = true;
+	newAction->ActionData.branchDataInt.ifTrue = cutsceneIfTrue;
+	newAction->ActionData.branchDataInt.ifFalse = cutsceneIfElse;
+	newAction->ActionData.branchDataInt.variable = variable;
+	newAction->ActionData.branchDataInt.comparisonValue = value;
+
+	return newAction;
+}
+
+
+SceneAction* ifNotEquals(int* variable, int value, CutsceneID cutsceneToTrigger, World *GameWorld)
+{
+	if (variable == NULL || GameWorld == NULL || cutsceneToTrigger <= NO_CUTSCENE || cutsceneToTrigger >= UNDEFINED_CUTSCENE)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_IF_NOT_EQUALS, GameWorld);
+
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->repeatTimes = 1;
+	newAction->parallelAction = false;	// in case it doesnt immediately delete, it wont execute potentially incorrect actions after itself
+	newAction->ActionData.branchDataInt.elseBranchPresent = false;
+	newAction->ActionData.branchDataInt.ifTrue = cutsceneToTrigger;
+	newAction->ActionData.branchDataInt.ifFalse = NO_CUTSCENE;
+	newAction->ActionData.branchDataInt.variable = variable;
+	newAction->ActionData.branchDataInt.comparisonValue = value;
+
+	return newAction;
+}
+
+
+SceneAction* ifNotEqualsElse(int* variable, int value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld)
+{
+	if (variable == NULL || GameWorld == NULL || cutsceneIfElse <= NO_CUTSCENE || cutsceneIfElse >= UNDEFINED_CUTSCENE)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_IF_NOT_EQUALS, GameWorld);
+
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->repeatTimes = 1;
+	newAction->parallelAction = false;	// in case it doesnt immediately delete, it wont execute potentially incorrect actions after itself
+	newAction->ActionData.branchDataInt.elseBranchPresent = true;
+	newAction->ActionData.branchDataInt.ifTrue = cutsceneIfTrue;
+	newAction->ActionData.branchDataInt.ifFalse = cutsceneIfElse;
+	newAction->ActionData.branchDataInt.variable = variable;
+	newAction->ActionData.branchDataInt.comparisonValue = value;
+
+	return newAction;
+}
+
+
+SceneAction* ifLessThan(int* variable, int value, CutsceneID cutsceneToTrigger, World *GameWorld)
+{
+	if (variable == NULL || GameWorld == NULL || cutsceneToTrigger <= NO_CUTSCENE || cutsceneToTrigger >= UNDEFINED_CUTSCENE)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_IF_LESS_THAN, GameWorld);
+
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->repeatTimes = 1;
+	newAction->parallelAction = false;	// in case it doesnt immediately delete, it wont execute potentially incorrect actions after itself
+	newAction->ActionData.branchDataInt.elseBranchPresent = false;
+	newAction->ActionData.branchDataInt.ifTrue = cutsceneToTrigger;
+	newAction->ActionData.branchDataInt.ifFalse = NO_CUTSCENE;
+	newAction->ActionData.branchDataInt.variable = variable;
+	newAction->ActionData.branchDataInt.comparisonValue = value;
+
+	return newAction;
+}
+
+
+SceneAction* ifLessThanElse(int* variable, int value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld)
+{
+	if (variable == NULL || GameWorld == NULL || cutsceneIfElse <= NO_CUTSCENE || cutsceneIfElse >= UNDEFINED_CUTSCENE)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_IF_LESS_THAN, GameWorld);
+
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->repeatTimes = 1;
+	newAction->parallelAction = false;	// in case it doesnt immediately delete, it wont execute potentially incorrect actions after itself
+	newAction->ActionData.branchDataInt.elseBranchPresent = true;
+	newAction->ActionData.branchDataInt.ifTrue = cutsceneIfTrue;
+	newAction->ActionData.branchDataInt.ifFalse = cutsceneIfElse;
+	newAction->ActionData.branchDataInt.variable = variable;
+	newAction->ActionData.branchDataInt.comparisonValue = value;
+
+	return newAction;
+}
+
+
+SceneAction* ifGreaterThan(int* variable, int value, CutsceneID cutsceneToTrigger, World *GameWorld)
+{
+	if (variable == NULL || GameWorld == NULL || cutsceneToTrigger <= NO_CUTSCENE || cutsceneToTrigger >= UNDEFINED_CUTSCENE)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_IF_GREATER_THAN, GameWorld);
+
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->repeatTimes = 1;
+	newAction->parallelAction = false;	// in case it doesnt immediately delete, it wont execute potentially incorrect actions after itself
+	newAction->ActionData.branchDataInt.elseBranchPresent = false;
+	newAction->ActionData.branchDataInt.ifTrue = cutsceneToTrigger;
+	newAction->ActionData.branchDataInt.ifFalse = NO_CUTSCENE;
+	newAction->ActionData.branchDataInt.variable = variable;
+	newAction->ActionData.branchDataInt.comparisonValue = value;
+
+	return newAction;
+}
+
+
+SceneAction* ifGreaterThanElse(int* variable, int value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld)
+{
+	if (variable == NULL || GameWorld == NULL || cutsceneIfElse <= NO_CUTSCENE || cutsceneIfElse >= UNDEFINED_CUTSCENE)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_IF_GREATER_THAN, GameWorld);
+
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->repeatTimes = 1;
+	newAction->parallelAction = false;	// in case it doesnt immediately delete, it wont execute potentially incorrect actions after itself
+	newAction->ActionData.branchDataInt.elseBranchPresent = true;
+	newAction->ActionData.branchDataInt.ifTrue = cutsceneIfTrue;
+	newAction->ActionData.branchDataInt.ifFalse = cutsceneIfElse;
+	newAction->ActionData.branchDataInt.variable = variable;
+	newAction->ActionData.branchDataInt.comparisonValue = value;
+
+	return newAction;
+}
+
+
+SceneAction* ifFloatEquals(float* variable, float value, CutsceneID cutsceneToTrigger, World *GameWorld)
+{
+	if (variable == NULL || GameWorld == NULL || cutsceneToTrigger <= NO_CUTSCENE || cutsceneToTrigger >= UNDEFINED_CUTSCENE)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_FLOAT_IF_EQUALS, GameWorld);
+
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->repeatTimes = 1;
+	newAction->parallelAction = false;	// in case it doesnt immediately delete, it wont execute potentially incorrect actions after itself
+	newAction->ActionData.branchDataFloat.elseBranchPresent = false;
+	newAction->ActionData.branchDataFloat.ifTrue = cutsceneToTrigger;
+	newAction->ActionData.branchDataFloat.ifFalse = NO_CUTSCENE;
+	newAction->ActionData.branchDataFloat.variable = variable;
+	newAction->ActionData.branchDataFloat.comparisonValue = value;
+
+	return newAction;
+}
+
+
+SceneAction* ifFloatEqualsElse(float* variable, float value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld)
+{
+	if (variable == NULL || GameWorld == NULL || cutsceneIfElse <= NO_CUTSCENE || cutsceneIfElse >= UNDEFINED_CUTSCENE)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_FLOAT_IF_EQUALS, GameWorld);
+
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->repeatTimes = 1;
+	newAction->parallelAction = false;	// in case it doesnt immediately delete, it wont execute potentially incorrect actions after itself
+	newAction->ActionData.branchDataFloat.elseBranchPresent = true;
+	newAction->ActionData.branchDataFloat.ifTrue = cutsceneIfTrue;
+	newAction->ActionData.branchDataFloat.ifFalse = cutsceneIfElse;
+	newAction->ActionData.branchDataFloat.variable = variable;
+	newAction->ActionData.branchDataFloat.comparisonValue = value;
+
+	return newAction;
+}
+
+
 SceneAction* SceneAction_SayText(TextInstance *text, World *GameWorld)
 {
 	if (GameWorld == NULL || text == NULL)
@@ -574,7 +998,7 @@ SceneAction* SwitchActorSprite(char objName[], const char spriteName[], World *G
 }
 
 
-SceneAction* SetActorPosition(char objName[], double xPosition, double yPosition, World *GameWorld)
+SceneAction* SetActorPosition(char objName[], float xPosition, float yPosition, World *GameWorld)
 {
 	if (GameWorld == NULL || objName == NULL)
 	{
@@ -607,7 +1031,7 @@ SceneAction* SetActorPosition(char objName[], double xPosition, double yPosition
 }
 
 
-SceneAction* MoveActor(char objName[], double xMovement, double yMovement, short repeatTimes, World *GameWorld)
+SceneAction* MoveActor(char objName[], float xMovement, float yMovement, short repeatTimes, World *GameWorld)
 {
 	if (GameWorld == NULL || objName == NULL)
 	{
@@ -640,7 +1064,7 @@ SceneAction* MoveActor(char objName[], double xMovement, double yMovement, short
 }
 
 
-SceneAction* MoveActorX(char objName[], double xMovement, short repeatTimes, World *GameWorld)
+SceneAction* MoveActorX(char objName[], float xMovement, short repeatTimes, World *GameWorld)
 {
 	if (GameWorld == NULL || objName == NULL)
 	{
@@ -673,7 +1097,7 @@ SceneAction* MoveActorX(char objName[], double xMovement, short repeatTimes, Wor
 }
 
 
-SceneAction* MoveActorY(char objName[], double yMovement, short repeatTimes, World *GameWorld)
+SceneAction* MoveActorY(char objName[], float yMovement, short repeatTimes, World *GameWorld)
 {
 	if (GameWorld == NULL || objName == NULL)
 	{
@@ -795,6 +1219,8 @@ SceneAction* HideActor(char objName[], World *GameWorld)
 		return NULL;
 	}
 
+	newAction->ActorObject = actorObj;
+
 	return newAction;
 }
 
@@ -823,6 +1249,8 @@ SceneAction* ShowActor(char objName[], World *GameWorld)
 		return NULL;
 	}
 
+	newAction->ActorObject = actorObj;
+
 	return newAction;
 }
 
@@ -845,10 +1273,43 @@ SceneAction* CreateActor(char objName[], ObjectType actorID, int xPos, int yPos,
 		return NULL;
 	}
 
-	strcpy(newAction->ActionData.objectInfo.name, objName);
-	newAction->ActionData.objectInfo.objectID = actorID;
-	newAction->ActionData.objectInfo.xPos = xPos;
-	newAction->ActionData.objectInfo.xPos = yPos;
+	newAction->ActorObject = AddNamedObject(GameWorld, objName, actorID, xPos, yPos);
+	if (newAction->ActorObject != NULL)
+	{
+		newAction->ActorObject->State = STATIC;
+		newAction->ActorObject->ObjectDisplay->RenderModeOverride = DO_NOT_RENDER;
+	}
+
+	return newAction;
+}
+
+
+SceneAction* SetActorLayer(char objName[], Layer destLayer, World *GameWorld)
+{
+	if (GameWorld == NULL || objName == NULL)
+	{
+		return NULL;
+	}
+
+	if (strlen(objName) > OBJECT_NAME_LENGTH)
+	{
+		return NULL;
+	}
+
+	Object *actorObj = FindObject(objName, *(GameWorld->ObjectList));
+	if (actorObj == NULL)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_SET_ACTOR_LAYER, GameWorld);
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->ActionData.layer = destLayer;
+	newAction->ActorObject = actorObj;
 
 	return newAction;
 }
@@ -878,6 +1339,72 @@ SceneAction* SceneAction_PlaySound(char soundName[], char folderName[], ChannelN
 	newAction->ActionData.soundData.volume = volume;
 	newAction->parallelAction = true;
 	newAction->repeatTimes = 1;
+
+	return newAction;
+}
+
+
+SceneAction* SceneAction_PlaySoundRepeat(char soundName[], char folderName[], ChannelName soundChannel, float volume, int repeatTimes, World *GameWorld)
+{
+	if (GameWorld == NULL || soundName == NULL || folderName == NULL)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = SceneAction_PlaySound(soundName, folderName, soundChannel, volume, GameWorld);
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->repeatTimes = repeatTimes;
+
+	return newAction;
+}
+
+
+SceneAction* SceneAction_SetSoundChannelVolume(ChannelName soundChannel, float newVolume, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_SET_CHANNEL_VOL, GameWorld);
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	strcpy(newAction->ActionData.soundData.soundName, "noSound");
+	strcpy(newAction->ActionData.soundData.folderName, "noFolder");
+	newAction->ActionData.soundData.channel = soundChannel;
+	newAction->ActionData.soundData.volume = newVolume;
+	newAction->parallelAction = true;
+	newAction->repeatTimes = 1;
+
+	return newAction;
+}
+
+SceneAction* SceneAction_FadeSoundChannel(ChannelName soundChannel, float fadeValue, int repeatTimes, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_FADE_CHANNEL_VOL, GameWorld);
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	strcpy(newAction->ActionData.soundData.soundName, "noSound");
+	strcpy(newAction->ActionData.soundData.folderName, "noFolder");
+	newAction->ActionData.soundData.channel = soundChannel;
+	newAction->ActionData.soundData.volume = fadeValue;
+	newAction->parallelAction = true;
+	newAction->repeatTimes = repeatTimes;
 
 	return newAction;
 }
@@ -1054,7 +1581,6 @@ SceneAction* deleteSceneAction(SceneAction *deleteAction, World *GameWorld)
 	{
 		nextAction->prevSceneAction = prevAction;
 	}
-
 
 	free(deleteAction);
 

@@ -1549,3 +1549,30 @@ void stringToLower(char input[])
 	return;
 }
 
+
+int PickRandomIntBetween(int low, int high)
+{
+	if (low > high)
+	{
+		return 0;
+	}
+
+	int range = high - low;
+
+	return (rand() % range) + low;
+}
+
+
+float PickRandomFloatBetween(float low, float high)
+{
+	if (low > high)
+	{
+		return 0.0;
+	}
+	
+	float range = high - low;
+
+	float generatedValue = ((float)rand()/(float)(RAND_MAX)) * range;
+
+	return generatedValue + low;
+}

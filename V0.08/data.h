@@ -145,7 +145,8 @@ typedef enum FunctionResult
 	EXECUTION_UNNECESSARY = 2,
 	AT_FULL_CAPACITY = 3,
 	FILE_NOT_FOUND = 4,
-	END_OF_FILE = 5
+	END_OF_FILE = 5,
+	DATA_CLEARED = 6
 } FuncResult;
 
 
@@ -324,36 +325,12 @@ typedef enum CutsceneID
 	PLAYING_CUTSCENE = -1,
 	NO_CUTSCENE = 0,
 	TEST_SCENE = 1,
-	TEST_SCENE_2,
+	TEST_SCENE_2 = 2,
+	TEST_SCENE_2_AGAIN = 3,
+	TEST_SCENE_2_CORRECT,
+	TEST_SCENE_2_WRONG,
 	UNDEFINED_CUTSCENE
 } CutsceneID;
-
-
-typedef enum SceneActionID
-{
-	SCENE_END,
-	SCENE_WAIT,
-	SCENE_SAY_TEXT,
-	SCENE_ANIMATE_ACTOR,
-	SCENE_SET_ACTOR_SPRITE,
-	SCENE_SET_ACTOR_POS,
-	SCENE_MOVE_ACTOR,
-	SCENE_MOVE_ACTOR_X,
-	SCENE_MOVE_ACTOR_Y,
-	SCENE_MOVE_ACTOR_TO,
-	SCENE_ROTATE_ACTOR,
-	SCENE_SET_ACTOR_DIRECTION,
-	SCENE_HIDE_ACTOR,
-	SCENE_SHOW_ACTOR,
-	SCENE_CREATE_ACTOR,
-	SCENE_PLAY_SOUND,
-	SCENE_SET_CAMERA_POS,
-	SCENE_MOVE_CAMERA,
-	SCENE_MOVE_CAMERA_SMOOTH,
-	SCENE_SET_SCREEN_ZOOM,
-	SCENE_CHANGE_SCREEN_ZOOM,
-	UNDEFINED_SCENE_ACTION
-} SceneActionID;
 
 
 typedef enum CameraState 
@@ -957,6 +934,27 @@ struct ObjectMeta
 	int yPos;
 };
 
+
+struct ifIntData
+{
+	int *variable;
+	int comparisonValue;
+
+	bool elseBranchPresent;
+	CutsceneID ifTrue;
+	CutsceneID ifFalse;
+};
+
+struct ifFloatData
+{
+	float *variable;
+	float comparisonValue;
+
+	bool elseBranchPresent;
+	CutsceneID ifTrue;
+	CutsceneID ifFalse;
+};
+
 union SceneActionArguments
 {
 	float zoomScales[2];
@@ -967,7 +965,47 @@ union SceneActionArguments
 	struct ObjectMeta objectInfo;
 	bool hidden;
 	float CameraData[3];
+	Layer layer;
+	struct ifIntData branchDataInt;
+	struct ifFloatData branchDataFloat;
 };
+
+typedef enum SceneActionID
+{
+	SCENE_END,
+	SCENE_WAIT,
+	SCENE_IF_EQUALS,
+	SCENE_IF_NOT_EQUALS,
+	SCENE_IF_LESS_THAN,
+	SCENE_IF_GREATER_THAN,
+	SCENE_FLOAT_IF_EQUALS,
+	SCENE_CHANGE_VARIABLE_BY,
+	SCENE_SET_VARIABLE_TO,
+	SCENE_SAY_TEXT,
+	SCENE_ANIMATE_ACTOR,
+	SCENE_SET_ACTOR_SPRITE,
+	SCENE_SET_ACTOR_POS,
+	SCENE_MOVE_ACTOR,
+	SCENE_MOVE_ACTOR_X,
+	SCENE_MOVE_ACTOR_Y,
+	SCENE_MOVE_ACTOR_TO,
+	SCENE_ROTATE_ACTOR,
+	SCENE_SET_ACTOR_DIRECTION,
+	SCENE_HIDE_ACTOR,
+	SCENE_SHOW_ACTOR,
+	SCENE_CREATE_ACTOR,
+	SCENE_SET_ACTOR_LAYER,
+	SCENE_PLAY_SOUND,
+	SCENE_PLAY_SOUND_REPEAT,
+	SCENE_SET_CHANNEL_VOL,
+	SCENE_FADE_CHANNEL_VOL,
+	SCENE_SET_CAMERA_POS,
+	SCENE_MOVE_CAMERA,
+	SCENE_MOVE_CAMERA_SMOOTH,
+	SCENE_SET_SCREEN_ZOOM,
+	SCENE_CHANGE_SCREEN_ZOOM,
+	UNDEFINED_SCENE_ACTION
+} SceneActionID;
 
 struct SceneAction
 {
