@@ -1443,6 +1443,8 @@ int initialiseTextCharacter(Object *inputCharacter, char charValue, World *GameW
 	}
 
 
+	inputCharacter->arg5 = charValue;
+
 	return LEMON_SUCCESS;
 }
 
@@ -1526,32 +1528,12 @@ int endTextInstance(World *GameWorld)
 				break;
 			}
 
-			struct TextEventTrigger *DataPtr = &optionData->optionTriggers[optionData->SelectedOption];
-
-			if (DataPtr->TriggerFunction == &StartCutscene)
-			{
-				StartCutscene(DataPtr->FunctionArguments.cutscene, GameWorld);
-			}
-			else if (DataPtr->TriggerFunction != NULL)
-			{
-				TriggerableFunction function = (TriggerableFunction)DataPtr->TriggerFunction;
-				(function)(DataPtr->FunctionArguments.TriggerObject, (void*)GameWorld);
-			}
+			runTriggerableFunction(&optionData->optionTriggers[optionData->SelectedOption], GameWorld);
 		} break;
 
 		case TRIGGER_EVENT:
 		{
-			struct TextEventTrigger *DataPtr = &textToDelete->textTypeData.TriggerEvent;
-
-			if (DataPtr->TriggerFunction == &StartCutscene)
-			{
-				StartCutscene(DataPtr->FunctionArguments.cutscene, GameWorld);
-			}
-			else if (DataPtr->TriggerFunction != NULL)
-			{
-				TriggerableFunction function = (TriggerableFunction)DataPtr->TriggerFunction;
-				(function)(DataPtr->FunctionArguments.TriggerObject, (void*)GameWorld);
-			}
+			runTriggerableFunction(&textToDelete->textTypeData.TriggerEvent, GameWorld);
 		} break;
 
 		default:
@@ -1560,6 +1542,28 @@ int endTextInstance(World *GameWorld)
 	
 
 	deleteTextInstance(textToDelete, GameWorld);
+
+	return LEMON_SUCCESS;
+}
+
+
+int runTriggerableFunction(struct TextEventTrigger *DataPtr, World *GameWorld)
+{
+	if (DataPtr == NULL || DataPtr->TriggerFunction == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (DataPtr->TriggerFunction == &StartCutscene)
+	{
+		StartCutscene(DataPtr->FunctionArguments.cutscene, GameWorld);
+	}
+	else 
+	{
+		// This is inherently unsafe, may be removed in the future with specific functions (such as startCutscene) added instead
+		TriggerableFunction function = (TriggerableFunction)DataPtr->TriggerFunction;
+		(function)(DataPtr->FunctionArguments.TriggerObject, (void*)GameWorld);
+	}
 
 	return LEMON_SUCCESS;
 }
