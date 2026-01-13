@@ -15,17 +15,47 @@ int StartGame(World *GameWorld);
 
 int HandleGameWorldEvents(World *GameWorld, RenderFrame *ScreenData);
 
-int setCameraZoom(float newZoomX, float newZoomY, Camera *inputCamera, RenderFrame *ScreenData);
+int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *ScreenData);
 
-int setScreenAndRendererSize(int newWidth, int newHeight, RenderFrame *ScreenData);
+int deleteAllGameEvents(World *GameWorld);
 
-int setScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData);
+int clearGameEvents(World *GameWorld);
 
-int setScreenSizeScale(int newWidth, int newHeight, RenderFrame *ScreenData);
+GameEvent* addNewGameEvent(World *GameWorld);
 
-int enableFullscreen(RenderFrame *ScreenData);
+int switchLevel(int level, World *GameWorld);
 
-int disableFullscreen(RenderFrame *ScreenData);
+int streamPartition(int sceneID, World *GameWorld);
+
+int changeScreenSizeScaled(int newWidth, int newHeight, World *GameWorld);
+
+int changeScreenSize(int newWidth, int newHeight, World *GameWorld);
+
+int setScreenAndRendererSize(int newWidth, int newHeight, World *GameWorld);
+
+int enableFullscreen(World *GameWorld);
+
+int enableFullscreenScaled(World *GameWorld);
+
+int disableFullscreen(World *GameWorld);
+
+int toggleFullscreen(World *GameWorld);
+
+int setCameraZoom(float zoomX, float zoomY, World *GameWorld);
+
+int changeCameraZoom(float zoomX, float zoomY, World *GameWorld);
+
+int applyCameraZoom(float newZoomX, float newZoomY, Camera *inputCamera, RenderFrame *ScreenData);
+
+int applyScreenAndRendererSize(int newWidth, int newHeight, RenderFrame *ScreenData);
+
+int applyScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData);
+
+int applyScreenSizeScale(int newWidth, int newHeight, RenderFrame *ScreenData);
+
+int applyEnableFullscreen(RenderFrame *ScreenData);
+
+int applyDisableFullscreen(RenderFrame *ScreenData);
 
 int validateScreenDimensions(RenderFrame *ScreenData);
 

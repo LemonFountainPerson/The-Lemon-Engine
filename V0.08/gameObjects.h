@@ -26,12 +26,13 @@ Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int y
 
 
 // Initialises a new empty object to the object list
-Object* createNewObject(ObjectType objectID, ObjectController *ObjectList);
+Object* getNewObject(ObjectType objectID, ObjectController *ObjectList);
 
+int initialiseGenericObject(Object *inputObject, ObjectType objectID, ObjectController *ObjectList);
+
+Object* createNewObject(void);
 
 Object* findNewObject(ObjectController *ObjectList);
-
-void removePreAllocatedObject(Object *inputObject, ObjectController *ObjectList);
 
 
 int SetObjectName(const char name[], Object *inputObject);
@@ -46,7 +47,11 @@ int snapPositionToTileGrid(PhysicsRect *ObjectBox, int xPos, int yPos);
 
 PhysicsRect* createPhysicsRect(SolidType inputSolid);
 
+int resetPhysicsRect(PhysicsRect *input);
+
 DisplayData* createDisplayData(RenderMode startRenderMode);
+
+int resetDisplayData(DisplayData *input);
 
 
 // Helper function to set an object to a moving platform type 
@@ -221,7 +226,7 @@ int gateControl(Object *gate, ObjectController *objectList);
 int UpdateDoor(PlayerData Player, Object *Door, World *GameWorld);
 
 
-int TeleportPlayerToExitDoor(Object *Door, void *GameWorld);
+int TeleportPlayerToExitDoor(Object *Door, World *GameWorld);
 
 
 int UpdateLevelDoor(PlayerData Player, Object *Door, World *GameWorld);

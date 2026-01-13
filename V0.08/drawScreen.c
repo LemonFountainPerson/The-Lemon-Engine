@@ -46,23 +46,23 @@ int WorldCameraControl(World *GameWorld, Camera *inputCamera)
 	{
 		case MENU_CAMERA:
 		{
-			if (inputCamera->CameraLatch == 0)
+			if (inputCamera->CameraLatch == false)
 			{
 				inputCamera->CameraXBuffer = inputCamera->CameraX;
 				inputCamera->CameraYBuffer = inputCamera->CameraY;
 				inputCamera->CameraX = -32000.0;
 				inputCamera->CameraY = 0;
-				inputCamera->CameraLatch = 1;
+				inputCamera->CameraLatch = true;
 			}
 		} break;
 
 		default:
 		{
-			if (inputCamera->CameraLatch == 1)
+			if (inputCamera->CameraLatch == true)
 			{
 				inputCamera->CameraX = inputCamera->CameraXBuffer;
 				inputCamera->CameraY = inputCamera->CameraYBuffer;
-				inputCamera->CameraLatch = 0;
+				inputCamera->CameraLatch = false;
 			}
 		} break;
 	}
@@ -173,8 +173,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, RenderFrame ScreenData)
 
 	SDL_Renderer *Screen = ScreenData.Renderer;
 	Object *currentObject = NULL;
-	int result = LEMON_SUCCESS;
-
+	
 	Camera hudCam = {0};
 	ResetCamera(&hudCam);
 
@@ -194,7 +193,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, RenderFrame ScreenData)
 					continue;
 				}
 
-				result = renderObjectSprite(hudCam, *(currentObject->ObjectDisplay), *(currentObject->ObjectBox), Screen);
+				renderObjectSprite(hudCam, *(currentObject->ObjectDisplay), *(currentObject->ObjectBox), Screen);
 						
 				currentObject = currentObject->nextObject;
 			}
@@ -211,7 +210,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, RenderFrame ScreenData)
 					continue;
 				}
 
-				result = renderObjectSprite(inputCamera, *(currentObject->ObjectDisplay), *(currentObject->ObjectBox), Screen);				
+				renderObjectSprite(inputCamera, *(currentObject->ObjectDisplay), *(currentObject->ObjectBox), Screen);				
 			
 				currentObject = currentObject->nextObject;
 			}
@@ -937,9 +936,9 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, World *GameWorld)
 			sprintf(buffer, "\nCurrent Animation ID: %d", inputDisplay->currentAnimation);
 			strcat(text, buffer);
 
-			sprintf(buffer, "\nFrame XPos Offset: %d", inputDisplay->frameBuffer->SpriteXOffset);
+			sprintf(buffer, "\nFrame XPos Offset: %df", inputDisplay->frameBuffer->SpriteXOffset);
 			strcat(text, buffer);
-			sprintf(buffer, "\nFrame YPos Offset: %d", inputDisplay->frameBuffer->SpriteYOffset);
+			sprintf(buffer, "\nFrame YPos Offset: %df", inputDisplay->frameBuffer->SpriteYOffset);
 			strcat(text, buffer);
 			sprintf(buffer, "\nFrame Rotation Offset: %.2lf", (double)inputDisplay->frameBuffer->rotation * RADIAN_TO_DEGREE_PI);
 			strcat(text, buffer);

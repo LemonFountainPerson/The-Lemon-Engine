@@ -117,55 +117,12 @@ int StartUpLemonEngine()
 	return LEMON_SUCCESS;
 }
 
-
-int MainLoop(World *GameWorld)
+/*
+int MainLoop(World *GameWorld, static int gameTick, static int renderRefresh, static int timeElapsed, static int lastFrameTime)
 {
-	static int gameTick = 0;
-	static int renderRefresh = 0;
-	static int timeElapsed = 0;
-    static clock_t lastFrameTime = 0;
-    if (lastFrameTime == 0)
-    {
-    	lastFrameTime = clock();
-    }
-
-
-	// Window messages
-    getExternalInput(GameWorld);
-
-
-	// Timing
-    timeElapsed = (int)(((float)(clock() - lastFrameTime) / (float)CLOCKS_PER_SEC) * 10000);
-    lastFrameTime = clock();
-
-    gameTick += timeElapsed;
-    renderRefresh += timeElapsed;
-
-
-    // World updates
-    while (gameTick >= EngineSettings.TickDelta)
-    {
-    	gameTick -= EngineSettings.TickDelta;
-		GameTick(GameWorld);
-    }
-
-    GameFrame(GameWorld);
-
-
-    // Render screen
-    if (renderRefresh >= RenderSettings.RenderDelta)
-    {
-    	renderRefresh = renderRefresh - RenderSettings.RenderDelta;
-	   	RenderSDL(GameWorld);
-	}
-
-
-	// Process sound
-	IterateAudio();
-
 	return LEMON_SUCCESS;
 }
-
+*/
 
 int CloseGame(World *GameWorld)
 {
@@ -341,15 +298,16 @@ int initialiseWorld(World *GameWorld)
 	ResetCamera(&GameWorld->MainCamera);
 
 	GameWorld->level = 0;
-	GameWorld->GameEvent = NO_EVENT;
-	memset(&GameWorld->GameEventData, 0, sizeof(LemonGameEventData));
-	GameWorld->CurrentCutscene = NO_CUTSCENE;
-	GameWorld->SceneActionList = NULL;
+	GameWorld->GameEvents.EventID = NO_EVENT;
+	GameWorld->GameEvents.additionalEvent = NULL;
+	memset(&GameWorld->GameEvents.EventData, 0, sizeof(GameEventData));
 
 	GameWorld->GamePaused = 0;
 
 	GameWorld->TextQueue = NULL;
 	GameWorld->PlayingText = 0;
+	GameWorld->CurrentCutscene = NO_CUTSCENE;
+	GameWorld->SceneActionQueue = NULL;
 
 	// Check for resource data access
 	if (CheckResourceData() == MISSING_DATA)
@@ -410,9 +368,9 @@ FuncResult CheckResourceData(void)
 		return MISSING_DATA;
 	}
 
-	char newPath[strlen(LEVELDATA_ROOT) + strlen("Level0Data.txt") + 2];
+	char newPath[strlen(LEVELDATA_ROOT) + strlen("Level0.txt") + 2];
 	strcpy(newPath, LEVELDATA_ROOT);
-	strcat(newPath, "Level0Data.txt");
+	strcat(newPath, "Level0.txt");
 
 	if (access(newPath, F_OK | R_OK | W_OK) == -1)
 	{
@@ -477,11 +435,6 @@ int getExternalInput(World *GameWorld)
 
 int ClearKeyboardInput()
 {
-	if (keyboard == NULL)
-	{
-		return MISSING_DATA;
-	}
-
 	for (int i = LMN_SPACE; i < INPUT_COUNT; i++)
 	{
 		keyboard[i] = 0;	
@@ -494,11 +447,6 @@ int ClearKeyboardInput()
 
 int AcknowledgeHeldButtons()
 {
-	if (keyboard == NULL)
-	{
-		return MISSING_DATA;
-	}
-
 	for (int i = LMN_SPACE; i < INPUT_COUNT; i++)
 	{
 		if (keyboard[i] == 1)
@@ -1038,12 +986,14 @@ void MasterControls(World *GameWorld, PlayerData *player)
 		}
 	}
 
+	
 	if (keyboard['P'] == 1)
 	{
 		keyboard['P'] = 2;
-		GameWorld->GameEvent = ENABLE_FULLSCREEN;
+		streamPartition(1, GameWorld);
 	}
 
+/*
 	if (keyboard['O'] == 1)
 	{
 		keyboard['O'] = 2;
@@ -1071,7 +1021,20 @@ void MasterControls(World *GameWorld, PlayerData *player)
 		GameWorld->GameEvent = CHANGE_SCREEN_ZOOM;
 		GameWorld->GameEventData.zoomScales[0] = -0.01;
 		GameWorld->GameEventData.zoomScales[1] = -0.01;	
+
+		//String new = {0};
+		//String new2 = {0};
+		//setString(&new, "HELLOO");
+		//setString(&new2, " World!");
+		//concatString(&new, new2);
+		//printString(new);
+		//printString(new2);
+
+		//freeString(&new);
+		//freeString(&new2);
 	}
+
+	*/
 
 
     return;
@@ -1219,7 +1182,7 @@ int ResetCamera(Camera *inputCam)
 	inputCam->maxCameraX = (int)EngineSettings.WorldBoundX;
 	inputCam->minCameraY = -(int)EngineSettings.WorldBoundY;
 	inputCam->maxCameraY = (int)EngineSettings.WorldBoundY;
-	inputCam->CameraLatch = 0;
+	inputCam->CameraLatch = false;
 	inputCam->CameraXBuffer = 0;
 	inputCam->CameraYBuffer = 0;
 	inputCam->CameraMode = FOLLOW_PLAYER;
@@ -1236,7 +1199,6 @@ int ResetCamera(Camera *inputCam)
 int SetEngineSettingsToDefault(void)
 {
 	EngineSettings.MultiThreadingEnabled = MULTITHREADED_ENABLED;
-	EngineSettings.HardwareRendering = HARDWARE_RENDERING;
 	EngineSettings.MaxObjects = MAX_OBJECTS;
 	EngineSettings.PreservedSpriteSets = PRESERVED_SPRITESETS;
 	EngineSettings.ReservedObjects = RESERVED_OBJECTS;
@@ -1248,6 +1210,7 @@ int SetEngineSettingsToDefault(void)
 
 	EngineSettings.MaxSoundsPerChannel = MAX_SOUNDS_PER_CHANNEL;
 	EngineSettings.MaxTextQueueLength = MAX_TEXTQUEUE_LENGTH;
+	EngineSettings.MaxGameEvents = MAX_QUEUED_GAME_EVENTS;
 
 	EngineSettings.GameTicksPerSecond = 0;
 	EngineSettings.TickDelta = 999999999;
@@ -1345,6 +1308,7 @@ ObjectController* createObjectController(void)
 	newController->startSpriteSetPtr = NULL;
 	newController->cachedFirstObject = NULL;
 	newController->cachedLastObject = NULL;
+	newController->availableSlots = NULL;
 	newController->cachedCount = 0;
 
 	newController->FrameUpdates = NULL;
@@ -1352,14 +1316,26 @@ ObjectController* createObjectController(void)
 	if (EngineSettings.ObjectPreAllocationEnabled == 1)
 	{
 		int i = 0;
+		Object *newObject = NULL;
 
 		while (i < EngineSettings.MaxObjects)
 		{
-			createNewObject(0, newController);
+			newObject = createNewObject();
+
+			if (newObject == NULL)
+			{
+				return newController;
+			}
+
+			if (newController->availableSlots != NULL)
+			{
+				newController->availableSlots->prevObject = newObject;
+			}
+
+			newObject->nextObject = newController->availableSlots;
+			newController->availableSlots = newObject;
 			i++;
 		}
-
-		newController->lastObject = NULL;
 	}
 
 	return newController;
@@ -1373,7 +1349,9 @@ void clearGameData(World *GameWorld)
 		return;
 	}
 	
+	EngineSettings.ObjectPreAllocationEnabled = 0;
 	clearLevelData(GameWorld);
+	deleteAllGameEvents(GameWorld);
 
 	SpriteSet *currentSet;
 	currentSet = GameWorld->ObjectList->startSpriteSetPtr;
@@ -1575,4 +1553,128 @@ float PickRandomFloatBetween(float low, float high)
 	float generatedValue = ((float)rand()/(float)(RAND_MAX)) * range;
 
 	return generatedValue + low;
+}
+
+
+
+void setString(String *input, const char stringInput[])
+{
+	if (input == NULL || stringInput == NULL)
+	{
+		return;
+	}
+
+	int length = strlen(stringInput);
+
+	if (length < 1)
+	{
+		return;
+	}
+
+	if (input->stringChars != NULL)
+	{
+		free(input->stringChars);
+	}
+
+	input->stringChars = malloc(sizeof(char) * length);
+	if (input->stringChars == NULL)
+	{
+		input->length = 0;
+		return;
+	}
+
+	memcpy(input->stringChars, stringInput, length * sizeof(char));
+	input->length = length;
+
+	return;
+}
+
+
+void freeString(String *input)
+{
+	if (input == NULL)
+	{
+		return;
+	}
+
+	input->length = 0;
+
+	if (input->stringChars == NULL)
+	{
+		return;
+	}
+
+	free(input->stringChars);
+
+	return;
+}
+
+
+void copyString(String source, String *destination)
+{
+	if (source.stringChars == NULL)
+	{
+		return;
+	}
+
+	freeString(destination);
+
+	destination->stringChars = malloc(sizeof(char) * source.length);
+	if (destination->stringChars == NULL)
+	{
+		return;
+	}
+
+	destination->length = source.length;
+
+	for (int i = 0; i < source.length; i++)
+	{
+		destination->stringChars[i] = source.stringChars[i];
+	}
+
+	return;
+}
+
+
+void concatString(String *string1, String string2)
+{
+	String temp = {0};
+	copyString(*(string1), &temp);
+
+	freeString(string1);
+
+
+	string1->length = temp.length + string2.length;
+	string1->stringChars = malloc(sizeof(char) * string1->length);
+
+	if (string1->stringChars == NULL)
+	{
+		string1->length = 0;
+		return;
+	}
+
+	for (int i = 0; i < temp.length; i++)
+	{
+		string1->stringChars[i] = temp.stringChars[i];
+	}
+
+	for (int i = temp.length; i < string1->length; i++)
+	{
+		string1->stringChars[i] = string2.stringChars[i];
+		printf("\n%c", string2.stringChars[i]);
+	}
+
+
+	return;
+}
+
+
+void printString(String input)
+{
+	for (int i = 0; i < input.length; i++)
+	{
+		printf("%c", input.stringChars[i]);
+	}
+
+	return;
 }

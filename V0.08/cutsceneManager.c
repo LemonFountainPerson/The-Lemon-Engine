@@ -43,9 +43,9 @@ int StartCutscene(CutsceneID inputID, World *GameWorld)
 		SayText("How fantastic.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
 	
 		SayTextOption("Play new cutscene?", NO_PORTRAIT, BASIC_FADE, GameWorld, 3, 
-				"Test scene", 	&StartCutscene, TEST_SCENE, 
-				"Test scene 2", &StartCutscene, TEST_SCENE_2,
-				"No", NULL, NULL);
+				"Test scene", 	START_CUTSCENE, TEST_SCENE, 
+				"Test scene 2", START_CUTSCENE, TEST_SCENE_2,
+				"No", NO_ACTION);
 		break;
 
 	case TEST_SCENE_2:
@@ -59,9 +59,9 @@ int StartCutscene(CutsceneID inputID, World *GameWorld)
 	case TEST_SCENE_2_AGAIN:
 		SayText("Wait a second..... \nyou've been here before.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
 		SayTextOption("Do you remember the thing about the cherries?", NO_PORTRAIT, BASIC_FADE, GameWorld, 3, 
-				"No", 	NULL, NULL, 
-				"Yes, they're ugly", &StartCutscene, TEST_SCENE_2_WRONG,
-				"Yes, they're small tomatoes", &StartCutscene, TEST_SCENE_2_CORRECT);
+				"No", 	NO_ACTION, 
+				"Yes, they're ugly", START_CUTSCENE, TEST_SCENE_2_WRONG,
+				"Yes, they're small tomatoes", START_CUTSCENE, TEST_SCENE_2_CORRECT);
 		SayText("Oh... ok nevermind then.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
 		break;
 
@@ -107,16 +107,11 @@ int UpdateCutscene(World *GameWorld)
 	updateSceneActions(GameWorld);
 
 
-	if (GameWorld->SceneActionList == NULL || GameWorld->CurrentCutscene == END_CUTSCENE)
+	if (GameWorld->SceneActionQueue == NULL || GameWorld->CurrentCutscene == END_CUTSCENE)
 	{
 		EndCutscene(GameWorld);
 	}
 	
-
-	if (GameWorld->TextQueue != NULL)
-	{
-		//printf("\n%s", GameWorld->TextQueue->textPhrase);
-	}
 
 	return LEMON_SUCCESS;
 }
@@ -124,12 +119,12 @@ int UpdateCutscene(World *GameWorld)
 
 int updateSceneActions(World *GameWorld)
 {
-	if (GameWorld == NULL || GameWorld->SceneActionList == NULL)
+	if (GameWorld == NULL || GameWorld->SceneActionQueue == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	SceneAction *ActionPtr = GameWorld->SceneActionList;
+	SceneAction *ActionPtr = GameWorld->SceneActionQueue;
 
 	while (ActionPtr != NULL)
 	{
@@ -415,7 +410,6 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 		case SCENE_SET_ACTOR_LAYER:
 		{
 			inputAction->repeatTimes = 0;
-			printf("Layer: %d", inputAction->ActionData.layer);
 
 			if (inputAction->ActorObject == NULL)
 			{
@@ -488,10 +482,8 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 		{
 			float zoomX = inputAction->ActionData.zoomScales[0];
 			float zoomY = inputAction->ActionData.zoomScales[1];
-			
-			GameWorld->GameEvent = SET_SCREEN_ZOOM;
-			GameWorld->GameEventData.zoomScales[0] = zoomX;
-			GameWorld->GameEventData.zoomScales[1] = zoomY;
+
+			setCameraZoom(zoomX, zoomY, GameWorld);
 		} break;
 
 		case SCENE_CHANGE_SCREEN_ZOOM:
@@ -499,9 +491,7 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 			float zoomX = inputAction->ActionData.zoomScales[0];
 			float zoomY = inputAction->ActionData.zoomScales[1];
 
-			GameWorld->GameEvent = CHANGE_SCREEN_ZOOM;
-			GameWorld->GameEventData.zoomScales[0] = zoomX;
-			GameWorld->GameEventData.zoomScales[1] = zoomY;
+			changeCameraZoom(zoomX, zoomY, GameWorld);
 		} break;
 
 		case SCENE_SET_CHANNEL_VOL:
@@ -796,7 +786,7 @@ SceneAction* ifLessThanElse(int* variable, int value, CutsceneID cutsceneIfTrue,
 }
 
 
-SceneAction* ifGreaterThan(int* variable, int value, CutsceneID cutsceneToTrigger, World *GameWorld)
+SceneAction* ifGreaterThan(int *variable, int value, CutsceneID cutsceneToTrigger, World *GameWorld)
 {
 	if (variable == NULL || GameWorld == NULL || cutsceneToTrigger <= NO_CUTSCENE || cutsceneToTrigger >= UNDEFINED_CUTSCENE)
 	{
@@ -817,7 +807,7 @@ SceneAction* ifGreaterThan(int* variable, int value, CutsceneID cutsceneToTrigge
 	newAction->ActionData.branchDataInt.ifFalse = NO_CUTSCENE;
 	newAction->ActionData.branchDataInt.variable = variable;
 	newAction->ActionData.branchDataInt.comparisonValue = value;
-
+ 
 	return newAction;
 }
 
@@ -1529,14 +1519,14 @@ SceneAction* createSceneAction(SceneActionID newActionID, World *GameWorld)
 		return NULL;
 	}
 
-	if (GameWorld->SceneActionList == NULL)
+	if (GameWorld->SceneActionQueue == NULL)
 	{
-		GameWorld->SceneActionList = newAction;
+		GameWorld->SceneActionQueue = newAction;
 		newAction->prevSceneAction = NULL;
 	}
 	else
 	{
-		SceneAction *actionPtr = GameWorld->SceneActionList;
+		SceneAction *actionPtr = GameWorld->SceneActionQueue;
 
 		while (actionPtr->nextSceneAction != NULL)
 		{
@@ -1574,7 +1564,7 @@ SceneAction* deleteSceneAction(SceneAction *deleteAction, World *GameWorld)
 	}
 	else
 	{
-		GameWorld->SceneActionList = nextAction;
+		GameWorld->SceneActionQueue = nextAction;
 	}
 
 	if (nextAction != NULL)
@@ -1596,9 +1586,9 @@ int deleteAllSceneActions(World *GameWorld)
 		return MISSING_DATA;
 	}
 
-	while (GameWorld->SceneActionList != NULL)
+	while (GameWorld->SceneActionQueue != NULL)
 	{
-		deleteSceneAction(GameWorld->SceneActionList, GameWorld);
+		deleteSceneAction(GameWorld->SceneActionQueue, GameWorld);
 	}
 
 	return LEMON_SUCCESS;

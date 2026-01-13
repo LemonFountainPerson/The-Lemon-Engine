@@ -57,7 +57,7 @@ TextInstance* SayText(const char inputPhrase[], const char Portrait[], TextPrese
 
 TextInstance* SayTextOption(const char inputPhrase[], const char Portrait[], TextPreset inputPreset, World *GameWorld, int numberOfOptions, ...);
 
-int AddTriggerableEventToText(TextInstance *inputText, void *triggerFunction, void *functionInput);
+int AddTriggerableEventToText(TextInstance *inputText, TriggerableFunctionID triggerFunction, void *functionInput);
 
 int AddFunctionArgumentsToTriggerEvent(struct TextEventTrigger *eventTrigger, void *functionInput);
 

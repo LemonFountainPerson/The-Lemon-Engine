@@ -150,3 +150,14 @@ void stringToLower(char input[]);
 int PickRandomIntBetween(int low, int high);
 
 float PickRandomFloatBetween(float low, float high);
+
+
+void setString(String *input, const char stringInput[]);
+
+void freeString(String *input);
+
+void copyString(String source, String *destination);
+
+void concatString(String *string1, String string2);
+
+void printString(String input);

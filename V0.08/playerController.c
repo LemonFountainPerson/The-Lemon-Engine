@@ -123,6 +123,7 @@ FuncResult UpdatePlayer(PlayerData *Player, World *GameWorld)
 		return MISSING_DATA;
 	}
 
+
 	if (GameWorld->GamePaused > 0 || GameWorld->GameState == EMPTY_GAME || GameWorld->GameState == LOADING)
 	{
 		return ACTION_DISABLED;
@@ -257,12 +258,12 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 	}
 
 	PlayerBox->yPos += 4.0;
-	int againstCeiling = (GetCollidingObject(PlayerBox, GameWorld->ObjectList) != NULL);
+	bool againstCeiling = (GetCollidingObject(PlayerBox, GameWorld->ObjectList) != NULL);
 	PlayerBox->yPos -= 4.0;
 
 	float jumpInterruptVel = 9.0;
 
-	if (againstCeiling == 0 && jump == 1 && ((PlayerBox->inAir < 6 && Player->jumpHeld == 0) || (PlayerBox->yVelocity > jumpInterruptVel && Player->jumpProgress > 0) ))
+	if (!againstCeiling && jump == 1 && ((PlayerBox->inAir < 6 && Player->jumpHeld == 0) || (PlayerBox->yVelocity > jumpInterruptVel && Player->jumpProgress > 0) ))
 	{
 		PlayerJump(Player, hAxis, vAxis);
 	}
@@ -377,7 +378,7 @@ int PlayerJump(PlayerData *Player, int hAxis, int vAxis)
 
 	if (Player->jumpHeld == 0)
 	{
-		Lemon_PlaySound("Jump", "Player", PLAYER_SFX, 1.0);
+		Lemon_PlaySoundSpeed("Jump", "Player", PLAYER_SFX, 1.0, PickRandomFloatBetween(0.25, 1.5));
 	}
 
 	Player->jumpHeld = 1;
@@ -454,7 +455,7 @@ int animatePlayer(PlayerData *Player)
 	}
 
 	DisplayData *PlayerDisplay = Player->PlayerDisplay;
-	PhysicsRect *PlayerBox = Player->PlayerBox;
+	//PhysicsRect *PlayerBox = Player->PlayerBox;
 
 	if (Player->jumpProgress > 0)
 	{
@@ -477,12 +478,7 @@ int checkIfGrounded(World *GameWorld, PhysicsRect *inputBox)
 		return 0;
 	}
 
-	Object *detectedObject;
-	detectedObject = GameWorld->ObjectList->firstObject;
-
-	int i = 0;
-	int result = 0;
-
+	Object *detectedObject = GameWorld->ObjectList->firstObject;
 
 	inputBox->yPos += GameWorld->GlobalGravityY * 2;
 	inputBox->xPos += GameWorld->GlobalGravityX * 2;

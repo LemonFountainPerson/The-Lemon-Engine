@@ -7,6 +7,7 @@
 #include "playerController.h"
 #include "animations.h"
 #include "soundProcessor.h"
+#include "eventManager.h"
 #endif
 
 

@@ -8,21 +8,28 @@ int loadLevel(World *GameWorld, int level)
 		return MISSING_DATA;
 	}
 
-	printConsoleData();
 
-	if (DebugSettings.ConsoleTextEnabled == ALL_EVENTS)
+	// load file
+	char fileName[20] = {0};
+	snprintf(fileName, 20, "Level%d", level);
+
+	FILE *fPtr = openFile(fileName, LEVELDATA_ROOT, "--LEVEL_DATA--");
+
+	if (fPtr == NULL)
 	{
-		putConsoleString("\n---------------------------------------");
-		putConsoleString("\nLoading Level:\n");
-		printConsoleData();
+		return INVALID_DATA;
 	}
 
+	// Erase existing data
+	GameWorld->GameState = LOADING;
+	clearLevelData(GameWorld);
+	SetDebugSettingsToDefault();
 
-	int result = loadLevelData(GameWorld, level);
-
-	if (result != LEMON_SUCCESS)
+	// load data
+	if (loadLevelData(GameWorld, fPtr) != LEMON_SUCCESS)
 	{
-		goto Loading_Terminated;
+		putConsoleStrInt("\nError: Failed to load level ", level);
+		return LEMON_ERROR;
 	}
 
 	GameWorld->GameState = GAMEPLAY;
@@ -32,15 +39,36 @@ int loadLevel(World *GameWorld, int level)
 	SpawnHUD(GameWorld);
 
 
-	Loading_Terminated:
+	return LEMON_SUCCESS;
+}
 
-	if (DebugSettings.ConsoleTextEnabled == ALL_EVENTS)
+
+int loadScene(World *GameWorld, int sceneID)
+{
+	if (GameWorld == NULL)
 	{
-		putConsoleString("\n---------------------------------------");
-		printConsoleData();
+		return MISSING_DATA;
 	}
 
-	return result;
+
+	// load file
+	char fileName[MAX_LEN] = {0};
+	snprintf(fileName, MAX_LEN, "Level%d_Part%d", GameWorld->level, sceneID);
+
+	FILE *fPtr = openFile(fileName, LEVELDATA_ROOT, "--PARTITION_DATA--");
+
+	if (fPtr == NULL)
+	{
+		return INVALID_DATA;
+	}
+
+	// load data
+	if (loadLevelData(GameWorld, fPtr) != LEMON_SUCCESS)
+	{
+		return LEMON_ERROR;
+	}
+
+	return LEMON_SUCCESS;
 }
 
 
@@ -173,7 +201,7 @@ int logLevel(World *GameWorld)
 
 	char path[strlen(LEVELDATA_ROOT) + 18];
 	strcpy(path, LEVELDATA_ROOT);
-	strcat(path, "Level0DataLOG.txt");
+	strcat(path, "Level0LOG.txt");
 	path[strlen(LEVELDATA_ROOT) + 5] = GameWorld->level + 48;
 
 	fPtr = fopen(path, "wb");
@@ -184,29 +212,29 @@ int logLevel(World *GameWorld)
 		return LEMON_ERROR;
 	}
 
-	char Header[18] = LEMON_VERSION;
-	strcat(Header, "-LEVELDATA");
+	char Header[25] = LEMON_VERSION;
+	strcat(Header, "--LEVEL_DATA--");
 
-	fwrite(Header, sizeof(char), 15, fPtr);
+	fwrite(Header, sizeof(char), 20, fPtr);
 
-	fwrite("\n", sizeof(char), 5, fPtr);
+	fwrite("\n", sizeof(char), 2, fPtr);
 
 
 	Object *currentObject;
 	currentObject = GameWorld->ObjectList->firstObject;
 
-	char buffer[16] = {0};
+	char buffer[INT_MAX_LEN] = {0};
 
 	while (currentObject != NULL)
 	{
 		switch(currentObject->ObjectID)
 		{
 			case LEVEL_FLAG_OBJ:
-				fwrite("LVFLAG- ", sizeof(char), 8, fPtr);
+				fwrite("LVFLAG: ", sizeof(char), 8, fPtr);
 				break;
 
 			default:
-				fwrite("OBJECT- ", sizeof(char), 8, fPtr);
+				fwrite("OBJECT: ", sizeof(char), 8, fPtr);
 				break;
 		}
 
@@ -431,7 +459,7 @@ int checkFileHeader(FILE *fPtr, const char FileType[])
 	}
 
 	size_t readData = 0;
-	char charBuffer[11] = {0};
+	char charBuffer[20] = {0};
 
 	// Read version number
 	readData = fread(charBuffer, sizeof(char), 5, fPtr);
@@ -444,19 +472,13 @@ int checkFileHeader(FILE *fPtr, const char FileType[])
 
 	if (strcmp(charBuffer, LEMON_VERSION) != 0)
 	{
-		putConsoleStrStr("\nFile load failed: Incompatible version number! ", charBuffer);
+		putConsoleStrStr("\nFile load failed: Incompatible version number! Got: ", charBuffer);
 		return INVALID_DATA;
 	}
 
 
 	// Read data type
-	readData = fread(charBuffer, sizeof(char), 10, fPtr);
-	if (readData < 10)
-	{
-		return MISSING_DATA;
-	}
-
-	charBuffer[10] = 0;
+	getNextArg(fPtr, charBuffer, 20);
 
 	if (strcmp(charBuffer, FileType) != 0)
 	{
@@ -470,7 +492,7 @@ int checkFileHeader(FILE *fPtr, const char FileType[])
 
 int getCurrentLineNumber(FILE *fPtr)
 {
-	unsigned long filePosition = ftell(fPtr);
+	long filePosition = ftell(fPtr);
 
 	fseek(fPtr, 0, SEEK_SET);
 
@@ -502,7 +524,7 @@ int skipCommentInFile(FILE *fPtr, int maxLength)
 	int commentLength = 0;
 	size_t readData = 0;
 
-	unsigned long objectPosition = ftell(fPtr);
+	long objectPosition = ftell(fPtr);
 
 	while (commentLength < maxLength && buffer[0] != '/' && buffer[0] != '\n')
 	{
@@ -522,31 +544,43 @@ int skipCommentInFile(FILE *fPtr, int maxLength)
 }
 
 
-int loadLevelData(World *GameWorld, int level)
+FILE* openFile(const char fileName[], const char rootPath[], const char header[])
 {
-	char charBuffer[MAX_LEN + 4] = "Level0Data.lem";
-	charBuffer[5] = level + 48;
+	if (rootPath == NULL || fileName == NULL || header == NULL)
+	{
+		return NULL;
+	}
 
-	char path[MAX_LEN + strlen(LEVELDATA_ROOT) + 5];
-	strcpy(path, LEVELDATA_ROOT);
-	strcat(path, charBuffer);
+	int rootPathLength = strlen(rootPath);
+	int fileNameLength = strlen(fileName);
+
+	if (fileNameLength >= MAX_LEN || rootPathLength >= MAX_LEN)
+	{
+		return NULL;
+	}
+
+	char path[MAX_LEN + MAX_LEN + 5] = {0};
+	strcpy(path, rootPath);
+	strcat(path, fileName);
+	strcat(path, ".lem");
 
 	FILE *fPtr = fopen(path, "rb");
 
 	if (fPtr == NULL)
 	{
-		strcpy(charBuffer, "Level0Data.txt");
-		charBuffer[5] = level + 48;
-
-		strcpy(path, LEVELDATA_ROOT);
-		strcat(path, charBuffer);
-
+		path[fileNameLength + rootPathLength + 1] = 't';
+		path[fileNameLength + rootPathLength + 2] = 'x';
+		path[fileNameLength + rootPathLength + 3] = 't';
+		
 		fPtr = fopen(path, "rb");
 
 		if (fPtr == NULL)
 		{
-			putConsoleStrInt("\nCould not find Level ", level);
-			return FILE_NOT_FOUND;
+			putConsoleStrStr("\nCould not find file '", fileName);
+			putConsoleStrStr("' from root path: '", rootPath);
+			putConsoleString("'");
+			
+			return NULL;
 		}
 	}
 	else
@@ -555,45 +589,59 @@ int loadLevelData(World *GameWorld, int level)
 
 		if (fPtr == NULL)
 		{
-			return LEMON_ERROR;
+			return NULL;
 		}
 	}
 
-
-	if (checkFileHeader(fPtr, "-LEVELDATA") != LEMON_SUCCESS)
+	if (checkFileHeader(fPtr, header) != LEMON_SUCCESS)
 	{
 		fclose(fPtr);
-		return INVALID_DATA;
+		return NULL;
 	}
 
-	// Erase existing data
-	GameWorld->GameState = LOADING;
-	clearLevelData(GameWorld);
-	SetDebugSettingsToDefault();
+	return fPtr;
+}
 
 
-	bool endOfFile = false;
+int loadLevelData(World *GameWorld, FILE *fPtr)
+{
+	loadLevelDataChunk(GameWorld, fPtr, 10000);
+
+	fclose(fPtr);
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int loadLevelDataChunk(World *GameWorld, FILE *fPtr, int lineLimit)
+{
+	char charBuffer[MAX_LEN] = {0};
 	int i = 0;
 
 
-	while (endOfFile == false && feof(fPtr) == 0)
+	while (i < lineLimit)
 	{
+		if (feof(fPtr))
+		{
+			return END_OF_FILE;
+		}
+
 		getNextArg(fPtr, charBuffer, MAX_LEN);
 
 		if (strcmp(charBuffer, "ENDFILE") == 0)
 		{
-			endOfFile = true;
-			continue;
+			return END_OF_FILE;
 		}
-		else if (strcmp(charBuffer, "OBJECT-") == 0)
+		else if (strcmp(charBuffer, "OBJECT:") == 0)
 		{
 			loadObject(GameWorld, fPtr, 0, 0);
 		}	
-		else if (strcmp(charBuffer, "OBJREP-") == 0)
+		else if (strcmp(charBuffer, "OBJREP:") == 0)
 		{
-			loadRepeatingObject(GameWorld, fPtr);
+			loadRepeatingObject(GameWorld, fPtr, &i);
 		}	
-		else if (strcmp(charBuffer, "LVFLAG-") == 0)
+		else if (strcmp(charBuffer, "LVFLAG:") == 0)
 		{
 			loadLevelFlag(GameWorld, fPtr);
 		}
@@ -604,10 +652,7 @@ int loadLevelData(World *GameWorld, int level)
 		else
 		{
 			int lineCount = getCurrentLineNumber(fPtr);
-			putConsoleStrInt("\nLevel ", level);
-			putConsoleStrInt(" Load failed. Unrecognised data found at Line: ", lineCount);
-			clearLevelData(GameWorld);
-			fclose(fPtr);
+			putConsoleStrInt("\nLevelData load failed. Unrecognised data found at Line: ", lineCount);
 			return INVALID_DATA;
 		}
 
@@ -616,20 +661,12 @@ int loadLevelData(World *GameWorld, int level)
 		
 		i++;
 
-		if (i > 100000)
+		if (feof(fPtr))
 		{
-			putConsoleStrStr("\nFile limit reached! ", path);
-			endOfFile = 1;
+			return END_OF_FILE;
 		}
 	}
 
-
-	fclose(fPtr);
-
-
-	putConsoleStrStr("\nSuccessfully loaded level from file ", path);
-	putConsoleString("!\n");
-	printConsoleData();
 
 	return LEMON_SUCCESS;
 }
@@ -645,7 +682,6 @@ int clearLevelData(World *GameWorld)
 	GameWorld->GameState = LOADING;
 
 	clearTextQueue(GameWorld);
-
 	deleteAllSceneActions(GameWorld);
 
 	deleteAllObjects(GameWorld->ObjectList);
@@ -669,7 +705,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	getNextArg(fPtr, buffer, 20);
 
 	// Flag Decoded
-	if (strcmp(buffer, "SET-BG") == 0)
+	if (strcmp(buffer, "SET_BG") == 0)
 	{
 		int args[3] = {0};
 
@@ -682,7 +718,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	
 		switchBackGroundSprite(args[0], args[1], &GameWorld->WorldBackground);
 	}
-	else if (strcmp(buffer, "SET-BG-TRIGGER") == 0)
+	else if (strcmp(buffer, "SET_BG_TRIGGER") == 0)
 	{
 		int args[8] = {0};
 
@@ -695,7 +731,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	
 		AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], args[2], args[3], SET_BACKGROUND_TRIGGER, args[4], args[5], args[6], args[7]);
 	}
-	else if (strcmp(buffer, "CUTSCENE-TRIGGER") == 0)
+	else if (strcmp(buffer, "CUTSCENE_TRIGGER") == 0)
 	{
 		int args[5] = {0};
 
@@ -708,7 +744,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	
 		AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], args[2], args[3], CUTSCENE_TRIGGER, args[4], 0, 0, 0);
 	}
-	else if (strcmp(buffer, "SET-CAMBOX") == 0)
+	else if (strcmp(buffer, "SET_CAMBOX") == 0)
 	{
 		int args[4] = {0};
 
@@ -724,7 +760,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		GameWorld->MainCamera.minCameraY = args[2];
 		GameWorld->MainCamera.maxCameraY = args[3];
 	}
-	else if (strcmp(buffer, "SET-CAMBOX-TRIGGER") == 0)
+	else if (strcmp(buffer, "SET_CAMBOX_TRIGGER") == 0)
 	{
 		int args[8] = {0};
 
@@ -737,7 +773,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	
 		AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], args[2], args[3], SET_CAMBOX_TRIGGER, args[4], args[5], args[6], args[7]);
 	}
-	else if (strcmp(buffer, "START-CAMPOS") == 0)
+	else if (strcmp(buffer, "START_CAMPOS") == 0)
 	{
 		int args[2] = {0};
 
@@ -751,7 +787,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		GameWorld->MainCamera.CameraX = args[0];
 		GameWorld->MainCamera.CameraY = args[1];
 	}
-	else if (strcmp(buffer, "START-CAMMODE") == 0)
+	else if (strcmp(buffer, "START_CAMMODE") == 0)
 	{
 		int args[1] = {0};
 
@@ -764,7 +800,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		GameWorld->MainCamera.CameraMode = args[0];
 	}
-	else if (strcmp(buffer, "START-PLAYERPOS") == 0)
+	else if (strcmp(buffer, "START_PLAYERPOS") == 0)
 	{
 		int args[2] = {0};
 
@@ -783,7 +819,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		GameWorld->Player.PlayerBox->xPos = (double)args[0];
 		GameWorld->Player.PlayerBox->yPos = (double)args[1];
 	}
-	else if (strcmp(buffer, "START-MUSIC") == 0)
+	else if (strcmp(buffer, "START_MUSIC") == 0)
 	{
 		char nameBuffer[80] = {0};
 
@@ -800,7 +836,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 			Lemon_PlaySound(nameBuffer, "Music", LOOP_CHANNEL, volume);
 		}
 	}
-	else if (strcmp(buffer, "CACHE-TRIGGER") == 0)
+	else if (strcmp(buffer, "CACHE_TRIGGER") == 0)
 	{
 		int args[8] = {0};
 
@@ -813,6 +849,19 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], args[2], args[3], CACHE_TRIGGER, args[4], args[5], args[6], args[7]);
 	}
+	else if (strcmp(buffer, "STREAM_PARTITION_TRIGGER") == 0)
+	{
+		int args[5] = {0};
+
+		int returnMsg = readIntArgs(fPtr, args, 5);
+
+		if (returnMsg != 0)
+		{
+			return returnMsg;
+		}
+
+		AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], args[2], args[3], STREAM_PARTITION_TRIGGER, args[4], 0, 0, 0);
+	}
 	else
 	{
 		return INVALID_DATA;
@@ -822,13 +871,13 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 }
 
 
-int loadRepeatingObject(World *GameWorld, FILE *fPtr)
+int loadRepeatingObject(World *GameWorld, FILE *fPtr, int *objectsLoaded)
 {
 	int args[5] = {0};
 
 	int returnMsg = readIntArgs(fPtr, args, 4);
 
-	if (returnMsg != 0)
+	if (returnMsg != LEMON_SUCCESS)
 	{
 		return returnMsg;
 	}
@@ -847,6 +896,12 @@ int loadRepeatingObject(World *GameWorld, FILE *fPtr)
 
 			loadObject(GameWorld, fPtr, args[2] * xIter, args[3] * yIter);
 		}
+	}
+
+	if (objectsLoaded != NULL)
+	{
+		objectsLoaded += args[0] * args[1];
+		objectsLoaded--;
 	}
 
 	return LEMON_SUCCESS;
@@ -1002,16 +1057,14 @@ int readIntArgs(FILE *fPtr, int argsDest[], int number)
 			return LEMON_ERROR;
 		}
 
-		inputBuffer[11] = 0;
-
-		if (inputBuffer[0] != '-' && (inputBuffer[0] < 48 || inputBuffer[0] > 57) )
+		if (inputBuffer[0] == '-' || inRange(inputBuffer[0], '0', '9') )
 		{
-			fseek(fPtr, objectPosition, SEEK_SET);
-			return LEMON_SUCCESS;
+			argsDest[i] = convertStrToInt(inputBuffer, 12);			
 		}
 		else
 		{
-			argsDest[i] = convertStrToInt(inputBuffer, 12);
+			fseek(fPtr, objectPosition, SEEK_SET);
+			return LEMON_SUCCESS;
 		}
 	}
 
@@ -1021,17 +1074,16 @@ int readIntArgs(FILE *fPtr, int argsDest[], int number)
 
 int getNextArg(FILE *fPtr, char buffer[], int capacity)
 {
-	if (fPtr == NULL || feof(fPtr) != 0)
+	if (fPtr == NULL || feof(fPtr) != 0 || capacity < 2)
 	{
 		return MISSING_DATA;
 	}
 
-	size_t readData = 0;
 	memset(buffer, 0, capacity);
 
 	while (buffer[0] < 33 || buffer[0] == '/')
 	{
-		readData = fread(buffer, sizeof(char), 1, fPtr);
+		fread(buffer, sizeof(char), 1, fPtr);
 
 		if (feof(fPtr))
 		{
@@ -1041,20 +1093,21 @@ int getNextArg(FILE *fPtr, char buffer[], int capacity)
 
 	int i = 1;
 	
-	while (i < capacity)
+	while (i < capacity - 1)
 	{
-		readData = fread(buffer + i, sizeof(char), 1, fPtr);
+		fread(buffer + i, sizeof(char), 1, fPtr);
 
 		if (buffer[i] < 33)
 		{
-			fseek(fPtr, (int)-sizeof(char), SEEK_CUR);
+			//fseek(fPtr, (int)-sizeof(char), SEEK_CUR);
+			buffer[i] = 0;
+			return LEMON_SUCCESS;
 		}
 
-		if (buffer[i] == ',' || buffer[i] < 33) 
+		if (buffer[i] == ',') 
 		{
 			buffer[i] = 0;
-			i = capacity;
-			continue;
+			return LEMON_SUCCESS;
 		}
 
 		if (feof(fPtr))
@@ -1066,9 +1119,53 @@ int getNextArg(FILE *fPtr, char buffer[], int capacity)
 		i++;
 	}
 
-	//printf("%d %s\n", capacity, buffer);
+	buffer[capacity - 1] = 0;
 
 	return LEMON_SUCCESS;
+}
+
+int getNextArgInt(FILE *fPtr)
+{
+	if (fPtr == NULL)
+	{
+		return 0;
+	}
+
+	long filePos = ftell(fPtr);
+
+	char buffer[41] = {0};
+	getNextArg(fPtr, buffer, 40);
+	buffer[40] = 0;
+
+	if (inRange(buffer[0], '0', '9') || buffer[0] == '-')
+	{
+		return convertStrToInt(buffer, 41);
+	}
+
+	fseek(fPtr, filePos, SEEK_SET);
+	return 0;
+}
+
+float getNextArgFloat(FILE *fPtr)
+{
+	if (fPtr == NULL)
+	{
+		return 0.0;
+	}
+
+	long filePos = ftell(fPtr);
+
+	char buffer[41] = {0};
+	getNextArg(fPtr, buffer, 40);
+	buffer[40] = 0;
+
+	if (inRange(buffer[0], '0', '9') || buffer[0] == '-')
+	{
+		return ((float)atof(buffer));
+	}
+
+	fseek(fPtr, filePos, SEEK_SET);
+	return 0.0;
 }
 
 
@@ -1082,7 +1179,7 @@ int convertStrToInt(char str[], int size)
 
 	while (i < size)
 	{
-		if (inRange(str[i], 48, 58) == 0)
+		if (inRange(str[i], 48, 58))
 		{
 			input *= 10;
 			input += (str[i] - 48);
@@ -1126,6 +1223,12 @@ int convertIntToStr(char str[], int input)
 
 	while (j > 0)
 	{
+		if (i >= INT_MAX_LEN)
+		{
+			str[INT_MAX_LEN - 1] = 0;
+			return i;
+		}
+
 		int power = pow(10, j);
 		str[i] = ((input / power) % 10) + 48;
 		j--;
@@ -1140,14 +1243,15 @@ int convertIntToStr(char str[], int input)
 }
 
 
-int inRange(int input, int low, int high)
+bool inRange(int input, int low, int high)
 {
 	if (input < low || input > high)
 	{
-		return -1;
+		return false;
 	}
-	else {
-		return 0;
+	else 
+	{
+		return true;
 	}
 	
 }

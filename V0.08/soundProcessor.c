@@ -97,6 +97,7 @@ SoundInstance* InitSound(const char *pathPtr, ChannelName channel, float volume)
 		return NULL;
 	}
 
+	newSound->mono = (spec.channels == 1);
 	newSound->format = spec.format;
 	newSound->volume = volume;
 
@@ -545,6 +546,7 @@ SoundInstance* createEmptySoundInstance(ChannelName Channel)
 	newSound->wav_data_len = 0;
 	newSound->stream = NULL;
 	newSound->format = 0;
+	newSound->mono = false;
 	memset(newSound->name, 0, MAX_LEN * sizeof(char));
 	newSound->repeatTimes = 1;
 

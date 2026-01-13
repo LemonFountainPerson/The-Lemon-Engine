@@ -1,4 +1,4 @@
-V0.08-ANIMATION
+V0.08--ANIMATION--
 AddSprite: 	Grass_Block		Objects		TILE_FAST
 AddSprite: 	Dirt_Block		Objects		TILE_FAST
 AddSprite: 	Bottom_Block		Objects		TILE_FAST

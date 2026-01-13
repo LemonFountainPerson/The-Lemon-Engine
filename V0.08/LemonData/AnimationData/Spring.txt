@@ -1,4 +1,4 @@
-V0.08-ANIMATION
+V0.08--ANIMATION--
 AddSprite: 	Spring		Objects		SINGLE
 AddSprite: 	Spring2		Objects		SINGLE
 AddSprite: 	Spring3		Objects		SINGLE

@@ -30,7 +30,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 	}
 
 
-	Object *newObject = createNewObject(objectID, ObjectList);
+	Object *newObject = getNewObject(objectID, ObjectList);
 	
 	if (newObject == NULL)
 	{
@@ -69,9 +69,6 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 	newObject->arg4 = arg4;
 	newObject->arg5 = arg5;
 
-	newObject->ObjectID = objectID;
-	newObject->State = DEFAULT;
-	newObject->Action = IDLE;
 	newObject->layer = MIDDLEGROUND;
 
 	newObject->ObjectDisplay->currentSprite = 1;
@@ -126,6 +123,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 			newObject->ObjectBox->xSize = xSize * X_TILESCALE;
 			newObject->ObjectBox->ySize = ySize * Y_TILESCALE;
 			newObject->State = STATIC;
+			strcpy(newObject->name, "Block");
 
 			if (arg1 > 0)
 			{
@@ -349,12 +347,86 @@ Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int y
 }
 
 
-Object* createNewObject(ObjectType objectID, ObjectController *ObjectList)
+Object* getNewObject(ObjectType objectID, ObjectController *ObjectList)
 {
-	Object *currentObject;
-	currentObject = ObjectList->firstObject;
+	Object *newObject = NULL;
+
+	if (EngineSettings.ObjectPreAllocationEnabled == 1)
+	{
+		newObject = findNewObject(ObjectList);
+	}
+	else
+	{
+		newObject = createNewObject();
+	}
+
+	initialiseGenericObject(newObject, objectID, ObjectList);
+
+	return newObject;
+}
 
 
+int initialiseGenericObject(Object *inputObject, ObjectType objectID, ObjectController *ObjectList)
+{
+	if (inputObject == NULL || ObjectList == NULL || inputObject->ObjectDisplay == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	// reset values
+	resetPhysicsRect(inputObject->ObjectBox);
+	resetDisplayData(inputObject->ObjectDisplay);
+
+
+	Object *currentObject = ObjectList->lastObject;
+
+	if (currentObject != NULL)
+	{
+		inputObject->nextObject = currentObject->nextObject;
+		inputObject->prevObject = currentObject;
+
+		if (currentObject->nextObject != NULL)
+		{
+			// This shouldn't happen, as lastobject should point to the LAST object! (Although i put this in just in case to avoid bad pointer values)
+			currentObject->nextObject->prevObject = inputObject;
+		}
+
+		currentObject->nextObject = inputObject;
+	}
+	else
+	{
+		inputObject->nextObject = NULL;
+		inputObject->prevObject = NULL;
+		ObjectList->firstObject = inputObject;
+	}
+
+	ObjectList->lastObject = inputObject;
+	ObjectList->objectCount++;
+
+	// initialise data
+	inputObject->ObjectDisplay->spriteSetSource = createObjectSpriteSet(ObjectList, objectID);
+
+	inputObject->layer = MIDDLEGROUND;
+	inputObject->Interrupt = NO_INTERRUPT;
+	inputObject->ParentObject = NULL;
+	inputObject->ParentLink = DEFAULT_LINK;
+	inputObject->reserved = AWAITING_UPDATE;
+	strcpy(inputObject->name, "Generic");
+	inputObject->ObjectID = objectID;
+	inputObject->State = DEFAULT;
+	inputObject->Action = IDLE;
+	inputObject->arg1 = 0;
+	inputObject->arg2 = 0;
+	inputObject->arg3 = 0;
+	inputObject->arg4 = 0;
+	inputObject->arg5 = 0;
+
+	return LEMON_SUCCESS;
+}
+
+
+Object* createNewObject(void)
+{
 	Object *newObject = malloc(sizeof(Object));
 
 	if (newObject == NULL)
@@ -381,44 +453,15 @@ Object* createNewObject(ObjectType objectID, ObjectController *ObjectList)
 	if (newObject->ObjectDisplay == NULL)
 	{
 		putConsoleString("\nError: Could not allocate memory for new object's display data.\n");
+		free(newObject->ObjectBox);
 		free(newObject);
 		return NULL;
 	}
 
-	newObject->ObjectDisplay->spriteSetSource = createObjectSpriteSet(ObjectList, objectID);
-
-
-	int i = 0;
-
-	if (currentObject != NULL)
-	{
-		i = 1;
-
-		while (currentObject->nextObject != NULL && i < ObjectList->objectCount)
-		{
-			currentObject = currentObject->nextObject;
-			i++;
-		}
-
-		currentObject->nextObject = newObject;
-	}
-	else
-	{
-		ObjectList->firstObject = newObject;
-	}
-
-	ObjectList->lastObject = newObject;
-
-
-	newObject->nextObject = NULL;
-	newObject->prevObject = currentObject;
-	newObject->State = EMPTY_OBJECT;
 	newObject->ParentObject = NULL;
-	newObject->ParentLink = DEFAULT_LINK;
-	newObject->reserved = AWAITING_UPDATE;
-	strcpy(newObject->name, "Generic");
-
-	ObjectList->objectCount = i + 1;
+	newObject->nextObject = NULL;
+	newObject->prevObject = NULL;
+	newObject->State = EMPTY_OBJECT;
 
 	return newObject;
 }
@@ -426,33 +469,22 @@ Object* createNewObject(ObjectType objectID, ObjectController *ObjectList)
 
 Object* findNewObject(ObjectController *ObjectList)
 {
-	if (ObjectList == NULL || ObjectList->firstObject == NULL)
+	if (ObjectList == NULL || ObjectList->availableSlots == NULL)
 	{
 		return NULL;
 	}
 
-	Object *currentObject;
+	Object *newObject = ObjectList->availableSlots;
+	ObjectList->availableSlots = newObject->nextObject;
 
-	if (ObjectList->lastObject == NULL)
+	if (ObjectList->availableSlots != NULL)
 	{
-		currentObject = ObjectList->firstObject;
-	}
-	else
-	{
-		currentObject = ObjectList->lastObject->nextObject;
+		ObjectList->availableSlots->prevObject = NULL;
 	}
 
-	if (currentObject == NULL || currentObject->State != EMPTY_OBJECT)
-	{
-		return NULL;
-	}
+	newObject->nextObject = NULL;
 
-
-	ObjectList->lastObject = currentObject;
-
-	ObjectList->objectCount++;
-
-	return currentObject;
+	return newObject;
 }
 
 
@@ -540,59 +572,26 @@ Object* deleteObject(Object *input, ObjectController *ObjectList)
 		}
 	}
 	
+
+	if (EngineSettings.ObjectPreAllocationEnabled == 1)
+	{
+		if (ObjectList->availableSlots != NULL)
+		{
+			ObjectList->availableSlots->prevObject = input;
+		}
+
+		input->nextObject = ObjectList->availableSlots;
+		ObjectList->availableSlots = input;
+		input->State = EMPTY_OBJECT;
+
+		return nextObject;
+	}
+	
 	free(input->ObjectDisplay);
 	free(input->ObjectBox);
 	free(input);
 
 	return nextObject;
-}
-
-
-void removePreAllocatedObject(Object *inputObject, ObjectController *ObjectList)
-{
-	if (inputObject == NULL || ObjectList == NULL || ObjectList->lastObject == NULL)
-	{
-		return;
-	}
-
-	inputObject->State = EMPTY_OBJECT;
-	Object *prevObject = inputObject->prevObject;
-	Object *nextObject = inputObject->nextObject;
-
-	inputObject->prevObject = ObjectList->lastObject;
-	inputObject->nextObject = ObjectList->lastObject->nextObject;
-
-	if (ObjectList->lastObject->nextObject == NULL)
-	{
-		ObjectList->lastObject->nextObject;	
-	}
-	else
-	{
-		ObjectList->lastObject->nextObject->prevObject = inputObject;
-	}
-	
-	ObjectList->lastObject->nextObject = inputObject;
-
-	if (prevObject != NULL)
-	{
-		prevObject->nextObject = nextObject;
-	}
-	else
-	{
-		ObjectList->firstObject = nextObject;
-	}
-
-	if (nextObject != NULL)
-	{
-		nextObject->prevObject = prevObject;
-	}
-	else
-	{
-		ObjectList->lastObject = prevObject;
-	}
-
-
-	return;
 }
 
 
@@ -668,31 +667,45 @@ PhysicsRect* createPhysicsRect(SolidType inputSolid)
 		return NULL;
 	}
 
-	newRect->xPos = 0.0;
-	newRect->yPos = 0.0;
-	newRect->prevXPos = 0.0;
-	newRect->prevYPos = 0.0;
-	newRect->xPosRight = 0.0;
-	newRect->yPosTop = 0.0;
-	newRect->xSize = 0;
-	newRect->ySize = 0;
-	newRect->xFlip = 1;
-	newRect->yFlip = 1;
-	newRect->direction = RADIAN_90;
-
+	resetPhysicsRect(newRect);
 	newRect->solid = inputSolid;
-	newRect->collideMode = NO_COLLIDE_TYPE;
-	newRect->collideLayer = MIDDLEGROUND;
-	newRect->xVelocity = 0.0;
-	newRect->yVelocity = 0.0;
-	newRect->PhysicsXVelocity = 0.0;
-	newRect->PhysicsYVelocity = 0.0;
-	newRect->forwardVelocity = 0.0;
-	newRect->crouch = false;
-	newRect->inAir = 0;
-	newRect->GroundBox = NULL;
 
 	return newRect;
+}
+
+
+int resetPhysicsRect(PhysicsRect *input)
+{
+	if (input == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	input->xPos = 0.0;
+	input->yPos = 0.0;
+	input->prevXPos = 0.0;
+	input->prevYPos = 0.0;
+	input->xPosRight = 0.0;
+	input->yPosTop = 0.0;
+	input->xSize = 0;
+	input->ySize = 0;
+	input->xFlip = 1;
+	input->yFlip = 1;
+	input->direction = RADIAN_90;
+
+	input->solid = SOLID;
+	input->collideMode = NO_COLLIDE_TYPE;
+	input->collideLayer = MIDDLEGROUND;
+	input->xVelocity = 0.0;
+	input->yVelocity = 0.0;
+	input->PhysicsXVelocity = 0.0;
+	input->PhysicsYVelocity = 0.0;
+	input->forwardVelocity = 0.0;
+	input->crouch = false;
+	input->inAir = 0;
+	input->GroundBox = NULL;
+
+	return LEMON_SUCCESS;
 }
 
 
@@ -700,28 +713,47 @@ DisplayData* createDisplayData(RenderMode startRenderMode)
 {
 	DisplayData *newDisplay = malloc(sizeof(DisplayData));
 
-	newDisplay->currentSprite = 1;
-	newDisplay->spriteBuffer = NULL;
-	newDisplay->spriteSetSource = NULL;
+	if (newDisplay == NULL)
+	{
+		return NULL;
+	}
+
+	resetDisplayData(newDisplay);
 	newDisplay->RenderModeOverride = startRenderMode;
-	newDisplay->animationSpeed = 1.0;
-
-	newDisplay->size = 1.0;
-	newDisplay->direction = RADIAN_90;
-	newDisplay->spriteXOffset = 0;
-	newDisplay->spriteYOffset = 0;
-	newDisplay->pixelXOffset = 0;
-	newDisplay->pixelYOffset = 0;
-
-	newDisplay->currentAnimation = 0;
-	newDisplay->frameBuffer = NULL;
-	newDisplay->animationBuffer = NULL;
-	newDisplay->animationTick = 0.0;
-	newDisplay->animationLoopCount = 0;
-	newDisplay->transparencyEffect = 1.0;
-	newDisplay->hidden = false;
 
 	return newDisplay;
+}
+
+
+int resetDisplayData(DisplayData *input)
+{
+	if (input == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	input->currentSprite = 1;
+	input->spriteBuffer = NULL;
+	input->spriteSetSource = NULL;
+	input->RenderModeOverride = DEFAULT_TO_SPRITE;
+	input->animationSpeed = 1.0;
+
+	input->size = 1.0;
+	input->direction = RADIAN_90;
+	input->spriteXOffset = 0;
+	input->spriteYOffset = 0;
+	input->pixelXOffset = 0;
+	input->pixelYOffset = 0;
+
+	input->currentAnimation = 0;
+	input->frameBuffer = NULL;
+	input->animationBuffer = NULL;
+	input->animationTick = 0.0;
+	input->animationLoopCount = 0;
+	input->transparencyEffect = 1.0;
+	input->hidden = false;
+
+	return LEMON_SUCCESS;
 }
 
 
@@ -795,7 +827,7 @@ int switchObjectSprite(int spriteID, Object *inputObject)
 
 	DisplayData *ObjectDisplay = inputObject->ObjectDisplay;
 
-	if (inputObject->ObjectID == LEVEL_FLAG_OBJ || ObjectDisplay->spriteBuffer != NULL && ObjectDisplay->spriteBuffer->spriteID == spriteID)
+	if (inputObject->ObjectID == LEVEL_FLAG_OBJ || (ObjectDisplay->spriteBuffer != NULL && ObjectDisplay->spriteBuffer->spriteID == spriteID) )
 	{
 		ObjectDisplay->currentSprite = spriteID;
 		return EXECUTION_UNNECESSARY;
@@ -1561,10 +1593,6 @@ int applyMagnetisation(PhysicsRect *inputBox, PhysicsRect *GroundBox, World *Gam
 		return EXECUTION_UNNECESSARY;
 	}
 
-
-	double savedXVelocity = inputBox->xVelocity;
-	double savedYVelocity = inputBox->yVelocity;
-
 	
 	// Ensure that velocity applied is not necessary in the case of it moving against gravity
 	double pixelXDifference = (int)GroundBox->xPos - (int)GroundBox->prevXPos;
@@ -1878,6 +1906,7 @@ int UpdateCoin(Object *coin, World *GameWorld)
 		Lemon_PlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.75);
 	}
 
+/*
 	if (keyboard[LMN_INTERACT2] || coin->arg1 > 0)
 	{
 		if (DistanceBetween(coin, Player->PlayerPtr) < 25000.0)
@@ -1892,7 +1921,7 @@ int UpdateCoin(Object *coin, World *GameWorld)
 			coinBox->forwardVelocity += 1.5;
 		}
 	}
-
+*/
 
 	return LEMON_SUCCESS;
 }
@@ -2333,8 +2362,6 @@ Object* InitialiseMovingPlatform(Object *inputObject, int objectID, int xPos, in
 
 int UpdateHorizontalPlatform(Object *platform)
 {
-	int YPos = platform->ObjectBox->yPos;
-	int YPos2 = platform->ObjectBox->yPos + platform->ObjectBox->ySize;
 	int XPos = platform->ObjectBox->xPos;
 	int XPos2 = platform->ObjectBox->xPos + platform->ObjectBox->xSize;
 
@@ -2374,7 +2401,7 @@ int UpdateHorizontalPlatform(Object *platform)
 	}
 
 	// Deccelerate
-	if (XPos2 >= rightBound && platform->arg4 > 0 || XPos <= leftBound && platform->arg4 < 0)
+	if ((XPos2 >= rightBound && platform->arg4 > 0) || (XPos <= leftBound && platform->arg4 < 0))
 	{
 		platform->ObjectBox->xVelocity *= 0.9;
 	}
@@ -2394,8 +2421,6 @@ int UpdateVerticalPlatform(Object *platform)
 {
 	int YPos = platform->ObjectBox->yPos;
 	int YPos2 = platform->ObjectBox->yPos + platform->ObjectBox->ySize;
-	int XPos = platform->ObjectBox->xPos;
-	int XPos2 = platform->ObjectBox->xPos + platform->ObjectBox->xSize;
 
 	int bottomBound = platform->arg1;
 	int topBound = platform->arg2;
@@ -2433,7 +2458,7 @@ int UpdateVerticalPlatform(Object *platform)
 	}
 
 	// Deccelerate
-	if (YPos2 >= topBound && platform->arg4 > 0 || YPos <= bottomBound && platform->arg4 < 0)
+	if ((YPos2 >= topBound && platform->arg4 > 0) || (YPos <= bottomBound && platform->arg4 < 0))
 	{
 		platform->ObjectBox->yVelocity *= 0.9;
 	}
@@ -2466,9 +2491,9 @@ int UpdateDoor(PlayerData Player, Object *Door, World *GameWorld)
 		{
 			SayText("The door seems to be blocked on the \nother side.", NO_PORTRAIT, BASIC_FADE, GameWorld);
 			SayTextOption("", NO_PORTRAIT, BASIC_FADE, GameWorld, 3, 
-				"W-what? What is it?", 			NULL, NULL, 
-				"I SCREAM I SHOUT", 			NULL, NULL,
-				"Actually i'm okay with this",	NULL, NULL);
+				"W-what? What is it?", 			NO_ACTION, 
+				"I SCREAM I SHOUT", 			NO_ACTION,
+				"Actually i'm okay with this",	NO_ACTION);
 		}
 		else
 		{
@@ -2477,9 +2502,9 @@ int UpdateDoor(PlayerData Player, Object *Door, World *GameWorld)
 			SayText("....Or is it?\n\rIt just looks like a big pink and black rectangle...", "Test_Face", BASIC_FADE, GameWorld);
 
 			SayTextOption("Enter the Door?", "Test_Face", BASIC_FADE, GameWorld, 3, 
-				"Yes", &TeleportPlayerToExitDoor, Door, 
-				"No", NULL, NULL,
-				"hm... lemme think aout it", &StartCutscene, TEST_SCENE_2);
+				"Yes", MOVE_PLAYER_TO_EXIT_DOOR, Door, 
+				"No", NO_ACTION,
+				"hm... lemme think aout it", START_CUTSCENE, TEST_SCENE_2);
 		}
 
 		GoTo(Player.PlayerPtr, savedXPos, savedYPos);
@@ -2489,16 +2514,14 @@ int UpdateDoor(PlayerData Player, Object *Door, World *GameWorld)
 } 
 
 
-int TeleportPlayerToExitDoor(Object *Door, void *GameWorld)
-{
-	World *WorldPtr = (World*)GameWorld;
-	
-	if (WorldPtr == NULL || Door == NULL || WorldPtr->Player.PlayerBox == NULL)
+int TeleportPlayerToExitDoor(Object *Door, World *GameWorld)
+{	
+	if (GameWorld == NULL || Door == NULL || GameWorld->Player.PlayerBox == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	PlayerData *Player = &WorldPtr->Player;
+	PlayerData *Player = &GameWorld->Player;
 
 	GoTo(Player->PlayerPtr, Door->arg1, Door->arg2);
 
@@ -2530,8 +2553,7 @@ int UpdateLevelDoor(PlayerData Player, Object *Door, World *GameWorld)
 
 	if (Door->arg2 > 0 && GameWorld->TextQueue == NULL)
 	{
-		GameWorld->GameEvent = SWITCH_LEVEL;
-		GameWorld->GameEventData.newLevelID = Door->arg1;
+		switchLevel(Door->arg1, GameWorld);
 		Door->arg2 = 0;
 	}
 
@@ -3324,18 +3346,6 @@ int CheckBoxCollidesBox(PhysicsRect *inputBox, PhysicsRect *compareBox)
 		return 0;
 	}
 
-	int inputX = inputBox->xPos;
-	int inputXRight = inputBox->xPos + inputBox->xSize;
-	int inputY = inputBox->yPos;
-	int inputYTop = inputBox->yPos + inputBox->ySize;
-
-
-	int compareX = compareBox->xPos;
-	int compareXRight = compareBox->xPos + compareBox->xSize;
-	int compareY = compareBox->yPos;
-	int compareYTop = compareBox->yPos + compareBox->ySize;
-
-
 	switch(inputBox->solid)
 	{		
 		case JUMP_THROUGH:
@@ -3913,12 +3923,12 @@ int moveObjectForward(PhysicsRect *movingBox, ObjectController *ObjectList)
 		cosVal = 0.0;
 	}
 
-	double xDest = movingBox->xPos + (sinVal * movingBox->forwardVelocity);
-	double yDest = movingBox->yPos + (cosVal * movingBox->forwardVelocity);
+	//double xDest = movingBox->xPos + (sinVal * movingBox->forwardVelocity);
+	//double yDest = movingBox->yPos + (cosVal * movingBox->forwardVelocity);
 
-	double xTravel = floor(xDest) - floor(movingBox->xPos);
-	double yTravel = floor(yDest) - floor(movingBox->yPos);
-	double travelDistance = sqrt(pow(xTravel, 2.0) + pow(yTravel, 2.0));
+	//double xTravel = floor(xDest) - floor(movingBox->xPos);
+	//double yTravel = floor(yDest) - floor(movingBox->yPos);
+	//double travelDistance = sqrt(pow(xTravel, 2.0) + pow(yTravel, 2.0));
 	
 
 	double xStep = orientation * sinVal;
@@ -4246,8 +4256,7 @@ int ResolveAllYCollision(PhysicsRect *movingBox, ObjectController *ObjectList)
 
 
 	int count = 0;
-	Object *currentObject;
-	currentObject = GetCollidingObject(movingBox, ObjectList);
+	Object *currentObject = GetCollidingObject(movingBox, ObjectList);
 
 	while (currentObject != NULL && count < COLLISION_CYCLES)
 	{
@@ -4410,23 +4419,19 @@ int ResolveXCollisionByPush(PhysicsRect *movingBox, PhysicsRect *compareBox)
 	}
 
 
-	double ObjXPos = movingBox->xPos;
-	double ObjXPosRight = movingBox->xPos + movingBox->xSize;
-	double ObjYPos = movingBox->yPos;
-	double ObjYPosTop = movingBox->yPos + movingBox->ySize;
+	float ObjXPos = movingBox->xPos;
+	float ObjXPosRight = movingBox->xPos + movingBox->xSize;
+	float ObjYPos = movingBox->yPos;
 
-	double prevXPosRight = movingBox->prevXPos + movingBox->xSize;
-	double prevXPosCenter = movingBox->prevXPos + (movingBox->xSize >> 1);
-
-
-	int result = 0;
+	float prevXPosRight = movingBox->prevXPos + movingBox->xSize;
+	float prevXPosCenter = movingBox->prevXPos + (movingBox->xSize >> 1);
 
 	switch(movingBox->solid)
 	{
 		case FLAT_SLOPE:
 			if (movingBox->xFlip == 1)
 			{
-				int slopeLeftEdge = (int)((compareBox->yPos - ObjYPos) / ((double)movingBox->ySize/(double)movingBox->xSize));
+				int slopeLeftEdge = (int)((compareBox->yPos - ObjYPos) / ((float)movingBox->ySize/(float)movingBox->xSize));
 				slopeLeftEdge = clamp(slopeLeftEdge, 0, movingBox->xSize);
 
 				ObjXPos = slopeLeftEdge + ObjXPos;
@@ -4434,7 +4439,7 @@ int ResolveXCollisionByPush(PhysicsRect *movingBox, PhysicsRect *compareBox)
 			}
 			else
 			{
-				int slopeLeftEdge = (int)(movingBox->xSize - ((compareBox->yPos - ObjYPos) / ((double)movingBox->ySize/(double)movingBox->xSize)) );
+				int slopeLeftEdge = (int)(movingBox->xSize - ((compareBox->yPos - ObjYPos) / ((float)movingBox->ySize/(float)movingBox->xSize)) );
 				slopeLeftEdge = clamp(slopeLeftEdge, 0, movingBox->xSize);
 
 				ObjXPosRight = slopeLeftEdge + ObjXPos;
@@ -4516,29 +4521,25 @@ int ResolveYCollisionByPush(PhysicsRect *movingBox, PhysicsRect *compareBox)
 		return MISSING_DATA;
 	}
 
-	double ObjXPos = movingBox->xPos;
-	double ObjXPosRight = movingBox->xPos + movingBox->xSize;
-	double ObjYPos = movingBox->yPos;
-	double ObjYPosTop = movingBox->yPos + movingBox->ySize;
+	float ObjYPos = movingBox->yPos;
+	float ObjYPosTop = movingBox->yPos + movingBox->ySize;
 
-	double prevYCenter = movingBox->prevYPos + (movingBox->ySize >> 1);
+	float prevYCenter = movingBox->prevYPos + (movingBox->ySize >> 1);
 
-
-	int result = 0;
 
 	switch(movingBox->solid)
 	{
 		case FLAT_SLOPE:
 			if (movingBox->xFlip == 1)
 			{
-				int slopeFloor = (int)( ((compareBox->xPos + compareBox->xSize - movingBox->xPos) * ((double)movingBox->ySize/(double)movingBox->xSize)) );
+				int slopeFloor = (int)( ((compareBox->xPos + compareBox->xSize - movingBox->xPos) * ((float)movingBox->ySize/(float)movingBox->xSize)) );
 				slopeFloor = clamp(slopeFloor, 0, movingBox->ySize);
 
 				ObjYPosTop = slopeFloor + ObjYPos;
 			}
 			else
 			{
-				int slopeFloor = (int)( ((movingBox->xSize - (compareBox->xPos - movingBox->xPos)) * ((double)movingBox->ySize/(double)movingBox->xSize)) );
+				int slopeFloor = (int)( ((movingBox->xSize - (compareBox->xPos - movingBox->xPos)) * ((float)movingBox->ySize/(float)movingBox->xSize)) );
 				slopeFloor = clamp(slopeFloor, 0, movingBox->ySize);
 
 				ObjYPosTop = slopeFloor + ObjYPos;

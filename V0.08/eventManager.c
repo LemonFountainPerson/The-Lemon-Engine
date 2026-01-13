@@ -44,14 +44,39 @@ int HandleGameWorldEvents(World *GameWorld, RenderFrame *ScreenData)
 	}
 
 
-	if (GameWorld->GameEvent == NO_EVENT)
+	if (GameWorld->GameEvents.EventID == NO_EVENT && GameWorld->GameEvents.additionalEvent == NULL)
 	{
 		return EXECUTION_UNNECESSARY;
 	}
 
-	LemonGameEventData *EventData = &GameWorld->GameEventData;
+	GameEvent *currentEvent = &GameWorld->GameEvents;
+	int i = 0;
 
-	switch (GameWorld->GameEvent)
+	while (currentEvent != NULL && i < EngineSettings.MaxGameEvents)
+	{
+		ExecuteGameEvent(currentEvent, GameWorld, ScreenData);
+		currentEvent = currentEvent->additionalEvent;
+
+		i++;
+	}
+
+	clearGameEvents(GameWorld);
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *ScreenData)
+{
+	if (inputEvent == NULL || GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameEventData *EventData = &inputEvent->EventData;
+
+	switch (inputEvent->EventID)
 	{
 		case SWITCH_LEVEL:
 			if (EventData->newLevelID > -1)
@@ -60,39 +85,39 @@ int HandleGameWorldEvents(World *GameWorld, RenderFrame *ScreenData)
 			}
 			break;
 
-		case SET_SCREEN_ZOOM:
+		case SET_CAMERA_ZOOM:
 			{
-				setCameraZoom(EventData->zoomScales[0], EventData->zoomScales[1], &GameWorld->MainCamera, ScreenData);
+				applyCameraZoom(EventData->zoomScales[0], EventData->zoomScales[1], &GameWorld->MainCamera, ScreenData);
 			} break;
 
-		case CHANGE_SCREEN_ZOOM:
+		case CHANGE_CAMERA_ZOOM:
 			{
-				setCameraZoom((GameWorld->MainCamera.zoomX + EventData->zoomScales[0]), (GameWorld->MainCamera.zoomY + EventData->zoomScales[1]), &GameWorld->MainCamera, ScreenData);
+				applyCameraZoom((GameWorld->MainCamera.zoomX + EventData->zoomScales[0]), (GameWorld->MainCamera.zoomY + EventData->zoomScales[1]), &GameWorld->MainCamera, ScreenData);
 			} break;
 
 		case SET_SCREEN_AND_RENDERER_SIZE:
 			{
-				setScreenAndRendererSize(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
+				applyScreenAndRendererSize(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
 			} break;
 
 		case CHANGE_SCREEN_SIZE:
 			{	
-				setScreenSize(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
+				applyScreenSize(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
 			} break;
 
 		case CHANGE_SCREEN_SIZE_SCALE:
 			{
-				setScreenSizeScale(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
+				applyScreenSizeScale(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
 			} break;
 
 		case ENABLE_FULLSCREEN:
 			{
-				enableFullscreen(ScreenData);
+				applyEnableFullscreen(ScreenData);
 			} break;
 
 		case DISABLE_FULLSCREEN:
 			{
-				disableFullscreen(ScreenData);
+				applyDisableFullscreen(ScreenData);
 			} break;
 
 		case ENABLE_FULLSCREEN_SCALE:
@@ -116,20 +141,384 @@ int HandleGameWorldEvents(World *GameWorld, RenderFrame *ScreenData)
 				ScreenData->Fullscreen = true;
 			} break;
 
+		case STREAM_LEVEL_PARTITION:
+			{
+				int result = loadLevelDataChunk(GameWorld, EventData->loadedFile, 2);
+				if (result != LEMON_SUCCESS)
+				{
+					fclose(EventData->loadedFile);
+					inputEvent->canDelete = true;
+				}
+			} break;
+
 		default:
 			break;
 	}
 
+	return LEMON_SUCCESS;
+}
 
-	GameWorld->GameEvent = NO_EVENT;
-	memset(EventData, 0, sizeof(LemonGameEventData));
+
+int deleteAllGameEvents(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameWorld->GameEvents.EventID = NO_EVENT;
+
+	if (GameWorld->GameEvents.additionalEvent == NULL)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	GameEvent *sourcePtr = &GameWorld->GameEvents;
+	GameEvent *deletePtr = NULL;
+
+	while (sourcePtr->additionalEvent != NULL)
+	{
+		deletePtr = sourcePtr->additionalEvent;
+
+		sourcePtr->additionalEvent = deletePtr->additionalEvent;
+
+		// necessary to avoid crash/unfreed memory if program closes during a stream
+		if (!deletePtr->canDelete && deletePtr->EventID == STREAM_LEVEL_PARTITION)
+		{
+			fclose(deletePtr->EventData.loadedFile);
+		}
+
+		free(deletePtr);
+	}
+
+	return LEMON_SUCCESS;
+}
+
+int clearGameEvents(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (GameWorld->GameEvents.canDelete)
+	{
+		GameWorld->GameEvents.EventID = NO_EVENT;
+	}
+
+	if (GameWorld->GameEvents.additionalEvent == NULL)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	GameEvent *searchPtr = &GameWorld->GameEvents;
+	GameEvent *deletePtr = NULL;
+
+	while (searchPtr->additionalEvent != NULL)
+	{
+		deletePtr = searchPtr->additionalEvent;
+
+		if (deletePtr->canDelete)
+		{
+			searchPtr->additionalEvent = deletePtr->additionalEvent;
+			free(deletePtr);
+		}
+		else
+		{
+			searchPtr = deletePtr;
+		}
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+GameEvent* addNewGameEvent(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	if (GameWorld->GameEvents.EventID == NO_EVENT)
+	{
+		return &GameWorld->GameEvents;
+	}
+
+	GameEvent *eventPtr = &GameWorld->GameEvents;
+	int i = 0;
+	while (eventPtr->additionalEvent != NULL && i < EngineSettings.MaxGameEvents)
+	{
+		eventPtr = eventPtr->additionalEvent;
+		i++;
+	}
+
+	if (eventPtr->additionalEvent != NULL)
+	{
+		return NULL;
+	}
+
+	eventPtr->additionalEvent = malloc(sizeof(GameEvent));
+	if (eventPtr->additionalEvent == NULL)
+	{
+		return NULL;
+	}
+
+	eventPtr = eventPtr->additionalEvent;
+	memset(eventPtr, 0, sizeof(GameEvent));
+	eventPtr->additionalEvent = NULL;
+	eventPtr->EventID = NO_EVENT;
+	eventPtr->canDelete = true;
+
+
+	return eventPtr;
+}
+
+int switchLevel(int level, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (level < 0)
+	{
+		return INVALID_DATA;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	newEvent->EventID = SWITCH_LEVEL;
+	newEvent->EventData.newLevelID = level;
+
+	return LEMON_SUCCESS;
+}
+
+int streamPartition(int sceneID, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (sceneID < 0)
+	{
+		return INVALID_DATA;
+	}
+
+	char fileName[MAX_LEN] = {0};
+	snprintf(fileName, MAX_LEN, "Level%d_Part%d", GameWorld->level, sceneID);
+
+	FILE *fPtr = openFile(fileName, LEVELDATA_ROOT, "--PARTITION_DATA--");
+
+	if (fPtr == NULL)
+	{
+		return INVALID_DATA;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	newEvent->EventID = STREAM_LEVEL_PARTITION;
+	newEvent->EventData.loadedFile = fPtr;
+	newEvent->canDelete = false;
 
 
 	return LEMON_SUCCESS;
 }
 
 
-int setCameraZoom(float newZoomX, float newZoomY, Camera *inputCamera, RenderFrame *ScreenData)
+int changeScreenSizeScaled(int newWidth, int newHeight, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	newEvent->EventID = CHANGE_SCREEN_SIZE_SCALE;
+	newEvent->EventData.screenDimensions[0] = newWidth;
+	newEvent->EventData.screenDimensions[1] = newHeight;
+
+	return LEMON_SUCCESS;
+}
+
+int changeScreenSize(int newWidth, int newHeight, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	newEvent->EventID = CHANGE_SCREEN_SIZE;
+	newEvent->EventData.screenDimensions[0] = newWidth;
+	newEvent->EventData.screenDimensions[1] = newHeight;
+
+	return LEMON_SUCCESS;
+}
+
+int setScreenAndRendererSize(int newWidth, int newHeight, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	newEvent->EventID = SET_SCREEN_AND_RENDERER_SIZE;
+	newEvent->EventData.screenDimensions[0] = newWidth;
+	newEvent->EventData.screenDimensions[1] = newHeight;
+
+	return LEMON_SUCCESS;
+}
+
+int enableFullscreen(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	newEvent->EventID = ENABLE_FULLSCREEN;
+
+	return LEMON_SUCCESS;
+}
+
+int enableFullscreenScaled(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	newEvent->EventID = ENABLE_FULLSCREEN_SCALE;
+
+	return LEMON_SUCCESS;
+}
+
+int disableFullscreen(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	newEvent->EventID = DISABLE_FULLSCREEN;
+
+	return LEMON_SUCCESS;
+}
+
+int toggleFullscreen(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	if (ScreenData.Fullscreen == true)
+	{
+		newEvent->EventID = DISABLE_FULLSCREEN;
+	}
+	else
+	{
+		newEvent->EventID = DISABLE_FULLSCREEN;
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int setCameraZoom(float zoomX, float zoomY, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	newEvent->EventID = SET_CAMERA_ZOOM;
+	newEvent->EventData.zoomScales[0] = zoomX;
+	newEvent->EventData.zoomScales[1] = zoomY;
+
+	return LEMON_SUCCESS;
+}
+
+
+int changeCameraZoom(float zoomX, float zoomY, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	newEvent->EventID = CHANGE_CAMERA_ZOOM;
+	newEvent->EventData.zoomScales[0] = zoomX;
+	newEvent->EventData.zoomScales[1] = zoomY;
+
+	return LEMON_SUCCESS;
+}
+
+
+int applyCameraZoom(float newZoomX, float newZoomY, Camera *inputCamera, RenderFrame *ScreenData)
 {
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL || inputCamera == NULL)
 	{
@@ -159,7 +548,7 @@ int setCameraZoom(float newZoomX, float newZoomY, Camera *inputCamera, RenderFra
 }
 
 
-int setScreenAndRendererSize(int newWidth, int newHeight, RenderFrame *ScreenData)
+int applyScreenAndRendererSize(int newWidth, int newHeight, RenderFrame *ScreenData)
 {
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 	{
@@ -190,7 +579,7 @@ int setScreenAndRendererSize(int newWidth, int newHeight, RenderFrame *ScreenDat
 }
 
 
-int setScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData)
+int applyScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData)
 {
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 	{
@@ -224,7 +613,7 @@ int setScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData)
 }
 
 
-int setScreenSizeScale(int newWidth, int newHeight, RenderFrame *ScreenData)
+int applyScreenSizeScale(int newWidth, int newHeight, RenderFrame *ScreenData)
 {
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 	{
@@ -250,7 +639,7 @@ int setScreenSizeScale(int newWidth, int newHeight, RenderFrame *ScreenData)
 }
 
 
-int enableFullscreen(RenderFrame *ScreenData)
+int applyEnableFullscreen(RenderFrame *ScreenData)
 {
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 	{
@@ -276,7 +665,7 @@ int enableFullscreen(RenderFrame *ScreenData)
 }
 
 
-int disableFullscreen(RenderFrame *ScreenData)
+int applyDisableFullscreen(RenderFrame *ScreenData)
 {
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 	{
@@ -522,7 +911,6 @@ int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld)
 		{
 			StartCutscene(inputObject->arg2, GameWorld);
 			MarkObjectForDeletion(inputObject);
-			inputObject->Action = 2;
 		} break;
 
 
@@ -530,7 +918,6 @@ int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld)
 		if (detectCamera(inputObject, GameWorld->MainCamera))
 		{
 			switchBackGroundSprite(inputObject->arg2, inputObject->arg3, &GameWorld->WorldBackground);
-			inputObject->Action = 2;
 		} break;
 
 
@@ -557,9 +944,16 @@ int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld)
 				GameWorld->MainCamera.maxCameraY = inputObject->arg5;
 			}	
 
-			inputObject->Action = 2;
+			MarkObjectForDeletion(inputObject);
 		} break;
 
+
+		case STREAM_PARTITION_TRIGGER:
+		if (detectCamera(inputObject, GameWorld->MainCamera))
+		{
+			streamPartition(inputObject->arg2, GameWorld);
+		}
+		break;
 
 		default:
 		MarkObjectForDeletion(inputObject);

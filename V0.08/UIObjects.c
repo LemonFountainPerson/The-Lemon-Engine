@@ -567,29 +567,21 @@ int VideoSettingsControl(Object *MenuController, World *GameWorld)
 	{
 		switch (MenuController->arg2)
 		{
+			// THIS IS TEMPORARY - NEED TO IMPLEMENT SOME KIND OF SCREEN SIZE SELECTOR GUI
 			case 0:
-				// THIS IS TEMPORARY - NEED TO IMPLEMENT SOME KIND OF SCREEN SIZE SELECTOR GUI
-				GameWorld->GameEvent = CHANGE_SCREEN_SIZE_SCALE;
-				GameWorld->GameEventData.screenDimensions[0] = 640;		// new width
-				GameWorld->GameEventData.screenDimensions[1] = 360;		// new height
+				changeScreenSizeScaled(640, 360, GameWorld);
 				break;
 
 			case 1:
-				GameWorld->GameEvent = CHANGE_SCREEN_SIZE_SCALE;
-				GameWorld->GameEventData.screenDimensions[0] = 1280;	
-				GameWorld->GameEventData.screenDimensions[1] = 720;	
+				changeScreenSizeScaled(1280, 720, GameWorld);
 				break;
 
 			case 2:
-				GameWorld->GameEvent = CHANGE_SCREEN_SIZE;
-				GameWorld->GameEventData.screenDimensions[0] = 640;	
-				GameWorld->GameEventData.screenDimensions[1] = 360;	
-				break;
+				changeScreenSize(640, 360, GameWorld);	
+				break; 
 
 			case 3:
-				GameWorld->GameEvent = CHANGE_SCREEN_SIZE;
-				GameWorld->GameEventData.screenDimensions[0] = 1280;	
-				GameWorld->GameEventData.screenDimensions[1] = 720;	
+				changeScreenSize(1280, 720, GameWorld);
 				break;
 
 			default:
@@ -767,8 +759,6 @@ int InitialiseUIText(Object *UIText, World *GameWorld)
 	UIText->ObjectBox->collideLayer = HUD;
 	UIText->ObjectBox->solid = UNSOLID;
 
-	TextInstance *currentText = GameWorld->TextQueue;
-
 	switch(UIText->arg1)
 	{
 		case UNDEFINED_UI_ELEMENT:
@@ -783,8 +773,7 @@ int InitialiseUIText(Object *UIText, World *GameWorld)
 		break;
 
 		case TEXT_CHARACTER:
-		int charValue = currentText->textPhrase[currentText->currentChar];
-		initialiseTextCharacter(UIText, charValue, GameWorld);
+		initialiseTextCharacter(UIText, UIText->arg2, GameWorld);
 		break;
 
 		case TEXT_PORTRAIT:
@@ -886,10 +875,13 @@ TextInstance* SayTextOption(const char inputPhrase[], const char Portrait[], Tex
     	eventTrigger = &textData->optionTriggers[i];
 
     	strcpy(textData->optionNames[i], va_arg(args, char*));
-    	
-    	eventTrigger->TriggerFunction = va_arg(args, void*);
 
-    	AddFunctionArgumentsToTriggerEvent(eventTrigger, va_arg(args, void*));
+    	eventTrigger->TriggerFunction = va_arg(args, TriggerableFunctionID);
+
+    	if (eventTrigger->TriggerFunction != NO_ACTION)
+    	{
+    		AddFunctionArgumentsToTriggerEvent(eventTrigger, va_arg(args, void*));
+    	}
     }
     va_end(args);
 
@@ -897,9 +889,9 @@ TextInstance* SayTextOption(const char inputPhrase[], const char Portrait[], Tex
 }
 
 
-int AddTriggerableEventToText(TextInstance *inputText, void *triggerFunction, void *functionInput)
+int AddTriggerableEventToText(TextInstance *inputText, TriggerableFunctionID triggerFunction, void *functionInput)
 {
-	if (inputText == NULL || triggerFunction == NULL)
+	if (inputText == NULL || triggerFunction < 0)
 	{
 		return MISSING_DATA;
 	}
@@ -928,7 +920,7 @@ int AddFunctionArgumentsToTriggerEvent(struct TextEventTrigger *eventTrigger, vo
 		return MISSING_DATA;
 	}
 
-	if (eventTrigger->TriggerFunction == &StartCutscene)
+	if (eventTrigger->TriggerFunction == START_CUTSCENE)
 	{
 		eventTrigger->FunctionArguments.cutscene = (CutsceneID)functionInput;
 	}
@@ -1089,7 +1081,7 @@ TextInstance* CreateText(const char inputPhrase[], World *GameWorld)
 	memset(newText->font, 0, MAX_LEN);
 	memset(newText->textBoxSprite, 0, MAX_LEN);
 	newText->PortraitPosition = INSIDE_BOX_LEFT;
-	newText->Skippable = 1;
+	newText->Skippable = true;
 	newText->voiceMode = PLAY_EACH_CHARACTER;
 
 	if (GameWorld->TextQueue == NULL)
@@ -1152,7 +1144,7 @@ int updateText(World *GameWorld)
 	}
 
 	// Skip text animation if skip button is held
-	if (keyboard[LMN_TEXT_SKIP] && currentText->Skippable == 1)
+	if (keyboard[LMN_TEXT_SKIP] && currentText->Skippable == true)
 	{
 		keyboard[LMN_TEXT_CONFIRM] = 0;
 
@@ -1183,13 +1175,13 @@ int updateText(World *GameWorld)
 
 bool textSceneActionPresent(TextInstance *inputText, World *GameWorld)
 {
-	if (inputText == NULL || inputText->currentChar != 0 || GameWorld == NULL || GameWorld->SceneActionList == NULL)
+	if (inputText == NULL || inputText->currentChar != 0 || GameWorld == NULL || GameWorld->SceneActionQueue == NULL)
 	{
 		return true;
 	}
 
 
-	SceneAction *currentAction = GameWorld->SceneActionList;
+	SceneAction *currentAction = GameWorld->SceneActionQueue;
 
 	while (currentAction != NULL)
 	{
@@ -1212,13 +1204,13 @@ bool textSceneActionPresent(TextInstance *inputText, World *GameWorld)
 
 void DeleteTextSceneAction(TextInstance *inputText, World *GameWorld)
 {
-	if (inputText == NULL || GameWorld == NULL || GameWorld->SceneActionList == NULL)
+	if (inputText == NULL || GameWorld == NULL || GameWorld->SceneActionQueue == NULL)
 	{
 		return;
 	}
 
 
-	SceneAction *currentAction = GameWorld->SceneActionList;
+	SceneAction *currentAction = GameWorld->SceneActionQueue;
 
 	while (currentAction != NULL)
 	{
@@ -1243,7 +1235,7 @@ int playTextVoice(TextInstance *currentText)
 		return MISSING_DATA;
 	}
 
-	if (currentText->voice != NULL && currentText->voice[0] > 32)
+	if (currentText->voice[0] > 32)
 	{
 		Lemon_PlaySound(currentText->voice, "Voices", SPEECH, 1.0);
 
@@ -1397,7 +1389,7 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 	int newTextXPos = inputText->currentXPos + (int)inputText->boxPtr->ObjectBox->xPos;
 	int newTextYPos = inputText->currentYPos + (int)inputText->boxPtr->ObjectBox->yPos;
 
-	AddObject(GameWorld, UI_TEXT, newTextXPos, newTextYPos, 0, 0, TEXT_CHARACTER, 0, 0, 0, 0);
+	AddObject(GameWorld, UI_TEXT, newTextXPos, newTextYPos, 0, 0, TEXT_CHARACTER, currentChar, 0, 0, 0);
 	applyCharacterSpacing(inputText);
 
 	inputText->currentChar++;
@@ -1549,21 +1541,29 @@ int endTextInstance(World *GameWorld)
 
 int runTriggerableFunction(struct TextEventTrigger *DataPtr, World *GameWorld)
 {
-	if (DataPtr == NULL || DataPtr->TriggerFunction == NULL)
+	if (DataPtr == NULL || DataPtr->TriggerFunction < 0)
 	{
 		return MISSING_DATA;
 	}
 
-	if (DataPtr->TriggerFunction == &StartCutscene)
+	switch (DataPtr->TriggerFunction)
 	{
+	case START_CUTSCENE:
 		StartCutscene(DataPtr->FunctionArguments.cutscene, GameWorld);
+		break;
+
+	case MOVE_PLAYER_TO_EXIT_DOOR:
+		TeleportPlayerToExitDoor(DataPtr->FunctionArguments.TriggerObject, GameWorld);
+		break;
+
+	default:
+		break;
 	}
-	else 
-	{
+
+
 		// This is inherently unsafe, may be removed in the future with specific functions (such as startCutscene) added instead
-		TriggerableFunction function = (TriggerableFunction)DataPtr->TriggerFunction;
-		(function)(DataPtr->FunctionArguments.TriggerObject, (void*)GameWorld);
-	}
+		//TriggerableFunction function = (TriggerableFunction)DataPtr->TriggerFunction;
+		//(function)(DataPtr->FunctionArguments.TriggerObject, (void*)GameWorld);
 
 	return LEMON_SUCCESS;
 }

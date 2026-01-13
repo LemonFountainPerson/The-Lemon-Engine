@@ -39,13 +39,13 @@ int getAnimationIndex(const char animationName[], DisplayData *inputData);
 int iterateAnimation(DisplayData *inputData);
 
 
-Animation* initialiseNewAnimation(const char animationName[], double frameRate, SpriteSet *inputSet);
+Animation* initialiseNewAnimation(const char animationName[], float frameRate, SpriteSet *inputSet);
 
 
 AnimationFrame* addSpriteToAnimation(const char spriteName[], Animation *inputAnimation, SpriteSet *sourceSet);
 
 
-AnimationFrame* addSpriteToAnimationWithAttributes(const char spriteName[], Animation *inputAnimation, SpriteSet *sourceSet, int XOffset, int YOffset, float rotation);
+AnimationFrame* addSpriteToAnimationWithAttributes(const char spriteName[], Animation *inputAnimation, SpriteSet *sourceSet, float XOffset, float YOffset, float rotation);
 
 
 int deleteAnimation(SpriteSet *inputSet, Animation *deleteAnimation);

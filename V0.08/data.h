@@ -34,6 +34,7 @@
 
 #define MAX_SOUNDS_PER_CHANNEL 16
 #define MAX_TEXTQUEUE_LENGTH 200			// Number of textInstances allowed in the TextQueue at once
+#define MAX_QUEUED_GAME_EVENTS 16
 
 #define MAX_OBJECTS 15000
 #define MAX_PARTICLES 1000
@@ -43,9 +44,8 @@
 #define X_WORLD_BOUND 100000.0
 #define Y_WORLD_BOUND 100000.0
 
-#define MULTITHREADED_ENABLED 	false
-#define HARDWARE_RENDERING 		false
-#define OBJECT_PREALLOCATION 	false  			// UNIMPLEMENTED
+#define MULTITHREADED_ENABLED 	false 		// UNIMPLEMENTED
+#define OBJECT_PREALLOCATION 	true  		
 
 #define DEFAULT_TEXTURE "Missing.png"
 
@@ -73,6 +73,7 @@
 #define DEBUG_TEXT_MAX_LENGTH 400
 
 #define MAX_LEN 80
+#define INT_MAX_LEN 20
 
 #define ENCRYPT_OFFSET 600	
 
@@ -294,7 +295,7 @@ typedef enum LemonGameState
 } LemonGameState;
 
 
-typedef enum LemonGameEvent 
+typedef enum GameEventID
 {
 	NO_EVENT = 0,
 	SWITCH_LEVEL,
@@ -304,10 +305,11 @@ typedef enum LemonGameEvent
 	DISABLE_FULLSCREEN,
 	CHANGE_SCREEN_SIZE_SCALE,
 	ENABLE_FULLSCREEN_SCALE,
-	SET_SCREEN_ZOOM,
-	CHANGE_SCREEN_ZOOM,
+	SET_CAMERA_ZOOM,
+	CHANGE_CAMERA_ZOOM,
+	STREAM_LEVEL_PARTITION,
 	UNDEFINED_EVENT
-} LemonGameEvent;
+} GameEventID;
 
 
 typedef enum WorldPhysics 
@@ -467,6 +469,7 @@ typedef enum Flags
 	PLAY_MUSIC_TRIGGER = 10,
 	STOP_ALL_SOUND_LOOPS = 11,
 	CACHE_TRIGGER = 12,
+	STREAM_PARTITION_TRIGGER,
 	UNDEFINED_FLAG
 } Flags;
 
@@ -553,10 +556,11 @@ struct soundInstance
 	Uint32 wav_data_len;
 	SDL_AudioStream *stream;
 	SDL_AudioFormat format;
+	bool mono;
 
 	char name[MAX_LEN];
 	float volume;
-	short repeatTimes;
+	int repeatTimes;
 
 	struct soundInstance *nextSound;
 	struct soundInstance *prevSound;
@@ -621,8 +625,8 @@ struct animationFrame
 	struct animationFrame *nextFrame;
 
 	struct sprite *frameSprite;
-	short SpriteXOffset;
-	short SpriteYOffset;
+	int SpriteXOffset;
+	int SpriteYOffset;
 	float rotation;
 };
 
@@ -666,7 +670,7 @@ struct displayData
 
 	int currentAnimation;
 	float animationTick;
-	short animationLoopCount;
+	int animationLoopCount;
 	float animationSpeed;
 	struct animationFrame *frameBuffer;
 	struct animation *animationBuffer;
@@ -712,8 +716,8 @@ struct PhysicsRect
 	Layer collideLayer;
 
 	double direction;
-	short xFlip;
-	short yFlip;
+	int xFlip;
+	int yFlip;
 	bool crouch;
 };
 
@@ -722,11 +726,11 @@ struct PhysicsRect
 struct Object
 {
 	char name[OBJECT_NAME_LENGTH + 1];	// unique identifier for Object 		
-	short ObjectID;
-	short State;
-	short Action;
-	short Interrupt;	
-	short layer;
+	int ObjectID;
+	ObjectState State;
+	CurrentAction Action;
+	CurrentInterrupt Interrupt;	
+	Layer layer;
 	PhysicsFlags reserved;
 
 	struct PhysicsRect *ObjectBox;
@@ -776,6 +780,8 @@ struct ObjectController
 	struct Object *firstObject;
 	struct Object *lastObject;
 
+	struct Object *availableSlots;
+
 	int cachedCount;
 	struct Object *cachedFirstObject;
 	struct Object *cachedLastObject;
@@ -787,7 +793,7 @@ struct ObjectController
 
 	struct QuadTree *QuadTreeRoot;
 
-	short depthCounter;
+	int depthCounter;
 };
 
 
@@ -815,21 +821,25 @@ union TextEventTriggerData
 	struct Object *TriggerObject;
 };
 
-typedef int (*TriggerableFunction)(struct Object*, void*);
+typedef enum TriggerableFunctionID
+{
+	NO_ACTION,
+	START_CUTSCENE,
+	MOVE_PLAYER_TO_EXIT_DOOR
+} TriggerableFunctionID;
+
 struct TextEventTrigger
 {
 	union TextEventTriggerData FunctionArguments;
-	void* TriggerFunction;
+	TriggerableFunctionID TriggerFunction;
 };
-// Text event triggers require this terrible void pointer in case a different function type is supplied, although
-// only function types defined in UIObjects should be used
 
 
 struct TextOptionPrompt
 {
-	short SelectedOption;
-	short numberOfOptions;
-	short optionBeingPrinted;
+	int SelectedOption;
+	int numberOfOptions;
+	int optionBeingPrinted;
 
 	float OptionYPositions[MAX_OPTIONS];
 
@@ -866,14 +876,14 @@ struct TextInstance
 	union TextTypeData textTypeData;
 
 	int textDelayFrames;
-	short Skippable;
+	bool Skippable;
 
 	int boxOffsetX;
 	int boxOffsetY;
-	short textLengthSize;
+	int textLengthSize;
 
-	short currentChar;
-	short Counter;
+	int currentChar;
+	int Counter;
 	int currentXPos;
 	int currentYPos;
 };
@@ -890,7 +900,7 @@ struct Camera
 
 	float CameraXBuffer;
 	float CameraYBuffer;
-	short CameraLatch;
+	bool CameraLatch;
 	CameraState CameraMode;
 
 	float zoomX;
@@ -910,13 +920,6 @@ struct BackgroundData
 	RenderMode BackgroundRenderMode;
 };
 
-
-union LemonGameEventData
-{
-	int screenDimensions[2];
-	float zoomScales[2];
-	int newLevelID;
-};
 
 struct SoundMeta
 {
@@ -1011,7 +1014,7 @@ struct SceneAction
 {
 	SceneActionID ActionID;
 	bool parallelAction;
-	short repeatTimes;
+	int repeatTimes;
 
 	struct Object *ActorObject;
 	union SceneActionArguments ActionData;
@@ -1021,7 +1024,23 @@ struct SceneAction
 };
 
 
-// Memory allocated struct that controls camera, holds the Object list and level data
+union GameEventData
+{
+	int screenDimensions[2];
+	float zoomScales[2];
+	int newLevelID;
+	FILE *loadedFile;
+};
+
+typedef struct GameEvent
+{
+	GameEventID EventID;
+	union GameEventData EventData;
+	bool canDelete;
+
+	struct GameEvent *additionalEvent;
+} GameEvent;
+
 struct World
 {
 	struct Camera MainCamera;
@@ -1031,17 +1050,16 @@ struct World
 	struct playerData Player;
 	struct ObjectController *ObjectList;
 
-	struct TextInstance *TextQueue;
-	int PlayingText;
-
 	int GamePaused;
 	int level;
 	LemonGameState GameState;
-	LemonGameEvent GameEvent;
-	union LemonGameEventData GameEventData;
+	GameEvent GameEvents;
 
+	struct TextInstance *TextQueue;
+	int PlayingText;
+	
 	CutsceneID CurrentCutscene;
-	struct SceneAction *SceneActionList;
+	struct SceneAction *SceneActionQueue;
 
 	WorldPhysics PhysicsType;
 	float GlobalGravityY;
@@ -1086,7 +1104,6 @@ struct EngineData
 {
 	// Multi threading still not implemented!
 	bool MultiThreadingEnabled;
-	bool HardwareRendering;
 
 	bool ObjectPreAllocationEnabled;
 
@@ -1100,6 +1117,7 @@ struct EngineData
 
 	int MaxSoundsPerChannel;
 	int MaxTextQueueLength;
+	int MaxGameEvents;
 
 	int GameTicksPerSecond;
 	int TickDelta;
@@ -1157,6 +1175,13 @@ struct DebugData
 };
 
 
+typedef struct string
+{
+	char *stringChars;
+	int length;
+} String;
+
+
 typedef struct RenderFrame  RenderFrame;
 typedef struct DrawData DrawData;
 
@@ -1191,7 +1216,7 @@ typedef struct EngineData EngineData;
 typedef struct RenderData RenderData;
 typedef struct DebugData DebugData;
 
-typedef union LemonGameEventData LemonGameEventData;
+typedef union GameEventData GameEventData;
 typedef struct SceneAction SceneAction;
 typedef union SceneActionArguments SceneActionArguments;
 

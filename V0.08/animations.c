@@ -49,11 +49,11 @@ int LoadSpritesAndAnimationData(SpriteSet *newSet, int ObjectID)
 
 		default:
 		{
-			// Searches for a file named "[ObjectID]" as default
-			char defaultName[32];
-			sprintf(defaultName, "%d", ObjectID);
+			// Searches for a file named "Object [ObjectID]" as default
+			char defaultName[32] = {0};
+			snprintf(defaultName, 32, "Object %d", ObjectID);
 
-			loadAnimationsFromFile((const char*)defaultName, newSet);
+			loadAnimationsFromFile(defaultName, newSet);
 		} break;
 	}
 
@@ -69,29 +69,13 @@ int loadAnimationsFromFile(const char FileName[], SpriteSet *destSet)
 		return MISSING_DATA;
 	}
 
-	// Check string
-	if (strlen(FileName) >= MAX_LEN)
-	{
-		return INVALID_DATA;
-	}
-
-	char path[strlen(ANIMATION_ROOT) + strlen(FileName) + 5];
-	strcpy(path, ANIMATION_ROOT);
-	strcat(path, FileName);
-	strcat(path, ".txt");
-
-	FILE *fPtr = fopen(path, "rb");
+	FILE *fPtr = openFile(FileName, ANIMATION_ROOT, "--ANIMATION--");
 
 	if (fPtr == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (checkFileHeader(fPtr, "-ANIMATION") != LEMON_SUCCESS)
-	{
-		fclose(fPtr);
-		return LEMON_ERROR;
-	}
 
 	char argBuffer[MAX_LEN + 1] = {0};
 
@@ -112,9 +96,9 @@ int loadAnimationsFromFile(const char FileName[], SpriteSet *destSet)
 			char inputName[MAX_LEN] = {0};
 			getNextArg(fPtr, inputName, MAX_LEN);
 
-			getNextArg(fPtr, argBuffer, MAX_LEN);
+			float frameRate = getNextArgFloat(fPtr);
 
-			newAnimation = initialiseNewAnimation(inputName, atof(argBuffer), destSet);
+			newAnimation = initialiseNewAnimation(inputName, frameRate, destSet);
 
 			if (newAnimation == NULL)
 			{
@@ -125,10 +109,11 @@ int loadAnimationsFromFile(const char FileName[], SpriteSet *destSet)
 		{
 			getNextArg(fPtr, argBuffer, MAX_LEN);
 
-			int intBuffer[3] = {0};
-			readIntArgs(fPtr, intBuffer, 3);
+			int xOffset = getNextArgInt(fPtr);
+			int yOffset = getNextArgInt(fPtr);
+			float rotation = getNextArgFloat(fPtr);
 
-			addSpriteToAnimationWithAttributes(argBuffer, newAnimation, destSet, intBuffer[0], intBuffer[1], (float)((double)intBuffer[2] * DEGREE_TO_RADIAN_PI) );
+			addSpriteToAnimationWithAttributes(argBuffer, newAnimation, destSet, xOffset, yOffset, (rotation * (float)DEGREE_TO_RADIAN_PI) );
 		}
 		else if (strcmp(argBuffer, "AddSprite:") == 0)
 		{
@@ -460,7 +445,7 @@ int iterateAnimation(DisplayData *inputData)
 }
 
 
-Animation* initialiseNewAnimation(const char animationName[], double frameRate, SpriteSet *inputSet)
+Animation* initialiseNewAnimation(const char animationName[], float frameRate, SpriteSet *inputSet)
 {
 	if (inputSet == NULL)
 	{
@@ -505,8 +490,8 @@ Animation* initialiseNewAnimation(const char animationName[], double frameRate, 
 	newAnimation->nextAnimation = NULL;
 	newAnimation->animationData = NULL;
 
-	frameRate = dClamp(frameRate, 0.1, 1000.0);	
-	newAnimation->frameRate = ((float)EngineSettings.GameTicksPerSecond / (float)frameRate);
+	frameRate = fClamp(frameRate, 0.1, 1000.0);	
+	newAnimation->frameRate = ((float)EngineSettings.GameTicksPerSecond / frameRate);
 	newAnimation->frameRate = ceil(newAnimation->frameRate * 100) / 100;
 
 	newAnimation->animationID = i;
@@ -580,7 +565,7 @@ AnimationFrame* addSpriteToAnimation(const char spriteName[], Animation *inputAn
 }
 
 
-AnimationFrame* addSpriteToAnimationWithAttributes(const char spriteName[], Animation *inputAnimation, SpriteSet *sourceSet, int XOffset, int YOffset, float rotation)
+AnimationFrame* addSpriteToAnimationWithAttributes(const char spriteName[], Animation *inputAnimation, SpriteSet *sourceSet, float XOffset, float YOffset, float rotation)
 {
 	AnimationFrame *createdFrame = addSpriteToAnimation(spriteName, inputAnimation, sourceSet);
 
