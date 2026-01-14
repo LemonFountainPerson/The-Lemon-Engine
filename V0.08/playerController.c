@@ -378,7 +378,7 @@ int PlayerJump(PlayerData *Player, int hAxis, int vAxis)
 
 	if (Player->jumpHeld == 0)
 	{
-		Lemon_PlaySoundSpeed("Jump", "Player", PLAYER_SFX, 1.0, PickRandomFloatBetween(0.25, 1.5));
+		Lemon_PlaySound("Jump", "Player", PLAYER_SFX, 1.0);
 	}
 
 	Player->jumpHeld = 1;

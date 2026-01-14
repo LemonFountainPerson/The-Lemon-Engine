@@ -903,6 +903,7 @@ int MarkObjectForDeletion(Object *inputObject)
 	}
 
 	inputObject->State = TO_BE_DELETED;
+	inputObject->ObjectDisplay->size = 1.5;
 
 
 	if (DebugSettings.ConsoleTextEnabled == ALL_EVENTS)

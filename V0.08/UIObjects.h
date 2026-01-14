@@ -69,9 +69,11 @@ int ApplyTextPresets(TextInstance *inputText, const char Portrait[], TextPreset 
 
 int updateText(World *GameWorld);
 
-int TextInteraction(World *GameWorld);
+int TextInteraction(TextInstance *currentText, World *GameWorld);
 
 int handleOptionPrompt(TextInstance *inputText, World *GameWorld);
+
+int displayText(TextInstance *currentText, World *GameWorld);
 
 int displayNextCharacter(TextInstance *inputText, World *GameWorld);
 
@@ -94,7 +96,7 @@ int endTextInstance(World *GameWorld);
 
 int runTriggerableFunction(struct TextEventTrigger *DataPtr, World *GameWorld);
 
-int deleteTextInstance(TextInstance *input, World *GameWorld);
+int deleteTextInstance(World *GameWorld);
 
 int clearTextQueue(World *GameWorld);
 

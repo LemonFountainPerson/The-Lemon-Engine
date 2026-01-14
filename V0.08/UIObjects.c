@@ -819,12 +819,14 @@ int UpdateUIText(World *GameWorld, Object *UIText)
 		}
 		break;
 
+		/*
 	case TEXT_CHARACTER:
 		if (GameWorld->TextQueue == NULL)
 		{
 			MarkObjectForDeletion(UIText);
 		}
 		break;
+		*/
 
 	default:
 		break;
@@ -1135,12 +1137,25 @@ int updateText(World *GameWorld)
 		return ACTION_DISABLED;
 	}
 
-	TextInteraction(GameWorld);
-
-
-	if (currentText == NULL || currentText->currentChar < 0)
+	if (currentText->currentChar < 0)
 	{
-		return EXECUTION_UNNECESSARY;
+		TextInteraction(currentText, GameWorld);
+	}
+	else
+	{
+		displayText(currentText, GameWorld);
+	}
+	
+
+	return LEMON_SUCCESS;
+}
+
+
+int displayText(TextInstance *currentText, World *GameWorld)
+{
+	if (currentText == NULL)
+	{
+		return MISSING_DATA;
 	}
 
 	// Skip text animation if skip button is held
@@ -1173,58 +1188,82 @@ int updateText(World *GameWorld)
 }
 
 
-bool textSceneActionPresent(TextInstance *inputText, World *GameWorld)
+int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 {
-	if (inputText == NULL || inputText->currentChar != 0 || GameWorld == NULL || GameWorld->SceneActionQueue == NULL)
+	if (inputText == NULL || inputText->currentChar == -1)
 	{
-		return true;
+		return MISSING_DATA;
 	}
 
 
-	SceneAction *currentAction = GameWorld->SceneActionQueue;
+	char currentChar = inputText->textPhrase[inputText->currentChar];
 
-	while (currentAction != NULL)
+	if (inputText->currentChar == 0 && inputText->boxPtr == NULL)
 	{
-		if (currentAction->ActionID == SCENE_SAY_TEXT && currentAction->ActionData.sceneText == inputText)
+		// create text box
+		createTextBox(inputText, GameWorld);
+
+		if (inputText->boxPtr == NULL)
 		{
-			return true;
+			endTextInstance(GameWorld);
+			return LEMON_ERROR;
+		}
+	
+		// Create portrait
+		if (inputText->Portrait[0] != 0)
+		{
+			createTextBoxPortrait(inputText, GameWorld);
 		}
 
-		if (currentAction->parallelAction == false)
-		{
-			return false;
-		}
+		inputText->currentXPos = inputText->boxOffsetX;
+		inputText->currentYPos = inputText->boxOffsetY;
 
-		currentAction = currentAction->nextSceneAction;
-	}	
-
-	return false;
-}
-
-
-void DeleteTextSceneAction(TextInstance *inputText, World *GameWorld)
-{
-	if (inputText == NULL || GameWorld == NULL || GameWorld->SceneActionQueue == NULL)
-	{
-		return;
+		GameWorld->PlayingText = 1;
 	}
 
-
-	SceneAction *currentAction = GameWorld->SceneActionQueue;
-
-	while (currentAction != NULL)
+	// Spawn next character		
+	if (inputText->currentXPos + 40 > inputText->textLengthSize || currentChar == 10)
 	{
-		if (currentAction->ActionID == SCENE_SAY_TEXT && currentAction->ActionData.sceneText == inputText)
-		{
-			currentAction = deleteSceneAction(currentAction, GameWorld);
-		}
-		else
-		{
-			currentAction = currentAction->nextSceneAction;
-		}
-	}	
+		inputText->currentXPos = inputText->boxOffsetX;
+		inputText->currentYPos -= 50;
+	}
 
-	return;
+	switch(currentChar)
+	{
+		case 13:		// (/r) is repurposed to insert a delay of 30 ticks
+		inputText->Counter = -30;
+		break;
+
+		case 12:		// (/f) is repurposed to insert a delay of 12 ticks  
+		inputText->Counter = -12;
+		break;
+
+		case 11:		// (/v) is repurposed to insert a delay of 8 ticks 
+		inputText->Counter = -8;
+		break;
+
+		default:
+		break;
+	}
+	
+
+	int newTextXPos = inputText->currentXPos + (int)inputText->boxPtr->ObjectBox->xPos;
+	int newTextYPos = inputText->currentYPos + (int)inputText->boxPtr->ObjectBox->yPos;
+
+	AddObject(GameWorld, UI_TEXT, newTextXPos, newTextYPos, 0, 0, TEXT_CHARACTER, currentChar, 0, 0, 0);
+	applyCharacterSpacing(inputText);
+
+	inputText->currentChar++;
+
+	
+	// Finished creating text
+	if (inputText->currentChar > MAX_TEXT_LENGTH || inputText->textPhrase[inputText->currentChar] == 0)
+	{
+		inputText->currentChar = -1;
+	}
+
+	
+	return LEMON_SUCCESS;
 }
 
 
@@ -1249,14 +1288,12 @@ int playTextVoice(TextInstance *currentText)
 }
 
 
-int TextInteraction(World *GameWorld)
+int TextInteraction(TextInstance *currentText, World *GameWorld)
 {
-	if (GameWorld->TextQueue == NULL || GameWorld->TextQueue->currentChar > -1)
+	if (currentText == NULL)
 	{
-		return ACTION_DISABLED;
+		return MISSING_DATA;
 	}
-
-	TextInstance *currentText = GameWorld->TextQueue;
 	 
 	switch (currentText->textTypeSetting)
 	{
@@ -1276,24 +1313,22 @@ int TextInteraction(World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-
 int handleOptionPrompt(TextInstance *inputText, World *GameWorld)
 {
 	struct TextOptionPrompt *optionData = &inputText->textTypeData.OptionPrompt;
 
 	if (optionData->optionBeingPrinted < optionData->numberOfOptions)
 	{
-		inputText->currentChar = 1;
-
 		if (strlen(inputText->textPhrase) > 0)
 		{
 			inputText->currentYPos -= 50;
 		}
-		inputText->currentXPos = 50 + inputText->boxOffsetX;
+		inputText->currentXPos = inputText->boxOffsetX + 50;
 
 		memset(inputText->textPhrase, 0, MAX_TEXT_LENGTH);
-		inputText->textPhrase[0] = ' ';
-		strcpy(inputText->textPhrase + 1, optionData->optionNames[optionData->optionBeingPrinted]);
+		strcpy(inputText->textPhrase, optionData->optionNames[optionData->optionBeingPrinted]);
+		inputText->currentChar = 0;
+
 		optionData->OptionYPositions[optionData->optionBeingPrinted] = inputText->currentYPos;
 		optionData->optionBeingPrinted++;
 
@@ -1322,86 +1357,6 @@ int handleOptionPrompt(TextInstance *inputText, World *GameWorld)
 		endTextInstance(GameWorld);
 	}
 
-	return LEMON_SUCCESS;
-}
-
-
-int displayNextCharacter(TextInstance *inputText, World *GameWorld)
-{
-	if (inputText == NULL || inputText->currentChar == -1)
-	{
-		return MISSING_DATA;
-	}
-
-
-	char currentChar = inputText->textPhrase[inputText->currentChar];
-
-	if (inputText->currentChar == 0)
-	{
-		// create text box
-		createTextBox(inputText, GameWorld);
-
-		if (inputText->boxPtr == NULL)
-		{
-			endTextInstance(GameWorld);
-			return LEMON_ERROR;
-		}
-	
-		// Create portrait
-		if (inputText->Portrait[0] != 0)
-		{
-			createTextBoxPortrait(inputText, GameWorld);
-		}
-
-		inputText->currentXPos = inputText->boxOffsetX;
-		inputText->currentYPos = inputText->boxOffsetY;
-
-		GameWorld->PlayingText = 1;
-	}
-	else
-	{
-		// Spawn next character		
-		if (inputText->currentXPos + 40 > inputText->textLengthSize || currentChar == 10)
-		{
-			inputText->currentXPos = inputText->boxOffsetX;
-			inputText->currentYPos -= 50;
-		}
-
-		switch(currentChar)
-		{
-			case 13:		// (/r) is repurposed to insert a delay of 30 ticks
-			inputText->Counter = -30;
-			break;
-
-			case 12:		// (/f) is repurposed to insert a delay of 12 ticks  
-			inputText->Counter = -12;
-			break;
-	
-			case 11:		// (/v) is repurposed to insert a delay of 8 ticks 
-			inputText->Counter = -8;
-			break;
-
-			default:
-			break;
-		}
-	}
-
-	int newTextXPos = inputText->currentXPos + (int)inputText->boxPtr->ObjectBox->xPos;
-	int newTextYPos = inputText->currentYPos + (int)inputText->boxPtr->ObjectBox->yPos;
-
-	AddObject(GameWorld, UI_TEXT, newTextXPos, newTextYPos, 0, 0, TEXT_CHARACTER, currentChar, 0, 0, 0);
-	applyCharacterSpacing(inputText);
-
-	inputText->currentChar++;
-
-	
-	// Finished creating text
-	if (inputText->currentChar > MAX_TEXT_LENGTH || inputText->textPhrase[inputText->currentChar] == 0)
-	{
-		inputText->currentChar = -1;
-	}
-
-	
 	return LEMON_SUCCESS;
 }
 
@@ -1499,126 +1454,6 @@ Object* createTextBoxPortrait(TextInstance *inputText, World *GameWorld)
 	return portrait;
 }
 
-
-int endTextInstance(World *GameWorld)
-{
-	if (GameWorld == NULL || GameWorld->TextQueue == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	TextInstance *textToDelete = GameWorld->TextQueue;
-
-
-	switch (textToDelete->textTypeSetting)
-	{
-		case OPTION_PROMPT:
-		{
-			struct TextOptionPrompt *optionData = &textToDelete->textTypeData.OptionPrompt;
-			if (optionData->SelectedOption < 0 || optionData->SelectedOption >= optionData->numberOfOptions)
-			{
-				break;
-			}
-
-			runTriggerableFunction(&optionData->optionTriggers[optionData->SelectedOption], GameWorld);
-		} break;
-
-		case TRIGGER_EVENT:
-		{
-			runTriggerableFunction(&textToDelete->textTypeData.TriggerEvent, GameWorld);
-		} break;
-
-		default:
-			break;
-	}
-	
-
-	deleteTextInstance(textToDelete, GameWorld);
-
-	return LEMON_SUCCESS;
-}
-
-
-int runTriggerableFunction(struct TextEventTrigger *DataPtr, World *GameWorld)
-{
-	if (DataPtr == NULL || DataPtr->TriggerFunction < 0)
-	{
-		return MISSING_DATA;
-	}
-
-	switch (DataPtr->TriggerFunction)
-	{
-	case START_CUTSCENE:
-		StartCutscene(DataPtr->FunctionArguments.cutscene, GameWorld);
-		break;
-
-	case MOVE_PLAYER_TO_EXIT_DOOR:
-		TeleportPlayerToExitDoor(DataPtr->FunctionArguments.TriggerObject, GameWorld);
-		break;
-
-	default:
-		break;
-	}
-
-
-		// This is inherently unsafe, may be removed in the future with specific functions (such as startCutscene) added instead
-		//TriggerableFunction function = (TriggerableFunction)DataPtr->TriggerFunction;
-		//(function)(DataPtr->FunctionArguments.TriggerObject, (void*)GameWorld);
-
-	return LEMON_SUCCESS;
-}
-
-
-// this function works this way (taking a pointer that it doesnt trust when it has access to the start of the text queue via gameworld)
-// to avoid the case where in the process of ending a text instance, it executes a function that deletes itself before it reaches the actual line that was supposed to delete it.
-// In this case, without this check it would simply delete the first text of whatever else was loaded/remains
-// By including the pointer it can check whether it still is at the start of the queue or not so it knows it's deleting the correct thing
-int deleteTextInstance(TextInstance *input, World *GameWorld)
-{
-	if (GameWorld == NULL || GameWorld->TextQueue == NULL || input != GameWorld->TextQueue)
-	{
-		return MISSING_DATA;
-	}
-
-	TextInstance *textToDelete = GameWorld->TextQueue;
-
-	MarkObjectForDeletion(textToDelete->boxPtr);
-
-	DeleteTextSceneAction(textToDelete, GameWorld);
-
-	GameWorld->TextQueue = textToDelete->nextText;
-	
-	free(textToDelete);
-
-	if (GameWorld->TextQueue == NULL)
-	{
-		GameWorld->PlayingText = 0;
-	}
-
-	return LEMON_SUCCESS;
-}
-
-
-int clearTextQueue(World *GameWorld)
-{
-	if (GameWorld == NULL || GameWorld->TextQueue == NULL) { return MISSING_DATA; }
-
-	int i = 0;
-
-	while (i < EngineSettings.MaxTextQueueLength && GameWorld->TextQueue != NULL)
-	{
-		deleteTextInstance(GameWorld->TextQueue, GameWorld);
-		i++;
-	}
-
-	if (GameWorld->TextQueue != NULL) { return LEMON_ERROR; }
-
-	GameWorld->PlayingText = 0;
-
-	return LEMON_SUCCESS;
-}
-
-
 int mapTextToCharacter(Object *inputText, int characterValue)
 {
 	if (inputText == NULL || inputText->ObjectDisplay == NULL || inputText->ObjectDisplay->spriteBuffer == NULL)
@@ -1632,7 +1467,6 @@ int mapTextToCharacter(Object *inputText, int characterValue)
 
 	return LEMON_SUCCESS;
 }
-
 
 int applyCharacterSpacing(TextInstance *inputText)
 {
@@ -1694,4 +1528,175 @@ int applyCharacterSpacing(TextInstance *inputText)
 	
 
 	return LEMON_SUCCESS;
+}
+
+
+int endTextInstance(World *GameWorld)
+{
+	if (GameWorld == NULL || GameWorld->TextQueue == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	TextType inputTextType = GameWorld->TextQueue->textTypeSetting;
+	union TextTypeData inputData = GameWorld->TextQueue->textTypeData;
+
+	deleteTextInstance(GameWorld);
+
+
+	switch (inputTextType)
+	{
+		case OPTION_PROMPT:
+		{
+			struct TextOptionPrompt *optionData = &inputData.OptionPrompt;
+			if (optionData->SelectedOption < 0 || optionData->SelectedOption >= optionData->numberOfOptions)
+			{
+				break;
+			}
+
+			runTriggerableFunction(&optionData->optionTriggers[optionData->SelectedOption], GameWorld);
+		} break;
+
+		case TRIGGER_EVENT:
+		{
+			runTriggerableFunction(&inputData.TriggerEvent, GameWorld);
+		} break;
+
+		default:
+			break;
+	}
+	
+
+	return LEMON_SUCCESS;
+}
+
+
+int runTriggerableFunction(struct TextEventTrigger *DataPtr, World *GameWorld)
+{
+	if (DataPtr == NULL || DataPtr->TriggerFunction < 0)
+	{
+		return MISSING_DATA;
+	}
+
+	switch (DataPtr->TriggerFunction)
+	{
+	case START_CUTSCENE:
+		StartCutscene(DataPtr->FunctionArguments.cutscene, GameWorld);
+		break;
+
+	case MOVE_PLAYER_TO_EXIT_DOOR:
+		TeleportPlayerToExitDoor(DataPtr->FunctionArguments.TriggerObject, GameWorld);
+		break;
+
+	default:
+		break;
+	}
+
+
+		// This is inherently unsafe, may be removed in the future with specific functions (such as startCutscene) added instead
+		//TriggerableFunction function = (TriggerableFunction)DataPtr->TriggerFunction;
+		//(function)(DataPtr->FunctionArguments.TriggerObject, (void*)GameWorld);
+
+	return LEMON_SUCCESS;
+}
+
+
+int deleteTextInstance(World *GameWorld)
+{
+	if (GameWorld == NULL || GameWorld->TextQueue == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	TextInstance *textToDelete = GameWorld->TextQueue;
+
+	MarkObjectForDeletion(textToDelete->boxPtr);
+
+	DeleteTextSceneAction(textToDelete, GameWorld);
+
+	GameWorld->TextQueue = textToDelete->nextText;
+	
+	free(textToDelete);
+
+	if (GameWorld->TextQueue == NULL)
+	{
+		GameWorld->PlayingText = 0;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int clearTextQueue(World *GameWorld)
+{
+	if (GameWorld == NULL || GameWorld->TextQueue == NULL) { return MISSING_DATA; }
+
+	int i = 0;
+
+	while (i < EngineSettings.MaxTextQueueLength && GameWorld->TextQueue != NULL)
+	{
+		deleteTextInstance(GameWorld);
+		i++;
+	}
+
+	if (GameWorld->TextQueue != NULL) { return LEMON_ERROR; }
+
+	GameWorld->PlayingText = 0;
+
+	return LEMON_SUCCESS;
+}
+
+
+bool textSceneActionPresent(TextInstance *inputText, World *GameWorld)
+{
+	if (inputText == NULL || inputText->currentChar != 0 || GameWorld == NULL || GameWorld->CurrentCutscene == NO_CUTSCENE)
+	{
+		return true;
+	}
+
+
+	SceneAction *currentAction = GameWorld->SceneActionQueue;
+
+	while (currentAction != NULL)
+	{
+		if (currentAction->ActionID == SCENE_SAY_TEXT && currentAction->ActionData.sceneText == inputText)
+		{
+			return true;
+		}
+
+		if (currentAction->parallelAction == false)
+		{
+			return false;
+		}
+
+		currentAction = currentAction->nextSceneAction;
+	}	
+
+	return false;
+}
+
+
+void DeleteTextSceneAction(TextInstance *inputText, World *GameWorld)
+{
+	if (inputText == NULL || GameWorld == NULL || GameWorld->SceneActionQueue == NULL || GameWorld->CurrentCutscene == NO_CUTSCENE)
+	{
+		return;
+	}
+
+
+	SceneAction *currentAction = GameWorld->SceneActionQueue;
+
+	while (currentAction != NULL)
+	{
+		if (currentAction->ActionID == SCENE_SAY_TEXT && currentAction->ActionData.sceneText == inputText)
+		{
+			currentAction = deleteSceneAction(currentAction, GameWorld);
+		}
+		else
+		{
+			currentAction = currentAction->nextSceneAction;
+		}
+	}	
+
+	return;
 }

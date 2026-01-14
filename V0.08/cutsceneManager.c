@@ -98,12 +98,6 @@ int UpdateCutscene(World *GameWorld)
 	}
 
 	// Play cutscene
-	switch (GameWorld->CurrentCutscene)
-	{
-		default:
-		break;
-	}
-
 	updateSceneActions(GameWorld);
 
 
