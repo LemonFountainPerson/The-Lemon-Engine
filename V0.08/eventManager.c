@@ -62,7 +62,6 @@ int HandleGameWorldEvents(World *GameWorld, RenderFrame *ScreenData)
 
 	clearGameEvents(GameWorld);
 
-
 	return LEMON_SUCCESS;
 }
 
@@ -242,6 +241,10 @@ GameEvent* addNewGameEvent(World *GameWorld)
 
 	if (GameWorld->GameEvents.EventID == NO_EVENT)
 	{
+        memset(&GameWorld->GameEvents, 0, sizeof(GameEvent));
+	    GameWorld->GameEvents.additionalEvent = NULL;
+	    GameWorld->GameEvents.EventID = NO_EVENT;
+        GameWorld->GameEvents.canDelete = true;
 		return &GameWorld->GameEvents;
 	}
 
@@ -269,7 +272,6 @@ GameEvent* addNewGameEvent(World *GameWorld)
 	eventPtr->additionalEvent = NULL;
 	eventPtr->EventID = NO_EVENT;
 	eventPtr->canDelete = true;
-
 
 	return eventPtr;
 }
@@ -568,6 +570,7 @@ int applyScreenAndRendererSize(int newWidth, int newHeight, RenderFrame *ScreenD
 	validateScreenDimensions(ScreenData);
 
 	SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
+    SDL_SyncWindow(ScreenData->Window);
 	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
 
 	screenWidth = ScreenData->windowWidth;
@@ -602,6 +605,7 @@ int applyScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData)
 	float ScaleY = ((float)screenHeight/(float)ScreenData->windowHeight);
 
 	SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
+    SDL_SyncWindow(ScreenData->Window);
 	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
 
 	screenWidth = ScreenData->windowWidth * ScaleX;
@@ -633,7 +637,9 @@ int applyScreenSizeScale(int newWidth, int newHeight, RenderFrame *ScreenData)
 	validateScreenDimensions(ScreenData);
 
 	SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
+    SDL_SyncWindow(ScreenData->Window);
 	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+
 
 	return LEMON_SUCCESS;
 }

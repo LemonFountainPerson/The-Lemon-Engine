@@ -42,10 +42,10 @@ int RunLemonEngine(void)
 
 
 	// The loop code is run directly here without MainLoop() for performance when executing as a standalone program
-	int gameTick = 0;
-	int renderRefresh = 0;
-	int timeElapsed = 0;
-    clock_t lastFrameTime = 0;
+	Uint64 gameTick = 0;
+	Uint64 renderRefresh = 0;
+	Uint64 timeElapsed = 0;
+    Uint64 lastFrameTime = 0;
 	
     while(GameWorld.GameState != CLOSE_GAME)
     {
@@ -54,8 +54,8 @@ int RunLemonEngine(void)
 
 
 		// Timing
-	    timeElapsed = (int)(((float)(clock() - lastFrameTime) / (float)CLOCKS_PER_SEC) * 10000);
-	    lastFrameTime = clock();
+	    timeElapsed = (SDL_GetTicksNS() - lastFrameTime) / TICK_RESOLUTION;
+	    lastFrameTime = SDL_GetTicksNS();
 
 	    gameTick += timeElapsed;
 	    renderRefresh += timeElapsed;
@@ -65,6 +65,11 @@ int RunLemonEngine(void)
 	    while (gameTick >= EngineSettings.TickDelta)
 	    {
 	    	gameTick -= EngineSettings.TickDelta;
+            if (GameWorld.GameState == LOADING)
+            {
+                // When loaing reset gametick so it doesnt accumulate and lead to a frozen game
+                gameTick = 0;
+            }
 			GameTick(&GameWorld);
 	    }
 
@@ -783,19 +788,18 @@ bool SetWindowTitle(const char newTitle[])
 
 int setTickRate(int desiredTickRate)
 {
-	if (desiredTickRate > 200 || desiredTickRate < 0)
+	if (desiredTickRate > 2000 || desiredTickRate < 1)
 	{
 		return INVALID_DATA;
 	}
 
 	EngineSettings.GameTicksPerSecond = desiredTickRate;
 
-	double TargetDelta = (1.0/(double)EngineSettings.GameTicksPerSecond);
-	EngineSettings.TickDelta = (int)((TargetDelta) * 10000) - 5;
+	EngineSettings.TickDelta = (Uint64)(TICK_RESOLUTION_INVERSE/(double)EngineSettings.GameTicksPerSecond);
 
 	if (EngineSettings.GameTicksPerSecond == RenderSettings.RendersPerSecond)
 	{
-		EngineSettings.TickDelta = RenderSettings.RenderDelta;
+        RenderSettings.RenderDelta = EngineSettings.TickDelta;
 	}
 
 	return LEMON_SUCCESS;
@@ -804,19 +808,18 @@ int setTickRate(int desiredTickRate)
 
 int setRenderRefreshRate(int desiredRenderRate)
 {
-	if (desiredRenderRate > 200 || desiredRenderRate < 0)
+	if (desiredRenderRate > 2000 || desiredRenderRate < 1)
 	{
 		return INVALID_DATA;
 	}
 
 	RenderSettings.RendersPerSecond = desiredRenderRate;
 
-	double TargetDelta = (1.0/(double)RenderSettings.RendersPerSecond);
-	RenderSettings.RenderDelta = (int)(TargetDelta * 10000) - 5;
+	RenderSettings.RenderDelta = (Uint64)(TICK_RESOLUTION_INVERSE/(double)RenderSettings.RendersPerSecond);
 
 	if (EngineSettings.GameTicksPerSecond == RenderSettings.RendersPerSecond)
 	{
-		RenderSettings.RenderDelta = EngineSettings.TickDelta;
+        EngineSettings.TickDelta = RenderSettings.RenderDelta;
 	}
 
 	return LEMON_SUCCESS;
@@ -993,34 +996,29 @@ void MasterControls(World *GameWorld, PlayerData *player)
 		streamPartition(1, GameWorld);
 	}
 
-/*
 	if (keyboard['O'] == 1)
 	{
 		keyboard['O'] = 2;
-		GameWorld->GameEvent = DISABLE_FULLSCREEN;
+		enableFullscreen(GameWorld);
 	}
 
 	if (keyboard['K'] == 1)
 	{
 		keyboard['K'] = 2;
-		GameWorld->GameEvent = ENABLE_FULLSCREEN_SCALE;
+		enableFullscreenScaled(GameWorld);
 	}
 
 
 	if (keyboard['I'] == 1)
 	{
 		keyboard['I'] = 1;
-		GameWorld->GameEvent = CHANGE_SCREEN_ZOOM;
-		GameWorld->GameEventData.zoomScales[0] = 0.01;
-		GameWorld->GameEventData.zoomScales[1] = 0.01;
+		changeCameraZoom(0.01, 0.01, GameWorld);
 	}
 
 	if (keyboard['U'] == 1)
 	{
 		keyboard['U'] = 1;
-		GameWorld->GameEvent = CHANGE_SCREEN_ZOOM;
-		GameWorld->GameEventData.zoomScales[0] = -0.01;
-		GameWorld->GameEventData.zoomScales[1] = -0.01;	
+		changeCameraZoom(-0.01, -0.01, GameWorld);
 
 		//String new = {0};
 		//String new2 = {0};
@@ -1033,8 +1031,6 @@ void MasterControls(World *GameWorld, PlayerData *player)
 		//freeString(&new);
 		//freeString(&new2);
 	}
-
-	*/
 
 
     return;

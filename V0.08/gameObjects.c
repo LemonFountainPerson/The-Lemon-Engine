@@ -1264,7 +1264,7 @@ FuncResult updateObjects(World *GameWorld)
 		return MISSING_DATA;
 	}
 
-	if (GameWorld->GameState == EMPTY_GAME || GameWorld->GameState == LOADING)
+	if (GameWorld->GameState <= EMPTY_GAME || GameWorld->GameState == LOADING)
 	{
 		return ACTION_DISABLED;
 	}
@@ -1275,13 +1275,6 @@ FuncResult updateObjects(World *GameWorld)
 	{
 		return MISSING_DATA;
 	}
-
-	// UNIMPLEMENTED
-	// Set-up spatial-partioned quad tree for optimised collision detection
-	//deleteQuadTree(ObjectList->QuadTreeRoot);
-	//ObjectList->QuadTreeRoot = NULL;
-	//constructQuadTree(ObjectList);
-
 
 	// Set previous position values - removing this will break object magnetisation, parent movement links and certain collision detections
 	UpdatePreviousPositions(ObjectList);

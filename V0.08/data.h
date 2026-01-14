@@ -26,7 +26,10 @@
 #define H_RESOLUTION 1280
 
 #define TICKS_PER_SECOND 60
-#define RENDERS_PER_SECOND 120
+#define RENDERS_PER_SECOND 1000
+// Do not change
+#define TICK_RESOLUTION 1000        // values closer to 1 means higher resolution, while further means lower.
+#define TICK_RESOLUTION_INVERSE  ((double)1000000000 / (double)TICK_RESOLUTION)
 
 #define MAX_OBJECTS_RENDER 200
 #define MAX_PARTICLES_RENDER 64
@@ -285,6 +288,7 @@ typedef enum Layer
 
 typedef enum LemonGameState 
 {
+    ENCOUNTERED_FATAL_ERROR,
 	CLOSE_GAME = -1,
 	EMPTY_GAME = 0,
 	LOADING = 1,
@@ -1041,6 +1045,7 @@ typedef struct GameEvent
 	struct GameEvent *additionalEvent;
 } GameEvent;
 
+
 struct World
 {
 	struct Camera MainCamera;
@@ -1120,7 +1125,7 @@ struct EngineData
 	int MaxGameEvents;
 
 	int GameTicksPerSecond;
-	int TickDelta;
+	Uint64 TickDelta;
 
 	struct sprite *DefaultTexture;
 };
@@ -1146,7 +1151,7 @@ struct RenderData
 	int drawnHudElements;
 
 	int RendersPerSecond;
-	int RenderDelta;
+	Uint64 RenderDelta;
 };
 
 

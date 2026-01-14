@@ -24,16 +24,17 @@ int loadLevel(World *GameWorld, int level)
 	GameWorld->GameState = LOADING;
 	clearLevelData(GameWorld);
 	SetDebugSettingsToDefault();
+    GameWorld->level = level;
 
 	// load data
-	if (loadLevelData(GameWorld, fPtr) != LEMON_SUCCESS)
+	if (loadLevelData(GameWorld, fPtr) == INVALID_DATA)
 	{
 		putConsoleStrInt("\nError: Failed to load level ", level);
+        GameWorld->GameState = ENCOUNTERED_FATAL_ERROR;
 		return LEMON_ERROR;
 	}
 
 	GameWorld->GameState = GAMEPLAY;
-	GameWorld->level = level;
 
 
 	SpawnHUD(GameWorld);
@@ -43,7 +44,7 @@ int loadLevel(World *GameWorld, int level)
 }
 
 
-int loadScene(World *GameWorld, int sceneID)
+int loadPartition(World *GameWorld, int sceneID)
 {
 	if (GameWorld == NULL)
 	{
@@ -63,7 +64,7 @@ int loadScene(World *GameWorld, int sceneID)
 	}
 
 	// load data
-	if (loadLevelData(GameWorld, fPtr) != LEMON_SUCCESS)
+	if (loadLevelData(GameWorld, fPtr) == INVALID_DATA)
 	{
 		return LEMON_ERROR;
 	}
@@ -605,12 +606,12 @@ FILE* openFile(const char fileName[], const char rootPath[], const char header[]
 
 int loadLevelData(World *GameWorld, FILE *fPtr)
 {
-	loadLevelDataChunk(GameWorld, fPtr, 10000);
+	FuncResult result = loadLevelDataChunk(GameWorld, fPtr, 10000);
 
 	fclose(fPtr);
 
 
-	return LEMON_SUCCESS;
+	return result;
 }
 
 
@@ -618,7 +619,11 @@ int loadLevelDataChunk(World *GameWorld, FILE *fPtr, int lineLimit)
 {
 	char charBuffer[MAX_LEN] = {0};
 	int i = 0;
-
+    
+    if (lineLimit < 1)
+    {
+        i = -1000000;
+    }
 
 	while (i < lineLimit)
 	{
@@ -1080,10 +1085,16 @@ int getNextArg(FILE *fPtr, char buffer[], int capacity)
 	}
 
 	memset(buffer, 0, capacity);
+    size_t readData = 0;
 
 	while (buffer[0] < 33 || buffer[0] == '/')
 	{
-		fread(buffer, sizeof(char), 1, fPtr);
+		readData = fread(buffer, sizeof(char), 1, fPtr);
+        
+        if (readData != sizeof(char))
+        {   
+            return LEMON_ERROR;
+        }
 
 		if (feof(fPtr))
 		{
@@ -1095,11 +1106,12 @@ int getNextArg(FILE *fPtr, char buffer[], int capacity)
 	
 	while (i < capacity - 1)
 	{
-		fread(buffer + i, sizeof(char), 1, fPtr);
+		readData = fread(buffer + i, sizeof(char), 1, fPtr);
 
 		if (buffer[i] < 33)
 		{
-			//fseek(fPtr, (int)-sizeof(char), SEEK_CUR);
+            // necessary because some commands expect at least one character gap before next argument
+			fseek(fPtr, (int)-sizeof(char), SEEK_CUR);
 			buffer[i] = 0;
 			return LEMON_SUCCESS;
 		}

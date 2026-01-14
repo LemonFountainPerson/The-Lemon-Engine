@@ -12,6 +12,8 @@
 
 int loadLevel(World *GameWorld, int level);
 
+int loadPartition(World *GameWorld, int sceneID);
+
 int loadLevelData(World *GameWorld, FILE *fPtr);
 
 int loadLevelDataChunk(World *GameWorld, FILE *fPtr, int lineLimit);
