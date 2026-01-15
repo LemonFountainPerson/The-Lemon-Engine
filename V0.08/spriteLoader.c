@@ -529,6 +529,10 @@ int switchSprite(int spriteID, int spriteSet, DisplayData *inputData)
 		{
 			putConsoleStrInt(" from sprite set ", spriteSet);
 		}
+		else
+		{
+			putConsoleStrInt(" from sprite set ", currentSet->setID);
+		}
 
 		// Switch to Default if it exists
 		inputData->spriteBuffer = EngineSettings.DefaultTexture;

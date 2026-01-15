@@ -219,9 +219,7 @@ int RenderEngine(World *GameWorld, Camera renderCamera, RenderFrame ScreenData)
 
 	if (DebugSettings.DebugTextDisplayMode != DEBUG_TEXT_DISABLED)
     {
-    	DisplayDebugInfo(GameWorld, DebugSettings.DebugTextDisplayMode);
-
-		RenderDebugText(renderCamera, ScreenData);	
+    	DisplayDebugInfo(GameWorld, renderCamera, ScreenData);	
     }
 
     FPSCounter();
@@ -534,15 +532,25 @@ int updateMouse(void)
 	return LEMON_SUCCESS;
 }
 
-// Get mouse position corrected for zoom (HUD layer is immune to zoom already, so this is only for other layers)
+// Get mouse position corrected for camera position and zoom (HUD layer is immune to this already, so this is only for other layers)
+float getMouseXCamRelative(Camera inputCamera)
+{
+	return (MouseInput.xPos / inputCamera.zoomX) + inputCamera.CameraX;
+}
+
+float getMouseYCamRelative(Camera inputCamera)
+{
+	return (MouseInput.yPos / inputCamera.zoomY) + inputCamera.CameraY;
+}
+
 float getMouseXZoom(Camera inputCamera)
 {
-	return MouseInput.xPos / inputCamera.zoomX;
+	return (MouseInput.xPos / inputCamera.zoomX);
 }
 
 float getMouseYZoom(Camera inputCamera)
 {
-	return MouseInput.yPos / inputCamera.zoomY;
+	return (MouseInput.yPos / inputCamera.zoomY);
 }
 
 
@@ -739,8 +747,8 @@ int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullsc
 		return LEMON_ERROR;
 	}
 
-
 	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+	
 	SetWindowTitle("Lemon Engine");							// Initial window title
 	SetWindowIcon("MissingIcon");							// Initial window icon
 
@@ -999,7 +1007,8 @@ void MasterControls(World *GameWorld, PlayerData *player)
 	if (keyboard['O'] == 1)
 	{
 		keyboard['O'] = 2;
-		enableFullscreen(GameWorld);
+		AddObject(GameWorld, UI_ELEMENT, -(screenWidth / 2), -(screenHeight / 2), screenWidth, screenHeight, FADEOUT, 0, 0, 0, 0);
+		//enableFullscreen(GameWorld);
 	}
 
 	if (keyboard['K'] == 1)
@@ -1145,6 +1154,24 @@ int putConsoleStrIntStr(const char strInput1[], int intInput, const char strInpu
 	return putConsoleString(strInput2);
 }
 
+int putConsoleFloat(float input)
+{
+	char buffer[64] = {0};
+	sprintf(buffer, "%f", input);
+
+	return putConsoleString(buffer);
+}
+
+int putConsoleStrFloat(const char strInput[], float floatInput)
+{
+	if (putConsoleString(strInput) != LEMON_SUCCESS)
+	{
+		return AT_FULL_CAPACITY;
+	}	
+
+	return putConsoleFloat(floatInput);
+}
+
 
 int putConsoleDouble(double input)
 {
@@ -1153,7 +1180,6 @@ int putConsoleDouble(double input)
 
 	return putConsoleString(buffer);
 }
-
 
 int putConsoleStrDouble(const char strInput[], double doubleInput)
 {
@@ -1262,6 +1288,7 @@ int SetDebugSettingsToDefault(void)
 	DebugSettings.FPSCounter = 0;
 	DebugSettings.PauseStatus = 0;
 	DebugSettings.CameraInfo = 0;
+	DebugSettings.BackgroundInfo = 0;
 	DebugSettings.SoundInfo = 0;
 
 	DebugSettings.DebugTextColour.r = 255;
@@ -1457,7 +1484,6 @@ int clamp(int input, int lowerBound, int upperBound)
 	return input;
 }
 
-
 double dClamp(double input, double lowerBound, double upperBound)
 {
 	if (input < lowerBound)
@@ -1472,7 +1498,6 @@ double dClamp(double input, double lowerBound, double upperBound)
 
 	return input;
 }
-
 
 float fClamp(float input, float lowerBound, float upperBound)
 {
@@ -1489,6 +1514,32 @@ float fClamp(float input, float lowerBound, float upperBound)
 	return input;
 }
 
+
+bool inRange(int input, int low, int high)
+{
+	if (input < low || input > high)
+	{
+		return false;
+	}
+	else 
+	{
+		return true;
+	}
+	
+}
+
+bool inRangeExclusive(int input, int low, int high)
+{
+	if (input <= low || input >= high)
+	{
+		return false;
+	}
+	else 
+	{
+		return true;
+	}
+	
+}
 
 int modulo(int x, int N)
 {

@@ -86,9 +86,6 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 
 
 	case FADEOUT:
-		UIElement->ObjectDisplay->transparencyEffect = 1.0;
-		UIElement->ObjectBox->xFlip = -1;
-		UIElement->ObjectBox->yFlip = -1;
 		UIElement->arg2 = 0;
 		switchSpriteByName("FadeOut", 0, UIElement->ObjectDisplay);
 		if (UIElement->prevObject != NULL && UIElement->prevObject->ObjectID == UI_ELEMENT && UIElement->prevObject->arg1 == FADEOUT)
@@ -115,8 +112,8 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 
 	case PAUSE_MENU_CONTROLLER:
 	{
-		double xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
-		double yPosOrigin = 0.0;
+		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+		float yPosOrigin = 0.0;
 		UIElement->ObjectBox->xPos = xPosOrigin;
 		UIElement->ObjectBox->yPos = yPosOrigin;
 		UIElement->arg4 = (int)yPosOrigin;		// arg4 is y pos of first option
@@ -142,8 +139,8 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 
 	case SETTINGS_MENU_CONTROLLER:
 	{
-		double xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
-		double yPosOrigin = (4 * Y_TILESCALE);
+		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+		float yPosOrigin = (4 * Y_TILESCALE);
 		UIElement->ObjectBox->xPos = xPosOrigin;
 		UIElement->ObjectBox->yPos = yPosOrigin;
 		UIElement->arg4 = (int)yPosOrigin;
@@ -171,8 +168,8 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 
 	case VIDEO_SETTINGS_CONTROLLER:
 	{
-		double xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
-		double yPosOrigin = (6 * Y_TILESCALE);
+		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+		float yPosOrigin = (6 * Y_TILESCALE);
 		UIElement->ObjectBox->xPos = xPosOrigin;
 		UIElement->ObjectBox->yPos = yPosOrigin;
 		UIElement->arg4 = (int)yPosOrigin;
@@ -203,8 +200,8 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 
 	case SOUND_SETTINGS_CONTROLLER:
 	{
-		double xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
-		double yPosOrigin = (4 * Y_TILESCALE);
+		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+		float yPosOrigin = (4 * Y_TILESCALE);
 		UIElement->ObjectBox->xPos = xPosOrigin;
 		UIElement->ObjectBox->yPos = yPosOrigin;
 		UIElement->arg4 = (int)yPosOrigin;
@@ -234,6 +231,7 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 		switchSpriteByName("MouseCursor", USE_CURRENT_SPRITESET, UIElement->ObjectDisplay);
 		AddFrameUpdateFunction(&UpdateCursor, UIElement, GameWorld->ObjectList);
 		UIElement->layer = FRONT_LAYER;
+		UIElement->ObjectDisplay->transparency = 0.5;
 		break;
 
 	default:
@@ -317,17 +315,17 @@ int UpdateUIElement(World *GameWorld, Object *UIElement)
 	case FADEOUT:
 		if (UIElement->arg2 == 0)
 		{
-			UIElement->ObjectDisplay->transparencyEffect -= 0.03;
-			if (UIElement->ObjectDisplay->transparencyEffect < 0.01)
+			UIElement->ObjectDisplay->transparency += 0.03;
+			if (UIElement->ObjectDisplay->transparency > 0.99)
 			{
-				UIElement->ObjectDisplay->transparencyEffect = 0.0;
+				UIElement->ObjectDisplay->transparency = 1.0;
 				UIElement->arg2 = 1;
 			}
 		}
 		else if (UIElement->arg2 > 130)
 		{
-			UIElement->ObjectDisplay->transparencyEffect += 0.04;
-			if (UIElement->ObjectDisplay->transparencyEffect > 0.99)
+			UIElement->ObjectDisplay->transparency -= 0.04;
+			if (UIElement->ObjectDisplay->transparency < 0.01)
 			{
 				MarkObjectForDeletion(UIElement);
 			}
@@ -358,8 +356,8 @@ int UpdateCursor(Object *Cursor, World *GameWorld)
 		return MISSING_DATA;
 	}
 
-	Cursor->ObjectBox->xPos = getMouseXZoom(GameWorld->MainCamera) - (Cursor->ObjectBox->xSize >> 1) + GameWorld->MainCamera.CameraX;
-	Cursor->ObjectBox->yPos = getMouseYZoom(GameWorld->MainCamera) - (Cursor->ObjectBox->ySize >> 1) + GameWorld->MainCamera.CameraY;
+	Cursor->ObjectBox->xPos = getMouseXCamRelative(GameWorld->MainCamera) - (Cursor->ObjectBox->xSize >> 1);
+	Cursor->ObjectBox->yPos = getMouseYCamRelative(GameWorld->MainCamera) - (Cursor->ObjectBox->ySize >> 1);
 
 	if (Cursor->nextObject != NULL)
 	{
@@ -435,11 +433,11 @@ int PauseMenu(Object *MenuController, World *GameWorld)
 }
 
 
-int MenuControl(Object *MenuController, World *GameWorld)
+bool MenuControl(Object *MenuController, World *GameWorld)
 {
 	if (MenuController == NULL || GameWorld == NULL || MenuController->ObjectID != UI_ELEMENT)
 	{
-		return 0;
+		return false;
 	}
 
 	// arg2: Option selected
@@ -447,7 +445,7 @@ int MenuControl(Object *MenuController, World *GameWorld)
 	// arg4: Y Pos for first option
 	// arg5: refresh flag
 
-	if (MenuController->arg5 == 1)
+	if (MenuController->arg5 > 0)
 	{
 		MenuController->arg5 = 0;
 		MarkObjectForDeletion(MenuController);
@@ -457,7 +455,7 @@ int MenuControl(Object *MenuController, World *GameWorld)
 		{
 			newMenu->arg2 = MenuController->arg2;
 			newMenu->ObjectBox->yPos = MenuController->ObjectBox->yPos;
-			return 0;
+			return false;
 		}
 	}
 
@@ -490,7 +488,7 @@ int MenuControl(Object *MenuController, World *GameWorld)
 
 	if (MenuController->Interrupt == INTERACTION_INTERRUPT)
 	{
-		MenuController->ObjectBox->yPos = (double)MenuController->arg4 - (MenuController->arg2 * 128);
+		MenuController->ObjectBox->yPos = (float)MenuController->arg4 - (MenuController->arg2 * 128);
 		MenuController->Interrupt = NO_INTERRUPT;
 	}
 
@@ -500,11 +498,11 @@ int MenuControl(Object *MenuController, World *GameWorld)
 		AcknowledgeHeldButtons();
 		MenuController->Interrupt = NO_INTERRUPT;
 
-		return 1;
+		return true;
 	}
 
 
-	return 0;
+	return false;
 }
 
 
@@ -761,26 +759,26 @@ int InitialiseUIText(Object *UIText, World *GameWorld)
 
 	switch(UIText->arg1)
 	{
-		case UNDEFINED_UI_ELEMENT:
+	case UNDEFINED_UI_ELEMENT:
 		MarkObjectForDeletion(UIText);
 		break;
 
-		case TEXTOPTION_CURSOR:
+	case TEXTOPTION_CURSOR:
 			UIText->arg2 = -1;
 			initialiseTextCharacter(UIText, '>', GameWorld);
 
 			UpdateUIText(GameWorld, UIText);
 		break;
 
-		case TEXT_CHARACTER:
+	case TEXT_CHARACTER:
 		initialiseTextCharacter(UIText, UIText->arg2, GameWorld);
 		break;
 
-		case TEXT_PORTRAIT:
+	case TEXT_PORTRAIT:
 		UIText->ParentLink = POSITION_LINK;
 		break;
 
-		default:
+	default:
 		break;
 	}
 
@@ -1388,9 +1386,6 @@ int initialiseTextCharacter(Object *inputCharacter, char charValue, World *GameW
 		// Just in case
 		inputCharacter->ObjectDisplay->RenderModeOverride = DO_NOT_RENDER;
 	}
-
-
-	inputCharacter->arg5 = charValue;
 
 	return LEMON_SUCCESS;
 }

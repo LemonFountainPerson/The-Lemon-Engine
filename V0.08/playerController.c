@@ -434,9 +434,7 @@ int PlayerInteractingWithBox(PlayerData Player, PhysicsRect *inputBox)
 		return MISSING_DATA;
 	}
 
-	int result = checkBoxOverlapsBoxBroad(inputBox, Player.InteractBox);
-
-	if (result == 1 && Player.InteractBox->solid == SOLID)
+	if (checkBoxOverlapsBoxBroad(inputBox, Player.InteractBox) && Player.InteractBox->solid == SOLID)
 	{
 		Player.InteractBox->solid = UNSOLID;
 

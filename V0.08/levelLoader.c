@@ -1254,16 +1254,3 @@ int convertIntToStr(char str[], int input)
 	return i;
 }
 
-
-bool inRange(int input, int low, int high)
-{
-	if (input < low || input > high)
-	{
-		return false;
-	}
-	else 
-	{
-		return true;
-	}
-	
-}

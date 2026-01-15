@@ -278,8 +278,8 @@ int renderHitbox(Camera inputCamera, World *gameWorld, PhysicsRect *inputBox, SD
 	
 	SDL_FRect Hitbox;
 
-	float xCoord = (float)((screenWidth >> 1) + inputBox->xPos - inputCamera.CameraX);
-	float yCoord = (float)((screenHeight >> 1) - inputBox->yPos + inputCamera.CameraY - inputBox->ySize);
+	float xCoord = (screenWidth >> 1) + inputBox->xPos - inputCamera.CameraX;
+	float yCoord = inputCamera.CameraY + (screenHeight >> 1) - inputBox->yPos - inputBox->ySize;
 	Hitbox.x = xCoord;
 	Hitbox.y = yCoord;
 	Hitbox.h = (float)inputBox->ySize;
@@ -399,7 +399,7 @@ int renderObjectSprite(Camera inputCamera, DisplayData inputData, PhysicsRect in
 		inputRenderMode = spritePtr->RenderMode;
 	}
 
-	if (inputData.transparencyEffect < 1.0)	// Hijack render mode if transparency effect is being applied so that faster render function can be used when no transparency is applied
+	if (inputData.transparency > 0.0)	// Hijack render mode if transparency effect is being applied so that faster render function can be used when no transparency is applied
 	{
 		switch (inputRenderMode)
 		{
@@ -418,6 +418,16 @@ int renderObjectSprite(Camera inputCamera, DisplayData inputData, PhysicsRect in
 			default:
 			break;
 		}
+
+		if (inputData.transparency > 1.0)
+		{
+			inputData.transparency = 1.0;
+			return LEMON_SUCCESS;
+		}
+
+		Uint8 alphaVal = (Uint8)fClamp(inputData.transparency * 255.0, 0.0, 255.0);
+
+		SDL_SetTextureAlphaMod(spritePtr->texture, alphaVal);
 	}
 
 
@@ -589,7 +599,7 @@ int renderBackGroundSprite(Camera inputCamera, BackgroundData WorldBackground, R
 
 
 // Debug text functions
-int DisplayDebugInfo(World *GameWorld, DebugTextMode debugTextMode)
+int DisplayDebugInfo(World *GameWorld, Camera renderCamera, RenderFrame ScreenData)
 {
 	if (GameWorld == NULL || GameWorld->ObjectList == NULL)
 	{
@@ -628,31 +638,35 @@ int DisplayDebugInfo(World *GameWorld, DebugTextMode debugTextMode)
 	}
 
 
-	/* Backgrounds
+	// Backgrounds
 	if (DebugSettings.BackgroundInfo == 1)
 	{
-		sprintf(text, "Background sprite Name: %s  Background Sprite ID: %d", );
-		AddDebugText(text, SCREEN_RELATIVE, -140, (screenHeight >> 1), 0);
+		Sprite *bgSprite = GameWorld->WorldBackground.BackgroundSpriteBuffer;
+		if (bgSprite != NULL)
+		{
+			sprintf(text, "Background sprite Name: %s  Background Sprite ID: %d", bgSprite->spriteName, bgSprite->spriteID);
+			AddDebugText(text, SCREEN_RELATIVE, -140, (screenHeight >> 1), 0);
+		}
 	}
-	*/
+	
 
 	// Camera Information
 	switch (DebugSettings.CameraInfo)
 	{
 	case 1:
-		sprintf(text, "Camera X: %.2f  Camera Y: %.2f", GameWorld->MainCamera.CameraX, GameWorld->MainCamera.CameraY);
+		sprintf(text, "Camera X: %.2f  Camera Y: %.2f", renderCamera.CameraX, renderCamera.CameraY);
 		AddDebugText(text, SCREEN_RELATIVE, -140, (screenHeight >> 1), 0);
 		break;
 
 	case 2: 
 		sprintf(text, "Camera X: %.2f  Camera Y: %.2f \nCameraLatch: %d \nBuffer X: %.2f  Buffer Y: %.2f", 
-			GameWorld->MainCamera.CameraX, GameWorld->MainCamera.CameraY, GameWorld->MainCamera.CameraLatch, GameWorld->MainCamera.CameraXBuffer, GameWorld->MainCamera.CameraYBuffer);
+			renderCamera.CameraX, renderCamera.CameraY, renderCamera.CameraLatch, renderCamera.CameraXBuffer, renderCamera.CameraYBuffer);
 		AddDebugText(text, SCREEN_RELATIVE, -140, (screenHeight >> 1), 0);
 		break;
 
 	case 3: 
 		sprintf(text, "Camera X: %.2f  Camera Y: %.2f \nX zoom: %.2f \nY zoom X: %.2f", 
-			GameWorld->MainCamera.CameraX, GameWorld->MainCamera.CameraY, GameWorld->MainCamera.zoomX, GameWorld->MainCamera.zoomY);
+			renderCamera.CameraX, renderCamera.CameraY, renderCamera.zoomX, renderCamera.zoomY);
 		AddDebugText(text, SCREEN_RELATIVE, -140, (screenHeight >> 1), 0);
 		break;
 
@@ -661,36 +675,65 @@ int DisplayDebugInfo(World *GameWorld, DebugTextMode debugTextMode)
 	}
 
 
-	Object *currentObject = GameWorld->ObjectList->firstObject;
+	Object *currentObject = GameWorld->ObjectList->lastObject;
 	int objCount = GameWorld->ObjectList->objectCount;
 
-	switch(debugTextMode)
+	switch(DebugSettings.DebugTextDisplayMode)
 	{
 		case DEBUG_TEXT_DISABLED:
+			break;
+
+
 		case DEBUG_TEXT_ENABLED:
+			while(currentObject != NULL && objCount > 0 && !MouseOverlappingBox(currentObject, GameWorld))
+			{
+				currentObject = currentObject->prevObject;
+				objCount--;
+			}
+
+			if (currentObject == NULL)
+			{
+				break;
+			}
+
+			if (currentObject->layer == HUD)
+			{
+				Camera hudCam = {0};
+				ResetCamera(&hudCam);
+				renderHitbox(hudCam, GameWorld, currentObject->ObjectBox, ScreenData.Renderer);
+			}
+			else
+			{
+				renderHitbox(renderCamera, GameWorld, currentObject->ObjectBox, ScreenData.Renderer);
+			}
+			
+			DisplayObjectDebugInfo(currentObject, objCount, true, renderCamera);
 			break;
 
 		case ONLY_PLAYER_INFO:
 		{
+			sprintf(text, "Jump Progress: %d\nCoin Count: %d\nHitPoints: %d", GameWorld->Player.jumpProgress, GameWorld->Player.coinCount, GameWorld->Player.HP);
+			AddDebugText(text, SCREEN_RELATIVE, -40.0, 100.0 - (screenHeight >> 1), 0);
+
 			while (currentObject != NULL && objCount > 0 && GameWorld->Player.PlayerPtr != currentObject)
 			{			
-				currentObject = currentObject->nextObject;
+				currentObject = currentObject->prevObject;
 				objCount--;
 			}
 
-			DisplayObjectDebugInfo(currentObject, objCount, GameWorld);
+			DisplayObjectDebugInfo(currentObject, objCount, false, renderCamera);
 		} break;
 
 		case ONLY_NONSTATIC_OBJECT_INFO:
 		{
 			while (currentObject != NULL && objCount > 0)
 			{	
-				if (currentObject->State != STATIC)
+				if (currentObject->State != STATIC && onScreen(currentObject, GameWorld))
 				{
-					DisplayObjectDebugInfo(currentObject, objCount, GameWorld);
+					DisplayObjectDebugInfo(currentObject, objCount, false, renderCamera);
 				}
 				
-				currentObject = currentObject->nextObject;
+				currentObject = currentObject->prevObject;
 				objCount--;
 			}
 		} break;
@@ -699,29 +742,29 @@ int DisplayDebugInfo(World *GameWorld, DebugTextMode debugTextMode)
 		{
 			while (currentObject != NULL && objCount > 0)
 			{	
-				DisplayObjectDebugInfo(currentObject, objCount, GameWorld);
-				
-				currentObject = currentObject->nextObject;
+				if (onScreen(currentObject, GameWorld))
+				{
+					DisplayObjectDebugInfo(currentObject, objCount, false, renderCamera);
+				}
+
+				currentObject = currentObject->prevObject;
 				objCount--;
 			}
 		} break;
 	}
 
 
+	RenderDebugText(renderCamera, ScreenData);
+
 	return LEMON_SUCCESS;
 }
 
 
-int DisplayObjectDebugInfo(Object *input, int objectNumber, World *GameWorld)
+int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Camera renderCamera)
 {
-	if (GameWorld == NULL || input == NULL || input->ObjectBox == NULL)
+	if (input == NULL || input->ObjectBox == NULL)
 	{
 		return MISSING_DATA;
-	}
-
-	if (!onScreen(input, GameWorld))
-	{
-		return EXECUTION_UNNECESSARY;
 	}
 
 	PhysicsRect *inputBox = input->ObjectBox;
@@ -1047,26 +1090,6 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, World *GameWorld)
 		break;
 
 
-		case 15:
-			PlayerData *Player = &GameWorld->Player;
-
-			if (input != Player->PlayerPtr)
-			{
-				strcat(text, "Not Assigned as Player");
-				break;
-			}
-
-			sprintf(buffer, "Jump Progress: %d", Player->jumpProgress);
-			strcat(text, buffer);
-
-			sprintf(buffer, "\nCoin Count: %d", Player->coinCount);
-			strcat(text, buffer);
-
-			sprintf(buffer, "\nHitPoints: %d", Player->HP);
-			strcat(text, buffer);
-		break;
-
-
 		default:
 			sprintf(buffer, "ObjectID: %d", input->ObjectID);
 			strcat(text, buffer);
@@ -1082,6 +1105,12 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, World *GameWorld)
 		break;
 	}
 	
+
+	if(goToMouse)
+	{
+		AddDebugText(text, SCREEN_RELATIVE, getMouseXZoom(renderCamera), getMouseYZoom(renderCamera) - 16.0, 0);
+		return LEMON_SUCCESS;
+	}
 
 	if (input->layer == HUD)
 	{
@@ -1128,7 +1157,7 @@ int DisplaySoundChannelDebugInfo(ChannelName channel)
 }
 
 
-int AddDebugText(char inputPhrase[], DebugTextFormatting format, int x, int y, int TicksToDelete)
+int AddDebugText(char inputPhrase[], DebugTextFormatting format, float x, float y, int TicksToDelete)
 {
 	if (inputPhrase == NULL || strlen(inputPhrase) < 1 || strlen(inputPhrase) >= DEBUG_TEXT_MAX_LENGTH)
 	{
@@ -1171,18 +1200,18 @@ int AddDebugText(char inputPhrase[], DebugTextFormatting format, int x, int y, i
 
     if (format == SCREEN_LIST_FORMAT)
     {
-    	TextsArray[index].Location.y = (float)(index + 1) * 20;
-    	TextsArray[index].Location.x = (float)x;
+    	TextsArray[index].Location.y = (float)(index + 1) * 20 - (screenHeight >> 1);
+    	TextsArray[index].Location.x = x;
     }
     else if (format == SCREEN_SOUND_FORMAT)
     {
     	TextsArray[index].Location.y = (float)50 + (y * 20);
-    	TextsArray[index].Location.x = (float)-x;
+    	TextsArray[index].Location.x = -x;
     }
     else
     {
-    	TextsArray[index].Location.x = (float)x;
-    	TextsArray[index].Location.y = (float)-y;
+    	TextsArray[index].Location.x = x;
+    	TextsArray[index].Location.y = -y;
     }
 
     TextsArray[index].Location.w = text->w;
@@ -1241,10 +1270,6 @@ int RenderDebugText(Camera inputCamera, RenderFrame ScreenData)
 			{
 				CorrectedDestination.x -= inputCamera.CameraX;
 				CorrectedDestination.y += inputCamera.CameraY;
-			}
-			else
-			{
-				
 			}
 
 			CorrectedDestination.x += inputCamera.zoomedWidth >> 1;

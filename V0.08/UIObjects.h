@@ -38,7 +38,7 @@ int UpdateTextBox(Object *textBox);
 
 int PauseMenu(Object *MenuController, World *GameWorld);
 
-int MenuControl(Object *MenuController, World *GameWorld);
+bool MenuControl(Object *MenuController, World *GameWorld);
 
 int SettingsMenuControl(Object *MenuController, World *GameWorld);
 

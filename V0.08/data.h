@@ -18,18 +18,13 @@
 
 
 
-//								Engine Settings (Can be modified via variables)
+//								Engine Settings (Can be modified during runtime via variables)
 //-------------------------------------------------------------------------------------------------
+
 // Most displayed objects are designed to adjust positioning based on resolution; 
 // however the lowest expected resolution is 1280 x 720, lower values may result in unintended behaviour
 #define V_RESOLUTION 720
 #define H_RESOLUTION 1280
-
-#define TICKS_PER_SECOND 60
-#define RENDERS_PER_SECOND 2000
-// Do not change
-#define TICK_RESOLUTION 1000        // values closer to 1 means higher resolution, while further means lower.
-#define TICK_RESOLUTION_INVERSE  ((double)1000000000 / (double)TICK_RESOLUTION)
 
 #define MAX_OBJECTS_RENDER 200
 #define MAX_PARTICLES_RENDER 64
@@ -52,24 +47,29 @@
 
 #define DEFAULT_TEXTURE "Missing.png"
 
+#define TICKS_PER_SECOND 60
+#define RENDERS_PER_SECOND 2000
+
+// Do not change
+#define TICK_RESOLUTION 1000        // values closer to 1 means higher resolution, while further means lower.
+#define TICK_RESOLUTION_INVERSE  ((double)1000000000 / (double)TICK_RESOLUTION)
+
+
 //-------------------------------------------------------------------------------------------------
 
 
-//									Root Folder locations
-//-------------------------------------------------------------------------------------------------
-#define SOUND_ROOT 		"LemonData/Sounds/"
-#define SPRITE_ROOT 	"LemonData/Sprites/"
-#define ANIMATION_ROOT 	"LemonData/AnimationData/"
-#define LEVELDATA_ROOT 	"LemonData/LevelData/"
-
-//-------------------------------------------------------------------------------------------------
-
-
-//								Engine constants
+//								Engine constants (Cannot be modified during runtime)
 //-------------------------------------------------------------------------------------------------
 // Avoid editing these values, as it may cause issues/performance loss
 #define OBJECT_NAME_LENGTH 15
 #define MAX_SPRITE_SIZE 3000
+
+#define MAX_TEXT_LENGTH 200
+
+#define MAX_OPTIONS 4
+#define OPTION_TEXT_MAX_LEN 50
+
+#define SCENE_VARIABLE_COUNT 16
 
 #define CONSOLE_STRING_LENGTH 512
 #define MAX_DEBUG_TEXTS 32
@@ -87,20 +87,6 @@
 //-------------------------------------------------------------------------------------------------
 
 
-//								Game constants
-//-------------------------------------------------------------------------------------------------
-#define MAX_TEXT_LENGTH 200
-
-#define MAX_OPTIONS 4
-#define OPTION_TEXT_MAX_LEN 50
-
-// Tiles Probably wont be re-implemented, but constants are useful for stylisation
-#define Y_TILESCALE 32
-#define X_TILESCALE 32
-
-//-------------------------------------------------------------------------------------------------
-
-
 //								Physics values
 //-------------------------------------------------------------------------------------------------
 #define COLLISION_CYCLES 5
@@ -113,7 +99,7 @@
 //-------------------------------------------------------------------------------------------------
 
 
-//								Useful constants
+//								Useful constants (For convenience)
 //-------------------------------------------------------------------------------------------------
 #define RADIAN_15 0.26179938779
 #define RADIAN_30 0.52359877559
@@ -129,7 +115,22 @@
 #define USE_CURRENT_SPRITESET 0
 #define BACKGROUND_SETID 1
 
+// Tiles Probably wont be re-implemented, but constants are useful for stylisation
+#define Y_TILESCALE 32
+#define X_TILESCALE 32
+
 //-------------------------------------------------------------------------------------------------
+
+
+//									Root Folder locations
+//-------------------------------------------------------------------------------------------------
+#define SOUND_ROOT 		"LemonData/Sounds/"
+#define SPRITE_ROOT 	"LemonData/Sprites/"
+#define ANIMATION_ROOT 	"LemonData/AnimationData/"
+#define LEVELDATA_ROOT 	"LemonData/LevelData/"
+
+//-------------------------------------------------------------------------------------------------
+
 
 
 #define LEMON_VERSION "V0.08"
@@ -689,7 +690,7 @@ struct displayData
 	unsigned int pixelXOffset;
 	unsigned int pixelYOffset;
 
-	float transparencyEffect;
+	float transparency;		// 0.0 is no transparency - 1.0 is full transparency (invisible)
 	bool hidden;
 };
 
@@ -944,7 +945,7 @@ struct ObjectMeta
 
 struct ifIntData
 {
-	int *variable;
+	int variableIndex;
 	int comparisonValue;
 
 	bool elseBranchPresent;
@@ -975,19 +976,19 @@ union SceneActionArguments
 	Layer layer;
 	struct ifIntData branchDataInt;
 	struct ifFloatData branchDataFloat;
+	int variableMutationArgs[2];
 };
 
 typedef enum SceneActionID
 {
 	SCENE_END,
 	SCENE_WAIT,
+	SCENE_CHANGE_VARIABLE_BY,
+	SCENE_SET_VARIABLE_TO,
 	SCENE_IF_EQUALS,
-	SCENE_IF_NOT_EQUALS,
 	SCENE_IF_LESS_THAN,
 	SCENE_IF_GREATER_THAN,
 	SCENE_FLOAT_IF_EQUALS,
-	SCENE_CHANGE_VARIABLE_BY,
-	SCENE_SET_VARIABLE_TO,
 	SCENE_SAY_TEXT,
 	SCENE_ANIMATE_ACTOR,
 	SCENE_SET_ACTOR_SPRITE,
@@ -1003,7 +1004,6 @@ typedef enum SceneActionID
 	SCENE_CREATE_ACTOR,
 	SCENE_SET_ACTOR_LAYER,
 	SCENE_PLAY_SOUND,
-	SCENE_PLAY_SOUND_REPEAT,
 	SCENE_SET_CHANNEL_VOL,
 	SCENE_FADE_CHANNEL_VOL,
 	SCENE_SET_CAMERA_POS,
@@ -1172,6 +1172,7 @@ struct DebugData
 	int FPSCounter;
 	int PauseStatus;
 	int CameraInfo;
+	int BackgroundInfo;
 	int SoundInfo;
 	int CutsceneInfo;
 

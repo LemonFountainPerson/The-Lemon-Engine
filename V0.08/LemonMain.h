@@ -60,6 +60,10 @@ int getExternalInput(World *GameWorld);
 
 int updateMouse(void);
 
+float getMouseXCamRelative(Camera inputCamera);
+
+float getMouseYCamRelative(Camera inputCamera);
+
 float getMouseXZoom(Camera inputCamera);
 
 float getMouseYZoom(Camera inputCamera);
@@ -107,27 +111,24 @@ int resizeSDLWindow();
 
 void printConsoleData();
 
-
 void clearConsoleString();
-
 
 int putConsoleString(const char input[]);
 
-
 int putConsoleInteger(int input);
-
 
 int putConsoleStrStr(const char input1[], const char input2[]);
 
-
 int putConsoleStrInt(const char strInput[], int intInput);
-
 
 int putConsoleStrIntStr(const char strInput1[], int intInput, const char strInput2[]);
 
+int putConsoleFloat(float input);
+
+int putConsoleStrFloat(const char strInput[], float floatInput);
+
 
 int putConsoleDouble(double input);
-
 
 int putConsoleStrDouble(const char strInput[], double doubleInput);
 
@@ -137,6 +138,10 @@ int clamp(int input, int lowerBound, int upperBound);
 double dClamp(double input, double lowerBound, double upperBound);
 
 float fClamp(float input, float lowerBound, float upperBound);
+
+bool inRange(int input, int low, int high);
+
+bool inRangeExclusive(int input, int low, int high);
 
 
 int modulo(int x, int N);

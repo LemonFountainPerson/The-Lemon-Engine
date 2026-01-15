@@ -38,16 +38,16 @@ int renderBackGroundSprite(Camera inputCamera, BackgroundData WorldBackground, R
 
 
 // Debug text functions
-int AddDebugText(char inputPhrase[], DebugTextFormatting format, int x, int y, int TicksToDelete);
+int AddDebugText(char inputPhrase[], DebugTextFormatting format, float x, float y, int TicksToDelete);
 
 
 int DisplaySoundChannelDebugInfo(ChannelName channel);
 
 
-int DisplayDebugInfo(World *GameWorld, DebugTextMode debugTextMode);
+int DisplayDebugInfo(World *GameWorld, Camera inputCamera, RenderFrame ScreenData);
 
 
-int DisplayObjectDebugInfo(Object *input, int objectNumber, World *GameWorld);
+int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Camera renderCamera);
 
 
 int RemoveDebugText(int index);

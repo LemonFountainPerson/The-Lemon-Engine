@@ -66,8 +66,5 @@ int convertStrToInt(char str[], int size);
 
 int convertIntToStr(char str[], int input);
 
-bool inRange(int input, int low, int high);
-
-
 
 int loadTestScene(World *GameWorld);

@@ -144,10 +144,9 @@ float DistanceBetween(Object *Source, Object *Target);
 bool onScreen(Object *inputObject, World *GameWorld);
 
 
-int MouseOverlappingBox(Object *input, World *GameWorld);
+bool MouseOverlappingBox(Object *input, World *GameWorld);
 
-
-int MouseOverlappingSprite(Object *input, World *GameWorld);
+bool MouseOverlappingSprite(Object *input, World *GameWorld);
 
 
 // Core Object Functionality
@@ -256,11 +255,9 @@ Object* GetCollidingObject(PhysicsRect *inputBox, ObjectController *ObjectList);
 
 int CheckBoxCollidesBox(PhysicsRect *inputBox, PhysicsRect *compareBox);
 
+bool checkBoxOverlapsBoxBroad(PhysicsRect *inputBox, PhysicsRect *compareBox);
 
-int checkBoxOverlapsBoxBroad(PhysicsRect *inputBox, PhysicsRect *compareBox);
-
-
-int CheckBoxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox);
+bool CheckBoxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox);
 
 
 Object* GetOverlappingObject(Object *inputObject, ObjectController *objectList);

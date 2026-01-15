@@ -29,23 +29,30 @@ int Repeat(int repeatCount, int instructionCount, ...);
 SceneAction* Wait(float seconds, World *GameWorld);
 
 // branching based on variable
-SceneAction* ifEquals(int* variable, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
+SceneAction* ifEquals(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
 
-SceneAction* ifEqualsElse(int* variable, int value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld);
+SceneAction* ifNotEquals(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
 
-SceneAction* ifNotEquals(int* variable, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
+SceneAction* ifLessThan(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
 
-SceneAction* ifNotEqualsElse(int* variable, int value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld);
+SceneAction* ifLessThanEquals(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
 
-SceneAction* ifLessThan(int* variable, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
+SceneAction* ifGreaterThan(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
 
-SceneAction* ifLessThanElse(int* variable, int value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld);
-
-SceneAction* ifGreaterThan(int* variable, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
-
-SceneAction* ifGreaterThanElse(int* variable, int value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld);
+SceneAction* ifGreaterThanEquals(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
 
 SceneAction* ifFloatEquals(float* variable, float value, CutsceneID cutsceneToTrigger, World *GameWorld);
+
+SceneAction* ifElse(SceneAction *inputIfStatement, CutsceneID cutsceneIfElse);
+
+
+SceneAction* ifEqualsElse(int variableIndex, int value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld);
+
+SceneAction* ifNotEqualsElse(int variableIndex, int value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld);
+
+SceneAction* ifLessThanElse(int variableIndex, int value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld);
+
+SceneAction* ifGreaterThanElse(int variableIndex, int value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld);
 
 SceneAction* ifFloatEqualsElse(float* variable, float value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld);
 

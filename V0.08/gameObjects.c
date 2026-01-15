@@ -750,7 +750,7 @@ int resetDisplayData(DisplayData *input)
 	input->animationBuffer = NULL;
 	input->animationTick = 0.0;
 	input->animationLoopCount = 0;
-	input->transparencyEffect = 1.0;
+	input->transparency = 0.0;
 	input->hidden = false;
 
 	return LEMON_SUCCESS;
@@ -1245,7 +1245,7 @@ int cacheObjects(ObjectController *ObjectList, PhysicsRect boundingBox)
 			continue;
 		}
 
-		if (checkBoxOverlapsBoxBroad(&boundingBox, temp->ObjectBox) == 0)
+		if (checkBoxOverlapsBoxBroad(&boundingBox, temp->ObjectBox) == false)
 		{
 			moveObjectToCachedList(ObjectList, temp);
 		}
@@ -1667,7 +1667,7 @@ int UpdateParentChildLink(Object *inputObject)
 
 	if ((inputObject->ParentLink & TRANSPARENCY_LINK) != 0)
 	{
-		InputDisplay->transparencyEffect = ParentDisplay->transparencyEffect;
+		InputDisplay->transparency = ParentDisplay->transparency;
 	}
 
 
@@ -1892,7 +1892,7 @@ int UpdateCoin(Object *coin, World *GameWorld)
 	PlayerData *Player = &GameWorld->Player;
 	PhysicsRect *coinBox = coin->ObjectBox;
 
-	if (checkBoxOverlapsBoxBroad(Player->PlayerBox, coin->ObjectBox) == 1)
+	if (checkBoxOverlapsBoxBroad(Player->PlayerBox, coin->ObjectBox))
 	{
 		Player->coinCount++;
 		AddParticle(GameWorld, SPARKLE, coinBox->xPos + 20 - (rand() % 40), coinBox->yPos + 20 - (rand() % 40), 1, 0);
@@ -1931,7 +1931,7 @@ int UpdateSpring(Object *spring, World *GameWorld)
 	PhysicsRect *PlayerBox = GameWorld->Player.PlayerBox;
 
 
-	if (spring->ObjectDisplay->currentAnimation == 0 && PlayerBox->yVelocity < -1.0 && checkBoxOverlapsBoxBroad(PlayerBox, spring->ObjectBox) == 1)
+	if (spring->ObjectDisplay->currentAnimation == 0 && PlayerBox->yVelocity < -1.0 && checkBoxOverlapsBoxBroad(PlayerBox, spring->ObjectBox))
 	{
 		float xForce = -cos(spring->ObjectBox->direction) * spring->arg1;
 		float yForce = sin(spring->ObjectBox->direction) * spring->arg1;
@@ -3137,44 +3137,37 @@ bool onScreen(Object *inputObject, World *GameWorld)
 }
 
 
-int MouseOverlappingBox(Object *input, World *GameWorld)
+bool MouseOverlappingBox(Object *input, World *GameWorld)
 {
 	if (input == NULL || input->ObjectBox == NULL)
 	{
-		return 0;
+		return false;
 	}
 
-	int result = 0;
-
-	PhysicsRect inputBox = *(input->ObjectBox);
 	PhysicsRect mouseBox = {0};
 
 	mouseBox.xSize = 1;
 	mouseBox.ySize = 1;
-	mouseBox.xPos = (float)MouseInput.xPos;
-	mouseBox.yPos = (float)MouseInput.yPos;
+	mouseBox.xPos = getMouseXCamRelative(GameWorld->MainCamera);
+	mouseBox.yPos = getMouseYCamRelative(GameWorld->MainCamera);
 
 
-	if (input->layer != HUD)
+	if (input->layer == HUD)
 	{
-		inputBox.xPos -= GameWorld->MainCamera.CameraX;
-		inputBox.yPos -= GameWorld->MainCamera.CameraY;
+		mouseBox.xPos -= GameWorld->MainCamera.CameraX;
+		mouseBox.yPos -= GameWorld->MainCamera.CameraY;
 	}
 	
-	result = checkBoxOverlapsBoxBroad(&inputBox, &mouseBox);
-
-	return result;
+	return checkBoxOverlapsBoxBroad(input->ObjectBox, &mouseBox);
 }
 
 
-int MouseOverlappingSprite(Object *input, World *GameWorld)
+bool MouseOverlappingSprite(Object *input, World *GameWorld)
 {
 	if (input == NULL || input->ObjectDisplay == NULL || input->ObjectBox == NULL || input->ObjectDisplay->spriteBuffer == NULL)
 	{
-		return 0;
+		return false;
 	}
-
-	int result = 0;
 
 	PhysicsRect inputBox = *(input->ObjectBox);
 	DisplayData *inputDisplay = input->ObjectDisplay;
@@ -3212,40 +3205,39 @@ int MouseOverlappingSprite(Object *input, World *GameWorld)
 	{
 		if (GameWorld == NULL)
 		{
-			return 0;
+			return false;
 		}
 
 		inputBox.xPos -= GameWorld->MainCamera.CameraX;
 		inputBox.yPos -= GameWorld->MainCamera.CameraY;
 	}
 
-	result = checkBoxOverlapsBoxBroad(&inputBox, &mouseBox);
-
-	return result;
+	return checkBoxOverlapsBoxBroad(&inputBox, &mouseBox);
 }
 
 
-int checkBoxOverlapsBoxBroad(PhysicsRect *inputBox, PhysicsRect *compareBox)
+bool checkBoxOverlapsBoxBroad(PhysicsRect *inputBox, PhysicsRect *compareBox)
 {
 	if (inputBox == compareBox)
 	{
-		return 0;
+		return false;
 	}
 
-	return !((int)inputBox->xPos >= (int)(compareBox->xPos + compareBox->xSize) || (int)(inputBox->xPos + inputBox->xSize) <= (int)compareBox->xPos || (int)inputBox->yPos >= (int)(compareBox->yPos + compareBox->ySize) || (int)(inputBox->yPos + inputBox->ySize) <= (int)compareBox->yPos);
+	return !((int)inputBox->xPos >= (int)compareBox->xPos + compareBox->xSize || (int)inputBox->xPos + inputBox->xSize <= (int)compareBox->xPos 
+		|| (int)inputBox->yPos >= (int)compareBox->yPos + compareBox->ySize || (int)inputBox->yPos + inputBox->ySize <= (int)compareBox->yPos);
 }
 
 
-int CheckBoxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox)
+bool CheckBoxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox)
 {
 	if (inputBox == NULL || compareBox == NULL)
 	{
-		return MISSING_DATA;
+		return false;
 	}
 
 	if (inputBox == compareBox || inputBox->xSize <= 0 || inputBox->ySize <= 0 || compareBox->xSize <= 0 || compareBox->ySize <= 0)
 	{
-		return 0;
+		return false;
 	}
 
 	int inputX = inputBox->xPos;
@@ -3273,7 +3265,7 @@ int CheckBoxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox)
 				inputYTop = ((inputBox->xSize - compareBox->xPos + inputBox->xPos) * ((float)inputBox->ySize/(float)inputBox->xSize));
 			}
 			
-			inputYTop = dClamp(inputYTop, 0.0, (float)inputBox->ySize);
+			inputYTop = fClamp(inputYTop, 0.0, (float)inputBox->ySize);
 
 			if (inputBox->yFlip == -1)
 			{
@@ -3303,7 +3295,7 @@ int CheckBoxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox)
 				compareYTop = ((compareBox->xSize - (inputBox->xPos - compareBox->xPos)) * ((float)compareBox->ySize/(float)compareBox->xSize));
 			}
 
-			compareYTop = dClamp(compareYTop, 0.0, (float)compareBox->ySize);
+			compareYTop = fClamp(compareYTop, 0.0, (float)compareBox->ySize);
 
 			if (compareBox->yFlip == -1)
 			{
@@ -3335,7 +3327,7 @@ int CheckBoxCollidesBox(PhysicsRect *inputBox, PhysicsRect *compareBox)
 		return 0;
 	}
 
-	if (CheckBoxOverlapsBox(inputBox, compareBox) == 0)
+	if (CheckBoxOverlapsBox(inputBox, compareBox) == false)
 	{
 		return 0;
 	}
@@ -3575,7 +3567,7 @@ Object* GetCollidingObject(PhysicsRect *inputBox, ObjectController *ObjectList)
 
 	while (currentObject != NULL)
 	{
-		if (currentObject->ObjectBox->solid == UNSOLID || checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox) == 0)
+		if (currentObject->ObjectBox->solid == UNSOLID || checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox) == false)
 		{
 			currentObject = currentObject->nextObject;
 			continue;
@@ -3607,13 +3599,13 @@ Object* GetOverlappingObject(Object *inputObject, ObjectController *ObjectList)
 
 	while(currentObject != NULL && i > 0)
 	{
-		if (checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox) == 0)
+		if (checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox) == false)
 		{
 			currentObject = currentObject->nextObject;
 			continue;
 		}
 		
-		if (CheckBoxOverlapsBox(inputBox, currentObject->ObjectBox) == 1)
+		if (CheckBoxOverlapsBox(inputBox, currentObject->ObjectBox))
 		{
 			return currentObject;
 		}
@@ -3641,14 +3633,14 @@ Object* GetOverlappingObjectType(Object *inputObject, int overlapObjectID, Objec
 
 	while(currentObject != NULL && i > 0)
 	{
-		if (checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox) == 0)
+		if (checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox) == false)
 		{
 			currentObject = currentObject->nextObject;
 			continue;
 		}
 
 		
-		if (currentObject->ObjectID == overlapObjectID && CheckBoxOverlapsBox(inputBox, currentObject->ObjectBox) == 1)
+		if (currentObject->ObjectID == overlapObjectID && CheckBoxOverlapsBox(inputBox, currentObject->ObjectBox))
 		{
 			return currentObject;
 		}
@@ -3677,14 +3669,14 @@ Object* GetOverlappingObjectSolid(Object *inputObject, int solidID, ObjectContro
 
 	while(currentObject != NULL && i > 0)
 	{
-		if (checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox) == 0)
+		if (checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox) == false)
 		{
 			currentObject = currentObject->nextObject;
 			continue;
 		}
 
 		
-		if (currentObject->ObjectBox->solid == solidID && CheckBoxOverlapsBox(inputBox, currentObject->ObjectBox) == 1)
+		if (currentObject->ObjectBox->solid == solidID && CheckBoxOverlapsBox(inputBox, currentObject->ObjectBox))
 		{
 			return currentObject;
 		}
@@ -3713,14 +3705,14 @@ Object* GetOverlappingObjectAllSolids(Object *inputObject, ObjectController *Obj
 
 	while(currentObject != NULL && i > 0)
 	{
-		if (checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox) == 0)
+		if (checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox) == false)
 		{
 			currentObject = currentObject->nextObject;
 			continue;
 		}
 
 		
-		if (currentObject->ObjectBox->solid != UNSOLID && CheckBoxOverlapsBox(inputBox, currentObject->ObjectBox) == 1)
+		if (currentObject->ObjectBox->solid != UNSOLID && CheckBoxOverlapsBox(inputBox, currentObject->ObjectBox))
 		{
 			return currentObject;
 		}
@@ -3751,9 +3743,9 @@ int MoveObject(Object *inputObject, World *GameWorld)
 	moveObjectY(inputBox, ObjectList);
 	moveObjectForward(inputBox, ObjectList);
 
-	inputBox->xPos = dClamp(inputBox->xPos, -EngineSettings.WorldBoundX, EngineSettings.WorldBoundX);
+	inputBox->xPos = fClamp(inputBox->xPos, -EngineSettings.WorldBoundX, EngineSettings.WorldBoundX);
 	inputBox->xPosRight = inputBox->xPos + inputBox->xSize;
-	inputBox->yPos = dClamp(inputBox->yPos, -EngineSettings.WorldBoundY, EngineSettings.WorldBoundY);
+	inputBox->yPos = fClamp(inputBox->yPos, -EngineSettings.WorldBoundY, EngineSettings.WorldBoundY);
 	inputBox->yPosTop = inputBox->yPos + inputBox->ySize;
 
 	resetGroundCheck(inputBox, GameWorld);
@@ -4170,7 +4162,7 @@ int ResolveXCollision(PhysicsRect *movingBox, PhysicsRect *compareBox, ObjectCon
 				slopeFloor = (compareBox->xSize - movingBox->xPos + compareBox->xPos) * slope;
 			}
 
-			slopeFloor = dClamp(slopeFloor, 0.0, compareBox->ySize);
+			slopeFloor = fClamp(slopeFloor, 0.0, compareBox->ySize);
 
 			if (compareBox->yFlip == -1)
 			{
