@@ -651,8 +651,8 @@ int snapPositionToTileGrid(PhysicsRect *ObjectBox, int xPos, int yPos)
 		return MISSING_DATA;
 	}
 	
-	ObjectBox->xPos = (double)(xPos - (xPos % X_TILESCALE));
-	ObjectBox->yPos = (double)(yPos - (yPos % Y_TILESCALE));
+	ObjectBox->xPos = (float)(xPos - (xPos % X_TILESCALE));
+	ObjectBox->yPos = (float)(yPos - (yPos % Y_TILESCALE));
 	
 	return LEMON_SUCCESS;
 }
@@ -1589,7 +1589,7 @@ int applyMagnetisation(PhysicsRect *inputBox, PhysicsRect *GroundBox, World *Gam
 
 	
 	// Ensure that velocity applied is not necessary in the case of it moving against gravity
-	double pixelXDifference = (int)GroundBox->xPos - (int)GroundBox->prevXPos;
+	float pixelXDifference = (int)GroundBox->xPos - (int)GroundBox->prevXPos;
 
 	GroundBox->xPos += pixelXDifference; 
 		
@@ -1605,7 +1605,7 @@ int applyMagnetisation(PhysicsRect *inputBox, PhysicsRect *GroundBox, World *Gam
 		inputBox->PhysicsXVelocity = 0.0;
 	}
 
-	double pixelYDifference = (int)GroundBox->yPos - (int)GroundBox->prevYPos;
+	float pixelYDifference = (int)GroundBox->yPos - (int)GroundBox->prevYPos;
 	GroundBox->yPos += pixelYDifference; 
 		
 	if (fabs(GameWorld->GlobalGravityY) < 0.1 || CheckBoxCollidesBox(GroundBox, inputBox) == 0)
@@ -1720,7 +1720,7 @@ int ResolveAllObjects(World *GameWorld)
 		{
 			if (fabs(currentBox->PhysicsXVelocity) > 0.1)
 			{
-				double savedPos = currentBox->yPos;
+				float savedPos = currentBox->yPos;
 				currentBox->yPos -= currentBox->PhysicsYVelocity;
 				ResolveAllXCollision(currentObject->ObjectBox, GameWorld->ObjectList);
 				currentBox->yPos = savedPos;
@@ -1933,8 +1933,8 @@ int UpdateSpring(Object *spring, World *GameWorld)
 
 	if (spring->ObjectDisplay->currentAnimation == 0 && PlayerBox->yVelocity < -1.0 && checkBoxOverlapsBoxBroad(PlayerBox, spring->ObjectBox) == 1)
 	{
-		double xForce = -cos(spring->ObjectBox->direction) * spring->arg1;
-		double yForce = sin(spring->ObjectBox->direction) * spring->arg1;
+		float xForce = -cos(spring->ObjectBox->direction) * spring->arg1;
+		float yForce = sin(spring->ObjectBox->direction) * spring->arg1;
 
 		if (fabs(yForce) > 0.9)
 		{
@@ -3104,8 +3104,8 @@ float DistanceBetween(Object *Source, Object *Target)
 	PhysicsRect *box1 = (Source->ObjectBox);
 	PhysicsRect *box2 = (Target->ObjectBox);
 
-	double xDistance = (box2->xPos - box1->xPos) * (box2->xPos - box1->xPos);
-	double yDistance = (box2->yPos - box1->yPos) * (box2->yPos - box1->yPos);
+	float xDistance = (box2->xPos - box1->xPos) * (box2->xPos - box1->xPos);
+	float yDistance = (box2->yPos - box1->yPos) * (box2->yPos - box1->yPos);
 
 	return (float)sqrt(xDistance + yDistance);
 }
@@ -3151,8 +3151,8 @@ int MouseOverlappingBox(Object *input, World *GameWorld)
 
 	mouseBox.xSize = 1;
 	mouseBox.ySize = 1;
-	mouseBox.xPos = (double)MouseInput.xPos;
-	mouseBox.yPos = (double)MouseInput.yPos;
+	mouseBox.xPos = (float)MouseInput.xPos;
+	mouseBox.yPos = (float)MouseInput.yPos;
 
 
 	if (input->layer != HUD)
@@ -3204,8 +3204,8 @@ int MouseOverlappingSprite(Object *input, World *GameWorld)
 	PhysicsRect mouseBox = {0};
 	mouseBox.xSize = 1;
 	mouseBox.ySize = 1;
-	mouseBox.xPos = (double)MouseInput.xPos;
-	mouseBox.yPos = (double)MouseInput.yPos;
+	mouseBox.xPos = (float)MouseInput.xPos;
+	mouseBox.yPos = (float)MouseInput.yPos;
 
 
 	if (input->layer != HUD)
@@ -3266,14 +3266,14 @@ int CheckBoxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox)
 		{
 			if (inputBox->xFlip == 1)
 			{
-				inputYTop = ((compareBox->xPos + compareBox->xSize - inputBox->xPos) * ((double)inputBox->ySize/(double)inputBox->xSize));
+				inputYTop = ((compareBox->xPos + compareBox->xSize - inputBox->xPos) * ((float)inputBox->ySize/(float)inputBox->xSize));
 			}
 			else
 			{
-				inputYTop = ((inputBox->xSize - compareBox->xPos + inputBox->xPos) * ((double)inputBox->ySize/(double)inputBox->xSize));
+				inputYTop = ((inputBox->xSize - compareBox->xPos + inputBox->xPos) * ((float)inputBox->ySize/(float)inputBox->xSize));
 			}
 			
-			inputYTop = dClamp(inputYTop, 0.0, (double)inputBox->ySize);
+			inputYTop = dClamp(inputYTop, 0.0, (float)inputBox->ySize);
 
 			if (inputBox->yFlip == -1)
 			{
@@ -3296,14 +3296,14 @@ int CheckBoxOverlapsBox(PhysicsRect *inputBox, PhysicsRect *compareBox)
 		{
 			if (compareBox->xFlip == 1)
 			{
-				compareYTop = ((inputBox->xPos + inputBox->xSize - compareBox->xPos) * ((double)compareBox->ySize/(double)compareBox->xSize));
+				compareYTop = ((inputBox->xPos + inputBox->xSize - compareBox->xPos) * ((float)compareBox->ySize/(float)compareBox->xSize));
 			}
 			else
 			{
-				compareYTop = ((compareBox->xSize - (inputBox->xPos - compareBox->xPos)) * ((double)compareBox->ySize/(double)compareBox->xSize));
+				compareYTop = ((compareBox->xSize - (inputBox->xPos - compareBox->xPos)) * ((float)compareBox->ySize/(float)compareBox->xSize));
 			}
 
-			compareYTop = dClamp(compareYTop, 0.0, (double)compareBox->ySize);
+			compareYTop = dClamp(compareYTop, 0.0, (float)compareBox->ySize);
 
 			if (compareBox->yFlip == -1)
 			{
@@ -3442,8 +3442,8 @@ int AssignDirection(PhysicsRect *inputBox, PhysicsRect *compareBox)
 				break;
 			}
 
-			double slope = (double)compareBox->ySize/(double)compareBox->xSize;
-			double slopeFloor;
+			float slope = (float)compareBox->ySize/(float)compareBox->xSize;
+			float slopeFloor;
 
 			if (compareBox->xFlip == 1)
 			{
@@ -3764,7 +3764,7 @@ int MoveObject(Object *inputObject, World *GameWorld)
 
 int moveObjectX(PhysicsRect *inputBox, ObjectController *ObjectList)
 {
-	double velocity = inputBox->xVelocity;// + inputBox->PhysicsXVelocity;
+	float velocity = inputBox->xVelocity;// + inputBox->PhysicsXVelocity;
 
 	if (fabs(velocity) < 0.1)
 	{
@@ -3785,7 +3785,7 @@ int moveObjectX(PhysicsRect *inputBox, ObjectController *ObjectList)
 
 int moveObjectY(PhysicsRect *inputBox, ObjectController *ObjectList)
 {
-	double velocity = inputBox->yVelocity;// + inputBox->PhysicsYVelocity;
+	float velocity = inputBox->yVelocity;// + inputBox->PhysicsYVelocity;
 
 
 	if (fabs(velocity) < 0.1)
@@ -3925,12 +3925,12 @@ int moveObjectForward(PhysicsRect *movingBox, ObjectController *ObjectList)
 	//double travelDistance = sqrt(pow(xTravel, 2.0) + pow(yTravel, 2.0));
 	
 
-	double xStep = orientation * sinVal;
-	double yStep = orientation * cosVal;
+	float xStep = orientation * sinVal;
+	float yStep = orientation * cosVal;
 	int travelCount = (int)fabs(movingBox->forwardVelocity);
 
 	int collideCycle;
-	double lastStepX, lastStepY;
+	float lastStepX, lastStepY;
 
 	// regular collision
 	Object *currentObject = NULL;
@@ -3955,10 +3955,10 @@ int moveObjectForward(PhysicsRect *movingBox, ObjectController *ObjectList)
 			{
 				PhysicsRect *collideBox = currentObject->ObjectBox;
 
-				double tempVelocity = collideBox->forwardVelocity;
+				float tempVelocity = collideBox->forwardVelocity;
 				double tempDirection = collideBox->direction;
-				double collideXPos = collideBox->xPos;
-				double collideYPos = collideBox->yPos;
+				float collideXPos = collideBox->xPos;
+				float collideYPos = collideBox->yPos;
 
 				
 				collideBox->forwardVelocity = orientation * travelCount;
@@ -4030,11 +4030,11 @@ int ApplyForwardPhysics(PhysicsRect *inputBox, PhysicsRect *physicsBox)
 	double sinVal = sin(inputBox->direction);
 	double cosVal = cos(inputBox->direction);
 
-	double forwardX = inputBox->forwardVelocity * sinVal;
-	double forwardY = inputBox->forwardVelocity * cosVal;
+	float forwardX = inputBox->forwardVelocity * sinVal;
+	float forwardY = inputBox->forwardVelocity * cosVal;
 
-	double physicsBoxXVel = physicsBox->xVelocity;
-	double physicsBoxYVel = physicsBox->yVelocity;
+	float physicsBoxXVel = physicsBox->xVelocity;
+	float physicsBoxYVel = physicsBox->yVelocity;
 
 	if (fabs(physicsBox->forwardVelocity) > 0.1)
 	{
@@ -4042,7 +4042,7 @@ int ApplyForwardPhysics(PhysicsRect *inputBox, PhysicsRect *physicsBox)
 		physicsBoxYVel += physicsBox->forwardVelocity * cos(physicsBox->direction);
 	}
 
-	double newVelocity = 0.0;
+	float newVelocity = 0.0;
 
 	if (fabs(physicsBoxXVel) > 0.01 && fabs(sinVal) > 0.001 && (physicsBoxXVel > 0.1) == (forwardX > 0.1))
 	{
@@ -4085,7 +4085,7 @@ int ResolveAllXCollision(PhysicsRect *movingBox, ObjectController *ObjectList)
 			PhysicsRect *collideBox = currentObject->ObjectBox;
 			ResolveXCollisionByPush(movingBox, collideBox);
 
-			double prevXVel = collideBox->xVelocity;
+			float prevXVel = collideBox->xVelocity;
 			SolidType prevType = movingBox->solid;
 			CollideType prevCollideMode = collideBox->collideMode;
 
@@ -4158,8 +4158,8 @@ int ResolveXCollision(PhysicsRect *movingBox, PhysicsRect *compareBox, ObjectCon
 				}
 			}
 
-			double slope = ((double)compareBox->ySize/(double)compareBox->xSize);
-			double slopeFloor;
+			float slope = ((float)compareBox->ySize/(float)compareBox->xSize);
+			float slopeFloor;
 
 			if (compareBox->xFlip == 1)
 			{
@@ -4259,7 +4259,7 @@ int ResolveAllYCollision(PhysicsRect *movingBox, ObjectController *ObjectList)
 			PhysicsRect *collideBox = currentObject->ObjectBox;
 			ResolveYCollisionByPush(movingBox, collideBox);
 
-			double prevYVel = collideBox->yVelocity;
+			float prevYVel = collideBox->yVelocity;
 			SolidType prevType = movingBox->solid;
 			CollideType prevCollideMode = collideBox->collideMode;
 
@@ -4324,8 +4324,8 @@ int ResolveYCollision(PhysicsRect *movingBox, PhysicsRect *compareBox)
 
 			// If movingBox is halfway off edge, floor of slope continues to be calculated as Y = X * slope
 			// So here it is reset to the expected maximum if it over
-			double slope = ((double)compareBox->ySize/(double)compareBox->xSize);
-			double slopeFloor;
+			float slope = ((float)compareBox->ySize/(float)compareBox->xSize);
+			float slopeFloor;
 
 			if (compareBox->xFlip == 1)
 			{
@@ -4568,10 +4568,10 @@ int ClimbSlope(PhysicsRect *inputBox, PhysicsRect *compareBox, ObjectController 
 		return MISSING_DATA;
 	}
 
-	double savedForwardVelocity = inputBox->forwardVelocity;
+	float savedForwardVelocity = inputBox->forwardVelocity;
 	double savedDirection = inputBox->direction;
 
-	double velocity = inputBox->xVelocity + inputBox->PhysicsXVelocity;
+	float velocity = inputBox->xVelocity + inputBox->PhysicsXVelocity;
 
 	if (fabs(velocity) < 0.1)
 	{

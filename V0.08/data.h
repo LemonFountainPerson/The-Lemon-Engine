@@ -26,7 +26,7 @@
 #define H_RESOLUTION 1280
 
 #define TICKS_PER_SECOND 60
-#define RENDERS_PER_SECOND 1000
+#define RENDERS_PER_SECOND 2000
 // Do not change
 #define TICK_RESOLUTION 1000        // values closer to 1 means higher resolution, while further means lower.
 #define TICK_RESOLUTION_INVERSE  ((double)1000000000 / (double)TICK_RESOLUTION)

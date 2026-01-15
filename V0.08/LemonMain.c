@@ -788,7 +788,7 @@ bool SetWindowTitle(const char newTitle[])
 
 int setTickRate(int desiredTickRate)
 {
-	if (desiredTickRate > 2000 || desiredTickRate < 1)
+	if (desiredTickRate > 1000 || desiredTickRate < 1)
 	{
 		return INVALID_DATA;
 	}
@@ -808,7 +808,7 @@ int setTickRate(int desiredTickRate)
 
 int setRenderRefreshRate(int desiredRenderRate)
 {
-	if (desiredRenderRate > 2000 || desiredRenderRate < 1)
+	if (desiredRenderRate > 1000000 || desiredRenderRate < 1)
 	{
 		return INVALID_DATA;
 	}
