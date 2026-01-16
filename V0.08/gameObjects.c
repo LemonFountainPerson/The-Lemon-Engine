@@ -71,8 +71,6 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 
 	newObject->layer = MIDDLEGROUND;
 
-	newObject->ObjectDisplay->currentSprite = 1;
-
 	newObject->ObjectBox->xPos = xPos;
 	newObject->ObjectBox->yPos = yPos;
 
@@ -96,14 +94,14 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 			break;
 
 		case LEVEL_DOOR:
-			snapPositionToTileGrid(newObject->ObjectBox, xPos, yPos);
+			snapPositionToTileGrid(newObject, xPos, yPos);
 			newObject->ObjectBox->solid = JUMP_THROUGH;
 			newObject->ObjectBox->xSize = X_TILESCALE << 1;
 			newObject->ObjectBox->ySize = Y_TILESCALE * 3;
 			break;
 
 		case DOOR:
-			snapPositionToTileGrid(newObject->ObjectBox, xPos, yPos);
+			snapPositionToTileGrid(newObject, xPos, yPos);
 			newObject->ObjectBox->solid = JUMP_THROUGH;
 			newObject->ObjectBox->xSize = X_TILESCALE << 1;
 			newObject->ObjectBox->ySize = Y_TILESCALE * 3;
@@ -119,7 +117,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 		break;
 
 		case SOLID_BLOCK:
-			snapPositionToTileGrid(newObject->ObjectBox, xPos, yPos);
+			snapPositionToTileGrid(newObject, xPos, yPos);
 			newObject->ObjectBox->xSize = xSize * X_TILESCALE;
 			newObject->ObjectBox->ySize = ySize * Y_TILESCALE;
 			newObject->State = STATIC;
@@ -139,7 +137,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 		case FLAT_SLOPE_FLOOR:
 		//Angle: Y = (X * ySize/xSize)
 		//Angle: X = (Y / (ySize/xSize))
-			snapPositionToTileGrid(newObject->ObjectBox, xPos, yPos);
+			snapPositionToTileGrid(newObject, xPos, yPos);
 			newObject->ObjectBox->solid = FLAT_SLOPE;
 			newObject->State = STATIC;
 
@@ -166,7 +164,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 
 
 		case JUMP_THRU_BLOCK:
-			snapPositionToTileGrid(newObject->ObjectBox, xPos, yPos);
+			snapPositionToTileGrid(newObject, xPos, yPos);
 			newObject->ObjectBox->solid = JUMP_THROUGH;
 			newObject->ObjectBox->xSize = xSize * X_TILESCALE;
 			newObject->ObjectBox->ySize = ySize * Y_TILESCALE;
@@ -180,7 +178,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 			newObject->ObjectBox->solid = UNSOLID;
 			newObject->ParentLink = FINAL_LINK;
 			PlayAnimation("Coin_Spin", 0, newObject->ObjectDisplay);
-			snapPositionToTileGrid(newObject->ObjectBox, xPos, yPos);
+			snapPositionToTileGrid(newObject, xPos, yPos);
 			break;
 
 		
@@ -189,7 +187,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 			newObject->arg1 = arg1;
 			SetObjectDirection(newObject, (double)(90 + arg2), ROTATE_ALL);
 			newObject->ObjectBox->solid = UNSOLID;
-			snapPositionToTileGrid(newObject->ObjectBox, xPos, yPos);
+			snapPositionToTileGrid(newObject, xPos, yPos);
 			break;
 
 
@@ -202,7 +200,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 			newObject->arg4 = arg2;
 			newObject->ObjectBox->ySize = ySize * Y_TILESCALE;
 			newObject->ObjectBox->xSize = xSize * X_TILESCALE;
-			snapPositionToTileGrid(newObject->ObjectBox, xPos, yPos);
+			snapPositionToTileGrid(newObject, xPos, yPos);
 			break;
 
 		case HORIZONTAL_GATE:
@@ -214,7 +212,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 			newObject->arg4 = arg2;
 			newObject->ObjectBox->ySize = ySize * Y_TILESCALE;
 			newObject->ObjectBox->xSize = xSize * X_TILESCALE;
-			snapPositionToTileGrid(newObject->ObjectBox, xPos, yPos);
+			snapPositionToTileGrid(newObject, xPos, yPos);
 			break;
 
 
@@ -223,7 +221,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 			newObject->arg1 = arg1;
 			newObject->arg2 = arg2;
 			newObject->ObjectBox->solid = UNSOLID;
-			snapPositionToTileGrid(newObject->ObjectBox, xPos, yPos);
+			snapPositionToTileGrid(newObject, xPos, yPos);
 			break;
 
 
@@ -241,7 +239,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int xSize,
 			}
 			newObject->arg5 = abs(arg2);
 			newObject->ObjectBox->solid = UNSOLID;
-			snapPositionToTileGrid(newObject->ObjectBox, xPos, yPos);
+			snapPositionToTileGrid(newObject, xPos, yPos);
 			break;
 
 
@@ -427,16 +425,13 @@ int initialiseGenericObject(Object *inputObject, ObjectType objectID, ObjectCont
 
 Object* createNewObject(void)
 {
-	Object *newObject = malloc(sizeof(Object));
+	Object *newObject = calloc(1, sizeof(Object));
 
 	if (newObject == NULL)
 	{
 		putConsoleString("\nError: Could not allocate memory for new object.\n");
 		return NULL;
 	}
-
-	memset(newObject, 0, sizeof(Object));
-
 
 	newObject->ObjectBox = createPhysicsRect(SOLID);
 
@@ -446,7 +441,6 @@ Object* createNewObject(void)
 		free(newObject);
 		return NULL;
 	}
-
 
 	newObject->ObjectDisplay = createDisplayData(DEFAULT_TO_SPRITE);
 
@@ -644,15 +638,15 @@ Object* FindObjectID(const char name[], int objectID, ObjectController ObjectLis
 }
 
 
-int snapPositionToTileGrid(PhysicsRect *ObjectBox, int xPos, int yPos)
+int snapPositionToTileGrid(Object *input, int xPos, int yPos)
 {
-	if (ObjectBox == NULL)
+	if (input == NULL || input->ObjectBox == NULL)
 	{
 		return MISSING_DATA;
 	}
 	
-	ObjectBox->xPos = (float)(xPos - (xPos % X_TILESCALE));
-	ObjectBox->yPos = (float)(yPos - (yPos % Y_TILESCALE));
+	input->ObjectBox->xPos = (float)(xPos - (xPos % X_TILESCALE));
+	input->ObjectBox->yPos = (float)(yPos - (yPos % Y_TILESCALE));
 	
 	return LEMON_SUCCESS;
 }
@@ -3756,14 +3750,12 @@ int MoveObject(Object *inputObject, World *GameWorld)
 
 int moveObjectX(PhysicsRect *inputBox, ObjectController *ObjectList)
 {
-	float velocity = inputBox->xVelocity;// + inputBox->PhysicsXVelocity;
-
-	if (fabs(velocity) < 0.1)
+	if (fabs(inputBox->xVelocity) < 0.1)
 	{
 		return EXECUTION_UNNECESSARY;
 	}
 
-	inputBox->xPos += velocity;
+	inputBox->xPos += inputBox->xVelocity;
 
 	ResolveAllXCollision(inputBox, ObjectList);
 
@@ -3777,15 +3769,12 @@ int moveObjectX(PhysicsRect *inputBox, ObjectController *ObjectList)
 
 int moveObjectY(PhysicsRect *inputBox, ObjectController *ObjectList)
 {
-	float velocity = inputBox->yVelocity;// + inputBox->PhysicsYVelocity;
-
-
-	if (fabs(velocity) < 0.1)
+	if (fabs(inputBox->yVelocity) < 0.1)
 	{
 		return EXECUTION_UNNECESSARY;
 	}
 
-	inputBox->yPos += velocity;
+	inputBox->yPos += inputBox->yVelocity;
 
 	ResolveAllYCollision(inputBox, ObjectList);
 

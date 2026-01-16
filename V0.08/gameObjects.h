@@ -42,7 +42,7 @@ Object* FindObject(const char name[], ObjectController ObjectList);
 Object* FindObjectID(const char name[], int objectID, ObjectController ObjectList);
 
 
-int snapPositionToTileGrid(PhysicsRect *ObjectBox, int xPos, int yPos);
+int snapPositionToTileGrid(Object *input, int xPos, int yPos);
 
 
 PhysicsRect* createPhysicsRect(SolidType inputSolid);

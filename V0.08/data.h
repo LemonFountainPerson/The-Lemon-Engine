@@ -1249,6 +1249,3 @@ extern DebugData DebugSettings;
 extern unsigned char tiny_ttf[];
 
 extern unsigned int tiny_ttf_len;
-
-
-extern int Running_In_Windows_Mode;		// Windows causes a lot shennanigans on the technical side; should be depreciated later

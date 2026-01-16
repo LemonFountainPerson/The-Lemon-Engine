@@ -126,7 +126,7 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 					break;
 				}
 
-				if (Running_In_Windows_Mode == 1 || ScreenData->Fullscreen == true)
+				if (ScreenData->Fullscreen == true)
 				{
 					break;
 				}
@@ -527,11 +527,6 @@ int applyCameraZoom(float newZoomX, float newZoomY, Camera *inputCamera, RenderF
 		return MISSING_DATA;
 	}
 
-	if (Running_In_Windows_Mode == 1)
-	{
-		return ACTION_DISABLED;
-	}
-
 	if (newZoomX < MINIMUM_ZOOM || newZoomY < MINIMUM_ZOOM || screenWidth < MINIMUM_SCREEN_WIDTH || screenHeight < MINIMUM_SCREEN_HEIGHT)
 	{
 		return INVALID_DATA;
@@ -557,7 +552,7 @@ int applyScreenAndRendererSize(int newWidth, int newHeight, RenderFrame *ScreenD
 		return MISSING_DATA;
 	}
 
-	if (ScreenData->Fullscreen == true || Running_In_Windows_Mode == 1)
+	if (ScreenData->Fullscreen == true)
 	{
 		return ACTION_DISABLED;
 	}
@@ -589,7 +584,7 @@ int applyScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData)
 		return MISSING_DATA;
 	}
 
-	if (ScreenData->Fullscreen == true || Running_In_Windows_Mode == 1)
+	if (ScreenData->Fullscreen == true)
 	{
 		return ACTION_DISABLED;
 	}
@@ -624,7 +619,7 @@ int applyScreenSizeScale(int newWidth, int newHeight, RenderFrame *ScreenData)
 		return MISSING_DATA;
 	}
 
-	if (ScreenData->Fullscreen == true || Running_In_Windows_Mode == 1)
+	if (ScreenData->Fullscreen == true)
 	{
 		return ACTION_DISABLED;
 	}
@@ -652,7 +647,7 @@ int applyEnableFullscreen(RenderFrame *ScreenData)
 		return MISSING_DATA;
 	}
 
-	if (Running_In_Windows_Mode == 1 || ScreenData->Fullscreen == true)
+	if (ScreenData->Fullscreen == true)
 	{
 		return ACTION_DISABLED;
 	}
@@ -676,11 +671,6 @@ int applyDisableFullscreen(RenderFrame *ScreenData)
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 	{
 		return MISSING_DATA;
-	}
-
-	if (Running_In_Windows_Mode == 1)
-	{
-		return ACTION_DISABLED;
 	}
 
 	SDL_SetWindowFullscreen(ScreenData->Window, false);
