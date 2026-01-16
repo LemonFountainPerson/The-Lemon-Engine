@@ -3,6 +3,8 @@
 
 New Features:
 
+-> Added full linux support! Lemon now runs natively on windows and linux systems.
+
 -> Added a new cutscene manager that allows for events and actions to be "scheduled" for playback using easy to understand functions much like the textbox system.
 All text boxes also work with the cutscene manager, and they can be scheduled for playback much like any other action, and can be paired with option prompts to create 
 branching scene structures. See "Test_Scene" in cutsceneManger.c for an example of its use.
