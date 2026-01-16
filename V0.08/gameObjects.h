@@ -148,6 +148,8 @@ bool MouseOverlappingBox(Object *input, World *GameWorld);
 
 bool MouseOverlappingSprite(Object *input, World *GameWorld);
 
+bool MouseClickedObject(Object *input, World *GameWorld);
+
 
 // Core Object Functionality
 FuncResult updateObjects(World *GameWorld);

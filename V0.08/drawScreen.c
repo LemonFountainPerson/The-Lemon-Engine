@@ -1108,7 +1108,8 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 
 	if(goToMouse)
 	{
-		AddDebugText(text, SCREEN_RELATIVE, getMouseXZoom(renderCamera), getMouseYZoom(renderCamera) - 16.0, 0);
+		MouseInput.yPos -= 16.0; 		// bad idea
+		AddDebugText(text, SCREEN_RELATIVE, getMouseXZoom(renderCamera), getMouseYZoom(renderCamera), 0);
 		return LEMON_SUCCESS;
 	}
 

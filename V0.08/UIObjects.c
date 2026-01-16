@@ -373,8 +373,6 @@ int UpdateCursor(Object *Cursor, World *GameWorld)
 
 	if (MouseInput.LeftButton == 1 && PlayerBox != NULL)
 	{
-		AcknowledgeButton(MOUSE_LEFT);
-
 		int bulletXPos = (int)PlayerBox->xPos + (PlayerBox->xSize >> 1);
 		int bulletYPos = (int)PlayerBox->yPos + (PlayerBox->ySize >> 1);
 
@@ -1300,7 +1298,7 @@ int TextInteraction(TextInstance *currentText, World *GameWorld)
 		break;
 
 		default:
-			if (keyboard[LMN_TEXT_CONFIRM] == 1)
+			if (keyboard[LMN_TEXT_CONFIRM] == 1 || MouseInput.LeftButton == 1)
 			{
 				endTextInstance(GameWorld);
 			}
@@ -1349,7 +1347,44 @@ int handleOptionPrompt(TextInstance *inputText, World *GameWorld)
 		optionData->SelectedOption = clamp(optionData->SelectedOption + 1, 0, optionData->numberOfOptions - 1);
 	}
 
-	if (keyboard[LMN_TEXT_CONFIRM] == 1 || optionData->numberOfOptions < 1)
+	bool selectOption = (keyboard[LMN_TEXT_CONFIRM] == 1);
+
+	// detect mouse input
+	if (inputText->boxPtr != NULL)
+	{
+		PhysicsRect *boxRect = inputText->boxPtr->ObjectBox;
+		PhysicsRect optionBox;
+		resetPhysicsRect(&optionBox);
+		optionBox.xSize = 600;
+		optionBox.ySize = 50;
+		optionBox.xPos = inputText->boxOffsetX + boxRect->xPos;
+		optionBox.yPos = optionData->OptionYPositions[optionData->SelectedOption] + boxRect->yPos;
+		Object optionObj = {0};
+		optionObj.layer = HUD;
+		optionObj.ObjectBox = &optionBox;
+
+		int i = -1;
+		while (!MouseOverlappingBox(&optionObj, GameWorld) && i < optionData->numberOfOptions - 1)
+		{
+			i++;
+			optionBox.yPos = optionData->OptionYPositions[i] + boxRect->yPos;
+		}
+
+		if (MouseOverlappingBox(&optionObj, GameWorld) && i > -1)
+		{
+			optionData->SelectedOption = clamp(i, 0, optionData->numberOfOptions - 1);
+		}
+
+		selectOption = selectOption | MouseClickedObject(&optionObj, GameWorld);
+	}
+
+	/*
+	Camera hudCam = {0};
+	ResetCamera(&hudCam);
+	renderHitbox(hudCam, GameWorld, &optionBox, ScreenData.Renderer);
+	*/
+
+	if (selectOption || optionData->numberOfOptions < 1)
 	{
 		AcknowledgeHeldButtons();
 		endTextInstance(GameWorld);

@@ -3155,7 +3155,6 @@ bool MouseOverlappingBox(Object *input, World *GameWorld)
 	return checkBoxOverlapsBoxBroad(input->ObjectBox, &mouseBox);
 }
 
-
 bool MouseOverlappingSprite(Object *input, World *GameWorld)
 {
 	if (input == NULL || input->ObjectDisplay == NULL || input->ObjectBox == NULL || input->ObjectDisplay->spriteBuffer == NULL)
@@ -3207,6 +3206,16 @@ bool MouseOverlappingSprite(Object *input, World *GameWorld)
 	}
 
 	return checkBoxOverlapsBoxBroad(&inputBox, &mouseBox);
+}
+
+bool MouseClickedObject(Object *input, World *GameWorld)
+{
+	if (input == NULL || GameWorld == NULL)
+	{
+		return false;
+	}
+
+	return MouseOverlappingBox(input, GameWorld) && (MouseInput.LeftButton == 1);
 }
 
 

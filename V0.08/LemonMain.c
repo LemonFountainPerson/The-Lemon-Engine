@@ -214,13 +214,13 @@ int RenderEngine(World *GameWorld, Camera renderCamera, RenderFrame ScreenData)
 		drawHitboxes(renderCamera, GameWorld, ScreenData);
 	}
 
-    renderCamera.CameraX -= camXCorrection;
-	renderCamera.CameraY -= camYCorrection;
-
 	if (DebugSettings.DebugTextDisplayMode != DEBUG_TEXT_DISABLED)
     {
     	DisplayDebugInfo(GameWorld, renderCamera, ScreenData);	
     }
+
+    renderCamera.CameraX -= camXCorrection;
+	renderCamera.CameraY -= camYCorrection;
 
     FPSCounter();
 
@@ -251,25 +251,25 @@ int FPSCounter(void)
 	static int TextIndex = -1;
     ScreenData.FramesElapsed++;
 
-    float timePassed = ((float)(clock() - ScreenData.lastSecond) / (float)CLOCKS_PER_SEC);
+    Uint64 timePassed = (SDL_GetTicksNS() - ScreenData.lastSecond) / TICK_RESOLUTION;
 
-	if (timePassed > 0.999)
+	if (timePassed > TICK_RESOLUTION_INVERSE)
     {
     	if (DebugSettings.ConsoleTextEnabled != CONSOLE_TEXT_DISABLED)
     	{
-    		printf("\n%d FPS at %.5f", ScreenData.FramesElapsed, timePassed);
+    		printf("\n%d FPS at %.5f", ScreenData.FramesElapsed, ((float)timePassed/(float)TICK_RESOLUTION_INVERSE));
     	}
 
     	if (DebugSettings.FPSCounter != 0 && timePassed > 0)
 		{
 			char buffer[40] = {0};
-	        sprintf(buffer, "%d FPS", ScreenData.FramesElapsed);
+	        snprintf(buffer, 40, "%d FPS", ScreenData.FramesElapsed);
 	        RemoveDebugText(TextIndex);
-			TextIndex = AddDebugText(buffer, SCREEN_LIST_FORMAT, 20 - (screenWidth >> 1), 0, 1000);
+			TextIndex = AddDebugText(buffer, SCREEN_LIST_FORMAT, 20 - (screenWidth >> 1), 0, 99999);
 		} 
        
 	    ScreenData.FramesElapsed = 0;
-	    ScreenData.lastSecond = clock();
+	    ScreenData.lastSecond = SDL_GetTicksNS();
     }
 
     if (DebugSettings.FPSCounter == 0 && TextIndex > -1)
@@ -429,6 +429,10 @@ int getExternalInput(World *GameWorld)
     		break;
     	}
 	}
+
+	keyboard[LMN_TEXT_CONFIRM] = keyboard[LMN_INTERACT] || keyboard[LMN_ENTER];
+	keyboard[LMN_TEXT_SKIP] = keyboard[LMN_INTERACT2] || keyboard[LMN_SPACE] || MouseInput.RightButton == 1;
+	keyboard[LMN_MENU_CONFIRM] = keyboard[LMN_INTERACT] || keyboard[LMN_ENTER];
 
 	updateMouse();
 
@@ -688,10 +692,6 @@ int getKeyboardInput(SDL_Event *event)
 		default:
 		break;
 	}
-
-	keyboard[LMN_TEXT_CONFIRM] = keyboard[LMN_INTERACT] || keyboard[LMN_ENTER];
-	keyboard[LMN_TEXT_SKIP] = keyboard[LMN_INTERACT2] || keyboard[LMN_SPACE];
-	keyboard[LMN_MENU_CONFIRM] = keyboard[LMN_INTERACT] || keyboard[LMN_ENTER];
 			
 	return LEMON_SUCCESS;
 

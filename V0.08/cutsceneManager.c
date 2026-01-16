@@ -121,25 +121,21 @@ int updateSceneActions(World *GameWorld)
 
 	while (ActionPtr != NULL)
 	{
-		if (RunSceneAction(ActionPtr, GameWorld) == DATA_CLEARED)
+		if (RunSceneAction(ActionPtr, GameWorld) == DATA_CLEARED || GameWorld->SceneActionQueue == NULL)
 		{
-			return EXECUTION_UNNECESSARY;
+			return DATA_CLEARED;
 		}
 
 		if (ActionPtr->repeatTimes < 1)
 		{
 			ActionPtr = deleteSceneAction(ActionPtr, GameWorld);
 		}
-		else
+		else if (ActionPtr->parallelAction == false)
 		{
-			if (ActionPtr->parallelAction == false)
-			{
-				return LEMON_SUCCESS;
-			}
-		
-			ActionPtr = ActionPtr->nextSceneAction;
+			return LEMON_SUCCESS;
 		}
-		
+
+		ActionPtr = ActionPtr->nextSceneAction;
 	}
 
 
@@ -149,7 +145,12 @@ int updateSceneActions(World *GameWorld)
 
 int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 {
-	if (inputAction == NULL || inputAction->ActionID == UNDEFINED_SCENE_ACTION)
+	if (GameWorld == NULL || inputAction == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (inputAction->ActionID == UNDEFINED_SCENE_ACTION)
 	{
 		return INVALID_DATA;
 	}
@@ -166,6 +167,7 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 	case SCENE_END:
 		GameWorld->CurrentCutscene = END_CUTSCENE;
+		return DATA_CLEARED;
 		break;
 
 	case SCENE_CHANGE_VARIABLE_BY:
@@ -177,14 +179,19 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 		{
 			struct ifIntData branchData = currentData.branchDataInt;
 
+			CutsceneID sceneToPlay = NO_CUTSCENE;
+
 			if (cutsceneVariables[branchData.variableIndex] == branchData.comparisonValue)
 			{
-				StartCutscene(branchData.ifTrue, GameWorld);
-				return DATA_CLEARED;
+				sceneToPlay = branchData.ifTrue;
 			}
 			else if (branchData.elseBranchPresent)
 			{
-				StartCutscene(branchData.ifFalse, GameWorld);
+				sceneToPlay = branchData.ifFalse;
+			}
+
+			if (StartCutscene(sceneToPlay, GameWorld) == LEMON_SUCCESS)
+			{
 				return DATA_CLEARED;
 			}
 
@@ -195,14 +202,19 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 		{
 			struct ifIntData branchData = currentData.branchDataInt;
 
+			CutsceneID sceneToPlay = NO_CUTSCENE;
+
 			if (cutsceneVariables[branchData.variableIndex] < branchData.comparisonValue)
 			{
-				StartCutscene(branchData.ifTrue, GameWorld);
-				return DATA_CLEARED;
+				sceneToPlay = branchData.ifTrue;
 			}
 			else if (branchData.elseBranchPresent)
 			{
-				StartCutscene(branchData.ifFalse, GameWorld);
+				sceneToPlay = branchData.ifFalse;
+			}
+
+			if (StartCutscene(sceneToPlay, GameWorld) == LEMON_SUCCESS)
+			{
 				return DATA_CLEARED;
 			}
 		} break;
@@ -211,40 +223,23 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 		{
 			struct ifIntData branchData = currentData.branchDataInt;
 
+			CutsceneID sceneToPlay = NO_CUTSCENE;
+
 			if (cutsceneVariables[branchData.variableIndex] > branchData.comparisonValue)
 			{
-				StartCutscene(branchData.ifTrue, GameWorld);
-				return DATA_CLEARED;
+				sceneToPlay = branchData.ifTrue;
 			}
 			else if (branchData.elseBranchPresent)
 			{
-				StartCutscene(branchData.ifFalse, GameWorld);
+				sceneToPlay = branchData.ifFalse;
+			}
+
+			if (StartCutscene(sceneToPlay, GameWorld) == LEMON_SUCCESS)
+			{
 				return DATA_CLEARED;
 			}
 		} break;
 
-	case SCENE_FLOAT_IF_EQUALS:
-		{
-			struct ifFloatData branchData = currentData.branchDataFloat;
-
-			if (branchData.variable == NULL)
-			{
-				break;
-			}
-
-			if (fabs(*(branchData.variable) - branchData.comparisonValue) < 0.0001)
-			{
-				StartCutscene(branchData.ifTrue, GameWorld);
-				return DATA_CLEARED;
-			}
-			else if (branchData.elseBranchPresent)
-			{
-				StartCutscene(branchData.ifFalse, GameWorld);
-				return DATA_CLEARED;
-			}
-
-			// returning 'DATA_CLEARED' is neccessary here to avoid incorrect pointer access
-		} break;
 
 	case SCENE_ANIMATE_ACTOR:
 		{
@@ -873,58 +868,6 @@ SceneAction* ifGreaterThanElse(int variableIndex, int value, CutsceneID cutscene
 	newAction->ActionData.branchDataInt.ifFalse = cutsceneIfElse;
 	newAction->ActionData.branchDataInt.variableIndex = variableIndex;
 	newAction->ActionData.branchDataInt.comparisonValue = value;
-
-	return newAction;
-}
-
-
-SceneAction* ifFloatEquals(float* variable, float value, CutsceneID cutsceneToTrigger, World *GameWorld)
-{
-	if (variable == NULL || GameWorld == NULL || cutsceneToTrigger <= NO_CUTSCENE || cutsceneToTrigger >= UNDEFINED_CUTSCENE)
-	{
-		return NULL;
-	}
-
-	SceneAction *newAction = createSceneAction(SCENE_FLOAT_IF_EQUALS, GameWorld);
-
-	if (newAction == NULL)
-	{
-		return NULL;
-	}
-
-	newAction->repeatTimes = 1;
-	newAction->parallelAction = false;	
-	newAction->ActionData.branchDataFloat.elseBranchPresent = false;
-	newAction->ActionData.branchDataFloat.ifTrue = cutsceneToTrigger;
-	newAction->ActionData.branchDataFloat.ifFalse = NO_CUTSCENE;
-	newAction->ActionData.branchDataFloat.variable = variable;
-	newAction->ActionData.branchDataFloat.comparisonValue = value;
-
-	return newAction;
-}
-
-
-SceneAction* ifFloatEqualsElse(float* variable, float value, CutsceneID cutsceneIfTrue, CutsceneID cutsceneIfElse, World *GameWorld)
-{
-	if (variable == NULL || GameWorld == NULL || cutsceneIfElse <= NO_CUTSCENE || cutsceneIfElse >= UNDEFINED_CUTSCENE)
-	{
-		return NULL;
-	}
-
-	SceneAction *newAction = createSceneAction(SCENE_FLOAT_IF_EQUALS, GameWorld);
-
-	if (newAction == NULL)
-	{
-		return NULL;
-	}
-
-	newAction->repeatTimes = 1;
-	newAction->parallelAction = false;	
-	newAction->ActionData.branchDataFloat.elseBranchPresent = true;
-	newAction->ActionData.branchDataFloat.ifTrue = cutsceneIfTrue;
-	newAction->ActionData.branchDataFloat.ifFalse = cutsceneIfElse;
-	newAction->ActionData.branchDataFloat.variable = variable;
-	newAction->ActionData.branchDataFloat.comparisonValue = value;
 
 	return newAction;
 }
