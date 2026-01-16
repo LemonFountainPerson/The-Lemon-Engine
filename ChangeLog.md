@@ -29,6 +29,9 @@ or section by the same name in the Documentation for a full set of bindings.
 SINGLE and SCALE render modes; for SINGLE, it will act as a scale based on the size of the original image, for SCALE it is simply an additional scale factor which
 can size the sprite independent of the physicsRect attached; although it can only increase the size on both axis' equally, instead of on either axis independently.
 
+-> Text boxes and option prompts can now be used with the mouse.
+
+-> Added the ability to show specific object details in debug mode by hovering over them with your mouse.
 
 
 Structure Changes:
