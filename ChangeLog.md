@@ -40,8 +40,8 @@ Structure Changes:
 
 -> Rendering is now handled via the SDL texture renderer, meaning rendering is now hardware accelerated and there is improved scaling functionality.
 
--> Added the LemonGameEventData structure to the GameWorld, a union which will contain information required for any game event being triggered, e.g:
-width/height dimensions to change the screen size to.
+-> Added the LemonGameEventData structure, a union which will contain information required for any game event being triggered, e.g: width/height 
+dimensions to change the screen size to.
 
 -> Changed the way input is received/acknowledged by the engine; input values above 0 indicate the button is being held down, and for one-time inputs
 "AcknowledgeHeldButtons" can be used to set all inputs being held to a value other than 1, which can be used to differentiate between new inputs. All held buttons
@@ -60,17 +60,15 @@ tiling effect can be modified via "size" in the displayData.
 
 -> Removed the BG_ROW_PARRALAX rendermode (mainly because of difficulty to implement it with the SDL renderer, but also because of its niche use case).
 
--> Changed all object position and velocity variables to use floats instead of doubles (for effeciency reasons) and the Camera's position values to floats instead of 
+-> Changed all object position and velocity variables to use floats instead of doubles (for efficiency reasons) and the Camera's position values to floats instead of 
 integers (for compatibility). Direction values will remain as doubles for precision, but with most variables set as floats this should improve interoperability and 
 ease of use.
 
--> The windows-only version is no longer supported.
+-> The Windows-only version is no longer supported; the engine is written exclusively with SDL, to be compatible with both Windows and Linux.
 
 
 
 Bug fixes/Improvements:
-
--> Fixed a crashing issue related to scaled objects being rendered beyond the scope of the screen buffer.
 
 -> The ObjectController's (ObjectList) object count is now decremented when objects are deleted. (This variable is now always up-to-date.)
 
@@ -83,9 +81,9 @@ four slashes method, animation files can now use '>' for comments and ENDFILE to
 
 -> The camera and objects in the game scene are no longer restricted to positive x, y values. (You can place objects at negative values.)
 
--> In the event of a fatal error, the SDL version will now create a dialog box to explain the error before the program ends.
+-> In the event of a fatal error, the process will now create a dialog box to explain the error before the program ends.
 
--> Fixed a bug with deleting objects where parent child links that were in backwards order within the object list caused a crash.
+-> Fixed a bug with deleting objects where parent-child links that were in backwards order within the object list caused a crash.
 
 -> Scaled rendermodes now no longer crash the game when there is a pixel[x/y] offset, and now renders correctly.
 
