@@ -1,0 +1,8 @@
+FRV<1>--LEVEL_DATA--
+> Player
+OBJECT: 4
+> Level data
+OBJECT: 1, 0, 32, 48000, 1, 1
+OBJECT: 17, 800, 64, 64, 196, 1		
+LVFLAG:	SET_BG,	2, 1
+ENDFILE

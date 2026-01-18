@@ -1,0 +1,3 @@
+FRV<1>--ANIMATION--
+NewAnimation: OpenSwitch
+AddFrame: Missing   0   32
