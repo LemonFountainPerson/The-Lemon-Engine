@@ -3,9 +3,7 @@
 _________________________________________________
 
 
-Current Version: 0.07
-
-Currently only supported on windows. 
+Current Version: 0.09
 
 This is a project that serves more as a proof-of-concept or exercise as opposed to a real useful tool, especially because this project is being made from almost 
 the ground up. That said, if you like what you see go ahead and download the source code to try it out! 
@@ -43,9 +41,6 @@ the char values (i.e. keyboard['A'] will yield the state for the 'A' key.) Other
 general, 0 means unpressed and 1 means pressed, but for single inputs you can alter the entry to 2 to signify that the key is still being held but was taken as 
 an input for something.
 
--> The gameRunning and frameThrottle variables are all global variables usable across all files in the engine, but sould not be
-modified outside of the runLemonEngine function. If you wish to terminate the program, you should set the GameWorld's GameState 
-to CLOSE_GAME so that any necessary end-program actions can be taken in the future.
 
 
 # Engine Initialisation
@@ -67,42 +62,26 @@ struct world
 {
 	struct Camera MainCamera;
 
+	BackgroundData WorldBackground;
+
+	struct playerData Player;
 	struct ObjectController *ObjectList;
 
-	struct playerData *Player;
-
-	struct TextInstance *TextQueue;
-
-	struct spriteSet *BackGrounds;
-	struct sprite *bgSpriteBuffer;
-
-	float bgParallax;
-	int bgParallaxChunkSize;
-	double bgChunkParallax;
-
-	int drawnObjects;
-	int drawnParticles;
-	int drawnHudElements;
-	short drawHitboxes;
-	short drawSprites;
-	short drawBackGround;
-	short drawPlayer;
-	short drawUI;
-	short drawParticles;
-	short drawObjects;
-
-	LemonGameState GameState;
-	CutsceneID CurrentCutscene;
-	int SceneTick;
-	int PlayingText;
 	int GamePaused;
 	int level;
+	LemonGameState GameState;
+	GameEventManager GameEvents;
+
+	struct TextInstance *TextQueue;
+	int PlayingText;
+	
+	CutsceneID CurrentCutscene;
+	struct SceneAction *SceneActionQueue;
+	int SceneActionCount;
 
 	WorldPhysics PhysicsType;
 	float GlobalGravityY;
 	float GlobalGravityX;
-
-	int depthCounter;
 };
 ```
 
@@ -114,11 +93,6 @@ changes to surrounding code. Only its struct in data.h and the playerController.
 in the engine that have a postion/velocity, etc. use a PhysicsRect structure to hold this data. By using this common data structure, functions can be
 written to be compatible with any data structure as long as it conatins this PhysicsRect data.
 
-The Player struct holds a series of pointers to an object's components (NULL if it does not exist), and this object is effectively used as the 
-player itself. In addition, it also contains more general variables independent of whatever object is being used as the player avatar. This means
-on a level transition, the 'avatar' is deleted and effectively reset, while the other values in the PlayerData struct is preserved. For save 
-files, the data in the PlayerData struct are what is necessary to be saved, while data such as the avatar's position and state are more optional 
-to be saved.
 
 By default, there is a PLAYER_OBJECT object that will automatically assign itself to be the new player avatar when it is created, but this 
 functionality can be extended to other objects for multiple types of player avatars, or removed for a completely new system.
@@ -127,17 +101,13 @@ functionality can be extended to other objects for multiple types of player avat
 ```
 struct playerData
 {
-	struct Object *PlayerPtr;
+	Object *PlayerPtr;
 
-	struct PhysicsRect *PlayerBox;
-	struct displayData *PlayerDisplay;
-	struct PhysicsRect *InteractBox;
+	PhysicsBox *PlayerBox;
+	DisplayData *PlayerDisplay;
+	PhysicsBox InteractBox;
 
 	// These variables can be freely modified according to your modified player controller
-<<<<<<< HEAD
-=======
-	int inAir;
->>>>>>> 4cad089e073b065b375926109362f451d3a5169c
 	int jumpHeld;
 	int jumpProgress;
 
@@ -147,33 +117,32 @@ struct playerData
 
 struct physicsRect
 {
-	double xPos;
-	double yPos;
-	double xPosRight;
-	double yPosTop;
-	double prevXPos;
-	double prevYPos;
+	float xPos;
+	float yPos;
+	float prevXPos;
+	float prevYPos;
 
 	int xSize;
 	int ySize;
 
-	double forwardVelocity;
-	double yVelocity;
-	double xVelocity;
+	float forwardVelocity;
+	float yVelocity;
+	float xVelocity;
 
 	int inAir;
-	double PhysicsXVelocity;
-	double PhysicsYVelocity;
-	struct PhysicsRect *GroundBox;
+	float PhysicsXVelocity;
+	float PhysicsYVelocity;
+	struct PhysicsBox *GroundBox;
 
 	SolidType solid;
+	SolidFlag flag;
 	CollideType collideMode;
 	Layer collideLayer;
 
 	double direction;
 	short xFlip;
 	short yFlip;
-	int crouch;
+	bool crouch;
 };
 
 
