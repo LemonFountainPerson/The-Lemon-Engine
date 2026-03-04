@@ -1,11 +1,98 @@
+# v0.09
+5th March 2026
+
+## New Features:
+
+-> Added conditional commands to the level loading routine.
+
+-> Added a command to set an object's name in the level data. (Syntax: SETNAME {newNameHere})
+
+-> Arguments in files that are enclosed in speech marks (e.g: "data here") will always be interpreted as one argument, even if there are spaces or new lines
+between them.
+
+-> Added a command to hide an object when it is loaded. (Syntax: [Object info], HIDE)
+
+-> Added a command to snap any object's position to the 'Grid'. (Defined with X_TILESCALE and Y_TILESCALE)
+
+-> Added the ability to load cutscenes from files, located in the CutsceneData directory.
+
+-> Added the component add-on system, where objects can take on additional functionality when it has a component added on.
+
+-> Added the TileMap component for constructing more elaborate structures with less objects.
+
+-> Split the solid type enum into more clearly defined solidType and SolidFlag, where the type denotes the shape/behaviour and the flag
+can control extra features such as disabling interactions with a specific solid type.
+
+-> Added the ability to save game data such as display settings and game flags to be loaded at any time via the loadSave/loadSettings functions.
+
+-> Sounds can now be positioned relative to the camera with PositionSound() or simply panned left-right with SetLRPan()/ChangeLRPan().
+
+-> Mp3 and Ogg sounds can now be played, although the default is still Wav, meaning the extensions must be written along with the sound name in these
+cases.
+
+-> Added the TILESET background mode that uses a sprite as a tileset to display a background of tiles. These tiles can be programmed with 'TILESET_DATA'
+files using an array of numbers alongside some basic commands.
+
+-> Added 'Presets' to level data, which allow different level files to run other, embeded level files for repetition or organisation. 
+(Syntax: Preset: "NameOfPresetFile")
+
+
+## Structure Changes:
+
+-> The layer variable is now contained within the displayData struct instead of the object struct to clarify its use and improve consistency.
+
+-> The engine always preallocates objects, the ability to create and delete object data on the fly is now no longer present, for performance reasons 
+and to support the other systems. 
+
+-> All object and component data is now stored as 'arenas'.
+
+-> Remade the game event system to now be based on a static array for performance.
+
+-> The ACTOR state now always disables objects behaviour and movement, to allow them to be used as a puppet. All objects except for the player are also disabled
+during the CUTSCENE game state.
+
+-> The direction variable from the displaydata was removed, and is now soley based on the PhysicsBox direction variable. 
+
+-> The direction variable is now based on Degrees, rather than radians for its ease of understanding and better compatibility with SDL. Any calculations that
+expect radians must now convert between them first.
+
+-> Objects/PhysicsBoxes/DisplayDatas are now always pre-allocated; it is guaranteed that they are created as one large array.
+
+-> Added the File Reader version marker. Files being read by the engine will now be accepted if the current version number is in the header, (as before) or if
+the current filereader version is in the header. Current version: 'FRV<1>'
+
+-> Switched audio system to use SDL_Mixer, enabling finer control over audio positioning/panning, organisation and audio effects.
+
+-> Removed the xPosRight and YPosTop variables from the PhysicsBox, due to lack of usefulness. 
+
+
+## Bug Fixes/Improvements:
+
+-> Slight performance improvements by utilising the objects as an array instead of a linked list.
+
+-> Re-implemented the maximum objects rendered limiter for performance.
+
+-> Deleted objects no longer need to recursively search for child objects to delete them; deleting objects is now much more performant when there are many objects.
+
+-> Attempting to play a new sound when a channel is already full will now overwrite an existing sound instead of preventing the sound from playing.
+
+-> Re-organised includes to be easier to use.
+
+-> 'putConsoleString' is now formatted like printf, meaning the other variations of the function are no longer necessary.
+
+-> Text boxes will now automatically insert new line breaks into your text to make whole words fit the box correctly.
+
+
+
 # v0.08
 
 
-New Features:
+## New Features:
 
 -> Added full linux support! Lemon now runs natively on windows and linux systems.
 
--> Added a new cutscene manager that allows for events and actions to be "scheduled" for playback using easy to understand functions much like the textbox system.
+-> Added a new cutscene manager that allows for events and actions to be "scheduled" for playback using easy to understand functions #
+much like the textbox system.
 All text boxes also work with the cutscene manager, and they can be scheduled for playback much like any other action, and can be paired with option prompts to create 
 branching scene structures. See "Test_Scene" in cutsceneManger.c for an example of its use.
 
@@ -16,7 +103,7 @@ branching scene structures. See "Test_Scene" in cutsceneManger.c for an example 
 -> Added the ability to toggle fullscreen via the LemonGameEvent system.
 
 -> Added "DebugText" which allows for text to be drawn to the screen without using objects, primarily for debug purposes. (DebugString was also renamed to
-ConsoleString for clarity.) A pre-implemented use for the DebugText is to display obect info on screen in real time. Refer to the 'MasterControls' function 
+ConsoleString for clarity.) A pre-implemented use for the DebugText is to display object info on screen in real time. Refer to the 'MasterControls' function 
 or section by the same name in the Documentation for a full set of bindings.
 
 -> Added the ability to set the window title and icon.
@@ -36,7 +123,7 @@ can size the sprite independent of the physicsRect attached; although it can onl
 -> Added the ability to show specific object details in debug mode by hovering over them with your mouse.
 
 
-Structure Changes:
+## Structure Changes:
 
 -> Rendering is now handled via the SDL texture renderer, meaning rendering is now hardware accelerated and there is improved scaling functionality.
 
@@ -68,7 +155,7 @@ ease of use.
 
 
 
-Bug fixes/Improvements:
+## Bug fixes/Improvements:
 
 -> The ObjectController's (ObjectList) object count is now decremented when objects are deleted. (This variable is now always up-to-date.)
 
@@ -95,9 +182,9 @@ four slashes method, animation files can now use '>' for comments and ENDFILE to
 
 
 # v0.07
-21/09/25
+21st September 2025
 
-New Features:
+## New Features:
 
 -> The Lemon Engine is now 64 bit! Along with some internal changes, this has increased perfomance slightly across the board.
 
@@ -115,7 +202,7 @@ Object types can create multiple instances, and all instances associated with a 
 -> Added a built-in "invincibility frames" function that can be used on any object.
 
 
-Structure Changes:
+## Structure Changes:
 
 -> Objects on the HUD layer now render relative to the CENTER of the screen, (0, 0) is now the center instead of the bottom left corner. 
 For example, x: -500 y: 20 would be on the left edge near the middle of the screen (on 1280 x 720).
@@ -143,7 +230,7 @@ defined boundary for the game scene.
 -> Rewrote the particle system to utilise the new animation system to make it easier to use and create new particles.
 
 
-Bug fixes/Improvements:
+## Bug fixes/Improvements:
 
 -> Fixed the blendPixel's formula for blending the additional transparencyEffect - it is now correctly rendered in the SDL renderer.
 
@@ -186,7 +273,7 @@ previous position and current position is used.
 
 
 
-PLANNED UPCOMING FEATURES IN V0.08:
+## PLANNED UPCOMING FEATURES IN V0.08:
 
 -> Better application management; Dynamic Window resizing, window title/icon editing, improved SDL compatibility, etc.
 
@@ -204,13 +291,13 @@ PLANNED UPCOMING FEATURES IN V0.08:
 # v0.06:
 15/07/25
 
-Internal Structure changes:
+## Internal Structure changes:
 
-    -> Separated the objectState enum into two enums: objectState and currentAction. ObjectState can be used to control what the object should do at 
-       the engine level, handling deletion, special cross-object interactions such as being carried, and whether the object is an actor in a cutscene.
-       The currentAction enum can be used to control the object's current action being performed at a higher level such as 'Attacking', 'Defeated' or
-       'Chasing' for enemies. The two enums can be added to in order to facilitate any objects' function, although many low level functions rely on 
-       the objectState enum containing the TO_BE_DELETED, PAUSE_BEHAVIOUR and ACTOR states.
+   -> Separated the objectState enum into two enums: objectState and currentAction. ObjectState can be used to control what the object should do at 
+    the engine level, handling deletion, special cross-object interactions such as being carried, and whether the object is an actor in a cutscene.
+    The currentAction enum can be used to control the object's current action being performed at a higher level such as 'Attacking', 'Defeated' or
+    'Chasing' for enemies. The two enums can be added to in order to facilitate any objects' function, although many low level functions rely on 
+    the objectState enum containing the TO_BE_DELETED, PAUSE_BEHAVIOUR and ACTOR states.
 
    -> Moved the sprite[X/Y]Offset(s) from the physicsRect to the displaydata struct.
 
@@ -230,7 +317,7 @@ Internal Structure changes:
 
 
 
-New additions:
+## New additions:
 
     -> Added an animation system via the DisplayData that handles animation creation and playback with modifiable framerate and loop amount.
 
@@ -291,7 +378,7 @@ New additions:
     GlobalGravityY variables in the World structure.
 
 
-Bug fixes/Performance improvements:
+## Bug fixes/Performance improvements:
 
     -> Objects are first evaluated using the checkBoxOverlapsBox function when checking for collision to save cpu time on unneccesary sine/cosine
     calculations where it is not neccessary. (This has noticably improved performance, especially when more than ~2000 objects are present.)
@@ -304,7 +391,7 @@ Bug fixes/Performance improvements:
 # v0.05:
 10/06/25
 
-Internal Structure changes:
+## Internal Structure changes:
 
     -> Added UIObjects and eventManager files. UIObjects handles all UI_Elements while eventManager controls in-game events such as levelflags, 
     game pausing, and other triggerable events.
@@ -349,7 +436,7 @@ Internal Structure changes:
 
 
 
-New additions:
+## New additions:
 
     -> As part of the HUD/Menu system added, a new object type called "UI_ELEMENT" has been added that is immune to the gameWorld being paused, is 
     rendered relative to the camera's center as opposed to the gameWorld, and uses arg1 to denote its subtype i.e: option buttons, animatable 
@@ -369,7 +456,7 @@ New additions:
 
 
 
-Bug fixes/Performance improvements:
+## Bug fixes/Performance improvements:
 
     -> Lowered Dependency count for new solid types from 10-12 to 5-6. (Dependency count in this case refers to how many functions must be updated 
     to allow for full functionality.) 
