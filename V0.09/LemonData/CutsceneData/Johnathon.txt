@@ -1,0 +1,9 @@
+FRV<1>--CUTSCENE_DATA--
+SayText: "It's working. :)"    NO_PORTRAIT     2
+
+
+ENDFILE
+
+
+
+

@@ -1,0 +1,20 @@
+FRV<1>--CUTSCENE_DATA--
+PlaceWall: 1000, 64, 2, 10
+SayText: "I just changed this file!! And to test its linebreaking feature! mmmmmmm wwwwwwwww mmmmmmm wwwwwwwwww mmmmmm"    NO_PORTRAIT     2
+EnablePlayer
+Wait: 5
+DisablePlayer
+
+SayTextOption: "A Test cutscene from a FILE? HUH!?"	NO_PORTRAIT  2    3
+		"Option 1"	0
+		"Option Two"	3
+		"This is working." 0
+
+Wait: 3
+ChangeVariableBy: 0 1
+
+IFVARIABLE: 0 > 1
+THEN: 0
+ELSE: "Johnathon"
+
+ENDFILE

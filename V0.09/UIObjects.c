@@ -1,0 +1,1839 @@
+#include "LemonEngine.h"
+#include "utf8Decoder.h"
+
+
+int SpawnHUD(World *GameWorld)
+{
+	if (GameWorld == NULL || GameWorld->ObjectList == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+
+	// Create a default particle and UIElement object to initialise their sprite sets to avoid lag during gameplay 
+	//AddParticle(GameWorld, 0, 0, EMPTY_PARTICLE, 0, 0);
+	//AddObject(GameWorld, UI_ELEMENT, 0, 0, 0, 0, UNDEFINED_UI_ELEMENT, 0, 0, 0, 0);
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int HideHUD(ObjectController *ObjectList)
+{
+	if (ObjectList == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	Object *currentObject = ObjectList->firstObject;
+
+	while (currentObject != NULL)
+	{
+		if (getDisplayLayer(currentObject) == HUD)
+		{
+			hideObject(currentObject);
+		}
+
+		currentObject = currentObject->nextObject;
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int ShowHUD(ObjectController *ObjectList)
+{
+	if (ObjectList == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	Object *currentObject = ObjectList->firstObject;
+
+	while (currentObject != NULL)
+	{
+		if (getDisplayLayer(currentObject) == HUD)
+		{
+			showObject(currentObject);
+		}
+
+		currentObject = currentObject->nextObject;
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+UISubType convertEntryToUIType(char name[])
+{
+	if (!strcmp(name, "Cursor"))
+	{
+		return MOUSE_CURSOR;
+	}
+	else if (!strcmp(name, "BasicGraphic") || !strcmp(name, "Basic_Graphic"))
+	{
+		return BASIC_GRAPHIC;
+	}
+
+
+	return UNDEFINED_UI_ELEMENT;
+}
+
+
+char* convertUITypeToName(UISubType input)
+{
+	switch(input)
+	{
+	case BASIC_GRAPHIC:
+		return "Basic Graphic";
+
+	case MOUSE_CURSOR:
+		return "Cursor";
+
+	default:
+		return "Unknown";
+	}
+}
+
+
+int basicMenuCreation(float x, float yDiff, Object *controller, World *GameWorld, int count, ...);
+
+
+int InitialiseUIElement(Object *UIElement, World *GameWorld)
+{
+	if (GameWorld == NULL || UIElement == NULL || GameWorld->ObjectList == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	setDisplayLayer(UIElement, HUD);
+	UIElement->ObjectBox->collideLayer = HUD;
+	UIElement->ObjectBox->solid = UNSOLID;
+
+
+	switch(getSubType(UIElement))
+	{
+	case UNDEFINED_UI_ELEMENT:
+		MarkObjectForDeletion(UIElement);
+		break;
+
+
+	case FADEOUT:
+		UIElement->arg2 = 0;
+		setTransparency(UIElement, 1.0);
+		switchSpriteByName("FadeOut", 0, UIElement->ObjectDisplay);
+		UIElement->ObjectBox->xSize = screenWidth;
+		UIElement->ObjectBox->ySize = screenHeight;
+		if (UIElement->prevObject != NULL && UIElement->prevObject->ObjectID == UI_ELEMENT && getSubType(UIElement->prevObject) == FADEOUT)
+		{
+			MarkObjectForDeletion(UIElement);
+		}
+		break;
+
+
+	case PAUSE_BACKGROUND:
+		switchSpriteByName("PauseBackground", 0, UIElement->ObjectDisplay);
+		break;
+
+
+	case PAUSE_HEADER:
+		switchSpriteByName("PauseHeader", 0, UIElement->ObjectDisplay);
+		break;
+
+
+	case SETTINGS_HEADER:
+		switchSpriteByName("SettingsHeader", 0, UIElement->ObjectDisplay);
+		break;
+
+
+	case PAUSE_MENU_CONTROLLER:
+	{
+		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin, 132, PAUSE_HEADER, 0, 0, 0, 0);
+
+		basicMenuCreation(xPosOrigin, 128, UIElement, GameWorld, 3, 
+			"ResumeGame", "Settings", "QuitGame");
+	} break;
+
+
+	case SAVE_OPTIONS_CONTROLLER:
+	{
+		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+
+		basicMenuCreation(xPosOrigin, 128, UIElement, GameWorld, 5, 
+			"Save1", "Save2", "SaveState", "LoadState", "BackOption");
+	} break;
+
+	case SETTINGS_MENU_CONTROLLER:
+	{
+		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+
+		//AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, 0, 0, PAUSE_BACKGROUND, 0, 0, 0, 0);
+		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin + X_TILESCALE, 260, SETTINGS_HEADER, 0, 0, 0, 0);
+		
+		basicMenuCreation(xPosOrigin, 128, UIElement, GameWorld, 4, 
+			"VideoSettings", "SoundSettings", "Settings", "BackOption");
+	} break;
+
+
+	case VIDEO_SETTINGS_CONTROLLER:
+	{
+		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+
+		//AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, 0, 0, PAUSE_BACKGROUND, 0, 0, 0, 0);
+		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin + X_TILESCALE, 328, SETTINGS_HEADER, 0, 0, 0, 0);
+		
+		basicMenuCreation(xPosOrigin, 128, UIElement, GameWorld, 5, 
+			"Settings", "Settings", "Settings", "Settings", "BackOption");
+	} break;
+
+
+	case SOUND_SETTINGS_CONTROLLER:
+	{
+		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+
+		//AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, 0, 0, PAUSE_BACKGROUND, 0, 0, 0, 0);
+		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin + X_TILESCALE, 260, SETTINGS_HEADER, 0, 0, 0, 0);
+		
+		basicMenuCreation(xPosOrigin, 128, UIElement, GameWorld, 4, 
+			"Settings", "Settings", "Settings", "BackOption");
+	} break;
+
+
+	case MOUSE_CURSOR:
+		switchSpriteByName("MouseCursor", USE_CURRENT_SPRITESET, UIElement->ObjectDisplay);
+		AddFrameUpdateFunction(&UpdateCursor, UIElement, GameWorld->ObjectList);
+		setDisplayLayer(UIElement,FRONT_LAYER);
+		setTransparency(UIElement, 0.5);
+		break;
+
+	default:
+		SWITCH_TO_MISSING(UIElement);
+		break;
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int basicMenuCreation(float x, float yDiff, Object *controller, World *GameWorld, int count, ...)
+{
+	if (count < 1)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	float y = ((yDiff / 2.0) * (count - 2)) - 32.0;
+	controller->ObjectBox->xPos = x;
+	controller->ObjectBox->yPos = y;
+	controller->arg4 = (int)y;		// arg4 is y pos of first option
+
+	va_list args;
+	va_start(args, count);
+
+	y -= 5.0;
+	x -= 130.0;
+	for (int i = 0; i < count; i++)
+	{
+		AddOptionButton(va_arg(args, char*), x, y, controller, GameWorld);
+		y -= yDiff;
+	}
+
+	va_end(args);
+
+	SetDrawPriorityToFront(GameWorld->ObjectList, controller);
+	switchObjectSpriteByName("OptionCursor", controller);
+	
+
+	return LEMON_SUCCESS;
+}
+
+
+int LoadUISprites(SpriteSet *newSet)
+{
+	loadObjectSprite("OBJ_Missing", newSet, TILE);
+	loadObjectSprite("OptionCursor", newSet, SINGLE);
+	loadObjectSprite("BackButton", newSet, SINGLE);
+
+	loadObjectSprite("GamePaused_Background", newSet, SINGLE);
+	loadObjectSprite("GamePaused_Header", newSet, SINGLE);
+	loadObjectSprite("ResumeGame", newSet, SINGLE);
+	loadObjectSprite("ResumeGame_Highlighted", newSet, SINGLE);
+	loadObjectSprite("Settings", newSet, SINGLE);
+	loadObjectSprite("Settings_Highlighted", newSet, SINGLE);
+	loadObjectSprite("QuitGame", newSet, SINGLE);
+	loadObjectSprite("QuitGame_Highlighted", newSet, SINGLE);
+
+	loadObjectSprite("Settings_Background", newSet, SINGLE);
+	loadObjectSprite("Settings_Header", newSet, SINGLE);
+	loadObjectSprite("RenderQuality_Option", newSet, SINGLE);
+	loadObjectSprite("Volume_Option", newSet, SINGLE);
+	loadObjectSprite("Test_Option", newSet, SINGLE);
+
+	return LEMON_SUCCESS;
+}
+
+
+int LoadUITextSprites(SpriteSet *newSet)
+{
+	loadSpriteIntoSpriteSet("Test_Face", "TextDisplay", newSet, TILE);
+
+	loadSpriteIntoSpriteSet("TextBox_Basic", "TextDisplay", newSet, TILE_FAST);
+	loadSpriteIntoSpriteSet("TextBox_White", "TextDisplay", newSet, TILE_FAST);
+
+	loadSpriteIntoSpriteSet("Text_0", "TextDisplay", newSet, TILE_FAST);
+	loadSpriteIntoSpriteSet("Text_1", "TextDisplay", newSet, TILE);
+
+	return LEMON_SUCCESS;
+}
+
+
+int UpdateUIElement(World *GameWorld, Object *UIElement)
+{
+	if (GameWorld == NULL || UIElement == NULL || GameWorld->ObjectList == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+
+	switch (getSubType(UIElement))
+	{
+	case PAUSE_MENU_CONTROLLER:
+		PauseMenu(UIElement, GameWorld);
+		break;
+
+	case SAVE_OPTIONS_CONTROLLER:
+		SaveMenu(UIElement, GameWorld);
+		break;
+
+	case SETTINGS_MENU_CONTROLLER:
+		SettingsMenuControl(UIElement, GameWorld);
+		break;
+
+	case VIDEO_SETTINGS_CONTROLLER:
+		VideoSettingsControl(UIElement, GameWorld);
+		break;
+
+	case SOUND_SETTINGS_CONTROLLER:
+		SoundSettingsControl(UIElement, GameWorld);
+		break;
+
+	case OPTION_BUTTON:
+		UpdateOptionButton(UIElement, GameWorld->MainCamera);
+		break;
+
+	case FADEOUT:
+		if (UIElement->arg2 == 0)
+		{
+			changeTransparency(UIElement, -0.03);
+			if (getTransparency(UIElement) < 0.01)
+			{
+				UIElement->arg2 = 1;
+			}
+		}
+		else if (UIElement->arg2 > 130)
+		{
+			changeTransparency(UIElement, 0.04);
+			if (getTransparency(UIElement) > 0.99)
+			{
+				MarkObjectForDeletion(UIElement);
+			}
+		}
+		else
+		{
+			UIElement->arg2++;
+		}
+		break;
+
+	case MOUSE_CURSOR:
+		smoothSizeChangeTo(UIElement, 1.0, 6.0);
+		if (UIElement->arg2 < 1)
+		{
+			UIElement->Interrupt = NO_INTERRUPT;
+		}
+		if (UIElement->Interrupt == MOUSEDOWN_INTERRUPT)
+		{
+			UIElement->arg2--;
+		}
+		break;
+
+	default:
+		break;
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int UpdateCursor(Object *Cursor, World *GameWorld)
+{
+	if (Cursor == NULL || GameWorld == NULL || Cursor->ObjectBox == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	Cursor->ObjectBox->xPos = getMouseXCamRelative(GameWorld->MainCamera) - (Cursor->ObjectBox->xSize >> 1);
+	Cursor->ObjectBox->yPos = getMouseYCamRelative(GameWorld->MainCamera) - (Cursor->ObjectBox->ySize >> 1);
+
+	if (Cursor->nextObject != NULL)
+	{
+		SetDrawPriorityToFront(GameWorld->ObjectList, Cursor);
+	}
+
+	if (GameWorld->GamePaused == 1)
+	{
+		return ACTION_DISABLED;
+	}
+
+	Object *PlayerBox = GameWorld->Player.PlayerPtr;
+
+	if (MouseInput.LeftButton)
+	{
+		setScaleSize(Cursor, 0.75);
+
+		if (PlayerBox != NULL && Cursor->Interrupt == NO_INTERRUPT)
+		{
+			Object *Bullet = AddNamedObject(GameWorld, "PlayerBullet", PROJECTILE, 0, 0);
+			centerOnObject(Bullet, PlayerBox);
+			PointObjectToMouse(Bullet, GameWorld);
+			Bullet = AddNamedObject(GameWorld, "PlayerBullet", PROJECTILE, 0, 0);
+			centerOnObject(Bullet, PlayerBox);
+			PointObjectToMouse(Bullet, GameWorld);
+			RotateObject(Bullet, 17.5);
+			Bullet = AddNamedObject(GameWorld, "PlayerBullet", PROJECTILE, 0, 0);
+			centerOnObject(Bullet, PlayerBox);
+			PointObjectToMouse(Bullet, GameWorld);
+			RotateObject(Bullet, -17.5);
+
+			Cursor->Interrupt = MOUSEDOWN_INTERRUPT;
+			Cursor->arg2 = 2;
+		}
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+bool MenuControl(Object *MenuController, World *GameWorld)
+{
+	if (MenuController == NULL || GameWorld == NULL || MenuController->ObjectID != UI_ELEMENT)
+	{
+		return false;
+	}
+
+	// arg2: Option selected
+	// arg3: Number of options
+	// arg4: Y Pos for first option
+	// Action: refresh flag
+
+	if (MenuController->Action == REFRESH)
+	{
+		MenuController->Action = IDLE;
+		MarkObjectForDeletion(MenuController);
+		Object *newMenu = AddObject(GameWorld, UI_ELEMENT, 0, 0, getSubType(MenuController), 0, 0, 0, 0);
+
+		if (newMenu != NULL)
+		{
+			newMenu->arg2 = MenuController->arg2;
+			newMenu->ObjectBox->yPos = MenuController->ObjectBox->yPos;
+			return false;
+		}
+	}
+
+
+	if (keyboard[LMN_DOWN])
+	{
+		keyboard[LMN_DOWN] = 0;
+
+		MenuController->arg2++;
+		MenuController->Interrupt = INTERACTION_INTERRUPT;
+
+		if (MenuController->arg2 >= MenuController->arg3)
+		{
+			MenuController->arg2 = 0;
+		}
+	}
+
+	if (keyboard[LMN_UP])
+	{
+		keyboard[LMN_UP] = 0;
+
+		MenuController->arg2--;
+		MenuController->Interrupt = INTERACTION_INTERRUPT;
+
+		if (MenuController->arg2 < 0)
+		{
+			MenuController->arg2 = MenuController->arg3 - 1;
+		}
+	}
+
+	if (MenuController->Interrupt == INTERACTION_INTERRUPT)
+	{
+		MenuController->ObjectBox->yPos = (float)MenuController->arg4 - (MenuController->arg2 * 128);
+		MenuController->Interrupt = NO_INTERRUPT;
+	}
+
+
+	if (keyboard[LMN_MENU_CONFIRM] == 1 || MenuController->Interrupt == MOUSECLICK_INTERRUPT)
+	{
+		AcknowledgeHeldButtons();
+		MenuController->Interrupt = NO_INTERRUPT;
+
+		return true;
+	}
+
+
+	return false;
+}
+
+
+int PauseMenu(Object *MenuController, World *GameWorld)
+{
+	if (MenuController == NULL || GameWorld == NULL || MenuController->ObjectID != UI_ELEMENT)
+	{
+		return MISSING_DATA;
+	}
+
+
+	if (MenuControl(MenuController, GameWorld))
+	{
+		switch (MenuController->arg2)
+		{
+			case 1:
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SETTINGS_MENU_CONTROLLER, 0, 0, 0, 0) != NULL)
+				{
+					MarkObjectForDeletion(MenuController);
+				}
+				break;
+
+			case 2:
+				GameWorld->GameState = CLOSE_GAME;
+				break;
+
+			default:
+				ResumeGame(GameWorld);
+				break;
+		}
+	}
+
+
+	if (GameWorld->GamePaused == 0 && GameWorld->GameState != IN_MENU)
+	{
+		MarkObjectForDeletion(MenuController);
+	}
+
+	return LEMON_SUCCESS;
+}
+
+int SaveMenu(Object *MenuController, World *GameWorld)
+{
+	if (MenuController == NULL || GameWorld == NULL || MenuController->ObjectID != UI_ELEMENT)
+	{
+		return MISSING_DATA;
+	}
+
+
+	if (MenuControl(MenuController, GameWorld))
+	{
+		switch (MenuController->arg2)
+		{
+			case 0:
+				loadSave(1, GameFlags, GameWorld);
+				break;
+
+			case 1:
+				loadSettings(1, GameWorld);
+				break;
+
+			case 2:
+				saveGameState(GameWorld);
+				break;
+
+			case 3:
+				loadGameState(GameWorld);
+				break;
+
+			default:
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SETTINGS_MENU_CONTROLLER, 0, 0, 0, 0) != NULL)
+				{
+					MarkObjectForDeletion(MenuController);
+				}
+				break;
+		}
+	}
+
+
+	if (GameWorld->GamePaused == 0 && GameWorld->GameState != IN_MENU)
+	{
+		MarkObjectForDeletion(MenuController);
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int SettingsMenuControl(Object *MenuController, World *GameWorld)
+{
+	if (MenuController == NULL || GameWorld == NULL || MenuController->ObjectID != UI_ELEMENT)
+	{
+		return MISSING_DATA;
+	}
+
+
+	if (MenuControl(MenuController, GameWorld))
+	{
+		switch (MenuController->arg2)
+		{
+			case 0:
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, VIDEO_SETTINGS_CONTROLLER, 0, 0, 0, 0) != NULL)
+				{
+					MarkObjectForDeletion(MenuController);
+				}
+				break;
+
+			case 1:
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SOUND_SETTINGS_CONTROLLER, 0, 0, 0, 0) != NULL)
+				{
+					MarkObjectForDeletion(MenuController);
+				}
+				break;
+
+			case 2:
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SAVE_OPTIONS_CONTROLLER, 0, 0, 0, 0) != NULL)
+				{
+					MarkObjectForDeletion(MenuController);
+				}
+				break;
+
+
+			default:
+				PauseGame(GameWorld);
+				MarkObjectForDeletion(MenuController);
+				break;
+		}
+	}
+
+	if (GameWorld->GamePaused == 0 && GameWorld->GameState != IN_MENU)
+	{
+		MarkObjectForDeletion(MenuController);
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int VideoSettingsControl(Object *MenuController, World *GameWorld)
+{
+	if (MenuController == NULL || GameWorld == NULL || MenuController->ObjectID != UI_ELEMENT)
+	{
+		return MISSING_DATA;
+	}
+
+	if (MenuControl(MenuController, GameWorld))
+	{
+		switch (MenuController->arg2)
+		{
+			// THIS IS TEMPORARY - NEED TO IMPLEMENT SOME KIND OF SCREEN SIZE SELECTOR GUI
+			case 0:
+				changeScreenSizeScaled(320, 180, GameWorld);
+				break;
+
+			case 1:
+				changeScreenSizeScaled(1280, 720, GameWorld);
+				break;
+
+			case 2:
+				changeScreenSize(320, 180, GameWorld);	
+				break; 
+
+			case 3:
+				changeScreenSize(1280, 720, GameWorld);
+				break;
+
+			default:
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SETTINGS_MENU_CONTROLLER, 0, 0, 0, 0) != NULL)
+				{
+					MarkObjectForDeletion(MenuController);
+				}
+				break;
+		}
+
+		MenuController->Action = REFRESH;
+	}
+
+	if (GameWorld->GamePaused == 0 && GameWorld->GameState != IN_MENU)
+	{
+		MarkObjectForDeletion(MenuController);
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+
+int SoundSettingsControl(Object *MenuController, World *GameWorld)
+{
+	if (MenuController == NULL || GameWorld == NULL || MenuController->ObjectID != UI_ELEMENT)
+	{
+		return MISSING_DATA;
+	}
+
+	if (MenuControl(MenuController, GameWorld))
+	{
+		switch (MenuController->arg2)
+		{
+			case 0:
+				SetAllVolume(1.0);
+				break;
+
+			case 1:
+				SetAllVolume(0.0);
+				break;
+
+			case 2:
+				SetAllVolume(0.5);
+				break;
+
+
+			default:
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SETTINGS_MENU_CONTROLLER, 0, 0, 0, 0) != NULL)
+				{
+					MarkObjectForDeletion(MenuController);
+				}
+				break;
+		}
+	}
+
+	if (GameWorld->GamePaused == 0 && GameWorld->GameState != IN_MENU)
+	{
+		MarkObjectForDeletion(MenuController);
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+Object* AddOptionButton(const char spriteName[], int xPos, int yPos, Object *MenuController, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	Object *createdOption = AddObjectWithParent(GameWorld, MenuController, UI_ELEMENT, xPos, yPos, OPTION_BUTTON, MenuController->arg3, 0, 0, 0);
+	if (createdOption == NULL)
+	{
+		return NULL;
+	}
+
+	switchSpriteByName(spriteName, USE_CURRENT_SPRITESET, createdOption->ObjectDisplay);
+	matchBoxToDisplayDimensions(createdOption);
+	UpdateOptionButton(createdOption, GameWorld->MainCamera);
+
+	setScaleSize(createdOption, 1.0);
+	MenuController->arg3++;		// number of options
+
+	return createdOption;
+}
+
+
+int UpdateOptionButton(Object *Button, Camera inputCam)
+{
+	DisplayData *buttonDisplay = getDisplay(Button);
+	if (Button == NULL || Button->ParentObject == NULL || buttonDisplay == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (buttonDisplay->spriteBuffer == NULL || strcmp(buttonDisplay->spriteBuffer->name, "Missing") == 0)
+	{
+		return INVALID_DATA;
+	}
+
+	// Detect mouse overlap
+	if (MouseOverlappingSprite(Button, inputCam) == 1)
+	{	
+		if (Button->Interrupt == NO_INTERRUPT)					// Mouse hover
+		{
+			Button->ParentObject->arg2 = Button->arg2;
+			Button->Interrupt = INTERACTION_INTERRUPT;
+			Button->ParentObject->Interrupt = INTERACTION_INTERRUPT;
+		}
+
+		// Detect mouse click
+		if (MouseInput.LeftButton == 1)				// mouse down
+		{
+			Button->Interrupt = MOUSEDOWN_INTERRUPT;
+		}
+
+		if (Button->Interrupt == MOUSEDOWN_INTERRUPT && MouseInput.LeftButton == 0)	// mouse release/click
+		{
+			Button->ParentObject->Interrupt = MOUSECLICK_INTERRUPT;
+			Button->Interrupt = INTERACTION_INTERRUPT;
+		}
+	}
+	else
+	{
+		Button->Interrupt = NO_INTERRUPT;
+	}
+
+	// animate
+	if (Button->ParentObject->arg2 == Button->arg2)
+	{
+		if (keyboard[LMN_MENU_CONFIRM] == 1 || Button->Interrupt == MOUSEDOWN_INTERRUPT)
+		{
+			smoothSizeChangeTo(Button, 1.10, 2.0);
+		}
+		else
+		{
+			smoothSizeChangeTo(Button, 1.20, 5.0);
+		}
+		
+		if (Button->arg3 == 0)
+		{
+			buttonDisplay->currentSprite++;
+			Button->arg3 = 1;
+		}
+	}
+	else
+	{
+		smoothSizeChangeTo(Button, 1.00, 4.0);
+
+		if (Button->arg3 == 1)
+		{
+			buttonDisplay->currentSprite--;
+			Button->arg3 = 0;
+		}
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int InitialiseUIText(Object *UIText, World *GameWorld)
+{
+	if (GameWorld == NULL || UIText == NULL || GameWorld->ObjectList == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	setDisplayLayer(UIText, HUD);
+	UIText->ObjectBox->collideLayer = HUD;
+	UIText->ObjectBox->solid = UNSOLID;
+
+	switch(getSubType(UIText))
+	{
+	case UNDEFINED_UI_ELEMENT:
+		MarkObjectForDeletion(UIText);
+		break;
+
+	case TEXTOPTION_CURSOR:
+			UIText->arg2 = -1;
+			initialiseTextCharacter(UIText, '>', GameWorld);
+
+			UpdateUIText(GameWorld, UIText);
+		break;
+
+	case TEXT_CHARACTER:
+		initialiseTextCharacter(UIText, UIText->arg2, GameWorld);
+		break;
+
+	case TEXT_PORTRAIT:
+		UIText->ParentLink = POSITION_LINK;
+		break;
+
+	default:
+		break;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int UpdateUIText(World *GameWorld, Object *UIText)
+{
+	if (GameWorld == NULL || UIText == NULL || GameWorld->ObjectList == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+
+	TextInstance *currentText = GameWorld->TextQueue;
+
+	switch (getSubType(UIText))
+	{
+	case TEXTOPTION_CURSOR:
+		if (currentText == NULL || currentText->boxPtr == NULL || currentText->textTypeSetting != OPTION_PROMPT)
+		{
+			MarkObjectForDeletion(UIText);
+			break;
+		}
+
+		struct TextOptionPrompt *optionPrompt = &currentText->textTypeData.OptionPrompt;
+		int option = optionPrompt->SelectedOption;
+
+		if (optionPrompt != NULL && UIText->arg2 != option)
+		{
+			UIText->ObjectBox->xPos = currentText->boxPtr->ObjectBox->xPos + currentText->boxOffsetX;
+			UIText->ObjectBox->yPos = optionPrompt->OptionYPositions[option] + currentText->boxPtr->ObjectBox->yPos;
+			UIText->arg2 = option;
+			playTextVoice(currentText);
+		}
+		break;
+
+		/*
+	case TEXT_CHARACTER:
+		if (GameWorld->TextQueue == NULL)
+		{
+			MarkObjectForDeletion(UIText);
+		}
+		break;
+		*/
+
+	default:
+		break;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+TextInstance* SayText(const char inputPhrase[], const char Portrait[], TextPreset inputPreset, World *GameWorld)
+{
+	TextInstance *newText = CreateText(inputPhrase, GameWorld);
+
+	ApplyTextPresets(newText, Portrait, inputPreset);
+
+	return newText;
+}
+
+
+// Triggerable events used here and in the TRIGGER_EVENT text type expect a specific type of function and input, as defined by AddFunctionArgumentsToTriggerEvent
+TextInstance* SayTextOption(const char inputPhrase[], const char Portrait[], TextPreset inputPreset, World *GameWorld, int numberOfOptions, ...)
+{
+	if (inputPhrase == NULL || strlen(inputPhrase) >= OPTION_TEXT_MAX_LEN || numberOfOptions < 1 || numberOfOptions > MAX_TEXT_OPTIONS)
+	{
+		return NULL;
+	}
+
+	TextInstance *newText = CreateText(inputPhrase, GameWorld);
+
+	ApplyTextPresets(newText, Portrait, inputPreset);
+
+	if (newText == NULL)
+	{
+		return NULL;
+	}
+
+	newText->textTypeSetting = OPTION_PROMPT;
+	newText->textTypeData.OptionPrompt.numberOfOptions = numberOfOptions;
+	newText->textTypeData.OptionPrompt.SelectedOption = 0;
+	struct TextOptionPrompt *textData = &newText->textTypeData.OptionPrompt;
+
+	va_list args;
+    va_start(args, numberOfOptions);
+
+    struct TextEventTrigger *eventTrigger;
+    for (int i = 0; i < numberOfOptions; i++)
+    {
+    	eventTrigger = &textData->optionTriggers[i];
+
+    	strcpy(textData->optionNames[i], va_arg(args, char*));
+
+    	eventTrigger->FunctionPointer = va_arg(args, TriggerableFunction);
+
+    	if (eventTrigger->FunctionPointer != NULL)
+    	{
+    		AddFunctionArgumentsToTriggerEvent(eventTrigger, &args);
+    	}
+    }
+
+    va_end(args);
+
+	return newText;
+}
+
+
+int AddTriggerableEventToText(TextInstance *inputText, TriggerableFunction triggerFunction, void *functionInput)
+{
+	if (inputText == NULL || triggerFunction == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (inputText->textTypeSetting != REGULAR_TEXT)
+	{
+		// Its already been loaded with custom data here, so it should refuse to alter/overwrite it
+		return INVALID_DATA;
+	}
+
+	inputText->textTypeSetting = TRIGGER_EVENT;
+
+	struct TextEventTrigger *eventTrigger = &inputText->textTypeData.TriggerEvent;
+	eventTrigger->FunctionPointer = triggerFunction; 
+
+   	AddFunctionArgumentsToTriggerEvent(eventTrigger, functionInput);
+    	
+	return LEMON_SUCCESS;
+}
+
+
+int AddFunctionArgumentsToTriggerEvent(struct TextEventTrigger *eventTrigger, va_list *argInput)
+{
+	if (eventTrigger == NULL || argInput == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if ((void*)eventTrigger->FunctionPointer == &StartCutscene)
+	{
+		eventTrigger->FunctionArguments.cutscene = va_arg((*argInput), CutsceneID);
+	}
+	else if ((void*)eventTrigger->FunctionPointer == &loadLevel || (void*)eventTrigger->FunctionPointer == &switchLevel)
+	{
+		eventTrigger->FunctionArguments.level = va_arg((*argInput), int);
+	}
+	else
+	{
+		eventTrigger->FunctionArguments.TriggerObject = va_arg((*argInput), Object*);
+	}
+
+	return LEMON_SUCCESS;
+}
+
+int runTriggerableFunction(struct TextEventTrigger *DataPtr, World *GameWorld)
+{
+	if (DataPtr == NULL || DataPtr->FunctionPointer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if ((void*)DataPtr->FunctionPointer == &StartCutscene)
+	{
+		StartCutscene(DataPtr->FunctionArguments.cutscene, GameWorld);
+	}
+	else if ((void*)DataPtr->FunctionPointer == &loadLevel || (void*)DataPtr->FunctionPointer == &switchLevel)
+	{
+		switchLevel(DataPtr->FunctionArguments.level, GameWorld);
+	}
+	else
+	{
+		(DataPtr->FunctionPointer)(DataPtr->FunctionArguments.TriggerObject, GameWorld);
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int ApplyTextPresets(TextInstance *inputText, const char Portrait[], TextPreset inputPreset)
+{
+	if (inputText == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	int topTextLocation = (screenHeight >> 1) - 100;
+	int bottomTextLocation = 280 - (screenHeight >> 1);
+
+	// Default settings
+	inputText->currentXPos = -570;
+	inputText->currentYPos = bottomTextLocation;
+
+	inputText->boxOffsetX = 30;
+	inputText->boxOffsetY = 240;
+	inputText->textLengthSize = 1150;
+
+	inputText->textDelayFrames = 3;
+	strcpy(inputText->Portrait, Portrait);
+	strcpy(inputText->font, "Pixel_White");
+	strcpy(inputText->textBoxSprite, "TextBox_Basic");
+	inputText->LineSpacing = 50;
+	inputText->TextSize = 44;
+
+	switch (inputPreset)
+	{
+		case PLAINTEXT_BOTTOM:
+		strcpy(inputText->voice, "Text_snd");
+		memset(inputText->textBoxSprite, 0, MAX_LEN);
+		break;
+
+		case PLAINTEXT_TOP:
+		inputText->currentYPos = topTextLocation;
+		strcpy(inputText->voice, "Text_snd");
+		memset(inputText->textBoxSprite, 0, MAX_LEN);
+		break;
+
+		case WHITE_TOP:
+		strcpy(inputText->textBoxSprite, "TextBox_White");
+		strcpy(inputText->font, "Pixel_Black");
+		inputText->currentYPos = topTextLocation;
+		strcpy(inputText->voice, "Text_snd");
+		break;
+
+		case WHITE_TEXT:
+		strcpy(inputText->textBoxSprite, "TextBox_White");
+		strcpy(inputText->font, "Pixel_Black");
+		strcpy(inputText->voice, "Text_snd");
+		break;
+
+		case BASIC_TEXT:
+		strcpy(inputText->voice, "Text_snd");
+		break;
+
+		case BASIC_TOP:
+		inputText->currentYPos = topTextLocation;
+		strcpy(inputText->voice, "Text_snd");
+		break;
+
+		case BASIC_FAST:
+		strcpy(inputText->voice, "Text_snd");
+		inputText->textDelayFrames = 1;
+		break;
+
+		case BASIC_FLIP:
+		strcpy(inputText->voice, "Text_snd");
+		inputText->PortraitPosition = INSIDE_BOX_RIGHT;
+		break;
+
+		case BASIC_TOP_FLIP:
+		inputText->currentYPos = topTextLocation;
+		strcpy(inputText->voice, "Text_snd");
+		inputText->PortraitPosition = INSIDE_BOX_RIGHT;
+		break;
+
+		case BASIC_FADE:
+		strcpy(inputText->voice, "Text_snd");
+		strcpy(inputText->textBoxSprite, "TextBox_BasicFade");
+		break;
+
+		case BASIC_TOP_FADE:
+		strcpy(inputText->voice, "Text_snd");
+		strcpy(inputText->textBoxSprite, "TextBox_BasicFade");
+		inputText->currentYPos = topTextLocation;
+		break;
+
+		case SILENT_TOP:
+		inputText->currentYPos = topTextLocation;
+		break;
+
+		default:
+		break;
+	}
+
+	insertLineBreaks(inputText->textPhrase, inputText->textLengthSize - inputText->TextSize);
+
+
+	return LEMON_SUCCESS;
+}
+
+
+TextInstance* CreateText(const char inputPhrase[], World *GameWorld)
+{
+	if (GameWorld == NULL || inputPhrase == NULL)
+	{
+		return NULL;
+	}
+
+	if (strlen(inputPhrase) >= MAX_TEXT_LENGTH)
+	{
+		return NULL;
+	}
+
+	// Create text instance
+	TextInstance *newText = malloc(sizeof(TextInstance));
+
+	if (newText == NULL)
+	{
+		return NULL;
+	}
+
+	memset(newText->textPhrase, 0, MAX_TEXT_LENGTH - 1);
+	strcpy(newText->textPhrase, inputPhrase);	
+	memset(newText->voice, 0, MAX_LEN);
+	memset(newText->Portrait, 0, MAX_LEN);
+
+	newText->nextText = NULL;
+	newText->boxPtr = NULL;
+	memset(&newText->textTypeData, 0, sizeof(union TextTypeData));
+	newText->textTypeSetting = REGULAR_TEXT;
+
+	newText->currentXPos = 0;
+	newText->currentYPos = 0;
+	newText->boxOffsetX = 0;
+	newText->textLengthSize = 0;
+	newText->boxOffsetY = 0;
+	newText->currentChar = 0;
+	newText->Counter = 0;
+	newText->textDelayFrames = 0;
+	newText->LineSpacing = 50;
+	newText->TextSize = 44;
+
+	memset(newText->font, 0, MAX_LEN);
+	memset(newText->textBoxSprite, 0, MAX_LEN);
+	newText->PortraitPosition = INSIDE_BOX_LEFT;
+	newText->Skippable = true;
+	newText->voiceMode = PLAY_EACH_CHARACTER;
+
+	if (GameWorld->TextQueue == NULL)
+	{
+		GameWorld->TextQueue = newText;
+	}
+	else
+	{
+		TextInstance *currentText;
+		currentText = GameWorld->TextQueue;
+
+		int i = 0;
+
+		while (i < EngineSettings.MaxTextQueueLength && currentText->nextText != NULL)
+		{
+			currentText = currentText->nextText;
+			i++;
+		}
+
+		if (currentText->nextText != NULL)
+		{
+			free(newText);
+			return NULL;
+		}
+
+		currentText->nextText = newText;
+	}
+
+	// create an associated sceneAction to control when the text plays
+	SceneAction_SayText(newText, GameWorld);
+
+
+	return newText;
+}
+
+
+int insertLineBreaks(char *input, int maxLength)
+{
+	if (input == NULL || input[0] == 0)
+	{
+		return MISSING_DATA;
+	}
+
+	utf8_decode_init(input, strlen(input));
+	char decoded = 0;
+	int distance = 0;
+	int lastSpace = -1;
+	int prevIndex = 0;
+
+	while (!utf8_AtEnd())
+	{
+		prevIndex = utf8_getIndex();
+		decoded = utf8_decode_next();
+		distance += getCharacterSpacing(decoded);
+
+		if (decoded == ' ')
+		{
+			lastSpace = prevIndex;
+		}
+
+		if (distance > maxLength)
+		{
+			distance = 0;
+			if (lastSpace >= 1)
+			{
+				input[lastSpace] = '\n';
+			}
+		}
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+// Play the text at the first slot in the linked list, then delete and shift everything up when done with that instance
+int updateText(World *GameWorld)
+{
+	if (GameWorld == NULL || GameWorld->TextQueue == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	TextInstance *currentText = GameWorld->TextQueue;
+
+	if (!(GameWorld->GameState == GAMEPLAY || GameWorld->GameState == CUTSCENE) || GameWorld->GamePaused == 1 || !textSceneActionPresent(currentText, GameWorld))
+	{
+		return ACTION_DISABLED;
+	}
+
+	if (currentText->currentChar < 0)
+	{
+		TextInteraction(currentText, GameWorld);
+	}
+	else
+	{
+		displayText(currentText, GameWorld);
+	}
+	
+	return LEMON_SUCCESS;
+}
+
+
+int displayText(TextInstance *currentText, World *GameWorld)
+{
+	if (currentText == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	// Skip text animation if skip button is held
+	if (keyboard[LMN_TEXT_SKIP] && currentText->Skippable == true)
+	{
+		keyboard[LMN_TEXT_CONFIRM] = -1;
+
+		while (currentText->currentChar > -1)
+		{
+			displayNextCharacter(currentText, GameWorld);
+		}
+	}
+	else
+	{
+		currentText->Counter++;
+
+		if (!(currentText->Counter >= currentText->textDelayFrames || currentText->currentChar == 0))
+		{
+			return ACTION_DISABLED;
+		}
+
+		currentText->Counter = 0;
+
+		displayNextCharacter(currentText, GameWorld);
+	}
+	
+	playTextVoice(currentText);
+
+	return LEMON_SUCCESS;
+}
+
+
+int displayNextCharacter(TextInstance *inputText, World *GameWorld)
+{
+	if (inputText == NULL || inputText->currentChar == -1)
+	{
+		return MISSING_DATA;
+	}
+
+
+	if (inputText->boxPtr == NULL)
+	{
+		// create text box
+		createTextBox(inputText, GameWorld);
+
+		if (inputText->boxPtr == NULL)
+		{
+			endTextInstance(GameWorld);
+			return LEMON_ERROR;
+		}
+	
+		// Create portrait
+		if (inputText->Portrait[0] != 0 && strcmp(inputText->Portrait, "NO_PORTRAIT"))
+		{
+			createTextBoxPortrait(inputText, GameWorld);
+		}
+
+		inputText->currentXPos = inputText->boxOffsetX;
+		inputText->currentYPos = inputText->boxOffsetY;
+
+		GameWorld->PlayingText = 1;
+	}
+
+	if (inputText->currentChar == 0)
+	{
+		utf8_decode_init(inputText->textPhrase, strlen(inputText->textPhrase));
+	}
+
+	int decodedChar = utf8_decode_next();
+	inputText->currentChar = utf8_getIndex();
+
+	// Spawn next character		
+	if (inputText->currentXPos + inputText->TextSize > inputText->textLengthSize || decodedChar == 10)
+	{
+		inputText->currentXPos = inputText->boxOffsetX;
+		inputText->currentYPos -= inputText->LineSpacing;
+	}
+
+	switch(decodedChar)
+	{
+		case 13:		// (/r) is repurposed to insert a delay of 30 ticks
+		inputText->Counter = -30;
+		break;
+
+		case 12:		// (/f) is repurposed to insert a delay of 12 ticks  
+		inputText->Counter = -12;
+		break;
+
+		case 11:		// (/v) is repurposed to insert a delay of 8 ticks 
+		inputText->Counter = -8;
+		break;
+
+		default:
+		break;
+	}
+	
+
+	int newTextXPos = inputText->currentXPos + (int)inputText->boxPtr->ObjectBox->xPos;
+	int newTextYPos = inputText->currentYPos + (int)inputText->boxPtr->ObjectBox->yPos;
+
+	AddObject(GameWorld, UI_TEXT, newTextXPos, newTextYPos, TEXT_CHARACTER, decodedChar, 0, 0, 0);
+
+	inputText->currentXPos += getCharacterSpacing(decodedChar);
+
+	
+	// Finished creating text
+	if (decodedChar == 0 || utf8_AtEnd() || utf8_getIndex() >= MAX_TEXT_LENGTH)
+	{
+		inputText->currentChar = -1;
+	}
+
+	
+	return LEMON_SUCCESS;
+}
+
+
+int playTextVoice(TextInstance *currentText)
+{
+	if (currentText == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (currentText->voice[0] > 32)
+	{
+		PlaySound(currentText->voice, "Voices", SPEECH, 1.0);
+
+		if (currentText->voiceMode == PLAY_ONCE)
+		{
+			currentText->voice[0] = 0;
+		}
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int TextInteraction(TextInstance *currentText, World *GameWorld)
+{
+	if (currentText == NULL)
+	{
+		return MISSING_DATA;
+	}
+	 
+	switch (currentText->textTypeSetting)
+	{
+		case OPTION_PROMPT:
+			handleOptionPrompt(currentText, GameWorld);
+		break;
+
+		default:
+			if (buttonPressed(LMN_TEXT_CONFIRM) || buttonPressed(MOUSE_LEFT))
+			{
+				endTextInstance(GameWorld);
+			}
+		break;
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+int handleOptionPrompt(TextInstance *inputText, World *GameWorld)
+{
+	struct TextOptionPrompt *optionData = &inputText->textTypeData.OptionPrompt;
+
+	if (optionData->optionBeingPrinted < optionData->numberOfOptions)
+	{
+		if (strlen(inputText->textPhrase) > 0)
+		{
+			inputText->currentYPos -= 50;
+		}
+		inputText->currentXPos = inputText->boxOffsetX + 50;
+
+		memset(inputText->textPhrase, 0, MAX_TEXT_LENGTH);
+		strcpy(inputText->textPhrase, optionData->optionNames[optionData->optionBeingPrinted]);
+		inputText->currentChar = 0;
+
+		optionData->OptionYPositions[optionData->optionBeingPrinted] = inputText->currentYPos;
+		optionData->optionBeingPrinted++;
+
+		if (optionData->optionBeingPrinted >= optionData->numberOfOptions && inputText->boxPtr != NULL)
+		{
+			AddObjectWithParent(GameWorld, inputText->boxPtr, UI_TEXT, 0, 0, TEXTOPTION_CURSOR, 0, 0, 0, 0);
+		}
+		else
+		{
+			return LEMON_SUCCESS;
+		}
+	}
+
+	if (buttonPressed(LMN_UP))
+	{
+		optionData->SelectedOption = clamp(optionData->SelectedOption - 1, 0, optionData->numberOfOptions - 1);
+	}
+
+	if (buttonPressed(LMN_DOWN))
+	{
+		optionData->SelectedOption = clamp(optionData->SelectedOption + 1, 0, optionData->numberOfOptions - 1);
+	}
+
+	bool selectOption = buttonPressed(LMN_TEXT_CONFIRM);
+
+	// detect mouse input
+	if (inputText->boxPtr != NULL)
+	{
+		PhysicsBox *boxRect = inputText->boxPtr->ObjectBox;
+		PhysicsBox stateSave;
+		memcpy(&stateSave, boxRect, sizeof(PhysicsBox));
+
+		boxRect->xSize = 600;
+		boxRect->ySize = 50;
+		boxRect->xPos = inputText->boxOffsetX + boxRect->xPos;
+		float boxYPos = boxRect->yPos;
+
+		int i = 0;
+		while (i < optionData->numberOfOptions)
+		{
+			boxRect->yPos = optionData->OptionYPositions[i] + boxYPos;
+
+			if (MouseOverlappingBox(inputText->boxPtr, GameWorld->MainCamera))
+			{
+				optionData->SelectedOption = clamp(i, 0, optionData->numberOfOptions - 1);
+				i = optionData->numberOfOptions;
+			}
+
+			i++;
+		}
+
+		selectOption |= MouseClickedObject(inputText->boxPtr, GameWorld->MainCamera);
+		
+		memcpy(boxRect, &stateSave, sizeof(PhysicsBox));
+	}
+
+
+	if (selectOption || optionData->numberOfOptions < 1)
+	{
+		AcknowledgeHeldButtons();
+		endTextInstance(GameWorld);
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int initialiseTextCharacter(Object *inputCharacter, char charValue, World *GameWorld)
+{
+	if (GameWorld == NULL || GameWorld->TextQueue == NULL || inputCharacter == NULL)
+	{
+		MarkObjectForDeletion(inputCharacter);
+		return MISSING_DATA;
+	}
+
+	TextInstance *inputText = GameWorld->TextQueue;
+
+	inputCharacter->ParentObject = inputText->boxPtr;
+	inputCharacter->ParentLink = POSITION_LINK;
+	inputCharacter->ObjectBox->xSize = inputText->TextSize;
+	inputCharacter->ObjectBox->ySize = inputText->TextSize;
+
+	if (charValue > 32 && charValue < 123)
+	{
+		switchSpriteByName(inputText->font, 0, inputCharacter->ObjectDisplay);
+		mapTextToCharacter(inputCharacter, charValue);
+	}
+	else
+	{
+		MarkObjectForDeletion(inputCharacter);
+
+		// Just in case
+		setRenderModeOverride(inputCharacter, DO_NOT_RENDER);
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+Object* createTextBox(TextInstance *inputText, World *GameWorld)
+{
+	Object *TextBox = AddObject(GameWorld, UI_TEXT, inputText->currentXPos - inputText->boxOffsetX, inputText->currentYPos - inputText->boxOffsetY, TEXT_BOX, 0, 0, 0, 0);
+
+	inputText->boxPtr = TextBox;
+
+	DisplayData *boxDisplay = getDisplay(TextBox);
+
+	if (inputText->boxPtr == NULL || boxDisplay == NULL)
+	{
+		return NULL;
+	}
+
+	switchSpriteByName(inputText->textBoxSprite, 0, boxDisplay);
+
+	if (boxDisplay->spriteBuffer == NULL)
+	{
+		boxDisplay->currentSprite = -1;
+		return TextBox;
+	}
+
+	matchBoxToDisplayDimensions(TextBox);
+
+	return TextBox;
+}
+
+
+Object* createTextBoxPortrait(TextInstance *inputText, World *GameWorld)
+{
+	if (inputText == NULL || inputText->boxPtr == NULL)
+	{
+		return NULL;
+	}
+
+	int portraitSize = 200;
+	int boxXPos = (int)inputText->boxPtr->ObjectBox->xPos;
+	int boxYPos = (int)inputText->boxPtr->ObjectBox->yPos + ((inputText->boxOffsetY - portraitSize) >> 1) + 44;
+
+	Object *portrait = AddObjectWithParent(GameWorld, inputText->boxPtr, UI_TEXT, inputText->currentXPos, boxYPos, TEXT_PORTRAIT, 0, 0, 0, 0);
+
+	if (portrait != NULL)
+	{
+		switchSpriteByName(inputText->Portrait, 0, portrait->ObjectDisplay);
+
+		portrait->ObjectBox->xSize = portraitSize;
+		portrait->ObjectBox->ySize = portraitSize;
+
+		if (inputText->PortraitPosition == INSIDE_BOX_LEFT)
+		{
+			inputText->boxOffsetX += portraitSize + 30;
+		}
+		else if (inputText->PortraitPosition == INSIDE_BOX_RIGHT)
+		{
+			portrait->ObjectBox->xPos = boxXPos + inputText->textLengthSize - portraitSize;
+			inputText->textLengthSize -= portraitSize + 30;
+		}
+	}
+
+	return portrait;
+}
+
+int mapTextToCharacter(Object *inputText, int characterValue)
+{
+	DisplayData *charDisplay = getDisplay(inputText);
+
+	if (inputText == NULL || charDisplay == NULL || charDisplay->spriteBuffer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	int height = charDisplay->spriteBuffer->height - 50;
+	charDisplay->pixelXOffset = 4 + (56 * ((characterValue - 32) % 16));
+	charDisplay->pixelYOffset = height - (56 * floor((float)(characterValue - 32) / 16.0));
+
+	return LEMON_SUCCESS;
+}
+
+int getCharacterSpacing(char input)
+{
+	int widthValue = 0;
+
+	switch(input)
+	{
+		case 'i':
+		case 'l':
+		case '!':
+		case 39:
+		case 46:
+			widthValue = 16;
+		break;
+
+		case 'r':
+		case 'f':
+		case 32:
+			widthValue = 24;
+		break;
+
+		case 'O':
+		case 'N':
+		case 'J':
+			widthValue = 40;
+		break;
+
+		case 'w':
+		case 'W':
+		case 'm':
+		case 'M':
+		case 'Q':
+		case '-':
+			widthValue = 48;
+		break;
+
+		case 8:
+		case 10:
+		case 11:
+		case 12:
+		case 13:
+			widthValue = 0;
+		break;
+
+		default:
+			widthValue = 32;
+		break;
+
+	}
+
+	return widthValue;
+}
+
+
+int endTextInstance(World *GameWorld)
+{
+	if (GameWorld == NULL || GameWorld->TextQueue == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	TextType inputTextType = GameWorld->TextQueue->textTypeSetting;
+	union TextTypeData inputData = GameWorld->TextQueue->textTypeData;
+
+	deleteTextInstance(GameWorld);
+
+
+	switch (inputTextType)
+	{
+		case OPTION_PROMPT:
+		{
+			struct TextOptionPrompt *optionData = &inputData.OptionPrompt;
+			if (optionData->SelectedOption < 0 || optionData->SelectedOption >= optionData->numberOfOptions)
+			{
+				break;
+			}
+
+			runTriggerableFunction(&optionData->optionTriggers[optionData->SelectedOption], GameWorld);
+		} break;
+
+		case TRIGGER_EVENT:
+		{
+			runTriggerableFunction(&inputData.TriggerEvent, GameWorld);
+		} break;
+
+		default:
+			break;
+	}
+	
+
+	return LEMON_SUCCESS;
+}
+
+
+int deleteTextInstance(World *GameWorld)
+{
+	if (GameWorld == NULL || GameWorld->TextQueue == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	TextInstance *textToDelete = GameWorld->TextQueue;
+
+	MarkObjectForDeletion(textToDelete->boxPtr);
+
+	DeleteTextSceneAction(textToDelete, GameWorld);
+
+	GameWorld->TextQueue = textToDelete->nextText;
+	
+	free(textToDelete);
+
+	if (GameWorld->TextQueue == NULL || !textSceneActionPresent(GameWorld->TextQueue, GameWorld))
+	{
+		GameWorld->PlayingText = 0;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int clearTextQueue(World *GameWorld)
+{
+	if (GameWorld == NULL || GameWorld->TextQueue == NULL) { return MISSING_DATA; }
+
+	int i = 0;
+
+	while (i < EngineSettings.MaxTextQueueLength && GameWorld->TextQueue != NULL)
+	{
+		deleteTextInstance(GameWorld);
+		i++;
+	}
+
+	if (GameWorld->TextQueue != NULL) { return LEMON_ERROR; }
+
+	GameWorld->PlayingText = 0;
+
+	return LEMON_SUCCESS;
+}
+
+
+bool textSceneActionPresent(TextInstance *inputText, World *GameWorld)
+{
+	if (inputText == NULL || inputText->currentChar != 0 || GameWorld == NULL || GameWorld->SceneActionQueue == NULL)
+	{
+		return true;
+	}
+
+	SceneAction *currentAction = GameWorld->SceneActionQueue;
+
+
+	while (currentAction != NULL)
+	{
+		if (currentAction->ActionID == SCENE_SAY_TEXT && currentAction->ActionData.sceneText == inputText)
+		{
+			return true;
+		}
+
+		if (currentAction->parallelAction == false)
+		{
+			return false;
+		}
+
+		currentAction = currentAction->nextSceneAction;
+	}	
+
+	return false;
+}
+
+
+void DeleteTextSceneAction(TextInstance *inputText, World *GameWorld)
+{
+	if (inputText == NULL || GameWorld == NULL || GameWorld->SceneActionQueue == NULL)
+	{
+		return;
+	}
+
+
+	SceneAction *currentAction = GameWorld->SceneActionQueue;
+
+	while (currentAction != NULL)
+	{
+		if (currentAction->ActionID == SCENE_SAY_TEXT && currentAction->ActionData.sceneText == inputText)
+		{
+			currentAction = deleteSceneAction(currentAction, GameWorld);
+			return;
+		}
+		else
+		{
+			currentAction = currentAction->nextSceneAction;
+		}
+	}	
+
+	return;
+}

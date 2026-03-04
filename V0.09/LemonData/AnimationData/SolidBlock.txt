@@ -1,0 +1,10 @@
+FRV<1>--ANIMATION--
+AddSprite:	TileMapTEST		Objects		TILE
+AddSprite: 	Grass_Block		Objects		TILE_FAST
+AddSprite: 	Dirt_Block		Objects		TILE_FAST
+AddSprite: 	MissingMeasure		NULL		TILE
+AddSprite: 	Bottom_Block		Objects		TILE_FAST
+AddSprite: 	CornerEdge_Left_Block	Objects		TILE_FAST
+AddSprite: 	CornerEdge_Right_Block	Objects		TILE_FAST
+AddSprite: 	Mud_Block		Objects		TILE_FAST
+AddSprite: 	Snow_Block		Objects		TILE_FAST

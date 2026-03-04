@@ -1,0 +1,12 @@
+FRV<1>--LEVEL_DATA--
+> Player 
+OBJECT: PlayerObject
+OBJECT:	UIElement, 	0, 	0, 	Cursor	
+	
+LVFLAG:	START_CAMMODE, 	0
+
+ENDFILE
+
+
+
+
