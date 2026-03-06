@@ -1172,7 +1172,7 @@ TextInstance* CreateText(const char inputPhrase[], World *GameWorld)
 	newText->boxOffsetX = 0;
 	newText->textLengthSize = 0;
 	newText->boxOffsetY = 0;
-	newText->currentChar = 0;
+	newText->currentIndex = 0;
 	newText->Counter = 0;
 	newText->textDelayFrames = 0;
 	newText->LineSpacing = 50;
@@ -1225,16 +1225,15 @@ int insertLineBreaks(char *input, int maxLength)
 		return MISSING_DATA;
 	}
 
-	utf8_decode_init(input, strlen(input));
 	char decoded = 0;
 	int distance = 0;
 	int lastSpace = -1;
 	int prevIndex = 0;
+	int length = strlen(input);
 
-	while (!utf8_AtEnd())
+	while (prevIndex < length)
 	{
-		prevIndex = utf8_getIndex();
-		decoded = utf8_decode_next();
+		decoded = utf8_decode_next(input, prevIndex, length);
 		distance += getCharacterSpacing(decoded);
 
 		if (decoded == ' ')
@@ -1249,6 +1248,12 @@ int insertLineBreaks(char *input, int maxLength)
 			{
 				input[lastSpace] = '\n';
 			}
+
+			prevIndex = lastSpace + 1;
+		}
+		else
+		{
+			prevIndex = utf8_setIndex();
 		}
 	}
 
@@ -1272,7 +1277,7 @@ int updateText(World *GameWorld)
 		return ACTION_DISABLED;
 	}
 
-	if (currentText->currentChar < 0)
+	if (currentText->currentIndex < 0)
 	{
 		TextInteraction(currentText, GameWorld);
 	}
@@ -1297,7 +1302,7 @@ int displayText(TextInstance *currentText, World *GameWorld)
 	{
 		keyboard[LMN_TEXT_CONFIRM] = -1;
 
-		while (currentText->currentChar > -1)
+		while (currentText->currentIndex > -1)
 		{
 			displayNextCharacter(currentText, GameWorld);
 		}
@@ -1306,7 +1311,7 @@ int displayText(TextInstance *currentText, World *GameWorld)
 	{
 		currentText->Counter++;
 
-		if (!(currentText->Counter >= currentText->textDelayFrames || currentText->currentChar == 0))
+		if (!(currentText->Counter >= currentText->textDelayFrames || currentText->currentIndex == 0))
 		{
 			return ACTION_DISABLED;
 		}
@@ -1324,7 +1329,7 @@ int displayText(TextInstance *currentText, World *GameWorld)
 
 int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 {
-	if (inputText == NULL || inputText->currentChar == -1)
+	if (inputText == NULL || inputText->currentIndex == -1)
 	{
 		return MISSING_DATA;
 	}
@@ -1353,16 +1358,20 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 		GameWorld->PlayingText = 1;
 	}
 
-	if (inputText->currentChar == 0)
+	int decodedChar = utf8_decode_next(inputText->textPhrase, inputText->currentIndex, MAX_TEXT_LENGTH);
+	inputText->currentIndex = utf8_setIndex();
+
+	// Finished creating text
+	if (decodedChar == 0 || inputText->currentIndex >= MAX_TEXT_LENGTH || inputText->boxPtr->State == EMPTY_OBJECT)
 	{
-		utf8_decode_init(inputText->textPhrase, strlen(inputText->textPhrase));
+		inputText->currentIndex = -1;
+
+		return LEMON_SUCCESS;
 	}
 
-	int decodedChar = utf8_decode_next();
-	inputText->currentChar = utf8_getIndex();
 
 	// Spawn next character		
-	if (inputText->currentXPos + inputText->TextSize > inputText->textLengthSize || decodedChar == 10)
+	if (inputText->currentXPos + inputText->TextSize > inputText->textLengthSize || decodedChar == '\n')
 	{
 		inputText->currentXPos = inputText->boxOffsetX;
 		inputText->currentYPos -= inputText->LineSpacing;
@@ -1393,13 +1402,6 @@ int displayNextCharacter(TextInstance *inputText, World *GameWorld)
 	AddObject(GameWorld, UI_TEXT, newTextXPos, newTextYPos, TEXT_CHARACTER, decodedChar, 0, 0, 0);
 
 	inputText->currentXPos += getCharacterSpacing(decodedChar);
-
-	
-	// Finished creating text
-	if (decodedChar == 0 || utf8_AtEnd() || utf8_getIndex() >= MAX_TEXT_LENGTH)
-	{
-		inputText->currentChar = -1;
-	}
 
 	
 	return LEMON_SUCCESS;
@@ -1466,7 +1468,7 @@ int handleOptionPrompt(TextInstance *inputText, World *GameWorld)
 
 		memset(inputText->textPhrase, 0, MAX_TEXT_LENGTH);
 		strcpy(inputText->textPhrase, optionData->optionNames[optionData->optionBeingPrinted]);
-		inputText->currentChar = 0;
+		inputText->currentIndex = 0;
 
 		optionData->OptionYPositions[optionData->optionBeingPrinted] = inputText->currentYPos;
 		optionData->optionBeingPrinted++;
@@ -1785,7 +1787,7 @@ int clearTextQueue(World *GameWorld)
 
 bool textSceneActionPresent(TextInstance *inputText, World *GameWorld)
 {
-	if (inputText == NULL || inputText->currentChar != 0 || GameWorld == NULL || GameWorld->SceneActionQueue == NULL)
+	if (inputText == NULL || inputText->currentIndex != 0 || GameWorld == NULL || GameWorld->SceneActionQueue == NULL)
 	{
 		return true;
 	}

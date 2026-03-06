@@ -49,12 +49,10 @@ SOFTWARE.
 */
 
 
-#define UTF8_END 0
 #define UTF8_ERROR -1
 
 static int  the_index = 0;
 static int  the_length = 0;
-static int  the_char = 0;
 static int  the_byte = 0;
 static char* the_input;
 
@@ -63,27 +61,21 @@ static int get();
 
 static int cont();
 
-void utf8_decode_init(char p[], int length);
-
 int utf8_decode_at_byte();
 
-int utf8_decode_at_character();
+int utf8_decode_next(char *input, int index, int length);
 
-int utf8_decode_next();
-
-
+int utf8_setIndex();
 
 
 
-/*
-    Get the next byte. It returns UTF8_END if there are no more bytes.
-*/
 static int get() 
 {
     if (the_index >= the_length) 
     {
-        return UTF8_END;
+        return 0;
     }
+
     int c = the_input[the_index] & 0xFF;
     the_index += 1;
     return c;
@@ -104,19 +96,6 @@ static int cont()
 
 
 /*
-    Initialize the UTF-8 decoder. The decoder is not reentrant,
-*/
-void utf8_decode_init(char p[], int length) 
-{
-    the_index = 0;
-    the_input = p;
-    the_length = length;
-    the_char = 0;
-    the_byte = 0;
-}
-
-
-/*
     Get the current byte offset. This is generally used in error reporting.
 */
 int utf8_decode_at_byte() 
@@ -126,25 +105,16 @@ int utf8_decode_at_byte()
 
 
 /*
-    Get the current character offset. This is generally used in error reporting.
-    The character offset matches the byte offset if the text is strictly ASCII.
-*/
-int utf8_decode_at_character() 
-{
-    return (the_char > 0)
-        ? the_char - 1
-        : 0;
-}
-
-
-/*
     Extract the next character.
     Returns: the character (between 0 and 1114111)
-         or  UTF8_END   (the end)
          or  UTF8_ERROR (error)
 */
-int utf8_decode_next() 
+int utf8_decode_next(char *input, int index, int length) 
 {
+    the_input = input;
+    the_index = index;
+    the_length = length;
+
     int c;  /* the first byte of the character */
     int c1; /* the first continuation character */
     int c2; /* the second continuation character */
@@ -153,16 +123,16 @@ int utf8_decode_next()
 
     if (the_index >= the_length) 
     {
-        return the_index == the_length ? UTF8_END : UTF8_ERROR;
+        return the_index == the_length ? 0 : UTF8_ERROR;
     }
 
     the_byte = the_index;
-    the_char += 1;
     c = get();
 /*
     Zero continuation (0 to 127)
 */
-    if ((c & 0x80) == 0) {
+    if ((c & 0x80) == 0) 
+    {
         return c;
     }
 /*
@@ -181,7 +151,8 @@ int utf8_decode_next()
 /*
     Two continuations (2048 to 55295 and 57344 to 65535)
 */
-    } else if ((c & 0xF0) == 0xE0) {
+    } 
+    else if ((c & 0xF0) == 0xE0) {
         c1 = cont();
         c2 = cont();
         if ((c1 | c2) >= 0) {
@@ -194,7 +165,8 @@ int utf8_decode_next()
 /*
     Three continuations (65536 to 1114111)
 */
-    } else if ((c & 0xF8) == 0xF0) 
+    } 
+    else if ((c & 0xF8) == 0xF0) 
     {
         c1 = cont();
         c2 = cont();
@@ -208,21 +180,12 @@ int utf8_decode_next()
             }
         }
     }
+
     return UTF8_ERROR;
 }
 
 
-int utf8_getIndex()
+int utf8_setIndex()
 {
     return the_index;
-}
-
-int utf8_getLength()
-{
-    return the_length;
-}
-
-bool utf8_AtEnd()
-{
-    return the_index >= the_length - 1;
 }

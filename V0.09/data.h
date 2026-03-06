@@ -940,7 +940,7 @@ struct TextInstance
 	int LineSpacing;	// space between lines 
 	int TextSize;    	// width and height of text characters
 
-	int currentChar;
+	int currentIndex;
 	int Counter;
 	int currentXPos;
 	int currentYPos;

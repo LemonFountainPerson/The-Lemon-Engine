@@ -43,4 +43,4 @@ int animatePlayer(PlayerData *Player);
 int switchPlayerSprite(int spriteID, DisplayData *PlayerDisplay);
 
 
-int switchPlayerSpriteName(char spriteName[MAX_LEN], DisplayData *PlayerDisplay);
+int switchPlayerSpriteName(const char spriteName[], DisplayData *PlayerDisplay);

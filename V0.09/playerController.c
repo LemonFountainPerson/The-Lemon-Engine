@@ -97,7 +97,7 @@ int PlayerObjectAboutToBeDeleted(PlayerData *Player)
 
 FuncResult UpdatePlayer(PlayerData *Player, World *GameWorld)
 {
-	if (Player == NULL || Player->PlayerPtr == NULL || GameWorld->ObjectList == NULL)
+	if (Player == NULL || Player->PlayerPtr == NULL || Player->PlayerPtr->State == EMPTY_OBJECT || GameWorld->ObjectList == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -479,14 +479,12 @@ int switchPlayerSprite(int spriteID, DisplayData *PlayerDisplay)
 }
 
 
-int switchPlayerSpriteName(char spriteName[MAX_LEN], DisplayData *PlayerDisplay)
+int switchPlayerSpriteName(const char spriteName[], DisplayData *PlayerDisplay)
 {
 	if (PlayerDisplay == NULL || PlayerDisplay->spriteSetSource == NULL)
 	{
-		return MISSING_DATA;, USE_CURRENT_SPRITESET, PlayerDisplay
+		return MISSING_DATA;
 	}
-
-	SpriteSet *currentSet = PlayerDisplay->spriteSetSource;
 
 	if (PlayerDisplay->spriteBuffer != NULL && strcmp(PlayerDisplay->spriteBuffer->name, spriteName) == 0)
 	{
