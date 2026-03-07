@@ -4,7 +4,7 @@ int switchBackGroundSprite(int spriteID, int desiredSetID, BackgroundData *input
 int switchBackGroundSpriteName(const char spriteName[], int desiredSetID, BackgroundData *inputData);
 
 
-int loadSpriteFromPath(Sprite *inputSprite, char path[]);
+int loadSpriteFromPath(Sprite *inputSprite, const char inputPath[]);
 
 
 SpriteSet* createSpriteSet(SpriteSet **firstSet, int desiredSetID);

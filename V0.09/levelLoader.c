@@ -881,37 +881,37 @@ FILE* openFile(const char fileName[], const char rootPath[], const char header[]
 		return NULL;
 	}
 
-	char path[MAX_LEN + MAX_LEN + 5] = {0};
+
+	char path[MAX_LEN + MAX_LEN + 10] = {0};
+	int pathLength = rootPathLength + fileNameLength;
 	strcpy(path, rootPath);
 	strcat(path, fileName);
-	strcat(path, ".lem");
 
-	FILE *fPtr = fopen(path, "rb");
+	FILE *fPtr;
+	int extLength;
+	char extensions[][10] = {"", ".lem", ".txt"};		// changing the order of this list modifies its priority; eg first it checks without ext, then with .lem, etc.
 
-	if (fPtr == NULL)
+	for (int attempt = 0; attempt < 3; attempt++)
 	{
-        memcpy(path + fileNameLength + rootPathLength, ".txt", 4);
+		extLength = strlen(extensions[attempt]);
+		memcpy(path + pathLength, extensions[attempt], extLength);
+		path[pathLength + extLength] = 0;
+	 	fPtr = fopen(path, "rb");
 
-		fPtr = fopen(path, "rb");
-
-		if (fPtr == NULL)
-		{
-			putConsoleStrStr("\nCould not find file '", fileName);
-			putConsoleStrStr("' from root path: '", rootPath);
-			putConsoleString("'");
-			
-			return NULL;
-		}
+	 	if (fPtr != NULL)
+	 	{
+	 		goto File_Loaded;
+	 	}
 	}
-	else
-	{
-		//fPtr = convertLemToTxt(charBuffer, fPtr);
 
-		if (fPtr == NULL)
-		{
-			return NULL;
-		}
-	}
+	putConsoleStrStr("\nCould not find file '", fileName);
+	putConsoleStrStr("' from root path: '", rootPath);
+	putConsoleString("'");
+	
+	return NULL;
+
+
+	File_Loaded:
 
 	if (checkFileHeader(fPtr, header) != LEMON_SUCCESS)
 	{

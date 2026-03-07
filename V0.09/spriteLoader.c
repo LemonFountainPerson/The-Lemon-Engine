@@ -117,61 +117,71 @@ int switchBackGroundSpriteName(const char spriteName[], int desiredSetID, Backgr
 }
 
 
-int loadSpriteFromPath(Sprite *inputSprite, char path[])
+int loadSpriteFromPath(Sprite *inputSprite, const char inputPath[])
 {
-	if (path == NULL || inputSprite == NULL || strlen(path) < 5)
+	static int maxLength = strlen(SPRITE_ROOT) + MAX_LEN;
+	if (inputPath == NULL || inputSprite == NULL || strlen(inputPath) >= maxLength)
 	{
 		return MISSING_DATA;
 	}
 
-	char newPath[strlen(SPRITE_ROOT) + (MAX_LEN << 1) + 6];
-	strcpy(newPath, path);
-	path = newPath;
+	int result = LEMON_SUCCESS;
 
-	if (strcmp(path + strlen(path) - 4, ".png") != 0)
+	char path[maxLength + 9];
+	strcpy(path, inputPath);
+
+	int pathLength = strlen(path);
+	int extLength;
+	char extensions[][10] = {".png", "", ".jpeg", ".jpg"};		// changing the order of this list modifies its priority; eg first it checks without ext, then with .lem, etc.
+
+	for (int attempt = 0; attempt < 4; attempt++)
 	{
-		strcat(path, ".png");		
+		extLength = strlen(extensions[attempt]);
+		memcpy(path + pathLength, extensions[attempt], extLength);
+		path[pathLength + extLength] = 0;
+	 	inputSprite->texture = IMG_LoadTexture(ScreenData.Renderer, path);
+
+	 	if (inputSprite->texture != NULL)
+	 	{
+	 		goto Texture_Loaded;
+	 	}
 	}
 
-	inputSprite->texture = IMG_LoadTexture(ScreenData.Renderer, path);
 	
+	// couldn't find any file
+	result = FILE_NOT_FOUND;
+	putConsoleStrStr("\nImage load failed! ", path);
+
+	strcpy(path + strlen(SPRITE_ROOT), DEFAULT_TEXTURE);
+
+	inputSprite->texture = IMG_LoadTexture(ScreenData.Renderer, path);
+
+	if (inputSprite->texture == NULL)
+	{
+		putConsoleString("\nError: Object Sprite data missing. Is the default texture missing?\n");
+		free(inputSprite);
+
+		return LEMON_ERROR;
+	}
+	
+
+	Texture_Loaded:
+
+	inputSprite->width = inputSprite->texture->w;
+	inputSprite->height = inputSprite->texture->h;
+
+	if (inputSprite->width * inputSprite->height > 90000000)	// just in case
+	{
+		putConsoleString("\nError: Object Sprite too large.\n");
+		free(inputSprite);
+
+		return LEMON_ERROR;
+	}
+
 	SDL_SetTextureScaleMode(inputSprite->texture, DEFAULT_SCALEMODE);
 
 
-	if (inputSprite->texture != NULL)
-	{
-		inputSprite->width = inputSprite->texture->w;
-		inputSprite->height = inputSprite->texture->h;
-
-		if (inputSprite->width > MAX_SPRITE_SIZE || inputSprite->height > MAX_SPRITE_SIZE)
-		{
-			putConsoleString("\nError: Object Sprite too large.\n");
-		}
-		else
-		{
-			return LEMON_SUCCESS;
-		}
-	}
-
-
-	putConsoleStrStr("\nImage load failed! ", path);
-
-	strcpy(path, SPRITE_ROOT);
-	strcat(path, DEFAULT_TEXTURE);
-
-	inputSprite->texture = IMG_LoadTexture(ScreenData.Renderer, path);
-	SDL_SetTextureScaleMode(inputSprite->texture, SDL_SCALEMODE_NEAREST);
-
-	if (inputSprite->texture != NULL)
-	{
-		return FILE_NOT_FOUND;
-	}
-				
-	putConsoleString("\nError: Object Sprite data missing.\n");
-
-	free(inputSprite);
-
-	return LEMON_ERROR;
+	return result;
 }
 
 
