@@ -1,0 +1,17 @@
+FRV<1>--LEVEL_DATA--
+> Player 
+OBJECT:	UIElement, 	0, 	0, 	Cursor	 setname {Cursor}
+OBJECT: PlayerObject
+
+LVFLAG:	SET_BG,		1, 1	
+	
+LVFLAG:	START_CAMMODE, 	0
+LVFLAG:	SET_CAMBOX, 	-10000, 3200000, -100, 10000
+
+LVFLAG: False_Cam_Bound 4000.0 4032.0 0.0 500.0
+
+ENDFILE
+
+
+
+

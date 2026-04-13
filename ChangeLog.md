@@ -1,5 +1,140 @@
+# v0.10
+12/04/26
+
+Happy 1 year anniversary!
+
+## New Features:
+
+-> Added the 'TickNumber'. Game ticks are now kept track of for use in timers, debugging, etc.
+
+-> Added the Timer component.
+
+-> Added the 'PhysicsComponent' which is used to denote which objects should have collision detection/resolution. (At least the type that is built-in.)
+In order to enable these physics, simply call 'addPhysics(object)' to do so. This avoids objects that do not need gravity, collision, momentum, etc having to do unnecessary calculations.
+(Any objects can be collided *with*, Physics component or not, but for an object to be the one performing the collision, it requires a physics component. )
+When adding a physics component, you can decide whether gravity is enabled.
+
+-> Added the 'Polygon' component. This can be used to render an arbitrary polygon instead of a simple sprite; the current sprite in the displaydata will be rendered on this polygon
+according to texture coordinates supplied. It has transparency but no automatic rotation, as the points of the polygon are plotted manually. Helper functions such as 'addQuad' can
+help to simplify the process, as with a quad a box is created that mimics the appearance of regular sprite render, although it allows for shearing and other effects to be applied by
+manipulating the vertices, such as with the 'movePolygonVertex' function.
+
+-> Added TTF font support for textboxes, using rendered textures for entire blocks of text instead of objects to represent each character. (This mode is currently togglable with 
+the 'EXPERIMENTAL_TEXT' flag in config.h, although this may be removed in future versions)
+
+-> Added the in-engine command console via the eventManager; allowing commands to be typed and executed within the process. (e.g: setPlayerPos, drawHitboxes, loadLevel, cutscene_play, etc.)
+
+-> Added 'Text' that allows you to place regular text using the new TTF renderer anywhere on the screen, with any font, any colour, etc. Use 'addText' or 'addTextToList' for this.
+(TextInstances/TextBoxes use a modified form of these.)
+
+-> Added the 'play_Cutscene' and 'play_Cutscene_From_File' game event functions to be able to schedule cutscenes safely from anywhere in the code instead of immediately erasing 
+data and initialising a new cutscene. To reflect this, the 'StartCutscene' functions have been renamed to 'initialiseCutscene' to make it clearer and more distinct from 
+playing a cutscene.
+
+-> Added the 'Event_movePlayer' and 'Event_moveObject' game event functions to schedule the movement of specific objects; this can be useful across loaded levels or for 
+guaranteeing some action if physics may get in the way, for example.
+
+-> Added the 'WaitUntil' instruction to the cutscene file loader. Any scene action that you wish to be complete before progressing to the next instruction can be performed
+by writing 'WaitUntil:' before the instruction.
+
+-> Added the 'Repeat' instruction to the cutscene file loader. If you wish to have a scene action repeat, you can write 'Repeat:' and then the number of times you want it to
+repeat before the instruction.
+
+-> Added the 'TextConfig' and its associated functions to operate the new TTF text renderer. A default font can be set in config.h, and this default can be changed during runtime.
+
+-> Added the SolidFlag 'IGNORE_SELF' which makes an object ignore other objects with the same solid type. (Like how ENTITY/BODY works, but as a flag that
+can be added regardless of solid type.)
+
+-> Added mouse wheel input support; wheelY and wheelX show how fast the wheel is currently moving (positive being moving away from the player's hand or to the right respectively, 
+and negative being the opposite), while wheelYDir and wheelXDir show what direction is moving with the same direction mapping, however is only ever -1, 0 or 1.
+
+-> Added basic controller support; inputs are located inside the 'GamepadInput' struct. Buttons are labelled according to their position on the controller, in accordance with how SDL 
+maps its buttons. Triggers and joysticks are represented by floats which range from -1.0 to 1.0 (left to right for X axis and down and up for Y axis). 
+
+-> Added basic 'Camera views', a way to render the gameworld with different cameras at once on the screen to a texture. For example, split screen can be acheived by utilising the main 
+camera and a camera view, where the main camera follows player 1, and the camera view follows player 2, or vice versa. The maximum amount of camera views can be configured via the 
+'MAX_CAMERA_VIEWS' constant. Use 'addCameraView' to create a new view.
+   Camera Views can copy the mian camera or use their own camera.
+   Camera Views can be attached to an object to follow its position in the gameworld. An example could be a camera monitor showing another location in the world. 
+
+-> Revamped triggerable events on textInstances/textBoxes. Instead of using arbitrary function pointers, the triggerable events now use the GameEvent system. By passing in a
+created GameEvent, it is removed from the queue to be re-added when the textBox decides to. This means the textBox code no longer needs to be updated anytime a new triggerable event
+needs to be added. A similar mechanism was added to the cutscene scene actions, where an event can be triggered during a cutscene using the 'SceneAction_triggerGameEvent' function.
+
+-> Improved how the sound processor handles sounds; sounds recently played are stored for later playback to avoid having to re-load them from disk, with a capacity definable via the
+'MAX_CACHED_SOUNDS' constant in config.h. (This means sounds played multiple times no longer consume huge amounts of memory, especially in quick succession.) 
+Larger sound files that would cause the game to stutter can be pre-cached to avoid this by calling 'loadAudio([fileName], [folderName])'.
+
+
+## Structure Changes:
+
+-> Removed the 'collideMode' variable from physicsBoxes; the 'flag' variable now handles this functionality. 
+
+-> Removed the 'Interrupt' variable from the Object struct. Interrupts are now handled through the 'Action' variable.
+
+-> Through a global pointer in gameObjects.c, component-related functions do not need the an ObjectController to be passed through, making them easier to use.
+
+-> Reworked some of the ParentLink options; 'POSITION_LINK' now sets the children to the position of the parent, with xVelocity and yVelocity being used as 
+offsets from that position, and 'MOTION_LINK' now copies any movement from parents to its children, but not any absolute positions.
+
+-> Gravity is now applied via the physics component (if enabled), which means the 'applyGravity' function no longer needs to be called for an object. 
+
+-> Renamed 'ENTITY' solidtype to 'BODY' to be more specific.
+
+-> Added the 'config.h' file to contain all globally-defined constants separately from all data structures contained within 'data.h'.
+
+-> Renamed 'TextInstances' to 'TextBoxes' to more clearly distinguish it from the new 'Text' data structure.
+
+-> Added the 'LEMON_USE_CUSTOM_CALLBACKS' preprocessor constant that when defined allows you to define your own functions for elements such as object initialisation and 
+object behaviour. By default, it is not defined and you must add to the pre-existing functions for these behaviours.
+
+-> GameEvents are now stored as a ring buffer, with new events overwriting the oldest events when it reaches maximum capacity.
+
+
+## Bug fixes/Improvements:
+
+-> Multiple layers of parent-children now propagate changes properly using recursion.
+
+-> Improved how sprites are found/switched to improve performance and code readability.
+
+-> Animations can now load their frames in contiguous chunks for better memory performance, this can disbaled by setting 'CONTIGUOUS_ANIMATION_ALLOCATION' to false.
+
+-> Animations now base their framerate on real time, instead of waiting for a game tick to advance to the next frame. (Game ticks per second now have no effect on 
+animation framerate.)
+
+-> Objects can now use the exact same spriteset data as other objects with the 'Copy:' command within animation data files. It acts as a basis, allowing
+additional sprites/animations to be added on top of the shared data. There is no limit to how many object types can copy a single set, although an object type can only
+copy one set at a time.
+This is useful if there are multiple objects that share similiar sprites/animations but would be a waste of memory to create two separate spritesets.
+
+-> Various improvements to the developer debug mode for clarity and better debugging tools.
+
+-> Functions that interface with the keyboard now correctly identify all buttons, instead of ignoring keys before 'LMN_SPACE'.
+
+-> Fixed a series of bugs where the arguments for a cutscene's scene actions were read in the wrong order from files.
+
+-> Fixed a bug where exiting fullscreen would result in the wrong screen size.
+
+-> Added proper culling to tile-mapped sprites being rendered, improving performance/memory especially on large objects rendered this way.
+ 
+-> Mp3 and Ogg audio files can be automatically loaded. When playing audio, the soundProcessor will search for different versions of the sound name until it finds a match
+or exhausts all of its options. E.g: First it tries [name].wav, then [name].mp3, then [name].ogg, and finally just [name] on its own. It is no longer necessary to specify 
+the file extension when playing a sound.
+
+-> Sound data is now loaded on a separate thread to avoid stutters when loading larger sound files. This fixes the issue where loading large sound files would freeze the 
+process for a noticable amount of time. 
+   -  Asynchronous sound loading can be disabled altogether by setting 'ASYNC_AUDIO_LOADER' to false in config.h.
+   -  'ASYNC_AUDIO_SIZE_THRESHOLD' controls the minimum size the audio file must be in bytes for it to be loaded asynchronously.
+   -  'ASYNC_AUDIO_SIZE_THRESHOLD' controls the minimum size the audio file must be in bytes for it to be loaded asynchronously. This is to avoid unnecessary overhead when 
+      loading very small sound files. 
+   -  This seperate thread can either be a permanent one running in the background or a temporary one only created when its needed, depending on the 
+      'ASYNC_AUDIO_LOADER_PERMANENT' constant defined in config.h. When not permanent, the thread will close itself when a certain amount of miliseconds have passed with 
+      no data to load, definable with 'ASYNC_AUDIO_LOADER_PERSIST_MS'.
+  
+
+
 # v0.09
-5th March 2026
+05/03/26
 
 ## New Features:
 
@@ -85,14 +220,13 @@ the current filereader version is in the header. Current version: 'FRV<1>'
 
 
 # v0.08
-
+16/01/26
 
 ## New Features:
 
 -> Added full linux support! Lemon now runs natively on windows and linux systems.
 
--> Added a new cutscene manager that allows for events and actions to be "scheduled" for playback using easy to understand functions #
-much like the textbox system.
+-> Added a new cutscene manager that allows for events and actions to be "scheduled" for playback using easy to understand functions much like the textbox system.
 All text boxes also work with the cutscene manager, and they can be scheduled for playback much like any other action, and can be paired with option prompts to create 
 branching scene structures. See "Test_Scene" in cutsceneManger.c for an example of its use.
 
@@ -104,7 +238,7 @@ branching scene structures. See "Test_Scene" in cutsceneManger.c for an example 
 
 -> Added "DebugText" which allows for text to be drawn to the screen without using objects, primarily for debug purposes. (DebugString was also renamed to
 ConsoleString for clarity.) A pre-implemented use for the DebugText is to display object info on screen in real time. Refer to the 'MasterControls' function 
-or section by the same name in the Documentation for a full set of bindings.
+for a full set of bindings.
 
 -> Added the ability to set the window title and icon.
 
@@ -182,7 +316,7 @@ four slashes method, animation files can now use '>' for comments and ENDFILE to
 
 
 # v0.07
-21st September 2025
+21/09/25
 
 ## New Features:
 
@@ -249,7 +383,7 @@ function.
 
 -> Errors encountered when loading a level will now point out the line where the error occured on, if applicable.
 
--> Object load commands can now be strung together without length limitation in the same way other arguements can be added (seperating different commands with a space or a comma).
+-> Object load commands can now be strung together without length limitation in the same way other arguments can be added (seperating different commands with a space or a comma).
 
 -> The inAir variable of the physicsRects are now updated via the applyGravity function and also after the object moves via the
 moveObject function. (This means it is now up-to-date at essentially all times.)
@@ -407,7 +541,7 @@ previous position and current position is used.
     PhysicsRect hitbox.
 
     -> Refactored the Collision functions to now be usable by any object with a PhysicsRect. There are now two sets of collision functions: 
-    Resolve[X/Y]Collision and Resolve[X/Y]CollisionByPush. The former is used when the moving object in question should conoform to the world 
+    Resolve[X/Y]Collision and Resolve[X/Y]CollisionByPush. The former is used when the moving object in question should conform to the world 
     around it, and the latter should be used to push collided objects out of its way. Both of these functions take in the previous position as 
     an arguement as they expect the moving object in question to have already moved for that frame.
     NOTE: Currently the Resolve[X/Y]Collision function handles all collision neccessary, but Resolve[X/Y]CollisionByPush can only handle collision 

@@ -1,0 +1,25 @@
+#!/bin/bash 
+sudo apt update
+sudo apt install cmake
+sudo apt install gcc g++ libfreetype6-dev libglib2.0-dev libcairo2-dev
+sudo apt-get install meson pkg-config gtk-doc-tools
+cd installation/harfbuzz-14.1.0
+meson build
+meson compile -C build
+cd installation/SDL-3.4.4
+cmake -S . -B build
+cmake --build build
+sudo cmake --install build --prefix /usr/local
+cd installation/SDL_image-3.4.2
+cmake -S . -B build
+cmake --build build
+sudo cmake --install build --prefix /usr/local
+cd installation/SDL_mixer-3.2.0
+cmake -S . -B build
+cmake --build build
+sudo cmake --install build --prefix /usr/local
+cd installation/SDL_ttf-3.2.2
+cmake -S . -B build
+cmake --build build
+sudo cmake --install build --prefix /usr/local
+exec bash

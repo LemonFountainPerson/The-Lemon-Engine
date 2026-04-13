@@ -1,0 +1,207 @@
+int RunLemonEngine(void);
+
+int StartUpLemonEngine(void);
+
+int MainLoop(World *GameWorld);
+
+int CloseGame(World *GameWorld, RenderFrame *ScreenData);
+
+
+FuncResult CheckResourceData(void);
+
+int initialiseWorld(World *GameWorld);
+
+int initialiseBackGround(BackgroundData *input);
+
+ObjectController* createObjectController(void);
+
+void destroyWorld(World *GameWorld);
+
+
+int getExternalInput(World *GameWorld, SDL_Renderer *screen);
+
+int GameTick(World *GameWorld);
+
+int GameFrame(World *GameWorld);
+
+int Render(World *GameWorld, RenderFrame *ScreenData);
+
+int RenderEngine(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen);
+
+
+Uint64 TickNumber(void);
+
+int FPSCounter(void);
+
+
+void printCameraViewInfo(CameraView list[VIEW_COUNT]);
+
+CameraView* addCameraViewToList(float camX, float camY, int camWidth, int camHeight, float viewPosX, float viewPosY, float width, float height, Layer drawLayer, bool useMain, CameraView list[VIEW_COUNT]);
+
+CameraView* addCameraView(float camX, float camY, float viewX, float viewY, float width, float height, bool screenSized, Layer drawLayer, World *GameWorld);
+
+CameraView* addMainCameraView(float viewX, float viewY, float width, float height, bool screenSized, Layer drawLayer, World *GameWorld);
+
+void attachCameraViewToObject(CameraView *input, Object *attach);
+
+CameraView* getCameraView(World *GameWorld, int id);
+
+void removeAllCameraViewsFromList(CameraView list[VIEW_COUNT]);
+
+void removeAllCameraViews(World *GameWorld);
+
+void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Renderer *Screen, Layer drawLayer);
+
+
+void putConsoleString(const char input[], ...);
+
+void putConsoleStringTS(const char input[], ...);
+
+void addInputHistory(const char input[], InputHistory *history);
+
+char* getPreviousInputHistory(InputHistory *history);
+
+char* getNextInputHistory(InputHistory *history);
+
+
+int ResetCamera(Camera *inputCam);
+
+int setCameraPos(Camera *input, float xPos, float yPos);
+
+void SetEngineSettingsToDefault(void);
+
+void SetRenderSettingsToDefault(void);
+
+void SetTextSettingsToDefault(void);
+
+void SetDebugSettingsToDefault(void);
+
+
+int getKeyboardInput(SDL_KeyboardEvent *key);
+
+void updateCustomKeys(void);
+
+bool buttonPressed(int key);
+
+bool keyPressed(int key);
+
+bool buttonHeld(int key);
+
+bool keyHeld(int key);
+
+void ClearInput(void);
+
+int updateMousePos(void);
+
+float getMouseXCam(Camera inputCamera);
+
+float getMouseYCam(Camera inputCamera);
+
+int getMouseInput(SDL_MouseButtonEvent *event);
+
+int getGamepadInput(SDL_GamepadButtonEvent *event);
+
+int updateGamepadAxis(SDL_GamepadAxisEvent *event);
+
+
+void AcknowledgeHeldButtons(void);
+
+void AcknowledgeMouse(void);
+
+void AcknowledgeButton(LemonKeys Key);
+
+
+int setTickRate(int desiredTickRate);
+
+
+int setRenderRefreshRate(int desiredRenderRate);
+
+
+int SetGravity(World *GameWorld, float force, float directionDegrees);
+
+
+void MasterControls(World *GameWorld, SDL_Window *window);
+
+
+int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullscreen);
+
+bool SetWindowIcon(const char fileName[]);
+
+bool SetWindowTitle(const char newTitle[]);
+
+int setVsync(bool enabled);
+
+int cleanUpSDLRenderer(RenderFrame *ScreenData);
+
+
+int clamp(int input, int lowerBound, int upperBound);
+
+double dClamp(double input, double lowerBound, double upperBound);
+
+float fClamp(float input, float lowerBound, float upperBound);
+
+bool inRange(int input, int low, int high);
+
+bool inRangeExclusive(int input, int low, int high);
+
+int max(int left, int right);
+
+int min(int left, int right);
+
+int modulo(int x, int N);
+
+float fModulo(float x, float N);
+
+
+void stringToUpper(char input[]);
+
+void stringToLower(char input[]);
+
+
+int PickRandomIntBetween(int low, int high);
+
+float PickRandomFloatBetween(float low, float high);
+
+
+int sparseInitialise(IntSparseList *input);
+
+int sparseAdd(int input, IntSparseList *List);
+
+int sparseRemove(int input, IntSparseList *List);
+
+int sparseGet(int input, IntSparseList *List);
+
+int stackAdd(int input, StackArray *List);
+
+int stackPop(StackArray *List);
+
+int stackRemove(int input, StackArray *List);
+
+
+void clearString(String *input);
+
+void setString(String *input, const char stringInput[]);
+
+void freeString(String *input);
+
+void copyString(String source, String *destination);
+
+void concatString(String *string1, String string2);
+
+void concatStringCStr(String *string1, const char *string2);
+
+void setStringUpper(String input);
+
+void setStringLower(String input);
+
+bool stringEquals(String input1, String input2);
+
+bool stringContains(String input, String sub);
+
+char at(String input, int index);
+
+bool stringEqualsCString(String input1, const char input2[]);
+
+void printString(String input);
+
+void printStringLine(String input);

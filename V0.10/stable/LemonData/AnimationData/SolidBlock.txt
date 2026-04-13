@@ -1,0 +1,28 @@
+FRV<1>--ANIMATION--
+AddSprite:	TileMapTEST		Objects		TILE
+AddSprite: 	Grass_Block		Objects		TILE_FAST
+AddSprite: 	Dirt_Block		Objects		TILE_FAST
+AddSprite: 	MissingMeasure		NULL		TILE
+AddSprite: 	Bottom_Block		Objects		TILE_FAST
+AddSprite: 	CornerEdge_Left_Block	Objects		TILE_FAST
+AddSprite: 	CornerEdge_Right_Block	Objects		TILE_FAST
+AddSprite: 	Mud_Block		Objects		TILE_FAST
+AddSprite: 	Snow_Block		Objects		TILE_FAST
+
+
+NewAnimation: Hurt 60
+AddFrame: Grass_Block
+AddFrame: Dirt_Block
+AddFrame: MissingMeasure
+AddFrame: Bottom_Block
+AddFrame: CornerEdge_Left_Block
+AddFrame: CornerEdge_Right_Block
+AddFrame: Mud_Block
+AddFrame: Snow_Block
+AddFrame: Mud_Block
+AddFrame: CornerEdge_Right_Block
+AddFrame: CornerEdge_Left_Block
+AddFrame: Bottom_Block
+AddFrame: MissingMeasure
+AddFrame: Dirt_Block
+AddFrame: TileMapTEST

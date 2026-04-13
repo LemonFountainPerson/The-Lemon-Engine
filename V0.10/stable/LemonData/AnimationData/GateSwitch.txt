@@ -1,0 +1,12 @@
+FRV<1>--ANIMATION--
+AddSprite: Missing NULL	SINGLE
+
+NewAnimation: FlipSwitchOn 30
+AddFrame: Missing   0   16
+AddFrame: Missing   0   32
+
+NewAnimation: FlipSwitchOff 30
+AddFrame: Missing   0   24
+AddFrame: Missing   0   16
+AddFrame: Missing   0   8
+AddFrame: Missing   0   0

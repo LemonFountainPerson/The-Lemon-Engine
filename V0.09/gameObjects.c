@@ -94,7 +94,6 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 		newObject->ObjectBox->xSize = arg1 * X_TILESCALE;
 		newObject->ObjectBox->ySize = arg2 * Y_TILESCALE;
 		newObject->State = STATIC;
-		addTileMap(newObject, 32, 32, 32, GameWorld->ObjectList);
 		
 		if (arg3 >= 0)
 		{
@@ -104,12 +103,14 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 		{
 			setRenderModeOverride(newObject, DO_NOT_RENDER);
 		}
+
+		addTileMap(newObject, 32, 32, 32, GameWorld->ObjectList);
 		break;
 
 
 	case FLAT_SLOPE_FLOOR:
-	//Angle: Y = (X * ySize/xSize)
-	//Angle: X = (Y / (ySize/xSize))
+		//Angle: Y = (X * ySize/xSize)
+		//Angle: X = (Y / (ySize/xSize))
 		snapPositionToTileGrid(newObject, xPos, yPos);
 		newObject->ObjectBox->solid = FLAT_SLOPE;
 		newObject->State = STATIC;
@@ -2492,7 +2493,7 @@ int UpdateSpring(Object *spring, World *GameWorld)
 			PlayerBox->xVelocity = xForce;
 		}
 		
-		PlaySound("Spring", "Objects", OBJECT_SFX, 1.0);
+		PlaySound("Spring.mp3", "Objects", OBJECT_SFX, 1.0);
 		PlayAnimation("Bounce", 1, getDisplay(spring));
 	}
 

@@ -1,0 +1,15 @@
+FRV<1>--TILESET_DATA--
+64, 16
+xPos: 0
+yPos: 0
+UseSprite: TileMapTEST
+> row 1
+repeat: 6 64
+> row 2
+repeat: 1 16
+repeat: 2 8
+repeat: 4 16
+repeat: 5 24
+> rows 3 - 6
+copyrow: 2 3
+fill: 7

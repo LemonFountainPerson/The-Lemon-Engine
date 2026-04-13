@@ -1,0 +1,2304 @@
+#include "LemonEngine.h"
+
+
+int StartGame(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (GameWorld->GameState == CLOSE_GAME)
+	{
+		return ACTION_DISABLED;
+	}
+
+	// Logic for handle flow of menus and levels, etc can go here for game start
+	loadLevel(GameWorld, 1);
+
+
+	return LEMON_SUCCESS;
+}
+
+
+// Game events
+int HandleGameEvents(World *GameWorld, RenderFrame *ScreenData)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	updateTypedCommand(ScreenData->Window, GameWorld);
+
+	if (DebugSettings.PauseEngine == ENGINE_PAUSED)
+	{
+		return ACTION_DISABLED;
+	}
+
+
+	if (keyboard[LMN_ESCAPE] == 1)
+	{
+		AcknowledgeButton(LMN_ESCAPE);
+
+		if (GameWorld->GamePaused == 0)
+		{
+			PauseGame(GameWorld);
+		}
+		else
+		{
+			ResumeGame(GameWorld);
+		}
+	}
+
+	if (GameWorld->GameEvents.eventsPending < 1)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	GameEvent *eventList = GameWorld->GameEvents.Events;
+	int i = GameWorld->GameEvents.nextAvailable;
+	int count = EngineSettings.MaxGameEvents;
+
+	while (count > 0)
+	{
+		ExecuteGameEvent(&eventList[i], GameWorld, ScreenData);
+
+		i = (i + 1) % EngineSettings.MaxGameEvents;
+		count--;
+	}
+
+	clearGameEvents(GameWorld);
+
+	return LEMON_SUCCESS;
+}
+
+
+
+int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *ScreenData)
+{
+	if (inputEvent == NULL || GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (inputEvent->EventID == NO_EVENT)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	if (DebugSettings.showEvents)
+	{
+		putConsoleStringTS("Executing event %d (%s)...", inputEvent->EventID, getEventName(inputEvent->EventID));
+	}
+
+	GameEventData *EventData = &inputEvent->EventData;
+
+	switch (inputEvent->EventID)
+	{
+		case EVENT_SWITCH_LEVEL:
+			if (EventData->newLevelID > -1)
+			{
+				loadLevel(GameWorld, EventData->newLevelID);
+			}
+			break;
+
+		case EVENT_PLAY_CUTSCENE:
+			{
+				initialiseCutscene(EventData->sceneID, GameWorld);
+			}
+			break;
+
+		case EVENT_PLAY_CUTSCENE_FROM_FILE:
+			{
+				initialiseCutsceneFromFile(EventData->sceneName, GameWorld);
+			}
+			break;
+
+		case EVENT_MOVE_PLAYER:
+				GoTo(GameWorld->Player.PlayerPtr, EventData->ObjectGoTo[0], EventData->ObjectGoTo[1]);
+			break;
+
+		case EVENT_MOVE_OBJECT:
+			{
+				int index = (int)EventData->ObjectGoTo[2];
+				ObjectController *ObjectList = GameWorld->ObjectList;
+				if (index < 0 || index >= EngineSettings.MaxObjects || ObjectList == NULL)
+				{
+					break;
+				}
+
+				Object *object = &ObjectList->objectComponents.Objects[index];
+				GoTo(object, EventData->ObjectGoTo[0], EventData->ObjectGoTo[1]);
+			} break;
+
+		case EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR:
+			{
+				if (EventData->object == NULL)
+				{
+					break;
+				}
+
+				centerOnObject(GameWorld->Player.PlayerPtr, EventData->object);
+				ResetPlayer(&GameWorld->Player);
+				PlaySound("DoorOpen", "Objects", OBJECT_SFX, 1.0);
+			} break;
+
+		case EVENT_SET_BRIGHTNESS:
+			{
+				SDL_SetRenderColorScale(ScreenData->Renderer, EventData->colourScale);
+			} break;
+
+		case EVENT_SET_CAMERA_ZOOM:
+			{
+				applyCameraZoom(EventData->zoomScales[0], EventData->zoomScales[1], &GameWorld->MainCamera, ScreenData);
+			} break;
+
+		case EVENT_CHANGE_CAMERA_ZOOM:
+			{
+				applyCameraZoom((GameWorld->MainCamera.zoomX + EventData->zoomScales[0]), (GameWorld->MainCamera.zoomY + EventData->zoomScales[1]), &GameWorld->MainCamera, ScreenData);
+			} break;
+
+		case EVENT_SET_SCREEN_AND_RENDERER_SIZE:
+			{
+				applyScreenAndRendererSize(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
+			} break;
+
+		case EVENT_CHANGE_SCREEN_SIZE:
+			{	
+				applyScreenSize(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
+			} break;
+
+		case EVENT_CHANGE_SCREEN_SIZE_SCALE:
+			{
+				applyScreenSizeScale(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
+			} break;
+
+		case EVENT_ENABLE_FULLSCREEN:
+			{
+				applyEnableFullscreen(ScreenData);
+			} break;
+
+		case EVENT_DISABLE_FULLSCREEN:
+			{
+				applyDisableFullscreen(ScreenData);
+			} break;
+
+		case EVENT_ENABLE_FULLSCREEN_SCALE:
+			{
+				applyEnableFullscreenScaled(ScreenData);
+			} break;
+
+		case EVENT_STREAM_LEVEL_PARTITION:
+			{
+				if (!inputEvent->loadingAFile)
+				{
+					char fileName[MAX_LEN] = {0};
+					snprintf(fileName, MAX_LEN, "Level%d_Part%d", GameWorld->level, EventData->newLevelID);
+
+					EventData->loadedFile = openFile(fileName, LEVELDATA_ROOT, "--PARTITION_DATA--");
+
+					if (EventData->loadedFile == NULL)
+					{
+						break;
+					}
+
+					inputEvent->loadingAFile = true;
+				}
+
+				int result = loadLevelDataChunk(GameWorld, EventData->loadedFile, 10);
+				if (result != LEMON_SUCCESS)
+				{
+					fclose(EventData->loadedFile);
+					EventData->loadedFile = NULL;
+					inputEvent->loadingAFile = false;
+				}
+			} break;
+
+		case EVENT_DELETE_ENVIRONMENT_OBJECTS:
+			{
+				deleteAllEnvironmentObjects(GameWorld->ObjectList);
+			} break;
+
+		default:
+			break;
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int deleteAllGameEvents(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameEvent *eventList = GameWorld->GameEvents.Events;
+
+	int i = 0;
+	while (i < EngineSettings.MaxGameEvents)
+	{
+		if (eventList[i].loadingAFile)
+		{
+			fclose(eventList[i].EventData.loadedFile);
+		}
+		eventList[i].EventID = NO_EVENT;
+
+		i++;
+	}
+
+	GameWorld->GameEvents.nextAvailable = 0;
+	GameWorld->GameEvents.eventsPending = 0;
+
+	return LEMON_SUCCESS;
+}
+
+int clearGameEvents(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameEvent *eventList = GameWorld->GameEvents.Events;
+
+	int i = 0;
+	while (i < EngineSettings.MaxGameEvents)
+	{
+		if (!eventList[i].loadingAFile && eventList[i].EventID != NO_EVENT)
+		{
+			eventList[i].EventID = NO_EVENT;
+			GameWorld->GameEvents.eventsPending--;
+		}
+
+		i++;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+GameEvent* findAvailableEvent(GameEventManager *Manager)
+{
+	GameEvent *events = Manager->Events;
+	int index = Manager->nextAvailable;
+	Manager->nextAvailable = (Manager->nextAvailable + 1) % EngineSettings.MaxGameEvents;
+
+	if (events[index].EventID != NO_EVENT && events[index].loadingAFile)
+	{
+		fclose(events[index].EventData.loadedFile);
+	}
+
+	return &events[index];
+}
+
+GameEvent* addNewGameEvent(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *eventPtr = findAvailableEvent(&GameWorld->GameEvents);
+
+	if (eventPtr == NULL)
+	{
+		return NULL;
+	}
+
+	memset(eventPtr, 0, sizeof(GameEvent));
+	eventPtr->loadingAFile = false;
+
+	if (GameWorld->GameEvents.eventsPending < EngineSettings.MaxGameEvents)
+	{
+		GameWorld->GameEvents.eventsPending++;
+	}
+
+	return eventPtr;
+}
+
+int triggerGameEvent(GameEvent *inputEvent, World *GameWorld)
+{
+	if (inputEvent == NULL || inputEvent->EventID == NO_EVENT)
+	{
+		return MISSING_DATA;
+	}
+
+	GameEvent *eventPtr = addNewGameEvent(GameWorld);
+
+	if (eventPtr == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	memcpy(eventPtr, inputEvent, sizeof(GameEvent));
+
+	return LEMON_SUCCESS;
+}
+
+// slightly cleaner than using a preprocessor define
+inline void removeEventToTriggerLater(GameEvent *inputEvent, GameEvent *storage, World *GameWorld)	
+{
+	memcpy(storage, inputEvent, sizeof(GameEvent));
+	GameWorld->GameEvents.eventsPending--;
+	inputEvent->EventID = NO_EVENT;
+}
+
+GameEvent* switchLevel(int level, World *GameWorld)
+{
+	if (GameWorld == NULL || level < 0)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_SWITCH_LEVEL;
+	newEvent->EventData.newLevelID = level;
+
+	return newEvent;
+}
+
+GameEvent* playCutscene(int scene, World *GameWorld)
+{
+	if (GameWorld == NULL || scene <= NO_CUTSCENE)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_PLAY_CUTSCENE;
+	newEvent->EventData.sceneID = scene;
+
+	return newEvent;
+}
+
+GameEvent* playCutsceneFromFile(const char name[], World *GameWorld)
+{
+	if (GameWorld == NULL || strlen(name) <= 0)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_PLAY_CUTSCENE_FROM_FILE;
+	strcpy(newEvent->EventData.sceneName, name);
+
+	return newEvent;
+}
+
+GameEvent* Event_movePlayer(float xPos, float yPos, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_MOVE_PLAYER;
+	newEvent->EventData.ObjectGoTo[0] = xPos;
+	newEvent->EventData.ObjectGoTo[1] = yPos;
+
+	return newEvent;
+}
+
+GameEvent* Event_moveObject(Object *input, float xPos, float yPos, World *GameWorld)
+{
+	if (GameWorld == NULL || input == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_MOVE_OBJECT;
+	newEvent->EventData.ObjectGoTo[0] = xPos;
+	newEvent->EventData.ObjectGoTo[1] = yPos;
+	newEvent->EventData.ObjectGoTo[2] = (float)input->index;
+
+	return newEvent;
+}
+
+GameEvent* Event_teleportPlayerToExitDoor(Object *dest, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR;
+	newEvent->EventData.object = dest;
+
+	return newEvent;
+}
+
+GameEvent* Event_setScreenBrightness(float brightness, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_SET_BRIGHTNESS;
+	newEvent->EventData.colourScale = brightness;
+
+	return newEvent;
+}
+
+GameEvent* streamPartition(int partID, World *GameWorld)
+{
+	if (GameWorld == NULL || partID < 0)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_STREAM_LEVEL_PARTITION;
+	newEvent->EventData.newLevelID = partID;
+
+	return newEvent;
+}
+
+GameEvent* scheduleEnvironmentDeletion(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_DELETE_ENVIRONMENT_OBJECTS;
+
+	return newEvent;
+}
+
+GameEvent* switchToNewPartition(int partID, World *GameWorld)
+{
+	scheduleEnvironmentDeletion(GameWorld);
+	return streamPartition(partID, GameWorld);
+}
+
+
+GameEvent* changeScreenSizeScaled(int newWidth, int newHeight, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_CHANGE_SCREEN_SIZE_SCALE;
+	newEvent->EventData.screenDimensions[0] = newWidth;
+	newEvent->EventData.screenDimensions[1] = newHeight;
+
+	return newEvent;
+}
+
+GameEvent* changeScreenSize(int newWidth, int newHeight, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_CHANGE_SCREEN_SIZE;
+	newEvent->EventData.screenDimensions[0] = newWidth;
+	newEvent->EventData.screenDimensions[1] = newHeight;
+
+	return newEvent;
+}
+
+GameEvent* setScreenAndRendererSize(int newWidth, int newHeight, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_SET_SCREEN_AND_RENDERER_SIZE;
+	newEvent->EventData.screenDimensions[0] = newWidth;
+	newEvent->EventData.screenDimensions[1] = newHeight;
+
+	return newEvent;
+}
+
+GameEvent* enableFullscreen(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_ENABLE_FULLSCREEN;
+
+	return newEvent;
+}
+
+GameEvent* enableFullscreenScaled(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_ENABLE_FULLSCREEN_SCALE;
+
+	return newEvent;
+}
+
+GameEvent* disableFullscreen(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_DISABLE_FULLSCREEN;
+
+	return newEvent;
+}
+
+
+GameEvent* setCameraZoom(float zoomX, float zoomY, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_SET_CAMERA_ZOOM;
+	newEvent->EventData.zoomScales[0] = zoomX;
+	newEvent->EventData.zoomScales[1] = zoomY;
+
+	return newEvent;
+}
+
+GameEvent* changeCameraZoom(float zoomX, float zoomY, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_CHANGE_CAMERA_ZOOM;
+	newEvent->EventData.zoomScales[0] = zoomX;
+	newEvent->EventData.zoomScales[1] = zoomY;
+
+	return newEvent;
+}
+
+
+
+int applyCameraZoom(float newZoomX, float newZoomY, Camera *inputCamera, RenderFrame *ScreenData)
+{
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL || inputCamera == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (newZoomX < MINIMUM_ZOOM || newZoomY < MINIMUM_ZOOM || screenWidth < MINIMUM_SCREEN_WIDTH || screenHeight < MINIMUM_SCREEN_HEIGHT)
+	{
+		return INVALID_DATA;
+	}
+
+	inputCamera->zoomX = newZoomX;
+	inputCamera->zoomY = newZoomY;
+	inputCamera->zoomedWidth = screenWidth / newZoomX;
+	inputCamera->zoomedHeight = screenHeight / newZoomY;
+	
+	SDL_SetRenderScale(ScreenData->Renderer, newZoomX, newZoomY);
+
+	validateZoom(inputCamera, ScreenData);
+
+	return LEMON_SUCCESS;
+}
+
+
+int applyScreenAndRendererSize(int newWidth, int newHeight, RenderFrame *ScreenData)
+{
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (ScreenData->Fullscreen == true)
+	{ 
+		return ACTION_DISABLED;
+	}
+
+	if (newWidth < MINIMUM_SCREEN_WIDTH || newHeight < MINIMUM_SCREEN_HEIGHT)
+	{
+		return INVALID_DATA;
+	}
+
+	validateScreenDimensions(ScreenData);
+
+	SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
+    SDL_SyncWindow(ScreenData->Window);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+
+	screenWidth = ScreenData->windowWidth;
+	screenHeight = ScreenData->windowHeight;
+
+	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+	
+	return LEMON_SUCCESS;
+}
+
+
+int applyScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData)
+{
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (ScreenData->Fullscreen == true)
+	{
+		return ACTION_DISABLED;
+	}
+
+	if (newWidth < MINIMUM_SCREEN_WIDTH || newHeight < MINIMUM_SCREEN_HEIGHT)
+	{
+		return INVALID_DATA;
+	}
+
+	validateScreenDimensions(ScreenData);
+
+	float ScaleX = ((float)screenWidth/(float)ScreenData->windowWidth);
+	float ScaleY = ((float)screenHeight/(float)ScreenData->windowHeight);
+
+	SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
+    SDL_SyncWindow(ScreenData->Window);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+
+	screenWidth = ScreenData->windowWidth * ScaleX;
+	screenHeight = ScreenData->windowHeight * ScaleY;
+
+	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+	
+	return LEMON_SUCCESS;
+}
+
+
+int applyScreenSizeScale(int newWidth, int newHeight, RenderFrame *ScreenData)
+{
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (ScreenData->Fullscreen == true)
+	{
+		return ACTION_DISABLED;
+	}
+
+	if (newWidth < MINIMUM_SCREEN_WIDTH || newHeight < MINIMUM_SCREEN_HEIGHT)
+	{
+		return INVALID_DATA;
+	}
+
+	validateScreenDimensions(ScreenData);
+
+	SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
+    SDL_SyncWindow(ScreenData->Window);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int applyEnableFullscreen(RenderFrame *ScreenData)
+{
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (ScreenData->Fullscreen == true)
+	{
+		return ACTION_DISABLED;
+	}
+
+	float ScaleX = ((float)screenWidth/(float)ScreenData->windowWidth);
+	float ScaleY = ((float)screenHeight/(float)ScreenData->windowHeight);
+
+	SDL_SetWindowFullscreen(ScreenData->Window, true);
+	SDL_SyncWindow(ScreenData->Window);
+
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+	screenWidth = ScreenData->windowWidth * ScaleX;
+	screenHeight = ScreenData->windowHeight * ScaleY;
+	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+
+	ScreenData->Fullscreen = true;
+	ScreenData->Scaled = false;
+
+	return LEMON_SUCCESS;
+}
+
+int applyEnableFullscreenScaled(RenderFrame *ScreenData)
+{
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (ScreenData->Fullscreen == true)
+	{
+		return ACTION_DISABLED;
+	}
+
+	validateScreenDimensions(ScreenData);
+
+	SDL_SetWindowFullscreen(ScreenData->Window, true);
+	SDL_SyncWindow(ScreenData->Window);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+
+	ScreenData->Fullscreen = true;
+	ScreenData->Scaled = true;
+
+	return LEMON_SUCCESS;
+}
+
+
+int applyDisableFullscreen(RenderFrame *ScreenData)
+{
+	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	float ScaleX = 1.0;
+	float ScaleY = 1.0;
+
+	if (!ScreenData->Scaled)
+	{
+		ScaleX = ((float)screenWidth/(float)ScreenData->windowWidth);
+		ScaleY = ((float)screenHeight/(float)ScreenData->windowHeight);
+	}
+
+	SDL_SetWindowFullscreen(ScreenData->Window, false);
+	SDL_SyncWindow(ScreenData->Window);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+
+	if (!ScreenData->Scaled)
+	{
+		screenWidth = ScreenData->windowWidth * ScaleX;
+		screenHeight = ScreenData->windowHeight * ScaleY;
+		SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+	}
+
+	ScreenData->Fullscreen = false;
+	ScreenData->Scaled = false;
+
+	return LEMON_SUCCESS;
+}
+
+
+int validateScreenDimensions(RenderFrame *ScreenData)
+{
+	if (ScreenData->windowWidth < MINIMUM_SCREEN_WIDTH || ScreenData->windowHeight < MINIMUM_SCREEN_HEIGHT || screenWidth < MINIMUM_SCREEN_WIDTH || screenHeight < MINIMUM_SCREEN_HEIGHT)
+	{
+		ScreenData->windowWidth = H_RESOLUTION;
+		ScreenData->windowHeight = V_RESOLUTION;
+		screenWidth = H_RESOLUTION;
+		screenHeight = V_RESOLUTION;
+
+		SDL_SetWindowSize(ScreenData->Window, screenWidth, screenHeight);
+
+		SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+
+		return LEMON_ERROR;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int validateZoom(Camera *inputCamera, RenderFrame *ScreenData)
+{
+	// panic script if zoom is invalid for whatever reason
+	if (inputCamera->zoomX < MINIMUM_ZOOM || inputCamera->zoomY < MINIMUM_ZOOM)
+	{
+		inputCamera->zoomX = 1.0;
+		inputCamera->zoomY = 1.0;
+
+		if (ScreenData->windowWidth < MINIMUM_SCREEN_WIDTH || ScreenData->windowHeight < MINIMUM_SCREEN_HEIGHT || screenWidth < 1 || screenHeight < 1)
+		{
+			putConsoleString("\nERROR: Screen/window set as invalid sizes. (Something's gone wrong!)");
+			SDL_SetRenderScale(ScreenData->Renderer, 1.0, 1.0);
+		}
+
+		return LEMON_ERROR;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+const char* getEventName(GameEventID input)
+{
+	switch(input)
+	{
+	case EVENT_SWITCH_LEVEL:
+		return "Switch Level";
+
+	case EVENT_MOVE_OBJECT:
+		return "Move Object";
+
+	case EVENT_MOVE_PLAYER:
+		return "Move Player";
+
+	case EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR:
+		return "Teleport Player to exit door";
+
+	case EVENT_PLAY_CUTSCENE:
+		return "Play Cutscene";
+
+	case EVENT_PLAY_CUTSCENE_FROM_FILE:
+		return "Play Cutscene from file";
+
+	case EVENT_SET_CAMERA_ZOOM:
+		return "Set camera zoom";
+
+	case EVENT_CHANGE_CAMERA_ZOOM:
+		return "Change camera zoom";
+
+	case EVENT_ENABLE_FULLSCREEN:
+		return "Enable fullscreen";
+
+	case EVENT_DISABLE_FULLSCREEN:
+		return "Disable fullscreen";
+
+	case EVENT_ENABLE_FULLSCREEN_SCALE:
+		return "Enable fullscreen scaled";
+
+	case EVENT_SET_SCREEN_AND_RENDERER_SIZE:
+		return "Set Screen and Renderer size";
+
+	case EVENT_CHANGE_SCREEN_SIZE:
+		return "Change screen size";
+
+	case EVENT_CHANGE_SCREEN_SIZE_SCALE:
+		return "Change screen size scaled";
+
+	case EVENT_STREAM_LEVEL_PARTITION:
+		return "Stream Level Partition";
+
+	case EVENT_DELETE_ENVIRONMENT_OBJECTS:
+		return "Delete environment Objects";
+
+	default:
+		return "UnmappedEventID";
+	}
+}
+
+
+void setTickNumber(Uint64 input);
+static Uint64 prevTickVal = 0;
+
+int PauseGame(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (GameWorld->GameState == EMPTY_GAME || GameWorld->GameState == LOADING)
+	{
+		return ACTION_DISABLED;
+	}
+
+	GameWorld->GamePaused = 1;
+	AcknowledgeHeldButtons();
+	GameWorld->MainCamera.CameraMode = MENU_CAMERA;
+	CameraControl(GameWorld, &GameWorld->MainCamera);
+	HideHUD(GameWorld->ObjectList);
+	prevTickVal = TickNumber();
+
+	AddObject(GameWorld, UI_ELEMENT, 0, 0, PAUSE_MENU_CONTROLLER, 0, 0, 0, 0);
+
+	// In order to have objects be visible in the pause menu while hiding objects from the previous scene, the camera is moved elsewhere
+	// and is restored to its previous position when unpaused  (There should not be any level geometry before X pos 0)
+	// When game is resumed, even if pos is not reset to original value, it will be corrected to 0 by WorldCameraControl
+	// X pos/Y pos is saved in camera[X/Y]Buffer
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int ResumeGame(World *GameWorld)
+{
+	if (GameWorld == NULL || GameWorld->ObjectList == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (GameWorld->GamePaused == 0)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+
+	GameWorld->GamePaused = 0;
+	GameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;
+	ShowHUD(GameWorld->ObjectList);
+	setTickNumber(prevTickVal);
+
+	return LEMON_SUCCESS;
+}
+
+
+int InitialiseLevelFlag(Object *inputObject, ObjectController *ObjectList)
+{
+	if (inputObject == NULL || inputObject->ObjectID != LEVEL_FLAG_OBJ)
+	{
+		return INVALID_DATA;
+	}
+
+	SetDrawPriorityToFront(ObjectList, inputObject);
+
+	inputObject->ObjectBox->solid = UNSOLID;
+	setRenderModeOverride(inputObject, DO_NOT_RENDER);
+	inputObject->ObjectBox->xSize = inputObject->arg2;
+	inputObject->ObjectBox->ySize = inputObject->arg3;
+
+	switch (getSubType(inputObject))
+	{
+		default:
+		break;
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+bool detectPlayer(Object* inputObject, PlayerData *Player)
+{
+	if (Player == NULL || Player->PlayerBox == NULL || inputObject == NULL)
+	{
+		return false;
+	}
+
+
+	int touchingPlayer = checkBoxOverlapsBoxBroad(Player->PlayerBox, inputObject->ObjectBox);
+
+	if (touchingPlayer == 1 && inputObject->Action == 0)
+	{
+		inputObject->Action = 1;
+		return true;
+	}
+
+	if (touchingPlayer == 0)
+	{
+		if (inputObject->Action == 2)
+		{
+			inputObject->Action = -1;
+		}
+		else 
+		{
+			inputObject->Action = 0; 
+		}
+	}
+
+
+	return false;
+}
+
+
+int mapPhysicsBoxToCamera(PhysicsBox *inputBox, Camera inputCam)
+{
+	if (inputBox == NULL)
+	{
+		return MISSING_DATA;
+	}	
+
+	resetPhysicsBox(inputBox);
+
+	inputBox->xPos = inputCam.CameraX;
+	inputBox->yPos = inputCam.CameraY;
+	inputBox->xSize = screenWidth;
+	inputBox->ySize = screenHeight;
+
+	return LEMON_SUCCESS;
+}
+
+bool detectCamera(Object* inputObject, Camera inputCamera)
+{
+	if (inputObject == NULL)
+	{
+		return false;
+	}
+
+	PhysicsBox camBox = {0};
+	mapPhysicsBoxToCamera(&camBox, inputCamera);
+
+	int touchingCamBox = checkBoxOverlapsBoxBroad(&camBox, inputObject->ObjectBox);
+
+	if (touchingCamBox == 1 && inputObject->Action == 0)
+	{
+		inputObject->Action = 1;
+		return true;
+	}
+
+	if (touchingCamBox == 0)
+	{
+		if (inputObject->Action == 2)
+		{
+			inputObject->Action = -1;
+		}
+		else 
+		{
+			inputObject->Action = 0; 
+		}
+	}
+
+	return false;
+}
+
+
+int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld)
+{
+	if (GameWorld == NULL || GameWorld->ObjectList == NULL || Player == NULL || Player->PlayerBox == NULL || inputObject == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (GameWorld->GameState != GAMEPLAY)
+	{
+		return ACTION_DISABLED;
+	}
+
+
+	switch (getSubType(inputObject))
+	{
+		case CACHE_TRIGGER:
+		if (detectCamera(inputObject, GameWorld->MainCamera))
+		{
+			PhysicsBox boundingBox;
+			mapPhysicsBoxToCamera(&boundingBox, GameWorld->MainCamera);
+
+			cacheObjects(GameWorld->ObjectList, boundingBox);
+			inputObject->Action = 2;
+		} break;
+
+
+		case CUTSCENE_TRIGGER:
+		if (detectPlayer(inputObject, Player))
+		{
+			initialiseCutscene(inputObject->arg2, GameWorld);
+			MarkObjectForDeletion(inputObject);
+		} break;
+
+
+		case SET_BACKGROUND_TRIGGER:
+		if (detectPlayer(inputObject, Player))
+		{
+			switchBackGroundSprite(inputObject->arg2, inputObject->arg3, &GameWorld->WorldBackground);
+		} break;
+
+
+		case SET_CAMBOX_TRIGGER:
+		if (detectPlayer(inputObject, Player))
+		{
+
+			MarkObjectForDeletion(inputObject);
+		} break;
+
+		case FALSE_CAMERA_BOUNDARY:
+		{
+			if (detectPlayer(inputObject, Player))
+			{
+				MarkObjectForDeletion(inputObject);
+			}
+
+			Camera *cam = &GameWorld->MainCamera;
+			PhysicsBox *box = inputObject->ObjectBox;
+			float halfWidth = (float)(screenWidth / 2);
+			float playerPrevX = Player->PlayerBox->prevXPos + (Player->PlayerBox->xSize >> 1);
+
+			if (playerPrevX > box->xPos + box->xSize && cam->CameraX - halfWidth < box->xPos + box->xSize)
+			{
+				cam->CameraX = box->xPos + box->xSize + halfWidth;
+			}
+
+			if (playerPrevX < box->xPos && cam->CameraX + halfWidth > box->xPos)
+			{
+				cam->CameraX = box->xPos - halfWidth;
+			}
+		} break;
+
+		case LOAD_PART_TRIGGER:
+		if (detectPlayer(inputObject, Player))
+		{
+			streamPartition(inputObject->arg2, GameWorld);
+		}
+		break;
+
+		case SWITCH_TO_NEW_PART_TRIGGER:
+		if (detectPlayer(inputObject, Player))
+		{
+			switchToNewPartition(inputObject->arg2, GameWorld);
+		} break;
+
+		case SET_PLAYER_LAYER:
+		if (detectPlayer(inputObject, Player))
+		{
+			setDisplayLayer(Player->PlayerPtr, getDisplayLayer(inputObject));
+		} break;
+
+		default:
+		MarkObjectForDeletion(inputObject);
+		break;
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+// command console
+void executeCommand(char inputSource[], World *GameWorld)
+{
+	char input[USER_INPUT_MAX_LEN] = {0};
+	strcpy(input, inputSource);
+	memset(inputSource, 0, USER_INPUT_MAX_LEN);
+	DebugSettings.userInputIndex = 0;
+	DebugSettings.cursorXPos = 0.0;
+	DebugSettings.scrollVal = 0;
+
+	putConsoleString("> %s", input);
+
+	if (GameWorld == NULL || GameWorld->ObjectList == NULL)
+	{
+		return;
+	}
+
+	char arg[USER_INPUT_MAX_LEN] = {0};
+	DebugSettings.argIndex = 0;
+	ObjectController *ObjectList = GameWorld->ObjectList;
+
+	parseArgument(input, arg);
+	stringToLower(arg);
+
+	if (strcmp(arg, "loadlevel") == 0 || strcmp(arg, "level") == 0)
+	{
+		int level = parseArgumentAsInt(input);
+		switchLevel(level, GameWorld);
+	}
+	else if (strcmp(arg, "currentlevel") == 0 || strcmp(arg, "getcurrentlevel") == 0)
+	{
+		putConsoleString("Current level ID: %d", GameWorld->level);
+	}
+	else if (strcmp(arg, "tickrate") == 0 || strcmp(arg, "settickrate") == 0)
+	{
+		int rate = parseArgumentAsInt(input);
+		setTickRate(rate);
+	}
+	else if (strcmp(arg, "tick") == 0)
+	{
+		putConsoleStringTS("Tickrate: %d", EngineSettings.GameTicksPerSecond);
+	}
+	else if (strcmp(arg, "pause") == 0)
+	{
+		DebugSettings.PauseEngine = (DebugSettings.PauseEngine + 1) % 2;
+
+		if (DebugSettings.PauseEngine == 1)
+		{
+			putConsoleStringTS("Engine is now paused.");
+		}
+		else
+		{
+			putConsoleStringTS("Engine is now unpaused.");
+		}
+	}
+	else if (strcmp(arg, "hitboxes") == 0 || strcmp(arg, "drawhitboxes") == 0)
+	{
+		RenderSettings.drawHitboxes = parseArgumentAsInt(input);
+	}
+	else if (strcmp(arg, "drawsprites") == 0)
+	{
+		RenderSettings.drawSprites = parseArgumentAsInt(input);
+	}
+	else if (strcmp(arg, "drawbackground") == 0)
+	{
+		RenderSettings.drawBackGround = parseArgumentAsInt(input);
+	}
+	else if (strcmp(arg, "fps") == 0)
+	{
+		DebugSettings.FPSCounter = parseBooleanCommand(input);
+	}
+	else if (strcmp(arg, "hitboxoutline") == 0 || strcmp(arg, "hitboxborder") == 0)
+	{
+		RenderSettings.HitboxOutlineThickness = parseArgumentAsInt(input);
+	}
+	else if (strcmp(arg, "setpos") == 0 || strcmp(arg, "setplayerpos") == 0)
+	{
+		float x = parseArgumentAsFloat(input);
+		float y = parseArgumentAsFloat(input);
+
+		GoTo(GameWorld->Player.PlayerPtr, x, y);
+	}
+	else if (strcmp(arg, "setcampos") == 0 || strcmp(arg, "setcamerapos") == 0)
+	{
+		float x = parseArgumentAsFloat(input);
+		float y = parseArgumentAsFloat(input);
+
+		setCameraPos(&GameWorld->MainCamera, x, y);
+	}
+	else if (strcmp(arg, "debug") == 0)
+	{
+		DebugSettings.DebugTextDisplayMode = parseArgumentAsInt(input);
+	}
+	else if (strcmp(arg, "showevents") == 0)
+	{
+		DebugSettings.showEvents = parseBooleanCommand(input);
+	}
+	else if (strcmp(arg, "showsceneactions") == 0)
+	{
+		DebugSettings.showSceneActions = parseBooleanCommand(input);
+	}
+	else if (strcmp(arg, "showspritesets") == 0)
+	{
+		DebugSettings.showSpriteset = parseBooleanCommand(input);
+	}
+	else if (strcmp(arg, "gamestateoverride") == 0 && DEBUG_MODE)
+	{
+		int ID = parseArgumentAsInt(input);
+
+		GameWorld->GameState = ID;
+	}
+	else if (strcmp(arg, "background") == 0 || strcmp(arg, "bg") == 0)
+	{
+		int ID = parseArgumentAsInt(input);
+		int set = parseArgumentAsInt(input);
+
+		switchBackGroundSprite(ID, set, &GameWorld->WorldBackground);
+	}
+	else if (strcmp(arg, "load") == 0)
+	{
+		parseArgument(input, arg);
+
+		if (strcmp(arg, "spriteset") == 0)
+		{
+			int ID = parseArgumentAsInt(input);
+
+			createNewSpriteSet(&ObjectList->spriteSets, ID);
+		}
+		else
+		{
+			goto Command_Unrecognised;
+		}
+	}
+	else if (strcmp(arg, "sound") == 0 || strcmp(arg, "snd") == 0)
+	{
+		parseArgument(input, arg);
+
+		if (strcmp(arg, "play") == 0)
+		{
+			char name[USER_INPUT_MAX_LEN] = {0};
+			char folder[USER_INPUT_MAX_LEN] = {0};
+			parseArgument(input, name);
+			parseArgument(input, folder);
+			float volume = parseArgumentAsFloat(input);
+			ChannelName channel = parseArgumentAsInt(input);
+
+			PlaySound(name, strcmp(folder, "NULL") ? folder : NULL, channel, volume);
+		}
+		else
+		{
+			goto Command_Unrecognised;
+		}
+	}
+	else if (strcmp(arg, "list") == 0 || strcmp(arg, "listinfo") == 0)
+	{
+		parseArgument(input, arg);
+
+		if (strcmp(arg, "object") == 0 || strcmp(arg, "objects") == 0)
+		{
+			Object *cursor = ObjectList->firstObject;
+
+			while (cursor != NULL)
+			{
+				putConsoleString("%s - Index: %d  ID: %d (%s)  State: %d (%s)", 
+					cursor->name, cursor->index, cursor->ObjectID, getObjectIDName(cursor->ObjectID), cursor->State, getObjectStateName(cursor->State));
+				cursor = cursor->nextObject;
+			}
+		}
+		else if (strcmp(arg, "text") == 0)
+		{
+			printTextsinfo(&TextSettings.TextList, "TextList");
+		}
+		else if (strcmp(arg, "fonts") == 0)
+		{
+			FontList *list = &TextSettings.FontList;
+
+			for (int i = 0; i < MAX_LOADED_FONTS; i++)
+			{
+				if (list->font[i] != NULL)
+				{
+					putConsoleString("Slot %d '%s'  ", i, list->name[i]);
+				}
+				else
+				{
+					putConsoleString("Slot %d (Empty)", i);
+				}
+			}
+		}
+		else if (strcmp(arg, "debugtext") == 0)
+		{
+			printTextsinfo(&DebugSettings.DebugTexts, "Debug Textlist");
+		}
+		else if (strcmp(arg, "spritesets") == 0)
+		{
+			SpriteSet *set = ObjectList->spriteSets.start;
+			putConsoleString("Spritesets loaded:");
+
+			while (set != NULL)
+			{
+				putConsoleString("Spriteset: %d ->", set->setID);
+				set = set->nextSet;
+			}
+
+			putConsoleString("End of list");
+		}
+		else if (strcmp(arg, "camviews") == 0 || strcmp(arg, "cameraviews") == 0)
+		{
+			printCameraViewInfo(GameWorld->views);
+		}
+		else if (strcmp(arg, "layers") == 0)
+		{
+			for (int i = BACKGROUND; i < LAYER_COUNT; i++)
+			{
+				putConsoleString("%d: %s", i, getLayerName(i));
+			}
+		}
+		else
+		{
+			goto Command_Unrecognised;
+		}
+	}
+	else if (strcmp(arg, "object") == 0 || strcmp(arg, "obj") == 0)
+	{
+		parseArgument(input, arg);
+
+		Object *object = parseArgumentToFindObject(input, ObjectList);
+		if (object == NULL)
+		{
+			return;
+		}
+
+		char flag[USER_INPUT_MAX_LEN] = {0};
+		parseArgumentFlag(input, flag);
+
+		if (strcmp(arg, "info") == 0)
+		{
+			displayObjectInfoConsole(object);
+		}
+		else if (strcmp(arg, "setpos") == 0)
+		{
+			float x = parseArgumentAsFloat(input);
+			float y = parseArgumentAsFloat(input);
+
+			if (strcmp(flag, "-snaptogrid") == 0 || strcmp(flag, "-grid") == 0)
+			{
+				snapPositionToTileGrid(object, x, y);
+			}
+			else
+			{
+				GoTo(object, x, y);
+			}
+		}
+		else if (strcmp(arg, "setname") == 0)
+		{
+			parseArgument(input, arg);
+			setObjectName(object, arg);
+		}
+		else if (strcmp(arg, "polygon") == 0)
+		{
+			Polygon *poly = getPolygon(object);
+
+			if (poly == NULL)
+			{
+				putConsoleString("'%s' has no polygon component", object->name);
+				return;
+			}
+
+			if (poly->quad)
+			{
+				putConsoleString("Num of vertices: %d\nQuad polygon: Yes", poly->vertices);
+			}
+			else
+			{
+				putConsoleString("Num of vertices: %d\nQuad polygon: No", poly->vertices);
+			}
+		}
+		else if (strcmp(arg, "physics") == 0)
+		{
+			PhysicsComponent *phys = getPhysicsComponent(object);
+
+			if (phys == NULL)
+			{
+				putConsoleString("'%s' has no physics component", object->name);
+				return;
+			}
+
+			if (phys->gravity)
+			{
+				putConsoleString("Gravity: enabled");
+			}
+			else
+			{
+				putConsoleString("Gravity: disabled");
+			}
+		}
+		else if (strcmp(arg, "timer") == 0)
+		{
+			Timer *timer = getTimer(object);
+
+			if (timer == NULL)
+			{
+				putConsoleString("'%s' has no timer component", object->name);
+				return;
+			}
+
+			putConsoleString("Tick Started: %lld \nOn Tick end: %lld \nTimer length: %d \nTimer value: %d", 
+				timer->startTick, timer->endTick, timer->timerLength, timer->timer);
+		}
+		else if (strcmp(arg, "removecomponents") == 0)
+		{
+			removeComponents(object, ObjectList);
+		}
+		else
+		{
+			goto Command_Unrecognised;
+		}
+		
+	}
+	else if (strcmp(arg, "create") == 0 || strcmp(arg, "add") == 0)
+	{
+		parseArgument(input, arg);
+
+		if (strcmp(arg, "object") == 0 || strcmp(arg, "obj") == 0)
+		{
+			int ID = parseArgumentAsInt(input);
+			int args[7] = {0};
+			for (int i = 0; i < 7; i++)
+			{
+				args[i] = parseArgumentAsInt(input);
+			}
+
+			AddObject(GameWorld, ID, args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+		}
+		
+	}
+	else if (strcmp(arg, "vsync") == 0) 
+	{
+		setVsync(parseBooleanCommand(input));
+	}
+	else if (strcmp(arg, "test") == 0) 
+	{
+		addCameraView(3000.0, 250.0, 1000.0, 100.0, 600.0, 338.0, true, BACKGROUND, GameWorld);
+		AddParticle(GameWorld, STATIC, 3000.0, 250.0, LOOP_INDEFINITELY, 0);
+	}
+	else if (strcmp(arg, "camview") == 0 || strcmp(arg, "cameraview") == 0)
+	{
+		parseArgument(input, arg);
+		
+		if (strcmp(arg, "clear") == 0)
+		{
+			removeAllCameraViews(GameWorld);
+		}
+		else if (strcmp(arg, "add") == 0)
+		{
+			char flag[USER_INPUT_MAX_LEN] = {0};
+			parseArgumentFlag(input, flag);
+
+			float camX = parseArgumentAsFloat(input);
+			float camY = parseArgumentAsFloat(input);				
+
+			float screenX = parseArgumentAsFloat(input);
+			float screenY = parseArgumentAsFloat(input);
+			float width = parseArgumentAsFloat(input);
+			float height = parseArgumentAsFloat(input);
+			bool screenSized = parseBooleanCommand(input);
+			Layer layer = parseArgumentAsInt(input);
+
+			if (strcmp(flag, "-main") != 0)
+			{
+				addMainCameraView(screenX, screenY, width, height, screenSized, layer, GameWorld);
+			}
+			else
+			{
+				addCameraView(camX, camY, screenX, screenY, width, height, screenSized, layer, GameWorld);
+			}
+		}
+		else if (strcmp(arg, "attach") == 0)
+		{
+			int index = parseArgumentAsInt(input);
+			Object *attach = parseArgumentToFindObject(input, ObjectList);
+			
+			if (attach == NULL)
+			{
+				return;
+			}
+
+			attachCameraViewToObject(getCameraView(GameWorld, index), attach);
+		}
+		else if (strcmp(arg, "setrefresh") == 0)
+		{
+			int index = parseArgumentAsInt(input);
+			CameraView *camView = getCameraView(GameWorld, index);
+
+			if (camView == NULL)
+			{
+				return;
+			}
+
+			camView->ticksUntilRefresh = parseArgumentAsInt(input);
+		}
+		else
+		{
+			goto Command_Unrecognised;
+		}
+	}
+	else if (strcmp(arg, "event") == 0)
+	{
+		parseArgument(input, arg);
+
+		if (strcmp(arg, "changescreensize") == 0)
+		{
+			int width = parseArgumentAsInt(input);
+			int height = parseArgumentAsInt(input);
+			changeScreenSize(width, height, GameWorld);
+		}
+		else if (strcmp(arg, "changescreensizescaled") == 0)
+		{
+			int width = parseArgumentAsInt(input);
+			int height = parseArgumentAsInt(input);
+			changeScreenSizeScaled(width, height, GameWorld);
+		}
+		else if (strcmp(arg, "setscreensize") == 0 || strcmp(arg, "setscreenandrenderersize") == 0)
+		{
+			int width = parseArgumentAsInt(input);
+			int height = parseArgumentAsInt(input);
+			setScreenAndRendererSize(width, height, GameWorld);
+		}
+		else if (strcmp(arg, "disablefullscreen") == 0 || strcmp(arg, "nofullscreen") == 0)
+		{
+			disableFullscreen(GameWorld);
+		}
+		else if (strcmp(arg, "enablefullscreen") == 0 || strcmp(arg, "fullscreen") == 0)
+		{
+			enableFullscreen(GameWorld);
+		}
+		else if (strcmp(arg, "enablefullscreenscaled") == 0 || strcmp(arg, "fullscreenscaled") == 0)
+		{
+			enableFullscreenScaled(GameWorld);
+		}
+		else if (strcmp(arg, "switchlevel") == 0)
+		{
+			int level = parseArgumentAsInt(input);
+			switchLevel(level, GameWorld);
+		}
+		else if (strcmp(arg, "playcutscene") == 0)
+		{
+			int scene = parseArgumentAsInt(input);
+			playCutscene(scene, GameWorld);
+		}
+		else if (strcmp(arg, "playcutscenefromfile") == 0)
+		{
+			parseArgument(input, arg);
+			playCutsceneFromFile(arg, GameWorld);
+		}
+		else if (strcmp(arg, "setcamzoom") == 0 || strcmp(arg, "setcamerazoom") == 0)
+		{
+			float zoomx = parseArgumentAsFloat(input);
+			float zoomy = parseArgumentAsFloat(input);
+			setCameraZoom(zoomx, zoomy, GameWorld);
+		}
+		else if (strcmp(arg, "changecamzoom") == 0 || strcmp(arg, "changecamerazoom") == 0)
+		{
+			float zoomx = parseArgumentAsFloat(input);
+			float zoomy = parseArgumentAsFloat(input);
+			changeCameraZoom(zoomx, zoomy, GameWorld);
+		}
+		else if (strcmp(arg, "deleteenv") == 0 || strcmp(arg, "deleteenvironment") == 0)
+		{
+			scheduleEnvironmentDeletion(GameWorld);
+		}
+		else if (strcmp(arg, "streampart") == 0 || strcmp(arg, "streampartition") == 0)
+		{
+			int partID = parseArgumentAsInt(input);
+			streamPartition(partID, GameWorld);
+		}
+		else
+		{
+			goto Command_Unrecognised;
+		}
+		
+	}
+	else if (strcmp(arg, "cutscene") == 0 || strcmp(arg, "cscene") == 0)
+	{
+		parseArgument(input, arg);
+
+		if (strcmp(arg, "play") == 0 || strcmp(arg, "start") == 0)
+		{
+			parseArgument(input, arg);
+
+			if (inRange(arg[0], '0', '9'))
+			{
+				initialiseCutscene(atoi(arg), GameWorld);
+			}
+			else
+			{
+				initialiseCutsceneFromFile(arg, GameWorld);
+			}
+		}
+		else
+		{
+			goto Command_Unrecognised;
+		}
+		
+	}
+	else if (strcmp(arg, "usedmemory") == 0 || strcmp(arg, "usedmem") == 0)
+	{
+		parseArgument(input, arg);
+		double total = 0.0;
+
+		if (strcmp(arg, "text") == 0)
+		{
+			total = (double)sizeof(TextSettings) / 1000.0;
+		}
+		else if (strcmp(arg, "debug") == 0)
+		{
+			total = (double)sizeof(DebugSettings) / 1000.0;
+		}
+		else if (strcmp(arg, "world") == 0 || strcmp(arg, "gameworld") == 0)
+		{
+			total = (double)sizeof(World) / 1000.0;
+		}
+		else if (strcmp(arg, "objlist") == 0 || strcmp(arg, "objectlist") == 0)
+		{
+			total = (double)sizeof(ObjectController) / 1000.0;
+		}
+		else if (strcmp(arg, "components") == 0 || strcmp(arg, "comps") == 0)
+		{
+			total = (double)sizeof(ComponentData) / 1000.0;
+			double objectSize = (double)sizeof(ObjectList->objectComponents.Objects) / 1000.0;
+			double boxSize = (double)sizeof(ObjectList->objectComponents.PhysicsBoxes) / 1000.0;
+			double displaySize = (double)sizeof(ObjectList->objectComponents.Displays) / 1000.0;
+
+			putConsoleString("\nObjects: %.2fkb \nPhysicsBoxes: %.2fkb \nDisplayDatas: %.2fkb \nComponents: %.2fkb", 
+				objectSize, boxSize, displaySize, total - objectSize - displaySize - boxSize);
+		}
+		else if (strcmp(arg, "objects") == 0)
+		{
+			total = (double)sizeof(ObjectList->objectComponents.Objects) / 1000.0;
+		}
+		else if (strcmp(arg, "displays") == 0)
+		{
+			total = (double)sizeof(ObjectList->objectComponents.Displays) / 1000.0;
+		}
+		else if (strcmp(arg, "physboxes") == 0 || strcmp(arg, "physicsboxes") == 0)
+		{
+			total = (double)sizeof(ObjectList->objectComponents.PhysicsBoxes) / 1000.0;
+		}
+		else if (strcmp(arg, "animations") == 0)
+		{
+			SpriteSet *set = ObjectList->spriteSets.start;
+			int setCount = 0;
+			int animCount = 0;
+			int frameCount = 0;
+			int spriteCount = 0;
+			double textureData = 0;
+
+			float width = 0;
+			float height = 0;
+
+			if (EngineSettings.DefaultTexture != NULL)
+			{
+				spriteCount++;
+				SDL_GetTextureSize(EngineSettings.DefaultTexture->texture, &width, &height);
+				textureData += width * height;
+			}
+
+			while (set != NULL)
+			{
+				Animation *anim = set->Animations;
+				while (anim != NULL)
+				{
+					AnimationFrame *frame = anim->animationData;
+
+					while (frame != NULL)
+					{
+						frame = frame->nextFrame;
+						frameCount++;
+					}
+
+					anim = anim->nextAnimation;
+					animCount++;
+				}
+
+				Sprite *sprite = set->firstSprite;
+				while (sprite != NULL)
+				{
+					SDL_GetTextureSize(sprite->texture, &width, &height);
+					textureData += width * height;
+					sprite = sprite->nextSprite;
+					spriteCount++;
+				}
+
+
+				set = set->nextSet;
+				setCount++;
+			}
+
+			putConsoleString("Spritesets: %d  Animations: %d  AnimationFrames: %d  Sprites: %d \nTexture data estimate: %.2lfkb", 
+				setCount, animCount, frameCount, spriteCount, textureData / 1000.0);
+			total = (double)((sizeof(SpriteSet) * setCount) + (sizeof(Animation) * animCount) + (sizeof(AnimationFrame) * frameCount) + (sizeof(Sprite) * spriteCount)) + textureData;
+			total /= 1000.0;
+		}
+		else
+		{
+			goto Command_Unrecognised;
+		}
+		
+		putConsoleString("Total used: %.2lfkb", total);
+	}
+	else if (strcmp(arg, "debugtext") == 0 || strcmp(arg, "tt2") == 0)
+	{
+		parseArgument(input, arg);
+
+		if (strcmp(arg, "info") == 0)
+		{
+			printTextsinfo(&DebugSettings.DebugTexts, "TextList");
+		}
+		else 
+		{
+			goto Command_Unrecognised;
+		}
+	}
+	else if (strcmp(arg, "help") == 0)
+	{
+		putConsoleString("quit  -  Close the game \nversion  -  see Version info \nswitchLevel/level [ID/name]  -  switch the level using an ID or a name");
+		putConsoleString("tick  -  show the current tick rate \ntickRate [val]  -  set a new tickRate (per second) \ndebug [val]  -  set the debug mode");
+		putConsoleString("pause - toggle the engine pause state \nusedmem_[something]  -  See how much memory is being consumed by some data");
+	}
+	else if (strcmp(arg, "quit") == 0 || strcmp(arg, "closegame") == 0)
+	{
+		GameWorld->GameState = CLOSE_GAME;
+	}
+	else if (strcmp(arg, "version") == 0)
+	{
+		putConsoleString("\n%s\n%s\nFile Reader: %s", LEMON_ENGINE_INFO, LEMON_VERSION, FILE_READER_VERSION);
+		if (DEBUG_MODE)
+		{
+			putConsoleString("Running in Debug mode");
+		}
+	}
+	else
+	{
+		Command_Unrecognised:
+		putConsoleString("'%s' command unrecognised", arg);
+		return;
+	}
+
+
+	addInputHistory(input, &DebugSettings.userInputHistory);
+}
+
+
+void parseArgument(const char input[USER_INPUT_MAX_LEN], char argDest[USER_INPUT_MAX_LEN])
+{
+	while (DebugSettings.argIndex < USER_INPUT_MAX_LEN - 1 && input[DebugSettings.argIndex] < 33)
+	{
+		DebugSettings.argIndex++;
+	}
+
+	bool enclosedCommand = false;
+	if (input[DebugSettings.argIndex] =='"')
+	{
+		enclosedCommand = true;
+		DebugSettings.argIndex++;
+	}
+
+	int i = 0;
+	while (DebugSettings.argIndex < USER_INPUT_MAX_LEN - 1 && input[DebugSettings.argIndex] != '\0')
+	{
+		argDest[i] = input[DebugSettings.argIndex];
+		DebugSettings.argIndex++;
+
+		i++;
+
+		if (input[DebugSettings.argIndex] == '"' || (!enclosedCommand && (input[DebugSettings.argIndex] == '_' || input[DebugSettings.argIndex] < 33)) )
+		{
+			DebugSettings.argIndex++;
+			break;
+		}
+	}
+
+	argDest[i] = 0;
+
+	return;
+}
+
+int parseArgumentAsInt(const char input[USER_INPUT_MAX_LEN])
+{
+	char buffer[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, buffer);
+
+	if (!inRange(buffer[0], '0', '9'))
+	{
+		return 0;
+	}
+
+	return atoi(buffer);
+}
+
+float parseArgumentAsFloat(const char input[USER_INPUT_MAX_LEN])
+{
+	char buffer[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, buffer);
+
+	return atof(buffer);
+}
+
+void parseArgumentFlag(char input[USER_INPUT_MAX_LEN], char argDest[USER_INPUT_MAX_LEN])
+{
+	int prevPos = DebugSettings.argIndex;
+
+	parseArgument(input, argDest);
+
+	while (DebugSettings.argIndex < USER_INPUT_MAX_LEN && input[DebugSettings.argIndex] != '-')
+	{
+		DebugSettings.argIndex++;
+	}
+
+	int i = 0;
+	while (DebugSettings.argIndex < USER_INPUT_MAX_LEN && input[DebugSettings.argIndex] > 32)
+	{
+		argDest[i] = input[DebugSettings.argIndex];
+		input[DebugSettings.argIndex] = ' ';
+		DebugSettings.argIndex++;
+		i++;
+	}
+
+	argDest[USER_INPUT_MAX_LEN - 1] = '\0';
+
+	DebugSettings.argIndex = prevPos;
+
+	stringToLower(argDest);
+
+	return;
+}
+
+bool parseBooleanCommand(const char input[USER_INPUT_MAX_LEN])
+{
+	char buffer[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, buffer);
+
+	if (strcmp(buffer, "true") == 0 || strcmp(buffer, "1") == 0)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+
+static const float consoleWidth = 1024.0;
+static const float consoleHeight = 600.0;
+
+void updateTypedCommand(SDL_Window *window, World *GameWorld)
+{
+	if (DebugSettings.TypingInConsole == false)
+	{
+		if (keyboard[LMN_GRAVE] == 1)
+		{
+			AcknowledgeButton(LMN_GRAVE);
+			startTypedCommand(window);
+		}
+
+		return;
+	}
+
+	if (buttonPressed(MOUSE_LEFT))
+	{
+		if (MouseInput.xPos > DebugSettings.consoleXPos && MouseInput.xPos < DebugSettings.consoleXPos + consoleWidth && MouseInput.yPos > DebugSettings.consoleYPos && MouseInput.yPos < DebugSettings.consoleYPos + consoleHeight)
+		{
+			DebugSettings.consoleFocus = true;
+		}
+		else
+		{
+			DebugSettings.consoleFocus = false;
+		}
+	}
+
+	if (buttonPressed(LMN_ENTER))
+	{
+		executeCommand(DebugSettings.userInputString, GameWorld);
+	}
+
+	if (buttonPressed(LMN_GRAVE))
+	{
+		SDL_StopTextInput(window);
+		DebugSettings.TypingInConsole = false;
+	}
+
+	if (buttonPressed(LMN_BACKSPACE) && DebugSettings.userInputIndex > 0)
+	{
+		DebugSettings.userInputIndex--;				
+
+		char buffer[USER_INPUT_MAX_LEN] = {0};
+		if (DebugSettings.userInputIndex < USER_INPUT_MAX_LEN - 1)
+		{
+			strcpy(buffer, DebugSettings.userInputString + DebugSettings.userInputIndex + 1);
+		}
+			
+		DebugSettings.userInputString[DebugSettings.userInputIndex] = 0;
+		strcat(DebugSettings.userInputString, buffer);
+
+		DebugSettings.cursorXPos = getCursorPos();
+	}
+
+	if (buttonPressed(LMN_UPARROW) || MouseInput.wheelYDir > 0)
+	{
+		if (DebugSettings.consoleFocus)
+		{
+			DebugSettings.scrollVal = clamp(DebugSettings.scrollVal + 1, 0, USER_INPUT_HISTORY_LEN);
+		}
+		else
+		{
+			char *next = getNextInputHistory(&DebugSettings.userInputHistory);
+
+			if (next != NULL && next[0] != '\0')
+			{
+				strcpy(DebugSettings.userInputString, next);
+				DebugSettings.userInputIndex = strlen(DebugSettings.userInputString);
+
+				DebugSettings.cursorXPos = getCursorPos();
+			}
+		}
+	}
+
+	if (buttonPressed(LMN_DOWNARROW) || MouseInput.wheelYDir < 0)
+	{
+		if (DebugSettings.consoleFocus)
+		{
+			DebugSettings.scrollVal = clamp(DebugSettings.scrollVal - 1, 0, USER_INPUT_HISTORY_LEN);
+		}
+		else
+		{
+			char *prev = getPreviousInputHistory(&DebugSettings.userInputHistory);
+
+			if (prev != NULL && prev[0] != '\0')
+			{
+				strcpy(DebugSettings.userInputString, prev);
+				DebugSettings.userInputIndex = strlen(DebugSettings.userInputString);
+
+				DebugSettings.cursorXPos = getCursorPos();
+			}
+		}
+	}
+
+	if (buttonPressed(LMN_LEFTARROW))
+	{
+		DebugSettings.userInputIndex = clamp(DebugSettings.userInputIndex - 1, 0, USER_INPUT_MAX_LEN);
+		DebugSettings.cursorXPos = getCursorPos();
+	}
+
+	if (buttonPressed(LMN_RIGHTARROW))
+	{
+		DebugSettings.userInputIndex = clamp(DebugSettings.userInputIndex + 1, 0, strlen(DebugSettings.userInputString));
+		DebugSettings.cursorXPos = getCursorPos();
+	}
+
+	ClearInput();
+}
+
+void startTypedCommand(SDL_Window *window)
+{
+	if (SDL_TextInputActive(window) || DebugSettings.TypingInConsole)
+	{
+		return;
+	}
+
+	SDL_StartTextInput(window);
+	DebugSettings.TypingInConsole = true;
+	DebugSettings.consoleFocus = false;
+	DebugSettings.scrollVal = 0;
+	
+	DebugSettings.userInputIndex = 0;
+	memset(DebugSettings.userInputString, 0, USER_INPUT_MAX_LEN);
+
+	DebugSettings.userInputString[0] = ' ';
+
+	DebugSettings.cursorXPos = 0.0;
+}
+
+void addTypedCommand(const char input[])
+{
+	int prevLength = strlen(DebugSettings.userInputString);
+	DebugSettings.userInputIndex = clamp(DebugSettings.userInputIndex, 0, USER_INPUT_MAX_LEN - 1);
+
+	if (DebugSettings.userInputIndex >= USER_INPUT_MAX_LEN - 1 || prevLength >= USER_INPUT_MAX_LEN - 1 || input == NULL)
+	{
+		return;
+	}
+
+	char buffer[USER_INPUT_MAX_LEN] = {0};
+
+	if (DebugSettings.userInputString[DebugSettings.userInputIndex] != '\0')
+	{
+		strcpy(buffer, DebugSettings.userInputString + DebugSettings.userInputIndex);
+	}
+	
+	int bytesAvailable = USER_INPUT_MAX_LEN - prevLength - 1;
+
+	strncpy(DebugSettings.userInputString + DebugSettings.userInputIndex, input, bytesAvailable);
+
+	strcat(DebugSettings.userInputString, buffer);
+
+	DebugSettings.userInputIndex += strlen(DebugSettings.userInputString) - prevLength;
+
+	DebugSettings.userInputString[USER_INPUT_MAX_LEN - 1] = 0;
+
+	DebugSettings.cursorXPos = getCursorPos();
+}
+
+Object* parseArgumentToFindObject(const char input[USER_INPUT_MAX_LEN], ObjectController *ObjectList)
+{
+	char buffer[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, buffer);
+
+	if (inRange(buffer[0], '0', '9'))
+	{
+		int index = atoi(buffer);
+
+		if (index >= MAX_OBJECTS)
+		{
+			putConsoleString("'%d' index out of bounds. Valid range 0 <-> %d", index, MAX_OBJECTS - 1);
+			return NULL;
+		}
+
+		return &ObjectList->objectComponents.Objects[index];
+	}
+	else
+	{
+		Object *object = FindObject(buffer, ObjectList);
+		if (object == NULL)
+		{
+			putConsoleString("Cannot find '%s' from objectlist.", buffer);
+		}
+
+		return object;
+	}
+}
+
+void displayObjectInfoConsole(Object *input)
+{
+	if (input == NULL)
+	{
+		return;
+	}
+
+	putConsoleString("\nObject Information: \nName: '%s'\nID: %d (%s)", input->name, input->ObjectID, getObjectIDName(input->ObjectID));
+	putConsoleString("Index: %d \nCurrent State: %d (%s)", input->index, input->State, getObjectStateName(input->State));
+
+	if (input->Parent == NULL)
+	{
+		putConsoleString("Parent: \n    None");
+	}
+	else
+	{
+		Object *parent = input->Parent;
+		putConsoleString("Parent: \n    Name: %s \n    ID: %d (%s)", parent->name, parent->ObjectID, getObjectIDName(parent->ObjectID));
+		putConsoleString("    Index: %d \n    Current State: %d (%s)", parent->index, parent->State, getObjectStateName(parent->State));
+	}
+
+	Layer objLayer = getDisplayLayer(input);
+	putConsoleString("XPos: %f  YPos: %f \nLayer: %d (%s)", input->ObjectBox->xPos, input->ObjectBox->yPos, objLayer, getLayerName(objLayer));
+
+}
+
+void renderConsole(World *GameWorld, SDL_Renderer *Screen)
+{
+	float xCorrection = (float)(screenWidth >> 1);
+	float yCorrection = (float)(screenHeight >> 1);
+
+	static const float inputFieldHeight = 28.0;
+	static const float insideSpacing = 8.0;
+	static const float topSpacing = 3.0;
+	DebugSettings.consoleXPos = -512.0;
+	DebugSettings.consoleYPos = yCorrection - consoleHeight;
+
+
+	SDL_FRect box = {0};
+
+	// render input field
+	box.x = xCorrection + DebugSettings.consoleXPos;
+	box.y = -(DebugSettings.consoleYPos - yCorrection);
+	box.w = consoleWidth;
+	box.h = inputFieldHeight;
+
+	if (DebugSettings.consoleFocus)
+	{
+		SDL_SetRenderDrawColor(Screen, 0x2D, 0x2A, 0x2A, 0xBB);
+	}
+	else
+	{
+		SDL_SetRenderDrawColor(Screen, 0x36, 0x32, 0x32, 0xBB);
+	}
+	
+	SDL_RenderFillRect(Screen, &box);
+
+	// render console
+	box.h = consoleHeight;
+	box.y -= consoleHeight;
+	SDL_SetRenderDrawColor(Screen, 0x1D, 0x1A, 0x1A, 0xBB);
+	SDL_RenderFillRect(Screen, &box);
+	box.y += consoleHeight;
+
+	if (DebugSettings.DebugFont == NULL)
+	{
+		return;
+	}
+
+	// render cursor
+	box.w = 2.0;
+	box.h = inputFieldHeight - (topSpacing * 2.0);
+	box.x += insideSpacing + DebugSettings.cursorXPos;
+	box.y += topSpacing;
+	SDL_SetRenderDrawColor(Screen, 0xFF, 0xFF, 0xFF, 0xFF);
+	SDL_RenderFillRect(Screen, &box);
+
+	// render user input
+	box.x = DebugSettings.consoleXPos + insideSpacing;
+	box.y = DebugSettings.consoleYPos;
+	int textWidth = (int)(consoleWidth - (2.0 * insideSpacing));
+	if (strlen(DebugSettings.userInputString) > 0)
+	{
+	    AddDebugText(DebugSettings.userInputString, box.x, box.y, textWidth, DTFORMAT_SCREEN_RELATIVE);
+	}
+
+	int index = modulo(DebugSettings.consoleHistory.head, USER_INPUT_HISTORY_LEN);
+	char all[USER_INPUT_MAX_LEN * USER_INPUT_HISTORY_LEN] = {0};
+
+	for (int i = USER_INPUT_HISTORY_LEN - DebugSettings.scrollVal; i > 0; i--)
+	{
+		strcat(all, DebugSettings.consoleHistory.inputs[index]);
+		index = (index + 1) % USER_INPUT_HISTORY_LEN;
+
+		if (i > 1)
+		{
+			all[strlen(all)] = '\n';
+		}
+	}
+
+	// render             `pkg-config --libs --cflags sdl3`
+	box.y += insideSpacing;
+
+    AddDebugText(all, box.x, box.y, textWidth, DTFORMAT_JUSTIFY_TOP);
+
+	return;
+}

@@ -1,0 +1,26 @@
+FRV<1>--CUTSCENE_DATA--
+PlaceWall: 1000, 64, 2, 10
+SayText: "I just changed this file!! And to test its linebreaking feature! mmmmmmm wwwwwwwww mmmmmmm wwwwwwwwww mmmmmm"    NO_PORTRAIT     2
+
+Repeat: 200
+{
+	RotateActor: "MainPlayer" 15.0 1
+	MoveActor: "MainPlayer" 2.0 0.0 1
+	MoveCamera: 3.0 0.0 1
+}
+
+EnablePlayer
+Wait: 5
+DisablePlayer
+createActor: "Mysterious block" 1 2000.0 1400.0
+animateActor: "Mysterious block" Hurt 2
+
+SayTextOption: "A Test cutscene from a FILE? HUH!?"	NO_PORTRAIT  2    3
+		"Option 1"	0
+		"Option Two"	3
+		"This is working." 0
+
+Wait: 3
+ChangeVariableBy: 0 1
+
+ENDFILE

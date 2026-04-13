@@ -1,0 +1,40 @@
+FRV<1>--ANIMATION--
+AddSprite:	StickMan	Player		SCALE 	
+
+AddSprite:	StickManJump	Player		SCALE
+
+NewAnimation:	Stand		10
+AddFrame:	StickMan
+
+
+> Player jump
+
+NewAnimation:	Jump	60
+AddFrame:	StickManJump	0	0	0
+AddFrame:	StickManJump	0	0	15
+AddFrame:	StickManJump	0	0	30
+AddFrame:	StickManJump	0	0	45
+AddFrame:	StickManJump	0	0	60
+AddFrame:	StickManJump	0	0	75
+AddFrame:	StickManJump	0	0	90
+AddFrame:	StickManJump	0	0	105
+AddFrame:	StickManJump	0	0	120
+AddFrame:	StickManJump	0	0	135
+AddFrame:	StickManJump	0	0	150
+AddFrame:	StickManJump	0	0	165
+AddFrame:	StickManJump	0	0	180
+AddFrame:	StickManJump	0	0	195
+AddFrame:	StickManJump	0	0	210
+AddFrame:	StickManJump	0	0	225
+AddFrame:	StickManJump	0	0	240
+AddFrame:	StickManJump	0	0	255
+AddFrame:	StickManJump	0	0	270
+AddFrame:	StickManJump	0	0	285
+AddFrame:	StickManJump	0	0	300
+AddFrame:	StickManJump	0	0	315
+AddFrame:	StickManJump	0	0	330
+AddFrame:	StickManJump	0	0	345
+
+ENDFILE
+
+
