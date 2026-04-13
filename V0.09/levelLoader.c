@@ -38,9 +38,6 @@ int loadLevel(World *GameWorld, int level)
 	GameWorld->GameState = GAMEPLAY;
 
 
-	SpawnHUD(GameWorld);
-
-
 	return LEMON_SUCCESS;
 }
 
@@ -222,229 +219,6 @@ int loadSaveData(const char *fileName, int flags[GAME_FLAG_COUNT], World *GameWo
 
 	return LEMON_SUCCESS;
 } 
-
-
-int convertEntryToObjectID(char entry[MAX_LEN])
-{
-	entry[MAX_LEN - 1] = 0;
-
-	if (entry[0] > 47 && entry[0] < 58)
-	{
-		return convertStrToInt(entry, 6);
-	}
-
-	stringToLower(entry);
-
-	if (strcmp(entry, "solidblock") == 0)
-	{
-		return SOLID_BLOCK;
-	}
-	else if (strcmp(entry, "flatslopefloor") == 0)
-	{
-		return FLAT_SLOPE_FLOOR;
-	}
-	else if (strcmp(entry, "jumpthrublock") == 0)
-	{
-		return JUMP_THRU_BLOCK;
-	}
-	else if (strcmp(entry, "coin") == 0)
-	{
-		return COIN;
-	}
-	else if (strcmp(entry, "playerobject") == 0)
-	{
-		return PLAYER_OBJECT;
-	}
-	else if (strcmp(entry, "uielement") == 0)
-	{
-		return UI_ELEMENT;
-	}
-	else if (strcmp(entry, "uitext") == 0)
-	{
-		return UI_TEXT;
-	}
-	else if (strcmp(entry, "particle") == 0)
-	{
-		return PARTICLE;
-	}
-	else if (strcmp(entry, "movingplatformhor") == 0)
-	{
-		return MOVING_PLATFORM_HOR;
-	}
-	else if (strcmp(entry, "movingplatformver") == 0)
-	{
-		return MOVING_PLATFORM_VER;
-	}
-	else if (strcmp(entry, "spring") == 0)
-	{
-		return SPRING;
-	}
-	else if (strcmp(entry, "gateswitch") == 0)
-	{
-		return GATE_SWITCH;
-	}
-	else if (strcmp(entry, "gateswitchtimed") == 0)
-	{
-		return GATE_SWITCH_TIMED;
-	}
-	else if (strcmp(entry, "verticalgate") == 0)
-	{
-		return VERTICAL_GATE;
-	}
-	else if (strcmp(entry, "horizontalgate") == 0)
-	{
-		return HORIZONTAL_GATE;
-	}
-	else if (strcmp(entry, "door") == 0)
-	{
-		return DOOR;
-	}
-	else if (strcmp(entry, "leveldoor") == 0)
-	{
-		return LEVEL_DOOR;
-	}
-	else if (strcmp(entry, "pushablebox") == 0)
-	{
-		return PUSHABLE_BOX;
-	}
-	else if (strcmp(entry, "basicenemy") == 0)
-	{
-		return BASIC_ENEMY;
-	}	
-
-
-	return -1;
-}
-
-const char* ConvertIDToObjectName(ObjectType input)
-{
-	if (input >= OBJECT_TYPE_COUNT && input < 0)
-	{
-		return "Undefined";
-	}
-
-	switch(input)
-	{
-	case LEVEL_FLAG_OBJ:
-		return "Level Flag";
-
-	case SPRING:
-		return "Spring";
-
-	case PARTICLE:
-		return "Particle";
-
-	case UI_ELEMENT:
-		return "UIElement";
-
-	case UI_TEXT:
-		return "UIText";
-
-	case COIN:
-		return "Coin";
-
-	case PLAYER_OBJECT:
-		return "PlayerObject";
-
-	case SOLID_BLOCK:
-		return "SolidBlock";
-
-	case LEVEL_DOOR:
-		return "LevelDoor";
-
-	case DOOR:
-		return "Door";
-
-	case VERTICAL_GATE:
-		return "VerticalGate";
-
-	case HORIZONTAL_GATE:
-		return "HorizontalGate";
-
-	case GATE_SWITCH_TIMED:
-		return "TimedGateSwitch";
-
-	case MOVING_PLATFORM_HOR:
-		return "MovingPlatform_Horizontal";
-
-	case MOVING_PLATFORM_VER:
-		return "MovingPlatform_Vertical";
-
-	case GATE_SWITCH:
-		return "GateSwitch";
-
-	case PUSHABLE_BOX:
-		return "PushableBox";
-
-	case JUMP_THRU_BLOCK:
-		return "JumpThroughPlatform";
-
-	case FLAT_SLOPE_FLOOR:
-		return "FlatSlopeFloor";
-
-	default:
-		static char name[MAX_LEN] = {0};
-		snprintf(name, MAX_LEN, "%d", input);
-		return name;
-	}
-}
-
-const char* ConvertSolidTypeToName(SolidType input)
-{
-	if (input >= UNDEFINED_SOLID && input < 0)
-	{
-		return "Undefined";
-	}
-
-	switch(input)
-	{
-	case SOLID:
-		return "Solid";
-
-	case UNSOLID:
-		return "Unsolid";
-
-	case ENTITY:
-		return "Entity";
-
-	case FLAT_SLOPE:
-		return "Flat Slope";
-
-	case JUMP_THROUGH:
-		return "Jump-Through Solid";
-
-	case PUSHABLE_SOLID:
-		return "Pushable Solid";
-
-	case CIRCLE:
-		return "Solid Circle";
-
-	default:
-		return "Unknown";
-	}
-}
-
-const char* ConvertSolidFlagToName(SolidFlag input)
-{
-	if (input >= UNDEFINED_SOLIDFLAG && input < 0)
-	{
-		return "Undefined";
-	}
-
-	switch(input)
-	{
-	
-	case ENTITY_SOLID:
-		return "Entity Solid";
-
-	case IGNORE_SOLID:
-		return "Ignore Solid Type";
-
-	default:
-		return "Unknown";
-	}	
-
-}
 
 
 int logLevel(World *GameWorld)
@@ -759,24 +533,25 @@ int loadObjectIndices(Object *input, ObjectController *ObjectList, FILE *file)
 
 	Object *objects = ObjectList->objectComponents.Objects;
 
+    size_t bytesRead = 0;
 	int readVal = 0;
-	fread(&readVal, 4, 1, file);
+	bytesRead = fread(&readVal, 4, 1, file);
 
-	if (readVal > -1 && readVal < EngineSettings.MaxObjects)
+	if (readVal > -1 && readVal < EngineSettings.MaxObjects && bytesRead > 3)
 	{
 		input->prevObject = &objects[readVal];
 	}
 
-	fread(&readVal, 4, 1, file);
+	bytesRead = fread(&readVal, 4, 1, file);
 
-	if (readVal > -1 && readVal < EngineSettings.MaxObjects)
+	if (readVal > -1 && readVal < EngineSettings.MaxObjects && bytesRead > 3)
 	{
 		input->nextObject = &objects[readVal];
 	}
 
-	fread(&readVal, 4, 1, file);
+	bytesRead = fread(&readVal, 4, 1, file);
 
-	if (readVal > -1 && readVal < EngineSettings.MaxObjects)
+	if (readVal > -1 && readVal < EngineSettings.MaxObjects && bytesRead > 3)
 	{
 		input->ParentObject = &objects[readVal];
 	}
@@ -809,7 +584,7 @@ int loadObjectIndices(Object *input, ObjectController *ObjectList, FILE *file)
 int loadGameState(World *GameWorld)
 {
 	// This function is not complete, and is not memory safe. Use at your own risk!
-	//return -1;
+    size_t readData = 0;
 
 	char title[MAX_LEN] = {0};
 	snprintf(title, MAX_LEN, "SaveState%d", GameWorld->level);
@@ -824,9 +599,9 @@ int loadGameState(World *GameWorld)
 	clearLevelData(GameWorld);
 
 	char buffer[MAX_LEN] = {0};
-	fread(buffer, sizeof(char), strlen(LEMON_VERSION), file);
+	readData = fread(buffer, sizeof(char), strlen(LEMON_VERSION), file);
 
-	if (strcmp(buffer, LEMON_VERSION))
+	if (strcmp(buffer, LEMON_VERSION) || readData != strlen(LEMON_VERSION))
 	{
 		closeFile(file);
 		return INVALID_DATA;
@@ -840,7 +615,7 @@ int loadGameState(World *GameWorld)
 	memset(GameWorld, 0, sizeof(World));
 	memset(list, 0, sizeof(ObjectController));
 
-	fread(GameWorld, sizeof(World), 1, file);
+	readData = fread(GameWorld, sizeof(World), 1, file);
 	GameWorld->ObjectList = list;
 
 	GameWorld->TextQueue = NULL;
@@ -852,16 +627,16 @@ int loadGameState(World *GameWorld)
 	initialiseBackGround(&GameWorld->WorldBackground);
 
 	int bgIndex;
-	fread(&bgIndex, 4, 1, file);
+	readData = fread(&bgIndex, 4, 1, file);
 
 	int bgSetIndex;
-	fread(&bgSetIndex, 4, 1, file);
+	readData = fread(&bgSetIndex, 4, 1, file);
 
 	switchBackGroundSprite(bgIndex, bgSetIndex, &GameWorld->WorldBackground);
 
 
 	int index = -1;
-	fread(&index, 4, 1, file);
+	readData = fread(&index, 4, 1, file);
 	
 	if (index > -1)
 	{
@@ -878,7 +653,7 @@ int loadGameState(World *GameWorld)
 
 
 	// read objectlist
-	fread(GameWorld->ObjectList, sizeof(ObjectController), 1, file);
+	readData = fread(GameWorld->ObjectList, sizeof(ObjectController), 1, file);
 
 
 
@@ -894,7 +669,7 @@ int loadGameState(World *GameWorld)
 		i++;
 	}
 
-	fread(&i, 4, 1, file);
+	readData = fread(&i, 4, 1, file);
 	if (i == -1)
 	{
 		list->firstObject = NULL;
@@ -904,7 +679,7 @@ int loadGameState(World *GameWorld)
 		list->firstObject = &objects[i];
 	}
 
-	fread(&i, 4, 1, file);
+	readData = fread(&i, 4, 1, file);
 	if (i == -1)
 	{
 		list->lastObject = NULL;
@@ -914,7 +689,7 @@ int loadGameState(World *GameWorld)
 		list->lastObject = &objects[i];
 	}
 
-	fread(&i, 4, 1, file);
+	readData = fread(&i, 4, 1, file);
 	if (i == -1)
 	{
 		list->availableSlots = NULL;
@@ -924,7 +699,7 @@ int loadGameState(World *GameWorld)
 		list->availableSlots = &objects[i];
 	}
 
-	fread(&i, 4, 1, file);
+	readData = fread(&i, 4, 1, file);
 	if (i == -1)
 	{
 		list->cachedFirstObject = NULL;
@@ -934,7 +709,7 @@ int loadGameState(World *GameWorld)
 		list->cachedFirstObject = &objects[i];
 	}
 
-	fread(&i, 4, 1, file);
+	readData = fread(&i, 4, 1, file);
 	if (i == -1)
 	{
 		list->cachedLastObject = NULL;
@@ -946,7 +721,7 @@ int loadGameState(World *GameWorld)
 
 
 	// # of scene actions
-	fread(&i, 4, 1, file);
+	readData = fread(&i, 4, 1, file);
 
 	while (i > 0)
 	{
@@ -960,12 +735,12 @@ int loadGameState(World *GameWorld)
 		}
 
 		SceneAction *prev = action->prevSceneAction;
-		fread(action, sizeof(SceneAction), 1, file);
+		readData = fread(action, sizeof(SceneAction), 1, file);
 		action->prevSceneAction = prev;
 		action->nextSceneAction = NULL;
 
 		int index = -1;
-		fread(&index, 4, 1, file);
+		readData = fread(&index, 4, 1, file);
 
 		if (index == -1)
 		{
@@ -1065,60 +840,6 @@ int checkFileHeader(FILE *fPtr, const char FileType[])
 }
 
 
-int getCurrentLineNumber(FILE *fPtr)
-{
-	long filePosition = ftell(fPtr);
-
-	fseek(fPtr, 0, SEEK_SET);
-
-	int lineCount = 1;
-	char fileCharacter = fgetc(fPtr);
-
-	while (ftell(fPtr) != filePosition && fileCharacter != EOF)
-	{
-		fileCharacter = fgetc(fPtr);
-
-		if (fileCharacter == '\n')
-		{
-			lineCount++;
-		}
-	}
-
-	return lineCount;
-}
-
-
-int skipCommentInFile(FILE *fPtr)
-{
-	if (fPtr == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	char buffer[2] = {0};
-	int commentLength = 0;
-	size_t readData = 0;
-
-	long objectPosition = ftell(fPtr);
-
-	while (commentLength < MAX_COMMENT_LENGTH && buffer[0] != '/' && buffer[0] != '\n')
-	{
-		objectPosition = ftell(fPtr);
-		readData = fread(buffer, sizeof(char), 1, fPtr);
-		commentLength++;
-
-		if (readData != 1)
-		{
-			return END_OF_FILE;
-		}
-	}
-
-	fseek(fPtr, objectPosition, SEEK_SET);
-
-	return LEMON_SUCCESS;
-}
-
-
 FILE* encodeLEMFile(FILE *file)
 {
 
@@ -1139,7 +860,10 @@ FILE* decodeLEMFile(FILE *file)
 
 void closeFile(FILE *file)
 {
-	fclose(file);
+    if (file)
+    {
+        fclose(file);
+    }
 }
 
 FILE* openFile(const char fileName[], const char rootPath[], const char header[])
@@ -1157,39 +881,37 @@ FILE* openFile(const char fileName[], const char rootPath[], const char header[]
 		return NULL;
 	}
 
-	char path[MAX_LEN + MAX_LEN + 5] = {0};
+
+	char path[MAX_LEN + MAX_LEN + 10] = {0};
+	int pathLength = rootPathLength + fileNameLength;
 	strcpy(path, rootPath);
 	strcat(path, fileName);
-	strcat(path, ".lem");
 
-	FILE *fPtr = fopen(path, "rb");
+	FILE *fPtr;
+	int extLength;
+	char extensions[][10] = {"", ".lem", ".txt"};		// changing the order of this list modifies its priority; eg first it checks without ext, then with .lem, etc.
 
-	if (fPtr == NULL)
+	for (int attempt = 0; attempt < 3; attempt++)
 	{
-		path[fileNameLength + rootPathLength + 1] = 't';
-		path[fileNameLength + rootPathLength + 2] = 'x';
-		path[fileNameLength + rootPathLength + 3] = 't';
-		
-		fPtr = fopen(path, "rb");
+		extLength = strlen(extensions[attempt]);
+		memcpy(path + pathLength, extensions[attempt], extLength);
+		path[pathLength + extLength] = 0;
+	 	fPtr = fopen(path, "rb");
 
-		if (fPtr == NULL)
-		{
-			putConsoleStrStr("\nCould not find file '", fileName);
-			putConsoleStrStr("' from root path: '", rootPath);
-			putConsoleString("'");
-			
-			return NULL;
-		}
+	 	if (fPtr != NULL)
+	 	{
+	 		goto File_Loaded;
+	 	}
 	}
-	else
-	{
-		//fPtr = convertLemToTxt(charBuffer, fPtr);
 
-		if (fPtr == NULL)
-		{
-			return NULL;
-		}
-	}
+	putConsoleStrStr("\nCould not find file '", fileName);
+	putConsoleStrStr("' from root path: '", rootPath);
+	putConsoleString("'");
+	
+	return NULL;
+
+
+	File_Loaded:
 
 	if (checkFileHeader(fPtr, header) != LEMON_SUCCESS)
 	{
@@ -1205,10 +927,7 @@ int loadLevelData(World *GameWorld, FILE *fPtr)
 {
 	FuncResult result = loadLevelDataChunk(GameWorld, fPtr, 10000);
 
-	if (fPtr)
-	{
-		closeFile(fPtr);
-	}
+	closeFile(fPtr);
 	
 	return result;
 }
@@ -1292,6 +1011,282 @@ int loadLevelDataChunk(World *GameWorld, FILE *fPtr, int lineLimit)
 		i++;
 	}
 
+
+	return LEMON_SUCCESS;
+}
+
+
+int convertEntryToObjectID(char entry[MAX_LEN])
+{
+	entry[MAX_LEN - 1] = 0;
+
+	if (entry[0] > 47 && entry[0] < 58)
+	{
+		return convertStrToInt(entry, 6);
+	}
+
+	stringToLower(entry);
+
+	if (strcmp(entry, "solidblock") == 0)
+	{
+		return SOLID_BLOCK;
+	}
+	else if (strcmp(entry, "flatslopefloor") == 0)
+	{
+		return FLAT_SLOPE_FLOOR;
+	}
+	else if (strcmp(entry, "jumpthrublock") == 0)
+	{
+		return JUMP_THRU_BLOCK;
+	}
+	else if (strcmp(entry, "coin") == 0)
+	{
+		return COIN;
+	}
+	else if (strcmp(entry, "playerobject") == 0)
+	{
+		return PLAYER_OBJECT;
+	}
+	else if (strcmp(entry, "uielement") == 0)
+	{
+		return UI_ELEMENT;
+	}
+	else if (strcmp(entry, "uitext") == 0)
+	{
+		return UI_TEXT;
+	}
+	else if (strcmp(entry, "particle") == 0)
+	{
+		return PARTICLE;
+	}
+	else if (strcmp(entry, "movingplatformhor") == 0)
+	{
+		return MOVING_PLATFORM_HOR;
+	}
+	else if (strcmp(entry, "movingplatformver") == 0)
+	{
+		return MOVING_PLATFORM_VER;
+	}
+	else if (strcmp(entry, "spring") == 0)
+	{
+		return SPRING;
+	}
+	else if (strcmp(entry, "gateswitch") == 0)
+	{
+		return GATE_SWITCH;
+	}
+	else if (strcmp(entry, "gateswitchtimed") == 0)
+	{
+		return GATE_SWITCH_TIMED;
+	}
+	else if (strcmp(entry, "verticalgate") == 0)
+	{
+		return VERTICAL_GATE;
+	}
+	else if (strcmp(entry, "horizontalgate") == 0)
+	{
+		return HORIZONTAL_GATE;
+	}
+	else if (strcmp(entry, "door") == 0)
+	{
+		return DOOR;
+	}
+	else if (strcmp(entry, "leveldoor") == 0)
+	{
+		return LEVEL_DOOR;
+	}
+	else if (strcmp(entry, "pushablebox") == 0)
+	{
+		return PUSHABLE_BOX;
+	}
+	else if (strcmp(entry, "basicenemy") == 0)
+	{
+		return BASIC_ENEMY;
+	}	
+
+
+	return -1;
+}
+
+const char* ConvertIDToObjectName(ObjectType input)
+{
+	if (input >= OBJECT_TYPE_COUNT && input < 0)
+	{
+		return "Undefined";
+	}
+
+	switch(input)
+	{
+	case LEVEL_FLAG_OBJ:
+		return "Level Flag";
+
+	case SPRING:
+		return "Spring";
+
+	case PARTICLE:
+		return "Particle";
+
+	case UI_ELEMENT:
+		return "UIElement";
+
+	case UI_TEXT:
+		return "UIText";
+
+	case COIN:
+		return "Coin";
+
+	case PLAYER_OBJECT:
+		return "PlayerObject";
+
+	case SOLID_BLOCK:
+		return "SolidBlock";
+
+	case LEVEL_DOOR:
+		return "LevelDoor";
+
+	case DOOR:
+		return "Door";
+
+	case VERTICAL_GATE:
+		return "VerticalGate";
+
+	case HORIZONTAL_GATE:
+		return "HorizontalGate";
+
+	case GATE_SWITCH_TIMED:
+		return "TimedGateSwitch";
+
+	case MOVING_PLATFORM_HOR:
+		return "MovingPlatform_Horizontal";
+
+	case MOVING_PLATFORM_VER:
+		return "MovingPlatform_Vertical";
+
+	case GATE_SWITCH:
+		return "GateSwitch";
+
+	case PUSHABLE_BOX:
+		return "PushableBox";
+
+	case JUMP_THRU_BLOCK:
+		return "JumpThroughPlatform";
+
+	case FLAT_SLOPE_FLOOR:
+		return "FlatSlopeFloor";
+
+	default:
+		static char name[MAX_LEN] = {0};
+		snprintf(name, MAX_LEN, "%d", input);
+		return name;
+	}
+}
+
+const char* ConvertSolidTypeToName(SolidType input)
+{
+	if (input >= UNDEFINED_SOLID && input < 0)
+	{
+		return "Undefined";
+	}
+
+	switch(input)
+	{
+	case SOLID:
+		return "Solid";
+
+	case UNSOLID:
+		return "Unsolid";
+
+	case ENTITY:
+		return "Entity";
+
+	case FLAT_SLOPE:
+		return "Flat Slope";
+
+	case JUMP_THROUGH:
+		return "Jump-Through Solid";
+
+	case PUSHABLE_SOLID:
+		return "Pushable Solid";
+
+	case CIRCLE:
+		return "Solid Circle";
+
+	default:
+		return "Unknown";
+	}
+}
+
+const char* ConvertSolidFlagToName(SolidFlag input)
+{
+	if (input >= UNDEFINED_SOLIDFLAG && input < 0)
+	{
+		return "Undefined";
+	}
+
+	switch(input)
+	{
+	
+	case ENTITY_SOLID:
+		return "Entity Solid";
+
+	case IGNORE_SOLID:
+		return "Ignore Solid Type";
+
+	default:
+		return "Unknown";
+	}	
+
+}
+
+int getCurrentLineNumber(FILE *fPtr)
+{
+	long filePosition = ftell(fPtr);
+
+	fseek(fPtr, 0, SEEK_SET);
+
+	int lineCount = 1;
+	char fileCharacter = fgetc(fPtr);
+
+	while (ftell(fPtr) != filePosition && fileCharacter != EOF)
+	{
+		fileCharacter = fgetc(fPtr);
+
+		if (fileCharacter == '\n')
+		{
+			lineCount++;
+		}
+	}
+
+	return lineCount;
+}
+
+
+int skipCommentInFile(FILE *fPtr)
+{
+	if (fPtr == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	char buffer[2] = {0};
+	int commentLength = 0;
+	size_t readData = 0;
+
+	long objectPosition = ftell(fPtr);
+
+	while (commentLength < MAX_COMMENT_LENGTH && buffer[0] != '/' && buffer[0] != '\n')
+	{
+		objectPosition = ftell(fPtr);
+		readData = fread(buffer, sizeof(char), 1, fPtr);
+		commentLength++;
+
+		if (readData != 1)
+		{
+			return END_OF_FILE;
+		}
+	}
+
+	fseek(fPtr, objectPosition, SEEK_SET);
 
 	return LEMON_SUCCESS;
 }
