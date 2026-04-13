@@ -380,6 +380,7 @@ void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Render
 			goto Skip_CamView_Rerender;
 		}
 
+		SDL_Texture *previousTarget = SDL_GetRenderTarget(Screen);
 		SDL_SetRenderTarget(Screen, list[i].target);
 		SDL_RenderClear(Screen);
 
@@ -394,7 +395,7 @@ void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Render
 			RenderEngine(list[i].cam, GameWorld, Screen);
 		}
 
-		SDL_SetRenderTarget(Screen, NULL);
+		SDL_SetRenderTarget(Screen, previousTarget);
 
 		list[i].nextRender = TickNumber() + list[i].ticksUntilRefresh;
 

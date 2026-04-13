@@ -1113,8 +1113,8 @@ int mapPhysicsBoxToCamera(PhysicsBox *inputBox, Camera inputCam)
 
 	resetPhysicsBox(inputBox);
 
-	inputBox->xPos = inputCam.CameraX;
-	inputBox->yPos = inputCam.CameraY;
+	inputBox->xPos = inputCam.CameraX - (screenWidth / 2);
+	inputBox->yPos = inputCam.CameraY - (screenHeight / 2);
 	inputBox->xSize = screenWidth;
 	inputBox->ySize = screenHeight;
 
@@ -1157,7 +1157,7 @@ bool detectCamera(Object* inputObject, Camera inputCamera)
 
 int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld)
 {
-	if (GameWorld == NULL || GameWorld->ObjectList == NULL || Player == NULL || Player->PlayerBox == NULL || inputObject == NULL)
+	if (GameWorld == NULL || GameWorld->ObjectList == NULL || Player == NULL || Player->PlayerPtr == NULL || inputObject == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -1184,10 +1184,24 @@ int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld)
 		case CUTSCENE_TRIGGER:
 		if (detectPlayer(inputObject, Player))
 		{
-			initialiseCutscene(inputObject->arg2, GameWorld);
+			playCutscene(inputObject->arg2, GameWorld);
 			MarkObjectForDeletion(inputObject);
 		} break;
 
+		case LEVEL_TRIGGER:
+		if (detectPlayer(inputObject, Player))
+		{
+			switchLevel(inputObject->arg2, GameWorld);
+		}
+		break;
+
+		case LEVEL_TRIGGER_SEAMLESS:
+		if (detectPlayer(inputObject, Player))
+		{
+			Player->PlayerPtr->reserved |= RFLAG_PRESERVE_ONCE;
+			switchLevel(inputObject->arg2, GameWorld);
+		}
+		break;
 
 		case SET_BACKGROUND_TRIGGER:
 		if (detectPlayer(inputObject, Player))

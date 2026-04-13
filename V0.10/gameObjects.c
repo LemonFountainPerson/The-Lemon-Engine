@@ -1164,7 +1164,6 @@ void deleteAllEnvironmentObjects(ObjectController *ObjectList)
 		}
 	}
 	
-
 	return;
 }
 
@@ -1185,6 +1184,10 @@ void deleteLevelObjects(ObjectController *ObjectList)
 		if ((cache->reserved & RFLAG_PRESERVE_OBJECT) == 0)
 		{
 			deleteObject(cache, ObjectList);
+		}
+		else if ((cache->reserved & RFLAG_PRESERVE_ONCE) == RFLAG_PRESERVE_ONCE)
+		{
+			cache->reserved &= (~RFLAG_PRESERVE_ONCE);
 		}
 	}
 
@@ -2270,27 +2273,9 @@ int applyMagnetisation(PhysicsBox *inputBox, PhysicsBox *GroundBox, World *GameW
 	}
 	
 	// Ensure that velocity applied is not necessary in the case of it moving against gravity
-	float pixelXDifference = (GroundBox->xPos) - (GroundBox->prevXPos);
-
-	GroundBox->xPos += pixelXDifference; 
-		
-	//if (fabs(GameWorld->GlobalGravityX) < 0.01 || CheckBoxCollidesBox(GroundBox, inputBox) == 0)
-	{
-		inputBox->PhysicsXVelocity = pixelXDifference;
-	}
-
-	GroundBox->xPos -= pixelXDifference; 
-
-	float pixelYDifference = (GroundBox->yPos) - (GroundBox->prevYPos);
-	GroundBox->yPos += pixelYDifference; 
-		
-	//if (fabs(GameWorld->GlobalGravityY) < 0.01 || CheckBoxCollidesBox(GroundBox, inputBox) == 0)
-	{
-		inputBox->PhysicsYVelocity = pixelYDifference;
-	}
-
-	GroundBox->yPos -= pixelYDifference;
-
+	inputBox->PhysicsXVelocity = (GroundBox->xPos) - (GroundBox->prevXPos);
+	inputBox->PhysicsYVelocity = (GroundBox->yPos) - (GroundBox->prevYPos);
+	
 	if (fabs(inputBox->PhysicsXVelocity) < 0.0001)
 	{
 		inputBox->PhysicsXVelocity = 0.0;
@@ -3853,11 +3838,13 @@ int ApplyFriction(PhysicsBox *inputBox, float forwardFriction, float xFriction, 
 	if (xFriction > 0.0)
 	{
 		inputBox->xVelocity *= xFriction;
+		inputBox->PhysicsXVelocity *= 0.98;
 	}
 
 	if (yFriction > 0.0)
 	{
 		inputBox->yVelocity *= yFriction;
+		inputBox->PhysicsYVelocity *= 0.98;
 	}
 
 	if (fabs(inputBox->xVelocity) < 0.001)
@@ -3868,6 +3855,16 @@ int ApplyFriction(PhysicsBox *inputBox, float forwardFriction, float xFriction, 
 	if (fabs(inputBox->yVelocity) < 0.001)
 	{
 		inputBox->yVelocity = 0.0;
+	}
+
+	if (fabs(inputBox->PhysicsXVelocity) < 0.001)
+	{
+		inputBox->PhysicsXVelocity = 0.0;
+	}
+
+	if (fabs(inputBox->PhysicsYVelocity) < 0.001)
+	{
+		inputBox->PhysicsYVelocity = 0.0;
 	}
 
 	if (fabs(inputBox->forwardVelocity) < 0.001)
@@ -3901,7 +3898,6 @@ Object* CheckForGround(PhysicsBox *movingBox, World *GameWorld)
 
 	if (GroundObject != NULL)
 	{
-		//putConsoleStringTS("From '%s': Found ground: %s", ConvertSolidTypeToName(movingBox->solid), GroundObject->name);
 		if (movingBox->inAir > 0)
 		{
 			if (fabs(movingBox->PhysicsXVelocity) > 0.1)
@@ -3928,15 +3924,10 @@ Object* CheckForGround(PhysicsBox *movingBox, World *GameWorld)
 		// If inAir is 0, that means at last check you were on ground
 		if (movingBox->inAir == 0)
 		{
-			if (fabs(movingBox->xVelocity) > 0.1 || fabs(movingBox->forwardVelocity) > 0.1)	// it could also be based on whether the left/right keys are pressed for the player for a better feel
-			{
-				movingBox->PhysicsXVelocity = fClamp(movingBox->PhysicsXVelocity, -MINIMUM_MOMENTUM, MINIMUM_MOMENTUM);
-			}
-
-			if (fabs(movingBox->yVelocity) > 0.1)
-			{
-				movingBox->PhysicsYVelocity = fClamp(movingBox->PhysicsYVelocity, -MINIMUM_MOMENTUM, MINIMUM_MOMENTUM);
-			}
+			// movingBox->xVelocity += movingBox->PhysicsXVelocity;
+			// movingBox->yVelocity += movingBox->PhysicsYVelocity;
+			// movingBox->PhysicsXVelocity = 0.0;
+			// movingBox->PhysicsYVelocity = 0.0;
 		}
 
 		// To indicate no ground, the pointer is set to the box itself

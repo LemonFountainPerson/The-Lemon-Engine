@@ -218,7 +218,8 @@ typedef enum ReservedFlags
 {
 	RFLAG_DEFAULT 			= 0x00000000,
 	RFLAG_DISABLE_PHYSICS 	= 0x00000001,
-	RFLAG_PRESERVE_OBJECT	= 0x00000002
+	RFLAG_PRESERVE_OBJECT	= 0x00000002,
+	RFLAG_PRESERVE_ONCE		= 0x00000006 // activates PRESERVE_OBJECT as well
 } ReservedFlags;
 
 
@@ -338,6 +339,8 @@ typedef enum Flags
 	SET_CAMBOX = 6,
 	SET_CAMBOX_TRIGGER = 7,
 	FALSE_CAMERA_BOUNDARY,
+	LEVEL_TRIGGER,
+	LEVEL_TRIGGER_SEAMLESS,
 	SET_PLAYER_LAYER,
 	START_WITH_MUSIC,
 	PLAY_MUSIC_TRIGGER,
@@ -448,6 +451,7 @@ typedef struct soundInstance
 	char name[MAX_LEN];
 	char folder[MAX_LEN];
 	float volume;
+	int repeats;
 	MIX_StereoGains panLevels;
 
 	struct soundInstance *nextSound;

@@ -106,8 +106,6 @@
 
 #define FAST_COLLISION_THRESHOLD 999	// If objectCount is over this, it will switch to the faster but slightly less accurate collision detection
 
-#define MINIMUM_MOMENTUM 3.0
-
 //-------------------------------------------------------------------------------------------------
 
 

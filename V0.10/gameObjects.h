@@ -95,6 +95,8 @@ void deleteAssociatedFrameFunction(Object *input, ObjectController *ObjectList);
 
 void deleteAllObjects(ObjectController *objectList);
 
+void deleteLevelObjects(ObjectController *ObjectList);
+
 void deleteAllEnvironmentObjects(ObjectController *ObjectList);
 
 

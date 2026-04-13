@@ -133,6 +133,7 @@ SoundInstance* getNewSound(ChannelName channel)
 	}
 
 	current->volume = 1.0;
+	current->repeats = 1;
 	current->name[0] = '\0';
 	current->folder[0] = '\0';
 	current->panLevels.left = 1.0;
@@ -243,6 +244,8 @@ void startSound(SoundInstance *sound, MIX_Audio *audio)
 
 	MIX_SetTrackStereo(sound->audio, &sound->panLevels);
 
+	MIX_SetTrackLoops(sound->audio, sound->repeats);
+
 	MIX_TagTrack(sound->audio, channelNames[sound->channel]);
 
 	if (SoundChannels[sound->channel].Pause == 0)
@@ -305,6 +308,7 @@ SoundInstance* RepeatSound(SoundInstance *input, int repeatTimes)
 		return NULL;
 	}
 
+	input->repeats = repeatTimes;
 	MIX_SetTrackLoops(input->audio, repeatTimes);
 
 	return input;
@@ -603,7 +607,8 @@ int IterateAudio(Camera positionCam)
 		while (sound != NULL && k < EngineSettings.MaxSoundsPerChannel)
 		{
 			k++;
-			
+
+
 			if (sound->state == SOUND_PLAYING)
 			{
 				if (!MIX_TrackPlaying(sound->audio) && MIX_GetTrackLoops(sound->audio) == 0)

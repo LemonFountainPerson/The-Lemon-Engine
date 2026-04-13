@@ -1236,22 +1236,7 @@ int clearLevelData(World *GameWorld)
 	clearTextQueue(GameWorld);
 	deleteAllSceneActions(GameWorld);
 
-
-	Object *current = GameWorld->ObjectList->firstObject;
-	Object *cache = NULL;
-	while (current != NULL)
-	{
-		cache = current;
-		current = current->nextObject;
-
-		if ((cache->reserved & RFLAG_PRESERVE_OBJECT) == 0)
-		{
-			deleteObject(cache, GameWorld->ObjectList);
-		}
-	}
-
-	//deleteLevelObjects(GameWorld->ObjectList)
-	//deleteAllObjects(GameWorld->ObjectList);
+	deleteLevelObjects(GameWorld->ObjectList);
 
 	deleteExcessSpriteSets(GameWorld->ObjectList, EngineSettings.PreservedSpriteSets);
 
@@ -1265,9 +1250,9 @@ int clearLevelData(World *GameWorld)
 
 int loadLevelFlag(World *GameWorld, FILE *fPtr)
 {
-	char buffer[20] = {0};
+	char buffer[MAX_LEN] = {0};
 
-	getNextArg(fPtr, buffer, 20);
+	getNextArg(fPtr, buffer, MAX_LEN);
 	stringToUpper(buffer);
 
 	// Flag Decoded
@@ -1314,6 +1299,22 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		}
 	
 		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], CUTSCENE_TRIGGER, args[4], 0, 0, 0), args[2], args[3]);
+	}
+	else if (strcmp(buffer, "LEVEL_TRIGGER") == 0)
+	{
+		int args[5] = {0};
+
+		readIntArgs(fPtr, args, 5);
+	
+		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], LEVEL_TRIGGER, args[4], 0, 0, 0), args[2], args[3]);
+	}
+	else if (strcmp(buffer, "LEVEL_TRIGGER_SEAMLESS") == 0)
+	{
+		int args[5] = {0};
+
+		readIntArgs(fPtr, args, 5);
+	
+		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], LEVEL_TRIGGER_SEAMLESS, args[4], 0, 0, 0), args[2], args[3]);
 	}
 	else if (strcmp(buffer, "SET_CAMBOX") == 0)
 	{
@@ -1393,7 +1394,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	}
 	else if (strcmp(buffer, "START_MUSIC") == 0)
 	{
-		char nameBuffer[80] = {0};
+		char nameBuffer[MAX_LEN] = {0};
 
 		getNextArg(fPtr, nameBuffer, MAX_LEN);
 
