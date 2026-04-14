@@ -149,21 +149,6 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 				SDL_SetRenderColorScale(ScreenData->Renderer, EventData->colourScale);
 			} break;
 
-		case EVENT_SET_CAMERA_ZOOM:
-			{
-				applyCameraZoom(EventData->zoomScales[0], EventData->zoomScales[1], &GameWorld->MainCamera, ScreenData);
-			} break;
-
-		case EVENT_CHANGE_CAMERA_ZOOM:
-			{
-				applyCameraZoom((GameWorld->MainCamera.zoomX + EventData->zoomScales[0]), (GameWorld->MainCamera.zoomY + EventData->zoomScales[1]), &GameWorld->MainCamera, ScreenData);
-			} break;
-
-		case EVENT_SET_SCREEN_AND_RENDERER_SIZE:
-			{
-				applyScreenAndRendererSize(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
-			} break;
-
 		case EVENT_CHANGE_SCREEN_SIZE:
 			{	
 				applyScreenSize(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
@@ -171,7 +156,7 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 
 		case EVENT_CHANGE_SCREEN_SIZE_SCALE:
 			{
-				applyScreenSizeScale(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
+				applyScreenSizeScale(EventData->screenDimensions[0], EventData->screenDimensions[1], &GameWorld->MainCamera, ScreenData);
 			} break;
 
 		case EVENT_ENABLE_FULLSCREEN:
@@ -181,12 +166,12 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 
 		case EVENT_DISABLE_FULLSCREEN:
 			{
-				applyDisableFullscreen(ScreenData);
+				applyDisableFullscreen(ScreenData, &GameWorld->MainCamera);
 			} break;
 
 		case EVENT_ENABLE_FULLSCREEN_SCALE:
 			{
-				applyEnableFullscreenScaled(ScreenData);
+				applyEnableFullscreenScaled(ScreenData, &GameWorld->MainCamera);
 			} break;
 
 		case EVENT_STREAM_LEVEL_PARTITION:
@@ -567,26 +552,6 @@ GameEvent* changeScreenSize(int newWidth, int newHeight, World *GameWorld)
 	return newEvent;
 }
 
-GameEvent* setScreenAndRendererSize(int newWidth, int newHeight, World *GameWorld)
-{
-	if (GameWorld == NULL)
-	{
-		return NULL;
-	}
-
-	GameEvent *newEvent = addNewGameEvent(GameWorld);
-	if (newEvent == NULL)
-	{
-		return NULL;
-	}
-
-	newEvent->EventID = EVENT_SET_SCREEN_AND_RENDERER_SIZE;
-	newEvent->EventData.screenDimensions[0] = newWidth;
-	newEvent->EventData.screenDimensions[1] = newHeight;
-
-	return newEvent;
-}
-
 GameEvent* enableFullscreen(World *GameWorld)
 {
 	if (GameWorld == NULL)
@@ -642,74 +607,7 @@ GameEvent* disableFullscreen(World *GameWorld)
 }
 
 
-GameEvent* setCameraZoom(float zoomX, float zoomY, World *GameWorld)
-{
-	if (GameWorld == NULL)
-	{
-		return NULL;
-	}
-
-	GameEvent *newEvent = addNewGameEvent(GameWorld);
-	if (newEvent == NULL)
-	{
-		return NULL;
-	}
-
-	newEvent->EventID = EVENT_SET_CAMERA_ZOOM;
-	newEvent->EventData.zoomScales[0] = zoomX;
-	newEvent->EventData.zoomScales[1] = zoomY;
-
-	return newEvent;
-}
-
-GameEvent* changeCameraZoom(float zoomX, float zoomY, World *GameWorld)
-{
-	if (GameWorld == NULL)
-	{
-		return NULL;
-	}
-
-	GameEvent *newEvent = addNewGameEvent(GameWorld);
-	if (newEvent == NULL)
-	{
-		return NULL;
-	}
-
-	newEvent->EventID = EVENT_CHANGE_CAMERA_ZOOM;
-	newEvent->EventData.zoomScales[0] = zoomX;
-	newEvent->EventData.zoomScales[1] = zoomY;
-
-	return newEvent;
-}
-
-
-
-int applyCameraZoom(float newZoomX, float newZoomY, Camera *inputCamera, RenderFrame *ScreenData)
-{
-	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL || inputCamera == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	if (newZoomX < MINIMUM_ZOOM || newZoomY < MINIMUM_ZOOM || screenWidth < MINIMUM_SCREEN_WIDTH || screenHeight < MINIMUM_SCREEN_HEIGHT)
-	{
-		return INVALID_DATA;
-	}
-
-	inputCamera->zoomX = newZoomX;
-	inputCamera->zoomY = newZoomY;
-	inputCamera->zoomedWidth = screenWidth / newZoomX;
-	inputCamera->zoomedHeight = screenHeight / newZoomY;
-	
-	SDL_SetRenderScale(ScreenData->Renderer, newZoomX, newZoomY);
-
-	validateZoom(inputCamera, ScreenData);
-
-	return LEMON_SUCCESS;
-}
-
-
-int applyScreenAndRendererSize(int newWidth, int newHeight, RenderFrame *ScreenData)
+int applyScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData)
 {
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 	{
@@ -726,22 +624,15 @@ int applyScreenAndRendererSize(int newWidth, int newHeight, RenderFrame *ScreenD
 		return INVALID_DATA;
 	}
 
-	validateScreenDimensions(ScreenData);
-
 	SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
     SDL_SyncWindow(ScreenData->Window);
-	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->screenWidth, &ScreenData->screenHeight);
 
-	screenWidth = ScreenData->windowWidth;
-	screenHeight = ScreenData->windowHeight;
-
-	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
-	
 	return LEMON_SUCCESS;
 }
 
 
-int applyScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData)
+int applyScreenSizeScale(int newWidth, int newHeight, Camera *inputCamera, RenderFrame *ScreenData)
 {
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 	{
@@ -758,46 +649,15 @@ int applyScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData)
 		return INVALID_DATA;
 	}
 
-	validateScreenDimensions(ScreenData);
-
-	float ScaleX = ((float)screenWidth/(float)ScreenData->windowWidth);
-	float ScaleY = ((float)screenHeight/(float)ScreenData->windowHeight);
+	float ScaleX = ((float)inputCamera->width/(float)ScreenData->screenWidth);
+	float ScaleY = ((float)inputCamera->height/(float)ScreenData->screenHeight);
 
 	SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
     SDL_SyncWindow(ScreenData->Window);
-	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->screenWidth, &ScreenData->screenHeight);
 
-	screenWidth = ScreenData->windowWidth * ScaleX;
-	screenHeight = ScreenData->windowHeight * ScaleY;
-
-	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
-	
-	return LEMON_SUCCESS;
-}
-
-
-int applyScreenSizeScale(int newWidth, int newHeight, RenderFrame *ScreenData)
-{
-	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	if (ScreenData->Fullscreen == true)
-	{
-		return ACTION_DISABLED;
-	}
-
-	if (newWidth < MINIMUM_SCREEN_WIDTH || newHeight < MINIMUM_SCREEN_HEIGHT)
-	{
-		return INVALID_DATA;
-	}
-
-	validateScreenDimensions(ScreenData);
-
-	SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
-    SDL_SyncWindow(ScreenData->Window);
-	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+	inputCamera->width = ScreenData->screenWidth * ScaleX;
+	inputCamera->height = ScreenData->screenHeight * ScaleY;
 
 
 	return LEMON_SUCCESS;
@@ -815,17 +675,10 @@ int applyEnableFullscreen(RenderFrame *ScreenData)
 	{
 		return ACTION_DISABLED;
 	}
-
-	float ScaleX = ((float)screenWidth/(float)ScreenData->windowWidth);
-	float ScaleY = ((float)screenHeight/(float)ScreenData->windowHeight);
-
 	SDL_SetWindowFullscreen(ScreenData->Window, true);
 	SDL_SyncWindow(ScreenData->Window);
 
-	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
-	screenWidth = ScreenData->windowWidth * ScaleX;
-	screenHeight = ScreenData->windowHeight * ScaleY;
-	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->screenWidth, &ScreenData->screenHeight);
 
 	ScreenData->Fullscreen = true;
 	ScreenData->Scaled = false;
@@ -833,7 +686,7 @@ int applyEnableFullscreen(RenderFrame *ScreenData)
 	return LEMON_SUCCESS;
 }
 
-int applyEnableFullscreenScaled(RenderFrame *ScreenData)
+int applyEnableFullscreenScaled(RenderFrame *ScreenData, Camera *inputCamera)
 {
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 	{
@@ -847,9 +700,16 @@ int applyEnableFullscreenScaled(RenderFrame *ScreenData)
 
 	validateScreenDimensions(ScreenData);
 
+
+	float ScaleX = ((float)inputCamera->width/(float)ScreenData->screenWidth);
+	float ScaleY = ((float)inputCamera->height/(float)ScreenData->screenHeight);
+
 	SDL_SetWindowFullscreen(ScreenData->Window, true);
 	SDL_SyncWindow(ScreenData->Window);
-	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->screenWidth, &ScreenData->screenHeight);
+
+	inputCamera->width = ScreenData->screenWidth * ScaleX;
+	inputCamera->height = ScreenData->screenHeight * ScaleY;
 
 	ScreenData->Fullscreen = true;
 	ScreenData->Scaled = true;
@@ -858,7 +718,7 @@ int applyEnableFullscreenScaled(RenderFrame *ScreenData)
 }
 
 
-int applyDisableFullscreen(RenderFrame *ScreenData)
+int applyDisableFullscreen(RenderFrame *ScreenData, Camera *inputCamera)
 {
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 	{
@@ -868,21 +728,20 @@ int applyDisableFullscreen(RenderFrame *ScreenData)
 	float ScaleX = 1.0;
 	float ScaleY = 1.0;
 
-	if (!ScreenData->Scaled)
+	if (ScreenData->Scaled)
 	{
-		ScaleX = ((float)screenWidth/(float)ScreenData->windowWidth);
-		ScaleY = ((float)screenHeight/(float)ScreenData->windowHeight);
+		ScaleX = ((float)inputCamera->width/(float)ScreenData->screenWidth);
+		ScaleY = ((float)inputCamera->height/(float)ScreenData->screenHeight);
 	}
 
 	SDL_SetWindowFullscreen(ScreenData->Window, false);
 	SDL_SyncWindow(ScreenData->Window);
-	SDL_GetWindowSize(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
+	SDL_GetWindowSize(ScreenData->Window, &ScreenData->screenWidth, &ScreenData->screenHeight);
 
-	if (!ScreenData->Scaled)
+	if (ScreenData->Scaled)
 	{
-		screenWidth = ScreenData->windowWidth * ScaleX;
-		screenHeight = ScreenData->windowHeight * ScaleY;
-		SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+		inputCamera->width = ScreenData->screenWidth * ScaleX;
+		inputCamera->height = ScreenData->screenHeight * ScaleY;
 	}
 
 	ScreenData->Fullscreen = false;
@@ -894,16 +753,12 @@ int applyDisableFullscreen(RenderFrame *ScreenData)
 
 int validateScreenDimensions(RenderFrame *ScreenData)
 {
-	if (ScreenData->windowWidth < MINIMUM_SCREEN_WIDTH || ScreenData->windowHeight < MINIMUM_SCREEN_HEIGHT || screenWidth < MINIMUM_SCREEN_WIDTH || screenHeight < MINIMUM_SCREEN_HEIGHT)
+	if (ScreenData->screenWidth < MINIMUM_SCREEN_WIDTH || ScreenData->screenHeight < MINIMUM_SCREEN_HEIGHT)
 	{
-		ScreenData->windowWidth = H_RESOLUTION;
-		ScreenData->windowHeight = V_RESOLUTION;
-		screenWidth = H_RESOLUTION;
-		screenHeight = V_RESOLUTION;
+		ScreenData->screenWidth = H_RESOLUTION;
+		ScreenData->screenHeight = V_RESOLUTION;
 
-		SDL_SetWindowSize(ScreenData->Window, screenWidth, screenHeight);
-
-		SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+		SDL_SetWindowSize(ScreenData->Window, H_RESOLUTION, V_RESOLUTION);
 
 		return LEMON_ERROR;
 	}
@@ -911,26 +766,6 @@ int validateScreenDimensions(RenderFrame *ScreenData)
 	return LEMON_SUCCESS;
 }
 
-
-int validateZoom(Camera *inputCamera, RenderFrame *ScreenData)
-{
-	// panic script if zoom is invalid for whatever reason
-	if (inputCamera->zoomX < MINIMUM_ZOOM || inputCamera->zoomY < MINIMUM_ZOOM)
-	{
-		inputCamera->zoomX = 1.0;
-		inputCamera->zoomY = 1.0;
-
-		if (ScreenData->windowWidth < MINIMUM_SCREEN_WIDTH || ScreenData->windowHeight < MINIMUM_SCREEN_HEIGHT || screenWidth < 1 || screenHeight < 1)
-		{
-			putConsoleString("\nERROR: Screen/window set as invalid sizes. (Something's gone wrong!)");
-			SDL_SetRenderScale(ScreenData->Renderer, 1.0, 1.0);
-		}
-
-		return LEMON_ERROR;
-	}
-
-	return LEMON_SUCCESS;
-}
 
 const char* getEventName(GameEventID input)
 {
@@ -954,12 +789,6 @@ const char* getEventName(GameEventID input)
 	case EVENT_PLAY_CUTSCENE_FROM_FILE:
 		return "Play Cutscene from file";
 
-	case EVENT_SET_CAMERA_ZOOM:
-		return "Set camera zoom";
-
-	case EVENT_CHANGE_CAMERA_ZOOM:
-		return "Change camera zoom";
-
 	case EVENT_ENABLE_FULLSCREEN:
 		return "Enable fullscreen";
 
@@ -968,9 +797,6 @@ const char* getEventName(GameEventID input)
 
 	case EVENT_ENABLE_FULLSCREEN_SCALE:
 		return "Enable fullscreen scaled";
-
-	case EVENT_SET_SCREEN_AND_RENDERER_SIZE:
-		return "Set Screen and Renderer size";
 
 	case EVENT_CHANGE_SCREEN_SIZE:
 		return "Change screen size";
@@ -1113,10 +939,10 @@ int mapPhysicsBoxToCamera(PhysicsBox *inputBox, Camera inputCam)
 
 	resetPhysicsBox(inputBox);
 
-	inputBox->xPos = inputCam.CameraX - (screenWidth / 2);
-	inputBox->yPos = inputCam.CameraY - (screenHeight / 2);
-	inputBox->xSize = screenWidth;
-	inputBox->ySize = screenHeight;
+	inputBox->xPos = inputCam.CameraX - (inputCam.width / 2);
+	inputBox->yPos = inputCam.CameraY - (inputCam.height / 2);
+	inputBox->xSize = inputCam.width;
+	inputBox->ySize = inputCam.height;
 
 	return LEMON_SUCCESS;
 }
@@ -1226,7 +1052,7 @@ int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld)
 
 			Camera *cam = &GameWorld->MainCamera;
 			PhysicsBox *box = inputObject->ObjectBox;
-			float halfWidth = (float)(screenWidth / 2);
+			float halfWidth = (float)(cam->width / 2);
 			float playerPrevX = Player->PlayerBox->prevXPos + (Player->PlayerBox->xSize >> 1);
 
 			if (playerPrevX > box->xPos + box->xSize && cam->CameraX - halfWidth < box->xPos + box->xSize)
@@ -1607,9 +1433,19 @@ void executeCommand(char inputSource[], World *GameWorld)
 	{
 		setVsync(parseBooleanCommand(input));
 	}
+	else if (strcmp(arg, "setcamzoom") == 0 || strcmp(arg, "setcamerazoom") == 0)
+	{
+		GameWorld->MainCamera.zoomX = parseArgumentAsFloat(input);
+		GameWorld->MainCamera.zoomY = parseArgumentAsFloat(input);
+	}
+	else if (strcmp(arg, "changecamzoom") == 0 || strcmp(arg, "changecamerazoom") == 0)
+	{
+		GameWorld->MainCamera.zoomX += parseArgumentAsFloat(input);
+		GameWorld->MainCamera.zoomY += parseArgumentAsFloat(input);
+	}
 	else if (strcmp(arg, "test") == 0) 
 	{
-		addCameraView(3000.0, 250.0, 1000.0, 100.0, 600.0, 338.0, true, BACKGROUND, GameWorld);
+		addCameraView(3000.0, 250.0, 1000, 750, 1000.0, 100.0, 600.0, 338.0, BACKGROUND, GameWorld);
 		AddParticle(GameWorld, STATIC, 3000.0, 250.0, LOOP_INDEFINITELY, 0);
 	}
 	else if (strcmp(arg, "camview") == 0 || strcmp(arg, "cameraview") == 0)
@@ -1632,16 +1468,15 @@ void executeCommand(char inputSource[], World *GameWorld)
 			float screenY = parseArgumentAsFloat(input);
 			float width = parseArgumentAsFloat(input);
 			float height = parseArgumentAsFloat(input);
-			bool screenSized = parseBooleanCommand(input);
 			Layer layer = parseArgumentAsInt(input);
 
 			if (strcmp(flag, "-main") != 0)
 			{
-				addMainCameraView(screenX, screenY, width, height, screenSized, layer, GameWorld);
+				addMainCameraView(screenX, screenY, width, height, layer, GameWorld);
 			}
 			else
 			{
-				addCameraView(camX, camY, screenX, screenY, width, height, screenSized, layer, GameWorld);
+				addCameraView(camX, camY, GameWorld->MainCamera.width, GameWorld->MainCamera.height, screenX, screenY, width, height, layer, GameWorld);
 			}
 		}
 		else if (strcmp(arg, "attach") == 0)
@@ -1677,7 +1512,7 @@ void executeCommand(char inputSource[], World *GameWorld)
 	{
 		parseArgument(input, arg);
 
-		if (strcmp(arg, "changescreensize") == 0)
+		if (strcmp(arg, "changescreensize") == 0 || strcmp(arg, "setscreensize") == 0)
 		{
 			int width = parseArgumentAsInt(input);
 			int height = parseArgumentAsInt(input);
@@ -1688,12 +1523,6 @@ void executeCommand(char inputSource[], World *GameWorld)
 			int width = parseArgumentAsInt(input);
 			int height = parseArgumentAsInt(input);
 			changeScreenSizeScaled(width, height, GameWorld);
-		}
-		else if (strcmp(arg, "setscreensize") == 0 || strcmp(arg, "setscreenandrenderersize") == 0)
-		{
-			int width = parseArgumentAsInt(input);
-			int height = parseArgumentAsInt(input);
-			setScreenAndRendererSize(width, height, GameWorld);
 		}
 		else if (strcmp(arg, "disablefullscreen") == 0 || strcmp(arg, "nofullscreen") == 0)
 		{
@@ -1721,18 +1550,6 @@ void executeCommand(char inputSource[], World *GameWorld)
 		{
 			parseArgument(input, arg);
 			playCutsceneFromFile(arg, GameWorld);
-		}
-		else if (strcmp(arg, "setcamzoom") == 0 || strcmp(arg, "setcamerazoom") == 0)
-		{
-			float zoomx = parseArgumentAsFloat(input);
-			float zoomy = parseArgumentAsFloat(input);
-			setCameraZoom(zoomx, zoomy, GameWorld);
-		}
-		else if (strcmp(arg, "changecamzoom") == 0 || strcmp(arg, "changecamerazoom") == 0)
-		{
-			float zoomx = parseArgumentAsFloat(input);
-			float zoomy = parseArgumentAsFloat(input);
-			changeCameraZoom(zoomx, zoomy, GameWorld);
 		}
 		else if (strcmp(arg, "deleteenv") == 0 || strcmp(arg, "deleteenvironment") == 0)
 		{
@@ -2237,8 +2054,8 @@ void displayObjectInfoConsole(Object *input)
 
 void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 {
-	float xCorrection = (float)(screenWidth >> 1);
-	float yCorrection = (float)(screenHeight >> 1);
+	float xCorrection = (float)(ScreenData.screenWidth >> 1);
+	float yCorrection = (float)(ScreenData.screenHeight >> 1);
 
 	static const float inputFieldHeight = 28.0;
 	static const float insideSpacing = 8.0;

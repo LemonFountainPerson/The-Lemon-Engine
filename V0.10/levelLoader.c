@@ -39,8 +39,6 @@ int loadLevel(World *GameWorld, int level)
 		return LEMON_ERROR;
 	}
 
-	restoreAllCachedObjects(GameWorld->ObjectList);
-
 	GameWorld->GameState = GAMEPLAY;
 	GameWorld->GamePaused = 0;
 
@@ -159,34 +157,12 @@ int loadSaveData(const char *fileName, int flags[GAME_FLAG_COUNT], World *GameWo
 				setVsync(false);
 			}
 		}
-		else if (!strcmp(readPhrase, "WINDOWRESOLUTION:"))
-		{
-			int width = getNextArgInt(fPtr);
-			int height = getNextArgInt(fPtr);
-
-			changeScreenSize(width, height, GameWorld);
-		}
-		else if (!strcmp(readPhrase, "SCREENRESOLUTION:"))
-		{
-			int width = getNextArgInt(fPtr);
-			int height = getNextArgInt(fPtr);
-
-			if (width >= MINIMUM_SCREEN_WIDTH)
-			{
-				screenWidth = width;
-			}
-
-			if (height >= MINIMUM_SCREEN_HEIGHT)
-			{
-				screenHeight = height;
-			}
-		}
 		else if (!strcmp(readPhrase, "RESOLUTION:"))
 		{
 			int width = getNextArgInt(fPtr);
 			int height = getNextArgInt(fPtr);
 
-			setScreenAndRendererSize(width, height, GameWorld);
+			changeScreenSize(width, height, GameWorld);
 		}
 		else if (!strcmp(readPhrase, "GAMEFLAGS:"))
 		{
@@ -1379,18 +1355,20 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 			return MISSING_DATA;
 		}
 
-		GameWorld->Player.PlayerBox->xPos = getNextArgFloat(fPtr);
-		GameWorld->Player.PlayerBox->yPos = getNextArgFloat(fPtr);
-	}
-	else if (strcmp(buffer, "CAMPOS_TO_PLAYER") == 0)
-	{
-		if (GameWorld->Player.PlayerBox == NULL)
-		{
-			return MISSING_DATA;
-		}
+		PhysicsBox *playerBox = GameWorld->Player.PlayerBox;
+
+		float x = getNextArgFloat(fPtr);
+		float y = getNextArgFloat(fPtr);
 		
-		GameWorld->MainCamera.CameraX = GameWorld->Player.PlayerBox->xPos;
-		GameWorld->MainCamera.CameraY = GameWorld->Player.PlayerBox->yPos;
+		if (playerBox->xPos != playerBox->prevXPos || playerBox->prevYPos != playerBox->yPos)
+		{
+			return ACTION_DISABLED;
+		}
+
+		playerBox->xPos = x;
+		playerBox->yPos = y;
+		GameWorld->MainCamera.CameraX = playerBox->xPos;
+		GameWorld->MainCamera.CameraY = playerBox->yPos;
 	}
 	else if (strcmp(buffer, "START_MUSIC") == 0)
 	{

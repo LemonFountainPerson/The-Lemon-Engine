@@ -38,9 +38,9 @@ void printCameraViewInfo(CameraView list[VIEW_COUNT]);
 
 CameraView* addCameraViewToList(float camX, float camY, int camWidth, int camHeight, float viewPosX, float viewPosY, float width, float height, Layer drawLayer, bool useMain, CameraView list[VIEW_COUNT]);
 
-CameraView* addCameraView(float camX, float camY, float viewX, float viewY, float width, float height, bool screenSized, Layer drawLayer, World *GameWorld);
+CameraView* addCameraView(float camX, float camY, int camWidth, int camHeight, float viewX, float viewY, float viewWidth, float viewHeight, Layer drawLayer, World *GameWorld);
 
-CameraView* addMainCameraView(float viewX, float viewY, float width, float height, bool screenSized, Layer drawLayer, World *GameWorld);
+CameraView* addMainCameraView(float viewX, float viewY, float width, float height, Layer drawLayer, World *GameWorld);
 
 void attachCameraViewToObject(CameraView *input, Object *attach);
 
@@ -91,7 +91,7 @@ bool keyHeld(int key);
 
 void ClearInput(void);
 
-int updateMousePos(void);
+int updateMousePos(Camera inputCam);
 
 float getMouseXCam(Camera inputCamera);
 

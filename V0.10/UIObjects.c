@@ -126,8 +126,8 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 		UIElement->reserved |= RFLAG_PRESERVE_OBJECT;	// This means do not delete between level transitions
 		setTransparency(UIElement, 1.0);
 		switchSpriteByName("FadeOut", 0, getDisplay(UIElement));
-		UIElement->ObjectBox->xSize = screenWidth;
-		UIElement->ObjectBox->ySize = screenHeight;
+		UIElement->ObjectBox->xSize = ScreenData.screenWidth;
+		UIElement->ObjectBox->ySize = ScreenData.screenHeight;
 		centerOnXY(UIElement, 0.0, 0.0);
 		if (UIElement->prevObject != NULL && UIElement->prevObject->ObjectID == UI_ELEMENT && getSubType(UIElement->prevObject) == LEVEL_FADE)
 		{
@@ -153,7 +153,7 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 
 	case PAUSE_MENU_CONTROLLER:
 	{
-		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+		float xPosOrigin = (3 * X_TILESCALE) - (ScreenData.screenWidth >> 1);
 		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin, 132, PAUSE_HEADER, 0, 0, 0, 0);
 
 		basicMenuCreation(xPosOrigin, 128, UIElement, GameWorld, 3, 
@@ -164,7 +164,7 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 
 	case SAVE_OPTIONS_CONTROLLER:
 	{
-		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+		float xPosOrigin = (3 * X_TILESCALE) - (ScreenData.screenWidth >> 1);
 
 		basicMenuCreation(xPosOrigin, 128, UIElement, GameWorld, 5, 
 			"Save1", "Save2", "SaveState", "LoadState", "BackOption");
@@ -173,7 +173,7 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 
 	case SETTINGS_MENU_CONTROLLER:
 	{
-		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+		float xPosOrigin = (3 * X_TILESCALE) - (ScreenData.screenWidth >> 1);
 
 		//AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, 0, 0, PAUSE_BACKGROUND, 0, 0, 0, 0);
 		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin + X_TILESCALE, 260, SETTINGS_HEADER, 0, 0, 0, 0);
@@ -186,7 +186,7 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 
 	case VIDEO_SETTINGS_CONTROLLER:
 	{
-		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+		float xPosOrigin = (3 * X_TILESCALE) - (ScreenData.screenWidth >> 1);
 
 		//AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, 0, 0, PAUSE_BACKGROUND, 0, 0, 0, 0);
 		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin + X_TILESCALE, 328, SETTINGS_HEADER, 0, 0, 0, 0);
@@ -199,7 +199,7 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 
 	case SOUND_SETTINGS_CONTROLLER:
 	{
-		float xPosOrigin = (3 * X_TILESCALE) - (screenWidth >> 1);
+		float xPosOrigin = (3 * X_TILESCALE) - (ScreenData.screenWidth >> 1);
 
 		//AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, 0, 0, PAUSE_BACKGROUND, 0, 0, 0, 0);
 		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin + X_TILESCALE, 260, SETTINGS_HEADER, 0, 0, 0, 0);
@@ -415,7 +415,6 @@ int UpdateCursor(Object *Cursor, World *GameWorld)
 		}
 	}
 
-	//setTransparency(UIElement, (Cursor->ObjectBox->yPos + (screenHeight / 2)) / screenHeight);
 
 	return LEMON_SUCCESS;
 }
@@ -1011,8 +1010,8 @@ int ApplyTextPresets(TextBox *inputText, const char Portrait[], TextPreset input
 		return MISSING_DATA;
 	}
 
-	int topTextLocation = (screenHeight >> 1) - 100;
-	int bottomTextLocation = 280 - (screenHeight >> 1);
+	int topTextLocation = (ScreenData.screenHeight >> 1) - 100;
+	int bottomTextLocation = 280 - (ScreenData.screenHeight >> 1);
 
 	// Default settings
 	inputText->currentXPos = -570;

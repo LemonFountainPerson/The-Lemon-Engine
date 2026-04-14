@@ -901,12 +901,14 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 	case SCENE_SET_SCREEN_ZOOM:
 		{
-			setCameraZoom(currentData.zoomScales[0], currentData.zoomScales[1], GameWorld);
+			GameWorld->MainCamera.zoomX = currentData.zoomScales[0];
+			GameWorld->MainCamera.zoomY = currentData.zoomScales[1];
 		} break;
 
 	case SCENE_CHANGE_SCREEN_ZOOM:
 		{
-			changeCameraZoom(currentData.zoomScales[0], currentData.zoomScales[1], GameWorld);
+			GameWorld->MainCamera.zoomX += currentData.zoomScales[0];
+			GameWorld->MainCamera.zoomY += currentData.zoomScales[1];
 		} break;
 
 	case SCENE_SET_CHANNEL_VOL:

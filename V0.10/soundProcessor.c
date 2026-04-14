@@ -1091,7 +1091,7 @@ int DisplaySoundChannelDebugInfo(ChannelName channel)
 
 	snprintf(buffer, DEBUG_TEXT_MAX_LENGTH, "Channel ID: %d  Channel vol: %.2f  \nSound Count: %d/%d", 
 		channel, SoundChannels[channel].channelVolume, SoundChannels[channel].soundCount, EngineSettings.MaxSoundsPerChannel);
-	AddDebugText(buffer, (screenWidth >> 1) - 330, i, 0, DTFORMAT_LIST_SOUND);
+	AddDebugText(buffer, (ScreenData.screenWidth >> 1) - 330, i, 0, DTFORMAT_LIST_SOUND);
 
 	i += 2;
 
@@ -1106,7 +1106,7 @@ int DisplaySoundChannelDebugInfo(ChannelName channel)
 			snprintf(buffer, DEBUG_TEXT_MAX_LENGTH, "inactive sound slot");
 		}
 
-		AddDebugText(buffer, (screenWidth >> 1) - (12 * strlen(buffer)), i, 0, DTFORMAT_LIST_SOUND);
+		AddDebugText(buffer, (ScreenData.screenWidth >> 1) - (12 * strlen(buffer)), i, 0, DTFORMAT_LIST_SOUND);
 
 		currentSound = currentSound->nextSound;
 		i++;

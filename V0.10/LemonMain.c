@@ -3,10 +3,6 @@
 
 RenderFrame ScreenData = {0};
 
-int screenWidth = H_RESOLUTION;
-
-int screenHeight = V_RESOLUTION;
-
 float deltaTime = 0.0;
 
 
@@ -138,6 +134,8 @@ CameraView* addCameraViewToList(float camX, float camY, int camWidth, int camHei
 
 			list[i].cam.CameraX = camX;
 			list[i].cam.CameraY = camY;
+			list[i].cam.width = camWidth;
+			list[i].cam.height = camHeight;
 			list[i].cam.zoomedWidth = camWidth;
 			list[i].cam.zoomedHeight = camHeight;
 			
@@ -165,29 +163,14 @@ CameraView* addCameraViewToList(float camX, float camY, int camWidth, int camHei
 	return NULL;
 }
 
-CameraView* addCameraView(float camX, float camY, float viewX, float viewY, float width, float height, bool screenSized, Layer drawLayer, World *GameWorld)
+CameraView* addCameraView(float camX, float camY, int camWidth, int camHeight, float viewX, float viewY, float viewWidth, float viewHeight, Layer drawLayer, World *GameWorld)
 {
-	if (screenSized)
-	{
-		return addCameraViewToList(camX, camY, screenWidth, screenHeight, viewX, viewY, width, height, drawLayer, false, GameWorld->views);
-	}
-	else
-	{
-		return addCameraViewToList(camX, camY, width, height, viewX, viewY, width, height, drawLayer, false, GameWorld->views); 
-	}
-	
+	return addCameraViewToList(camX, camY, camWidth, camHeight, viewX, viewY, viewWidth, viewHeight, drawLayer, false, GameWorld->views); 
 }
 
-CameraView* addMainCameraView(float viewX, float viewY, float width, float height, bool screenSized, Layer drawLayer, World *GameWorld)
+CameraView* addMainCameraView(float viewX, float viewY, float width, float height, Layer drawLayer, World *GameWorld)
 {
-	if (screenSized)
-	{
-		return addCameraViewToList(0.0, 0.0, screenWidth, screenHeight, viewX, viewY, width, height, drawLayer, true, GameWorld->views);
-	}
-	else
-	{
-		return addCameraViewToList(0.0, 0.0, width, height, viewX, viewY, width, height, drawLayer, true, GameWorld->views); 
-	}
+	return addCameraViewToList(0.0, 0.0, 0, 0, viewX, viewY, width, height, drawLayer, true, GameWorld->views);
 }
 
 void attachCameraViewToObject(CameraView *input, Object *attach)
@@ -296,11 +279,11 @@ void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Render
 
 	SDL_SetRenderDrawColor(Screen, 0x00, 0x00, 0x00, 0xFF);
 
-	float halfW = (float)(screenWidth >> 1);
-	float halfH = (float)(screenHeight >> 1);
+	Camera mainCam = GameWorld->MainCamera;
+	float halfW = (float)(mainCam.width >> 1);
+	float halfH = (float)(mainCam.height >> 1);
 	SDL_FRect box = {0};
 
-	Camera mainCam = GameWorld->MainCamera;
 	Object *attached = NULL;
 
 	for (int i = 0; i < VIEW_COUNT; i++)
@@ -386,8 +369,6 @@ void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Render
 
 		if (list[i].useMainCam)
 		{
-			mainCam.zoomedWidth = list[i].cam.zoomedWidth;
-			mainCam.zoomedHeight = list[i].cam.zoomedHeight;
 			RenderEngine(mainCam, GameWorld, Screen);
 		}
 		else
@@ -435,7 +416,7 @@ int StartUpLemonEngine(void)
 		return LEMON_ERROR;
 	}
 
-	if (initialiseScreen(&ScreenData, screenWidth, screenHeight, false) != LEMON_SUCCESS)
+	if (initialiseScreen(&ScreenData, H_RESOLUTION, V_RESOLUTION, false) != LEMON_SUCCESS)
 	{
 		return LEMON_ERROR;
 	}
@@ -596,6 +577,20 @@ int RenderEngine(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 		return MISSING_DATA;
 	}
 
+	if (fabs(renderCamera.zoomX - 1.0) > 0.001 || fabs(renderCamera.zoomY - 1.0) > 0.001)
+	{
+		renderCamera.zoomedWidth = renderCamera.width / renderCamera.zoomX;
+		renderCamera.zoomedHeight = renderCamera.height / renderCamera.zoomY;
+	}
+	else
+	{
+		renderCamera.zoomedWidth = renderCamera.width;
+		renderCamera.zoomedHeight = renderCamera.height;
+	}
+
+	SDL_SetRenderScale(Screen, renderCamera.zoomX, renderCamera.zoomY);
+	SDL_SetRenderLogicalPresentation(Screen, renderCamera.width, renderCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
+
 	renderBackGroundSprite(renderCamera, &GameWorld->WorldBackground, Screen);
 
 	drawObjects(renderCamera, GameWorld, Screen);
@@ -662,7 +657,7 @@ int FPSCounter(void)
 
 	        if (TextIndex < 0)
 	        {
-	        	TextIndex = addText(buffer, 20 - (screenWidth >> 1), (screenHeight >> 1) - 40);
+	        	TextIndex = addText(buffer, 20 - (ScreenData.screenWidth >> 1), (ScreenData.screenHeight >> 1) - 40);
 	        	setFontSize("DefaultFont", 20.0);
 	        }
 	        else
@@ -971,7 +966,7 @@ int getExternalInput(World *GameWorld, SDL_Renderer *screen)
 	}
 
 	updateCustomKeys();
-	updateMousePos();
+	updateMousePos(GameWorld->MainCamera);
 
 
 	return LEMON_SUCCESS;
@@ -1007,6 +1002,14 @@ int getKeyboardInput(SDL_KeyboardEvent *key)
 
 		case SDL_SCANCODE_TAB:
 			keyCode = LMN_TAB;
+			break;
+
+		case SDL_SCANCODE_LSHIFT:
+			keyCode = LMN_LSHIFT;
+			break;
+
+		case SDL_SCANCODE_RSHIFT:
+			keyCode = LMN_RSHIFT;
 			break;
 
 		case SDL_SCANCODE_GRAVE:
@@ -1193,15 +1196,15 @@ void AcknowledgeButton(LemonKeys Key)
 	return;
 }
 
-int updateMousePos(void)
+int updateMousePos(Camera inputCam)
 {
 	SDL_GetMouseState(&MouseInput.xPos, &MouseInput.yPos);
 
-	MouseInput.xPos -= (ScreenData.windowWidth >> 1);
-	MouseInput.xPos *= (float)screenWidth/(float)ScreenData.windowWidth;
+	MouseInput.xPos -= (ScreenData.screenWidth >> 1);
+	MouseInput.xPos *= (float)inputCam.width/(float)ScreenData.screenWidth;
 
-	MouseInput.yPos = ((ScreenData.windowHeight >> 1) - MouseInput.yPos);
-	MouseInput.yPos *= (float)screenHeight/(float)ScreenData.windowHeight;
+	MouseInput.yPos = ((ScreenData.screenHeight >> 1) - MouseInput.yPos);
+	MouseInput.yPos *= (float)inputCam.height/(float)ScreenData.screenHeight;
 
 	return LEMON_SUCCESS;
 }
@@ -1453,9 +1456,6 @@ int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullsc
 		return MISSING_DATA;
 	}
 
-	screenWidth = clamp(width, 144, 9000);
-	screenHeight = clamp(height, 144, 9000);
-
 	ScreenData->Window = NULL;
 	ScreenData->Renderer = NULL;
 	ScreenData->Fullscreen = false;
@@ -1471,7 +1471,7 @@ int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullsc
 		windowFlag |= SDL_WINDOW_FULLSCREEN;
 	}
 
-	SDL_CreateWindowAndRenderer("Starting up...", screenWidth, screenHeight, windowFlag, &ScreenData->Window, &ScreenData->Renderer);
+	SDL_CreateWindowAndRenderer("Starting up...", width, height, windowFlag, &ScreenData->Window, &ScreenData->Renderer);
 
 	if (ScreenData->Window == NULL)
 	{
@@ -1479,9 +1479,7 @@ int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullsc
 		return LEMON_ERROR;
 	}
 
-	SDL_GetWindowSizeInPixels(ScreenData->Window, &ScreenData->windowWidth, &ScreenData->windowHeight);
-	screenWidth = ScreenData->windowWidth;
-	screenHeight = ScreenData->windowHeight;
+	SDL_GetWindowSizeInPixels(ScreenData->Window, &ScreenData->screenWidth, &ScreenData->screenHeight);
 
 	if (ScreenData->Renderer == NULL)
 	{
@@ -1493,7 +1491,7 @@ int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullsc
 		return LEMON_ERROR;
 	}
 
-	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, screenWidth, screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+	SDL_SetRenderLogicalPresentation(ScreenData->Renderer, width, height, SDL_LOGICAL_PRESENTATION_STRETCH);
 
 	ScreenData->textEngine = TTF_CreateRendererTextEngine(ScreenData->Renderer);
 	if (ScreenData->textEngine == NULL)
@@ -1610,9 +1608,14 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 		return;
 	}
 
+	if (keyboard[LMN_LSHIFT] == 0)
+	{
+		return;
+	}
+
 	if (keyboard['J'] == 1)
 	{
-		enableFullscreenScaled(GameWorld);
+		enableFullscreen(GameWorld);
 	}
 
 	if (keyboard['H'] == 1)
@@ -1887,8 +1890,10 @@ int ResetCamera(Camera *inputCam)
 
 	inputCam->zoomX = 1.0;
 	inputCam->zoomY = 1.0;
-	inputCam->zoomedWidth = screenWidth;
-	inputCam->zoomedHeight = screenHeight;
+	inputCam->zoomedWidth = ScreenData.screenWidth;
+	inputCam->zoomedHeight = ScreenData.screenHeight;
+	inputCam->width = ScreenData.screenWidth;
+	inputCam->height = ScreenData.screenHeight;
 
 	return LEMON_SUCCESS;
 }

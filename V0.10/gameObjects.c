@@ -4383,8 +4383,8 @@ bool onScreen(Object *inputObject, World *GameWorld)
 		return false;
 	}
 
-	int camX = -(screenWidth >> 1);
-	int camY = -(screenHeight >> 1);
+	int camX = -(GameWorld->MainCamera.width >> 1);
+	int camY = -(GameWorld->MainCamera.height >> 1);
 	PhysicsBox *objBox = inputObject->ObjectBox;
 
 	if (getDisplayLayer(inputObject) != HUD)
@@ -4393,8 +4393,8 @@ bool onScreen(Object *inputObject, World *GameWorld)
 		camY += GameWorld->MainCamera.CameraY;
 	}
 
-	int camXRight = camX + screenWidth;
-	int camYTop = camY + screenHeight;
+	int camXRight = camX + GameWorld->MainCamera.width;
+	int camYTop = camY + GameWorld->MainCamera.height;
 
 	if ((int)objBox->xPos > camXRight || (int)objBox->xPos + objBox->xSize < camX || (int)objBox->yPos > camYTop || (int)objBox->yPos + objBox->ySize < camY)
 	{

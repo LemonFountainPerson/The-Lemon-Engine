@@ -24,9 +24,11 @@ typedef enum LemonKeys
 	ACKNOWLEDGE_INPUT = 0,
 	LMN_ESCAPE = 128,
 	LMN_GRAVE,
-	LMN_TAB,
 	LMN_ENTER,
 	LMN_SPACE,
+	LMN_TAB,
+	LMN_LSHIFT,
+	LMN_RSHIFT,
 	LMN_BACKSPACE,
 	LMN_COMMA,
 	LMN_PERIOD,
@@ -797,14 +799,11 @@ typedef enum GameEventID
 	EVENT_MOVE_OBJECT,
 	EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR,
 	EVENT_SET_BRIGHTNESS,
-	EVENT_SET_SCREEN_AND_RENDERER_SIZE,
 	EVENT_CHANGE_SCREEN_SIZE,
 	EVENT_CHANGE_SCREEN_SIZE_SCALE,
 	EVENT_ENABLE_FULLSCREEN,
 	EVENT_DISABLE_FULLSCREEN,
 	EVENT_ENABLE_FULLSCREEN_SCALE,
-	EVENT_SET_CAMERA_ZOOM,
-	EVENT_CHANGE_CAMERA_ZOOM,
 	EVENT_STREAM_LEVEL_PARTITION,
 	EVENT_DELETE_ENVIRONMENT_OBJECTS,
 	UNDEFINED_EVENT
@@ -957,6 +956,8 @@ typedef struct Camera
 
 	float zoomX;
 	float zoomY;
+	int width;
+	int height;
 	int zoomedWidth;
 	int zoomedHeight;
 } Camera;
@@ -986,8 +987,8 @@ typedef struct CameraView
 typedef struct RenderFrame 
 {
 	SDL_Window *Window;
-	int windowWidth;
-	int windowHeight;
+	int screenWidth;
+	int screenHeight;
 	SDL_Renderer *Renderer;
 	TTF_TextEngine *textEngine;
 
@@ -1312,10 +1313,6 @@ typedef struct String
 
 //Global variables/data
 extern RenderFrame ScreenData;
-
-extern int screenWidth;
-
-extern int screenHeight;
 
 extern float deltaTime;
 

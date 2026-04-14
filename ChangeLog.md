@@ -90,6 +90,9 @@ object behaviour. By default, it is not defined and you must add to the pre-exis
 
 -> GameEvents are now stored as a ring buffer, with new events overwriting the oldest events when it reaches maximum capacity.
 
+-> Removed 'screenWidth' and 'screenHeight' global variables, and now the width/height of the camera's perspective is defined by the 'width' and 'height' variables
+located in each camera. This means each camera can use their own screen dimensions, and by default will be stretched to fit the window.
+
 
 ## Bug fixes/Improvements:
 

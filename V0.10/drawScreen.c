@@ -43,17 +43,6 @@ int CameraControl(World *GameWorld, Camera *inputCamera)
 		return ACTION_DISABLED;
 	}
 
-	if (fabs(1.0 - inputCamera->zoomX) > 0.01 || fabs(1.0 - inputCamera->zoomY) > 0.01)
-	{
-		inputCamera->zoomedWidth = screenWidth / inputCamera->zoomX;
-		inputCamera->zoomedHeight = screenHeight / inputCamera->zoomY;
-	}
-	else
-	{
-		inputCamera->zoomedWidth = screenWidth;
-		inputCamera->zoomedHeight = screenHeight;
-	}
-
 	int camMode = inputCamera->CameraMode;
 
 
@@ -113,26 +102,26 @@ int CameraControl(World *GameWorld, Camera *inputCamera)
 
 			float yOffset = PlayerBox->yPos - inputCamera->CameraY;
 
-			if (yOffset >= (screenHeight * 0.1))
+			if (yOffset >= (inputCamera->height * 0.1))
 			{
-				float difference = yOffset - (screenHeight * 0.1);
+				float difference = yOffset - (inputCamera->height * 0.1);
 
 				inputCamera->CameraY += (difference / 5.0);
 
 				if (fabs(difference) < 5)
 				{
-					inputCamera->CameraY = PlayerBox->yPos - (screenHeight * 0.1);
+					inputCamera->CameraY = PlayerBox->yPos - (inputCamera->height * 0.1);
 				}
 			}
-			else if (yOffset < (screenHeight * -0.2))
+			else if (yOffset < (inputCamera->height * -0.2))
 			{
-				float difference = yOffset + (screenHeight * 0.2);
+				float difference = yOffset + (inputCamera->height * 0.2);
 
 				inputCamera->CameraY += (difference / 5.0) + 1;
 
 				if (fabs(difference) < 5)
 				{
-					inputCamera->CameraY = PlayerBox->yPos + (screenHeight * 0.2);
+					inputCamera->CameraY = PlayerBox->yPos + (inputCamera->height * 0.2);
 				}
 			}
 
@@ -161,8 +150,8 @@ int restrictCameraToBounds(Camera *inputCamera)
 		return MISSING_DATA;
 	}
 
-	float halfWidth = (float)(screenWidth / 2);
-	float halfHeight = (float)(screenHeight / 2);
+	float halfWidth = (float)(inputCamera->width / 2);
+	float halfHeight = (float)(inputCamera->height / 2);
 	float minX = inputCamera->minCameraX + halfWidth;
 	float maxX = inputCamera->maxCameraX - halfWidth;
 	float minY = inputCamera->minCameraY + halfHeight;
@@ -170,12 +159,12 @@ int restrictCameraToBounds(Camera *inputCamera)
 
 	if (maxX < minX)
 	{
-		inputCamera->maxCameraX = inputCamera->minCameraX + screenWidth;
+		inputCamera->maxCameraX = inputCamera->minCameraX + inputCamera->width;
 	}
 
 	if (maxY < minY)
 	{
-		inputCamera->maxCameraY = inputCamera->minCameraY + screenHeight;
+		inputCamera->maxCameraY = inputCamera->minCameraY + inputCamera->height;
 	}
 
 
@@ -202,8 +191,8 @@ int drawObjects(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 	RenderSettings.drawnParticles = 0;
 	RenderSettings.drawnHudElements = 0;
 
-	inputCamera.CameraX += (float)((screenWidth - inputCamera.zoomedWidth) >> 1);
-	inputCamera.CameraY += (float)((inputCamera.zoomedHeight - screenHeight) >> 1);
+	inputCamera.CameraX += (float)((inputCamera.width - inputCamera.zoomedWidth) >> 1);
+	inputCamera.CameraY += (float)((inputCamera.zoomedHeight - inputCamera.height) >> 1);
 	Camera hudCam = {0};
 	ResetCamera(&hudCam);
 
@@ -233,6 +222,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 			}
 
 			SDL_SetRenderScale(Screen, 1.0, 1.0);
+			SDL_SetRenderLogicalPresentation(Screen, hudCam.width, hudCam.height, SDL_LOGICAL_PRESENTATION_STRETCH);
 
 			while(currentObject != NULL)
 			{
@@ -252,6 +242,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 			}
 
 			SDL_SetRenderScale(Screen, inputCamera.zoomX, inputCamera.zoomY);
+			SDL_SetRenderLogicalPresentation(Screen, inputCamera.width, inputCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
 		}
 		else
 		{
@@ -301,8 +292,8 @@ void drawHitboxes(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 
 	Object *currentObject = GameWorld->ObjectList->firstObject;
 
-	inputCamera.CameraX += (float)((screenWidth - inputCamera.zoomedWidth) >> 1);
-	inputCamera.CameraY += (float)((inputCamera.zoomedHeight - screenHeight) >> 1);
+	inputCamera.CameraX += (float)((inputCamera.width - inputCamera.zoomedWidth) >> 1);
+	inputCamera.CameraY += (float)((inputCamera.zoomedHeight - inputCamera.height) >> 1);
 	Camera hudCamera = {0};
 	ResetCamera(&hudCamera);
 
@@ -344,8 +335,8 @@ int renderHitbox(Camera inputCamera, PhysicsBox *inputBox, SDL_Renderer *Screen)
 	
 	SDL_FRect Hitbox;
 
-	float xCoord = (screenWidth >> 1) + inputBox->xPos - inputCamera.CameraX;
-	float yCoord = inputCamera.CameraY + (screenHeight >> 1) - inputBox->yPos - inputBox->ySize;
+	float xCoord = (inputCamera.width >> 1) + inputBox->xPos - inputCamera.CameraX;
+	float yCoord = inputCamera.CameraY + (inputCamera.height >> 1) - inputBox->yPos - inputBox->ySize;
 	Hitbox.x = xCoord;
 	Hitbox.y = yCoord;
 	Hitbox.h = (float)inputBox->ySize;
@@ -441,8 +432,8 @@ int renderObjectSprite(Camera inputCamera, Object *input, SDL_Renderer *Screen)
 
 
 	// Locate object on screen
-	float realXOffset = (screenWidth >> 1) + inputBox.xPos + inputData.spriteXOffset - inputCamera.CameraX;
-	float realYOffset = (screenHeight >> 1) - inputBox.yPos - inputData.spriteYOffset + inputCamera.CameraY - inputBox.ySize;
+	float realXOffset = (inputCamera.width >> 1) + inputBox.xPos + inputData.spriteXOffset - inputCamera.CameraX;
+	float realYOffset = (inputCamera.height >> 1) - inputBox.yPos - inputData.spriteYOffset + inputCamera.CameraY - inputBox.ySize;
 	double renderDirection = inputBox.direction;
 
 	if (inputData.frameBuffer != NULL)
@@ -759,8 +750,8 @@ int renderBackGroundSprite(Camera inputCamera, BackgroundData *WorldBackground, 
 		return MISSING_DATA;
 	}
 
-	inputCamera.CameraX += (float)((screenWidth - inputCamera.zoomedWidth) >> 1);
-	inputCamera.CameraY += (float)((inputCamera.zoomedHeight - screenHeight) >> 1);
+	inputCamera.CameraX += (float)((inputCamera.width - inputCamera.zoomedWidth) >> 1);
+	inputCamera.CameraY += (float)((inputCamera.zoomedHeight - inputCamera.height) >> 1);
 	
 
 	RenderMode bgRenderMode = WorldBackground->BackgroundRenderMode;
@@ -929,7 +920,7 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 		snprintf(text + strlen(text), DEBUG_TEXT_MAX_LENGTH - strlen(text), "\nlevel: %d \nMouse x: %f  Mouse y: %f", 
 			GameWorld->level, getMouseXCam(GameWorld->MainCamera), getMouseYCam(GameWorld->MainCamera));
 
-		AddDebugText(text, 16 - (screenWidth >> 1), (screenHeight >> 1) - 60, 0, DTFORMAT_SCREEN_RELATIVE);
+		AddDebugText(text, 16 - (renderCamera.width >> 1), (renderCamera.height >> 1) - 60, 0, DTFORMAT_SCREEN_RELATIVE);
 	}
 
 	DisplaySoundChannelDebugInfo(DebugSettings.SoundInfo - 1);
@@ -939,19 +930,19 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 	{
 	case 1:
 		sprintf(text, "Camera X: %.2f  Camera Y: %.2f", renderCamera.CameraX, renderCamera.CameraY);
-		AddDebugText(text, -140, (screenHeight >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
+		AddDebugText(text, -140, (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
 		break;
 
 	case 2: 
 		sprintf(text, "Camera X: %.2f  Camera Y: %.2f \nCameraLatch: %d \nBuffer X: %.2f  Buffer Y: %.2f", 
 			renderCamera.CameraX, renderCamera.CameraY, renderCamera.CameraLatch, renderCamera.CameraXBuffer, renderCamera.CameraYBuffer);
-		AddDebugText(text, -140, (screenHeight >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
+		AddDebugText(text, -140, (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
 		break;
 
 	case 3: 
 		sprintf(text, "Camera X: %.2f  Camera Y: %.2f \nX zoom: %.2f \nY zoom X: %.2f", 
 			renderCamera.CameraX, renderCamera.CameraY, renderCamera.zoomX, renderCamera.zoomY);
-		AddDebugText(text, -140, (screenHeight >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
+		AddDebugText(text, -140, (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
 		break;
 
 	default:
@@ -990,8 +981,8 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 			}
 			else
 			{
-				renderCamera.CameraX += (float)((screenWidth - renderCamera.zoomedWidth) >> 1);
-				renderCamera.CameraY += (float)((renderCamera.zoomedHeight - screenHeight) >> 1);
+				renderCamera.CameraX += (float)((renderCamera.width - renderCamera.zoomedWidth) >> 1);
+				renderCamera.CameraY += (float)((renderCamera.zoomedHeight - renderCamera.height) >> 1);
 
 				renderHitbox(renderCamera, currentObject->ObjectBox, ScreenData.Renderer);
 			}
@@ -1048,7 +1039,7 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 	}
 
 	snprintf(text, DEBUG_TEXT_MAX_LENGTH, "%s \nTick: %llu", LEMON_VERSION, TickNumber());
-	AddDebugText(text, 16 - (screenWidth >> 1), 48 - (screenHeight >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
+	AddDebugText(text, 16 - (renderCamera.width >> 1), 48 - (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
 
 	return;
 }
@@ -1397,6 +1388,7 @@ float getCursorPos(void)
 void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 {
 	SDL_SetRenderScale(Screen, 1.0, 1.0);
+	SDL_SetRenderLogicalPresentation(Screen, ScreenData.screenWidth, ScreenData.screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
 
 	// render in-game text (immune to camera zoom, centered on the screen)
 	if (GameWorld->GamePaused == 0)
@@ -1420,6 +1412,8 @@ void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
     RemoveAllTexts(&DebugSettings.DebugTexts);
 
     SDL_SetRenderScale(Screen, renderCamera.zoomX, renderCamera.zoomY);
+    SDL_SetRenderLogicalPresentation(Screen, renderCamera.width, renderCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
+
 }
 
 void RenderTextList(TextList *list, Camera inputCamera)
@@ -1439,8 +1433,8 @@ void RenderTextList(TextList *list, Camera inputCamera)
 			continue;
 		}
 
-		correctedX = (screenWidth >> 1) + array[i].xPos;
-		correctedY = (screenHeight >> 1) - array[i].yPos;
+		correctedX = (ScreenData.screenWidth >> 1) + array[i].xPos;
+		correctedY = (ScreenData.screenHeight >> 1) - array[i].yPos;
 
 		if (array[i].CameraRelative == true)
 		{
