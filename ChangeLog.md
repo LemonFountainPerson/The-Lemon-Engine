@@ -100,7 +100,7 @@ located in each camera. This means each camera can use their own screen dimensio
 
 -> Improved how sprites are found/switched to improve performance and code readability.
 
--> Animations can now load their frames in contiguous chunks for better memory performance, this can disbaled by setting 'CONTIGUOUS_ANIMATION_ALLOCATION' to false.
+-> Animations can now load their frames in contiguous chunks for better memory performance, this can disabled by setting 'CONTIGUOUS_ANIMATION_ALLOCATION' to false.
 
 -> Animations now base their framerate on real time, instead of waiting for a game tick to advance to the next frame. (Game ticks per second now have no effect on 
 animation framerate.)
@@ -127,7 +127,6 @@ the file extension when playing a sound.
 -> Sound data is now loaded on a separate thread to avoid stutters when loading larger sound files. This fixes the issue where loading large sound files would freeze the 
 process for a noticable amount of time. 
    -  Asynchronous sound loading can be disabled altogether by setting 'ASYNC_AUDIO_LOADER' to false in config.h.
-   -  'ASYNC_AUDIO_SIZE_THRESHOLD' controls the minimum size the audio file must be in bytes for it to be loaded asynchronously.
    -  'ASYNC_AUDIO_SIZE_THRESHOLD' controls the minimum size the audio file must be in bytes for it to be loaded asynchronously. This is to avoid unnecessary overhead when 
       loading very small sound files. 
    -  This seperate thread can either be a permanent one running in the background or a temporary one only created when its needed, depending on the 
