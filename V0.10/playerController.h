@@ -24,7 +24,7 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld);
 int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld);
 
 
-int PlayerJump(PlayerData *Player, bool jump, int hAxis);
+int PlayerJump(PlayerData *Player, bool jump);
 
 
 int HandlePlayerInteract(PlayerData *Player);

@@ -1077,19 +1077,19 @@ void keyPressedWhen(int key, bool keyMap)
 
 void updateCustomKeys(void)
 {
-	keyPressedWhen(LMN_LEFT, keyboard['A'] || keyboard[LMN_LEFTARROW]);
-	keyPressedWhen(LMN_RIGHT, keyboard['D'] || keyboard[LMN_RIGHTARROW]);
-	keyPressedWhen(LMN_UP, keyboard['W'] || keyboard[LMN_UPARROW]);
-	keyPressedWhen(LMN_DOWN, keyboard['S'] || keyboard[LMN_DOWNARROW]);
+	keyPressedWhen(LMN_LEFT, keyboard['A'] || keyboard[LMN_LEFTARROW] || GamePadInput.dPadLeft);
+	keyPressedWhen(LMN_RIGHT, keyboard['D'] || keyboard[LMN_RIGHTARROW] || GamePadInput.dPadRight);
+	keyPressedWhen(LMN_UP, keyboard['W'] || keyboard[LMN_UPARROW] || GamePadInput.dPadUp);
+	keyPressedWhen(LMN_DOWN, keyboard['S'] || keyboard[LMN_DOWNARROW] || GamePadInput.dPadDown);
 
-	keyPressedWhen(LMN_JUMP, keyboard[LMN_SPACE]);
-	keyPressedWhen(LMN_INTERACT, keyboard['E'] || keyboard['Z']);
-	keyPressedWhen(LMN_INTERACT2, keyboard['Q'] || keyboard['X']);
-	keyPressedWhen(LMN_INTERACT3, keyboard['R'] || keyboard['C']);
+	keyPressedWhen(LMN_JUMP, keyboard[LMN_SPACE] || GamePadInput.southButton);
+	keyPressedWhen(LMN_INTERACT, keyboard['E'] || keyboard['Z'] || GamePadInput.westButton);
+	keyPressedWhen(LMN_INTERACT2, keyboard['Q'] || keyboard['X'] || GamePadInput.northButton);
+	keyPressedWhen(LMN_INTERACT3, keyboard['R'] || keyboard['C'] || GamePadInput.eastButton);
 
-	keyPressedWhen(LMN_TEXT_CONFIRM, keyboard[LMN_INTERACT] || keyboard[LMN_ENTER]);
-	keyPressedWhen(LMN_TEXT_SKIP, keyboard[LMN_INTERACT2] || keyboard[LMN_SPACE] || MouseInput.RightButton);
-	keyPressedWhen(LMN_MENU_CONFIRM, keyboard[LMN_INTERACT] || keyboard[LMN_ENTER]);
+	keyPressedWhen(LMN_TEXT_CONFIRM, keyboard[LMN_INTERACT] || keyboard[LMN_ENTER] || GamePadInput.westButton);
+	keyPressedWhen(LMN_TEXT_SKIP, keyboard[LMN_INTERACT2] || keyboard[LMN_SPACE] || MouseInput.RightButton || GamePadInput.eastButton);
+	keyPressedWhen(LMN_MENU_CONFIRM, keyboard[LMN_INTERACT] || keyboard[LMN_ENTER] || GamePadInput.westButton);
 
 	return;
 }

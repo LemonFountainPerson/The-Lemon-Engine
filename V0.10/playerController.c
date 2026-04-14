@@ -139,16 +139,30 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 
 	PhysicsBox *PlayerBox = Player->PlayerBox;
 
-	int hAxis = 0;
-	int vAxis = 0;
+	float hAxis = 0.0;
+	float vAxis = 0.0;
 	bool jump = false;
 
 	// Player input
 	if (!playingText(GameWorld) && PlayerObject->State != PAUSE_STATE)
 	{
-		hAxis = (keyboard[LMN_RIGHT] != 0) - (keyboard[LMN_LEFT] != 0);
+		if ((keyboard[LMN_RIGHT] != 0) - (keyboard[LMN_LEFT] != 0) == 0)
+		{
+			hAxis = GamePadInput.leftStickX;
+		}
+		else
+		{
+			hAxis = (float)(keyboard[LMN_RIGHT] != 0) - (keyboard[LMN_LEFT] != 0);
+		}
 
-		vAxis = (keyboard[LMN_UP] != 0) - (keyboard[LMN_DOWN] != 0);
+		if ((keyboard[LMN_UP] != 0) - (keyboard[LMN_DOWN] != 0) == 0)
+		{
+			vAxis = GamePadInput.leftStickY;
+		}
+		else
+		{
+			vAxis = (float)(keyboard[LMN_UP] != 0) - (keyboard[LMN_DOWN] != 0);
+		}
 
 		if (keyboard[LMN_JUMP])
 		{
@@ -221,7 +235,7 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 
 	if ((jump && !Player->jumpHeld && PlayerBox->inAir < Player->coyoteFrames && Player->jumpProgress == 0) || (PlayerBox->yVelocity > 0.0 && Player->jumpProgress > 0) )
 	{
-		PlayerJump(Player, jump, hAxis);
+		PlayerJump(Player, jump);
 	}
 
 
@@ -302,7 +316,7 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld)
 }
 
 
-int PlayerJump(PlayerData *Player, bool jump, int hAxis)
+int PlayerJump(PlayerData *Player, bool jump)
 {
 	// Jump handling - Player jump must be less than 0, and third condition ensures that the
 	// Player must be moving upwards or not be holding the button from previous jump to continue jumping/jump again
