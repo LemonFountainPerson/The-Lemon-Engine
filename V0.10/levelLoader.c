@@ -1565,7 +1565,7 @@ int loadObjectRepeated(World *GameWorld, FILE *fPtr)
 	return LEMON_SUCCESS;
 }
 
-int ApplyObjectLoadCommands(FILE *fPtr, Object *inputObject, char command[MAX_LEN])
+int ApplyObjectLoadCommands(FILE *fPtr, Object *inputObject, char command[MAX_LEN], ObjectController *ObjectList)
 {
 	if (inputObject == NULL || fPtr == NULL)
 	{
@@ -1652,6 +1652,30 @@ int ApplyObjectLoadCommands(FILE *fPtr, Object *inputObject, char command[MAX_LE
 	
 		setObjectName(inputObject, command);
 	}
+	else if (!strcmp(command, "SETPARENT"))
+	{
+		long filePos = ftell(fPtr);
+		getNextArg(fPtr, command, MAX_LEN);
+		fseek(fPtr, filePos, SEEK_SET);
+
+		if (command[0] != '{')
+		{
+			return INVALID_DATA;
+		}
+
+		consumeStatement(fPtr, '{');
+		getNextArg(fPtr, command, MAX_LEN);
+		if (command[0] != '}')
+		{
+			consumeStatement(fPtr, '}');
+		}
+		Object *parent = FindObject(command, ObjectList);
+
+		if (parent != NULL)
+		{
+			inputObject->Parent = parent;
+		}
+	}
 	else if (!strcmp(command, "HIDE"))
 	{
 		hideObject(inputObject);
@@ -1705,7 +1729,7 @@ int loadObject(World *GameWorld, FILE *fPtr, int xOffset, int yOffset)
 	{
 		getNextArg(fPtr, buffer, MAX_LEN);
 
-		ApplyObjectLoadCommands(fPtr, addedObject, buffer);
+		ApplyObjectLoadCommands(fPtr, addedObject, buffer, GameWorld->ObjectList);
 	}
 
 	return LEMON_SUCCESS;

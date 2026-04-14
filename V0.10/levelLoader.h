@@ -58,11 +58,6 @@ bool bracketedStatementPresent(FILE *fPtr, const char expectedPhrase[]);
 int consumeStatement(FILE *fPtr, char stopCharacter);
 
 
-int CheckObjectLoadCommands(FILE *fPtr, Object *inputObject);
-
-int ApplyObjectLoadCommand(Object *inputObject, char command[MAX_LEN]);
-
-
 int atEndOfLine(FILE *fPtr);
 
 bool endOfFile(FILE *fPtr);
