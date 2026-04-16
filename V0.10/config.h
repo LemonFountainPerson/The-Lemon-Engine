@@ -131,6 +131,7 @@
 #define SWITCH_TO_MISSING(x) switchSprite(-1, 0, getDisplay(x)); 
 #define BACKGROUND_SETID 1
 #define NO_ACTION NULL
+#define LOOP_SOUND 0
 
 // Tiles Probably wont be re-implemented, but constants are useful for stylisation
 #define Y_TILESCALE 32
@@ -152,6 +153,8 @@
 
 //-------------------------------------------------------------------------------------------------
 
+
+#define EXPORT __declspec( dllexport )
 
 
 #define LEMON_ENGINE_INFO "Lemon Engine - by Liam Fuentes Pessoa"

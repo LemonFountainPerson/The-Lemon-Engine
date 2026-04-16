@@ -1,6 +1,5 @@
 #include "LemonEngine.h"
 
-#define LOOP_SOUND -1
 #define AUDIO_DISTANCE_SCALE 1000.0
 #define AUDIO_FALLOFF_RATE 6.0
 #define ASYNC_AUDIO_CLOSED -1
@@ -244,14 +243,15 @@ void startSound(SoundInstance *sound, MIX_Audio *audio)
 
 	MIX_SetTrackStereo(sound->audio, &sound->panLevels);
 
-	MIX_SetTrackLoops(sound->audio, sound->repeats);
-
 	MIX_TagTrack(sound->audio, channelNames[sound->channel]);
 
 	if (SoundChannels[sound->channel].Pause == 0)
 	{
 		MIX_PlayTrack(sound->audio, propertiesContainer);
+		MIX_SetTrackLoops(sound->audio, sound->repeats - 1);
 	}
+
+	printf("\n%d -> %d", sound->repeats, MIX_GetTrackLoops(sound->audio));
 
 	sound->state = SOUND_PLAYING;
 
@@ -302,14 +302,14 @@ SoundInstance* RepeatSound(SoundInstance *input, int repeatTimes)
 		return NULL;
 	}
 
-	// -1 indicates to loop forever
-	if (repeatTimes < -1 || repeatTimes > 32000)
+	// 0 indicates to loop forever
+	if (repeatTimes < 0 || repeatTimes > 32000)
 	{
 		return NULL;
 	}
 
 	input->repeats = repeatTimes;
-	MIX_SetTrackLoops(input->audio, repeatTimes);
+	MIX_SetTrackLoops(input->audio, repeatTimes - 1);
 
 	return input;
 }

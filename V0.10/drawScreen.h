@@ -20,8 +20,6 @@ int renderHitbox(Camera inputCamera, PhysicsBox *inputBox, SDL_Renderer *Screen)
 
 int renderObject(Camera inputCam, Object *inputObject, SDL_Renderer *Screen);
 
-int renderObjectSprite(Camera inputCamera, Object *input, SDL_Renderer *Screen);
-
 int renderTiledSprite(SDL_Renderer *Screen, Camera inputCamera, DisplayData inputData, SDL_FRect *renderBox, TileMap *map);
 
 

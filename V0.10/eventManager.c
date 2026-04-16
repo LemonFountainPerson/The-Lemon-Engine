@@ -1399,8 +1399,8 @@ void executeCommand(char inputSource[], World *GameWorld)
 				return;
 			}
 
-			putConsoleString("Tick Started: %lld \nOn Tick end: %lld \nTimer length: %d \nTimer value: %d", 
-				timer->startTick, timer->endTick, timer->timerLength, timer->timer);
+			putConsoleString("Tick Started: %lld \nTimer length: %d \nTimer paused: %d", 
+				timer->startTick, timer->timerLength, timer->pause);
 		}
 		else if (strcmp(arg, "removecomponents") == 0)
 		{

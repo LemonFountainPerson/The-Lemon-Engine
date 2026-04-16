@@ -187,7 +187,6 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 		newObject->ParentLink = FINAL_LINK;
 		PlayObjectAnimation("Coin_Spin", 0, newObject);
 		snapPositionToTileGrid(newObject, xPos, yPos);
-		//addQuad(newObject);
 		break;
 
 	
@@ -2463,6 +2462,7 @@ int initialiseComponents(ObjectController *input)
 	initComponentType(HealthComponent);
 	initComponentType(TileMap);
 	initComponentType(Timer);
+	initComponentType(StopWatch);
 	initComponentType(PhysicsComponent);
 	initComponentType(Polygon);
 
@@ -2482,6 +2482,7 @@ int removeComponents(Object *input, ObjectController *ObjectList)
 	removeComponentType(input, HealthComponent);
 	removeComponentType(input, TileMap);
 	removeComponentType(input, Timer);
+	removeComponentType(input, StopWatch);
 	removeComponentType(input, PhysicsComponent);
 	removeComponentType(input, Polygon);
 
@@ -2553,10 +2554,21 @@ int removeComponent(Object *input, SparseList *List)
 	ComponentType *denseList = List->dense;
 	int lastIndex = List->storedComponents - 1;
 
-	if (strcmp(List->componentName, "Polygon") == 0 && denseList[denseIndex].Polygon.vertexList != NULL)
+	if (strcmp(List->componentName, "Polygon") == 0)
 	{
-		free(denseList[denseIndex].Polygon.vertexList);
-		denseList[denseIndex].Polygon.vertexList = NULL;
+		Polygon *poly = &denseList[denseIndex].Polygon;
+		
+		if (poly->vertexList != NULL)
+		{
+			free(poly->vertexList);
+			poly->vertexList = NULL;
+		}
+
+		if (poly->indicies != NULL)
+		{
+			free(poly->indicies);
+			poly->indicies = NULL;
+		}
 	}
 
 	// swap last and component to delete
@@ -2721,6 +2733,7 @@ Polygon* addPolygon(Object *input, int numOfVertices, ...)
 	newPolygon->vertexList = vertexList;
 	newPolygon->vertices = numOfVertices;
 	newPolygon->quad = false;
+	newPolygon->indicies = NULL;
 
 	return newPolygon;
 }
@@ -2730,17 +2743,28 @@ Polygon* addQuad(Object *input)
 	float x = (float)input->ObjectBox->xSize;
 	float y = (float)input->ObjectBox->ySize;
 	// add a polygon that is a box surrounding the sprite, that without modification appears identically to regular sprite rendering, albeit without rotations
-	Polygon *new = addPolygon(input, 6, 
+	Polygon *new = addPolygon(input, 4, 
 		0.0, 0.0, 0.0, 0.0,	
-		0.0, y, 0.0, 1.0,
-		x, 0.0, 1.0, 0.0,
 		0.0, y, 0.0, 1.0,
 		x, 0.0, 1.0, 0.0,
 		x, y, 1.0, 1.0);
 
-	if (new)
+	if (new != NULL)
 	{
 		new->quad = true;
+
+		if (new->indicies != NULL)
+		{
+			free(new->indicies);
+		}
+
+		new->indicies = malloc(6 * sizeof(int));
+		new->indicies[0] = 0;
+		new->indicies[1] = 1;
+		new->indicies[2] = 2;
+		new->indicies[3] = 1;
+		new->indicies[4] = 2;
+		new->indicies[5] = 3;
 	}
 
 	return new;
@@ -2761,6 +2785,7 @@ void movePolygonVertex(Object *input, int vertex, float newX, float newY)
 		return;
 	}
 
+	// kinda messy but allows you to treat the quad as a polygon with 4 points
 	if (poly->quad)
 	{
 		if (vertex > 3)
@@ -2791,6 +2816,8 @@ void movePolygonVertex(Object *input, int vertex, float newX, float newY)
 
 	poly->vertexList[vertex].position.x = newX;
 	poly->vertexList[vertex].position.y = newY;
+
+	return;
 }
 
 SDL_Vertex* getPolygonVertex(Object *input, int vertex)
@@ -2905,10 +2932,10 @@ int startTimer(int ticks, Object *input)
 		return MISSING_DATA;
 	}
 
-	newTimer->timer = ticks;
+	newTimer->pause = false;
+	newTimer->pauseTick = 0;
 	newTimer->timerLength = ticks;
 	newTimer->startTick = TickNumber();
-	newTimer->endTick = TickNumber() + ticks;
 
 	return LEMON_SUCCESS;
 }
@@ -2922,7 +2949,14 @@ bool timerExpired(Object *input)
 {
 	const Timer *timer = getComponentType(input, Timer);
 
-	if (timer == NULL || (TickNumber() - timer->startTick) >= timer->timerLength || timer->timer <= 0)
+	if (timer == NULL)
+	{
+		return true;
+	}
+
+	Uint64 current = timer->pause ? timer->pauseTick : TickNumber();
+
+	if ((current - timer->startTick) >= timer->timerLength)
 	{
 		removeComponentType(input, Timer);
 		return true;
@@ -2936,59 +2970,44 @@ Timer* getTimer(Object *input)
 	return getComponentType(input, Timer);
 }
 
-int cancelTimer(Object *input)
+int endTimer(Object *input)
 {
 	return removeComponentType(input, Timer);
 }
 
-int getTimerValue(Object *input)
+void pauseTimer(Object *input)
 {
-	Timer *timer = getTimer(input);
+	Timer *timer = getComponentType(input, Timer);
 
-	if (timer == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	return timer->timer;
-}
-
-void incrementTimer(Object *input)
-{
-	Timer *timer = getTimer(input);
-
-	if (timer == NULL)
+	if (timer == NULL || timer->pause)
 	{
 		return;
 	}
 
-	timer->timer--;
+	timer->pause = true;
+	timer->pauseTick = TickNumber();
 
-	if (timer->timer <= 0)
-	{
-		removeComponentType(input, Timer);
-	}
+	return;
 }
 
-// kind of unnecesssary as timers use a tick timestamp to determine when they expire, however it does automate their removal
-void incrementTimers()
+#define resumeTimer(x) unpauseTimer(x)
+void unpauseTimer(Object *input)
 {
-	SparseList *List = &currentComponents->Timer;
-	Object *objects = currentComponents->Objects;
-	ComponentType *denseList = List->dense;
+	Timer *timer = getComponentType(input, Timer);
 
-	for (int i = 0; i < List->storedComponents; i++)
+	if (timer == NULL || !timer->pause)
 	{
-		denseList[i].Timer.timer++;
-
-		if (denseList[i].Timer.timer > denseList[i].Timer.timerLength)
-		{
-			removeComponent(&objects[List->denseID[i]], List);
-			i--;
-		}
+		return;
 	}
+
+	timer->pause = false;
+	timer->startTick += TickNumber() - timer->pauseTick;
+
+	return;
 }
 
+
+// unused
 void pauseTimers(ComponentData *data, World *GameWorld)
 {
 	if (GameWorld->GamePaused == 0)
@@ -3005,9 +3024,84 @@ void pauseTimers(ComponentData *data, World *GameWorld)
 		if (cannotUpdateObject((&objects[List->denseID[i]])))
 		{
 			denseList[i].Timer.startTick++;
-			denseList[i].Timer.endTick++;
 		}
 	}	
+}
+
+
+int startStopWatch(Object *input)
+{
+	StopWatch *newStopWatch = addComponentType(input, StopWatch);
+
+	if (newStopWatch == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	newStopWatch->startTimeStamp = SDL_GetTicks();
+	newStopWatch->pause = false;
+	newStopWatch->pauseTimeStamp = 0;
+
+	return LEMON_SUCCESS;
+}
+
+float checkStopWatch(Object *input)
+{
+	const StopWatch *watch = getComponentType(input, StopWatch);
+
+	if (watch == NULL)
+	{
+		return 0.0;
+	}
+
+	if (watch->pause)
+	{
+		return (float)(watch->pauseTimeStamp - watch->startTimeStamp) / 1000.0;
+	}
+	else
+	{
+		return (float)(SDL_GetTicks() - watch->startTimeStamp) / 1000.0;
+	}
+}
+
+void pauseStopWatch(Object *input)
+{
+	StopWatch *watch = getComponentType(input, StopWatch);
+
+	if (watch == NULL || watch->pause)
+	{
+		return;
+	}
+
+	watch->pause = true;
+	watch->pauseTimeStamp = SDL_GetTicks();
+
+	return;
+}
+
+#define resumeStopWatch(x) unpauseStopWatch(x)
+void unpauseStopWatch(Object *input)
+{
+	StopWatch *watch = getComponentType(input, StopWatch);
+
+	if (watch == NULL || !watch->pause)
+	{
+		return;
+	}
+
+	watch->pause = false;
+	watch->startTimeStamp += SDL_GetTicks() - watch->pauseTimeStamp;
+
+	return;
+}
+
+float endStopWatch(Object *input)
+{
+	float time = checkStopWatch(input);
+
+	removeComponentType(input, StopWatch);
+
+	return time;
 }
 
 
@@ -3136,7 +3230,7 @@ int UpdateCoin(Object *coin, World *GameWorld)
 		Player->coinCount++;
 		AddParticle(GameWorld, SPARKLE, coinBox->xPos + 20 - (rand() % 40), coinBox->yPos + 20 - (rand() % 40), 1, 0);
 		MarkObjectForDeletion(coin);
-		PlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.75);
+		PlaySoundRepeat("Coin_Collect", "Objects", OBJECT_SFX, 0.75, 3);
 	}
 
 /*
@@ -3305,8 +3399,8 @@ int UpdateGateSwitch(PlayerData player, Object *gateSwitch, ObjectController *Ob
 		}
 		else
 		{
-			cancelTimer(gateSwitch);	
-			// cancel timer is somewhat redundant, basically ensures that after this point timerExpired is true, although that is never checked
+			endTimer(gateSwitch);	
+			// end timer is somewhat redundant, basically ensures that after this point timerExpired is true, although that is never checked
 		}
 
 		return LEMON_SUCCESS;

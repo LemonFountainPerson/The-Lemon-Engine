@@ -671,10 +671,20 @@ typedef struct TileMap
 typedef struct Timer
 {
 	Uint64 startTick;
-	Uint64 endTick;
-	int timerLength;
-	int timer;
+	Uint64 timerLength;
+
+	bool pause;
+	Uint64 pauseTick; 
 } Timer;
+
+typedef struct StopWatch
+{
+	Uint64 startTimeStamp;
+	bool pause;
+	Uint64 pauseTimeStamp; // when paused, the time value is (pauseTimeStamp - startTimeStamp) 
+	// when unpausing increment startTimeStamp by (currentTimeStamp - pauseTimeStamp)
+	// start: 5   paused: 23     current: 50      currentTime: 23 - 5 = 18   unpause: 5 + 50 - 23 = 5 + 27 = 32	   currentTime after unpause: 50 - 32 = 18
+} StopWatch;
 
 
 typedef struct PhysicsComponent
@@ -689,6 +699,7 @@ typedef struct Polygon
 	SDL_Vertex *vertexList;
 	int vertices;
 	bool quad;
+	int *indicies;
 } Polygon;
 
 // downside of union approach: bad with memory use, as if any large component exists, ALL component lists will increase
@@ -698,6 +709,7 @@ typedef union ComponentType
 	HealthComponent HealthComponent;
 	TileMap TileMap;
 	Timer Timer;
+	StopWatch StopWatch;
 	PhysicsComponent PhysicsComponent;
 	Polygon Polygon;
 
@@ -723,6 +735,7 @@ typedef struct ComponentData
 	SparseList HealthComponent;
 	SparseList TileMap;
 	SparseList Timer;
+	SparseList StopWatch;
 	SparseList HurtComponent;
 	SparseList PhysicsComponent;
 	SparseList Polygon;
@@ -1312,15 +1325,17 @@ typedef struct String
 
 
 //Global variables/data
-extern RenderFrame ScreenData;
+EXPORT extern RenderFrame ScreenData;
 
-extern float deltaTime;
+EXPORT extern float deltaTime;
 
-extern MouseData MouseInput;
+EXPORT extern MouseData MouseInput;
 
-extern GamePadData GamePadInput;
+EXPORT extern GamePadData GamePadInput;
 
-extern int keyboard[INPUT_COUNT];
+EXPORT extern int keyboard[INPUT_COUNT];
+
+EXPORT extern int GameFlags[GAME_FLAG_COUNT];
 
 extern EngineConfig EngineSettings;
 
@@ -1330,5 +1345,4 @@ extern TextConfig TextSettings;
 
 extern DebugConfig DebugSettings;
 
-extern int GameFlags[GAME_FLAG_COUNT];
 

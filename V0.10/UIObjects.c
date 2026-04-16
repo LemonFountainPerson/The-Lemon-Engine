@@ -339,7 +339,7 @@ int UpdateUIElement(World *GameWorld, Object *UIElement)
 			if (getTransparency(UIElement) < 0.01)
 			{
 				UIElement->Action = 1;
-				startTimerSeconds(0.5, UIElement);
+				startTimer(0.5, UIElement);
 				switchLevel(UIElement->arg2, GameWorld);
 			}
 		}

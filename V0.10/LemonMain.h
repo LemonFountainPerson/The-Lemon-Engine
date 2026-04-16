@@ -1,40 +1,40 @@
-int RunLemonEngine(void);
+EXPORT int RunLemonEngine(void);
 
-int StartUpLemonEngine(void);
+EXPORT int StartUpLemonEngine(void);
 
 int MainLoop(World *GameWorld);
 
-int CloseGame(World *GameWorld, RenderFrame *ScreenData);
+EXPORT int CloseGame(World *GameWorld, RenderFrame *ScreenData);
 
 
 FuncResult CheckResourceData(void);
 
-int initialiseWorld(World *GameWorld);
+EXPORT int initialiseWorld(World *GameWorld);
 
 int initialiseBackGround(BackgroundData *input);
 
 ObjectController* createObjectController(void);
 
-void destroyWorld(World *GameWorld);
+EXPORT void destroyWorld(World *GameWorld);
 
 
-int getExternalInput(World *GameWorld, SDL_Renderer *screen);
+EXPORT int getExternalInput(World *GameWorld, SDL_Renderer *screen);
 
-int GameTick(World *GameWorld);
+EXPORT int GameTick(World *GameWorld);
 
-int GameFrame(World *GameWorld);
+EXPORT int GameFrame(World *GameWorld);
 
-int Render(World *GameWorld, RenderFrame *ScreenData);
+EXPORT int Render(World *GameWorld, RenderFrame *ScreenData);
 
-int RenderEngine(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen);
+EXPORT int RenderEngine(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen);
 
 
-Uint64 TickNumber(void);
+EXPORT Uint64 TickNumber(void);
 
 int FPSCounter(void);
 
 
-void printCameraViewInfo(CameraView list[VIEW_COUNT]);
+void initialiseCameraViews(CameraView list[VIEW_COUNT]);
 
 CameraView* addCameraViewToList(float camX, float camY, int camWidth, int camHeight, float viewPosX, float viewPosY, float width, float height, Layer drawLayer, bool useMain, CameraView list[VIEW_COUNT]);
 
@@ -45,6 +45,8 @@ CameraView* addMainCameraView(float viewX, float viewY, float width, float heigh
 void attachCameraViewToObject(CameraView *input, Object *attach);
 
 CameraView* getCameraView(World *GameWorld, int id);
+
+void printCameraViewInfo(CameraView list[VIEW_COUNT]);
 
 void removeAllCameraViewsFromList(CameraView list[VIEW_COUNT]);
 

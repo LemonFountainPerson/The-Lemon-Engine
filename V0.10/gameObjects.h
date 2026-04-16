@@ -222,13 +222,20 @@ bool timerExpired(Object *input);
 
 Timer* getTimer(Object *input);
 
-int getTimerValue(Object *input);
-
-void incrementTimer(Object *input);
-
-void incrementTimers();
+int endTimer(Object *input);
 
 void pauseTimers(ComponentData *data, World *GameWorld);
+
+
+int startStopWatch(Object *input);
+
+float checkStopWatch(Object *input);
+
+void pauseStopWatch(Object *input);
+
+void unpauseStopWatch(Object *input);
+
+float endStopWatch(Object *input);
 
 
 FuncResult updateObjectsFrame(World *GameWorld);

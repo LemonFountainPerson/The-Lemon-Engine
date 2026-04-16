@@ -1,6 +1,5 @@
-// #include <LemonEngine/LemonEngine.h>
+#include "LemonEngine.h"
 #include "editor.h"
-
 
 SDL_Window *editorWindow = NULL;
 SDL_Renderer *editorScreen = NULL;
@@ -45,6 +44,11 @@ int main(void)
 
 int startUpLemonInstance(World *GameWorld)
 {
+	if (access("LemonEngine.dll", F_OK | R_OK) == -1)
+	{
+		return LEMON_ERROR;
+	}
+
 	if (StartUpLemonEngine() == LEMON_ERROR)
 	{
 		return LEMON_ERROR;
@@ -65,8 +69,6 @@ int startUpLemonInstance(World *GameWorld)
 		return LEMON_ERROR;
 	}
 
-	SDL_SetRenderLogicalPresentation(ScreenData.Renderer, 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED);
-
 	SDL_SetRenderTarget(ScreenData.Renderer, engineView);
 
 	if (initialiseWorld(GameWorld) != LEMON_SUCCESS)
@@ -74,8 +76,8 @@ int startUpLemonInstance(World *GameWorld)
     	return LEMON_ERROR;
     }
 
-  	GameWorld->MainCamera.width = 960;
-  	GameWorld->MainCamera.height = 720;
+  	ScreenData.screenWidth = 600;
+  	ScreenData.screenHeight = 450;
 	StartGame(GameWorld);
 
 	return LEMON_SUCCESS;

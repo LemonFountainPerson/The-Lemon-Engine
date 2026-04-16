@@ -1,4 +1,4 @@
-int StartGame(World *GameWorld);
+EXPORT int StartGame(World *GameWorld);
 
 
 int HandleGameEvents(World *GameWorld, RenderFrame *ScreenData);

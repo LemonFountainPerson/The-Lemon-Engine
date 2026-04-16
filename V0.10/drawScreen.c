@@ -393,27 +393,13 @@ int renderHitbox(Camera inputCamera, PhysicsBox *inputBox, SDL_Renderer *Screen)
 	return LEMON_SUCCESS;
 }
 
-
-int renderObject(Camera inputCam, Object *inputObject, SDL_Renderer *Screen)
+int renderObject(Camera inputCamera, Object *input, SDL_Renderer *Screen)
 {
 	if (RenderSettings.drawnObjects >= RenderSettings.maxObjects)
 	{
 		return ACTION_DISABLED;
 	}
 
-	if (renderObjectSprite(inputCam, inputObject, Screen) != LEMON_SUCCESS)
-	{
-		return EXECUTION_UNNECESSARY;
-	}
-
-	RenderSettings.drawnObjects++;
-
-	return LEMON_SUCCESS;
-}
-
-
-int renderObjectSprite(Camera inputCamera, Object *input, SDL_Renderer *Screen)
-{
 	DisplayData inputData = (*getDisplay(input));
 	PhysicsBox inputBox = (*input->ObjectBox);
 
@@ -524,7 +510,7 @@ int renderObjectSprite(Camera inputCamera, Object *input, SDL_Renderer *Screen)
 			renderPoly[i].color.a -= inputData.transparency;
 		}
 
-		SDL_RenderGeometry(Screen, spritePtr->texture, renderPoly, polygon->vertices, NULL, 0);
+		SDL_RenderGeometry(Screen, spritePtr->texture, renderPoly, polygon->vertices, polygon->indicies, 0);
 		return LEMON_SUCCESS;
 	}
 
@@ -563,6 +549,8 @@ int renderObjectSprite(Camera inputCamera, Object *input, SDL_Renderer *Screen)
 		SDL_RenderTextureRotated(Screen, spritePtr->texture, NULL, &renderBox, 0.0, NULL,flip);
 	}
 	
+	RenderSettings.drawnObjects++;
+
 	return LEMON_SUCCESS;
 }
 

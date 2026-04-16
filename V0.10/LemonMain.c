@@ -101,6 +101,234 @@ int RunLemonEngine(void)
 	return LEMON_SUCCESS;
 }
 
+int StartUpLemonEngine(void)
+{
+	putConsoleString("\nStarting up...\n");
+
+	// SDL initialisation
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))// | SDL_INIT_GAMEPAD))
+	{
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Failed to initialise SDL! \nEnsure SDL3.dll is in directory with executable.", NULL);
+		return LEMON_ERROR;
+	}
+
+	if (!TTF_Init())
+	{
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Failed to initialise TTF! \nEnsure SDL3_ttf.dll is in directory with executable.", NULL);
+		return LEMON_ERROR;
+	}
+
+	if (initialiseScreen(&ScreenData, H_RESOLUTION, V_RESOLUTION, false) != LEMON_SUCCESS)
+	{
+		return LEMON_ERROR;
+	}
+
+	if (initialiseAudio() != LEMON_SUCCESS)
+	{
+		return LEMON_ERROR;
+	}
+
+    // initialise text data to ensure pointers are null
+    DebugSettings.DebugFont = NULL;
+    initialiseFontList(&TextSettings.FontList);
+    initialiseTextList(&DebugSettings.DebugTexts);
+    initialiseTextList(&TextSettings.TextList);
+
+    SetEngineSettingsToDefault();
+	SetRenderSettingsToDefault();
+	SetTextSettingsToDefault();
+	SetDebugSettingsToDefault();
+
+	GamePadInput.gamepad = NULL;
+    ClearInput();
+
+	srand(RANDOM_SEED);
+
+	putConsoleString("Engine initialised!\n");
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int initialiseWorld(World *GameWorld)
+{
+	// Game world creation
+	memset(GameWorld, 0, sizeof(World));
+	ResetCamera(&GameWorld->MainCamera);
+    initialiseCameraViews(GameWorld->views);
+
+	GameWorld->GameState = EMPTY_GAME;
+	GameWorld->TextQueue = NULL;
+	GameWorld->CurrentCutscene = NO_CUTSCENE;
+	GameWorld->SceneActionQueue = NULL;
+
+	// Check for resource data access
+	if (CheckResourceData() == MISSING_DATA)
+	{
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Missing Data", 
+			"Missing Lemon resource data! \nPlease check that the LemonData folder is available and in the same directory as the executable.", ScreenData.Window);
+		return MISSING_DATA;
+	}
+
+	
+	// Object controller creation
+	GameWorld->ObjectList = createObjectController();
+
+	if (GameWorld->ObjectList == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	putConsoleString("Object Controller initialised!\n");
+
+
+	// Load backgrounds
+	initialiseBackGround(&GameWorld->WorldBackground);
+
+	InitialisePlayerData(&GameWorld->Player);
+	putConsoleString("Initialised Player!\n");
+
+	SetGravity(GameWorld, 1.0, 180.0);
+
+	GameWorld->PhysicsType = PLATFORMER;
+
+	putConsoleString("World Initialised!\n");
+
+	return LEMON_SUCCESS;
+}
+
+
+int CloseGame(World *GameWorld, RenderFrame *ScreenData)
+{
+	// Clear game data and cleanup
+	destroyWorld(GameWorld);
+
+	cleanUpAudioData();
+
+	cleanUpSDLRenderer(ScreenData);
+
+    SDL_Quit();
+    TTF_Quit();
+
+
+	return LEMON_SUCCESS;
+}
+
+
+// Updates 60 times per second (can be modified)
+int GameTick(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	// Input acknowledgement is delayed until the next frame by doing this so that gameFrame can use this frame's input correctly
+	keyboard[ACKNOWLEDGE_INPUT] = 1;
+
+	MasterControls(GameWorld, ScreenData.Window);
+
+	if (DebugSettings.PauseEngine == ENGINE_PAUSED)
+	{
+		return ACTION_DISABLED;
+	}
+
+	TickNum++;
+
+	CameraControl(GameWorld, &GameWorld->MainCamera);
+
+	UpdateCutscene(GameWorld);
+
+	updateObjects(GameWorld);
+
+	updateTextBoxes(GameWorld);
+
+	return LEMON_SUCCESS;
+}
+
+
+// Updates every frame
+int GameFrame(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	HandleGameEvents(GameWorld, &ScreenData);
+
+	if (DebugSettings.PauseEngine == ENGINE_PAUSED)
+	{
+		return ACTION_DISABLED;
+	}
+
+	updateObjectsFrame(GameWorld);
+
+	updateObjectDisplays(GameWorld);		// for allowing animations to happen between ticks; not being restricted to multiples/factors of gameTick amount
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int RenderEngine(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
+{
+	if (GameWorld == NULL || Screen == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (fabs(renderCamera.zoomX - 1.0) > 0.001 || fabs(renderCamera.zoomY - 1.0) > 0.001)
+	{
+		renderCamera.zoomedWidth = renderCamera.width / renderCamera.zoomX;
+		renderCamera.zoomedHeight = renderCamera.height / renderCamera.zoomY;
+	}
+	else
+	{
+		renderCamera.zoomedWidth = renderCamera.width;
+		renderCamera.zoomedHeight = renderCamera.height;
+	}
+
+	SDL_SetRenderScale(Screen, renderCamera.zoomX, renderCamera.zoomY);
+	SDL_SetRenderLogicalPresentation(Screen, renderCamera.width, renderCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
+
+	renderBackGroundSprite(renderCamera, &GameWorld->WorldBackground, Screen);
+
+	drawObjects(renderCamera, GameWorld, Screen);
+
+	if (RenderSettings.drawHitboxes == 1)
+	{
+		drawHitboxes(renderCamera, GameWorld, Screen);
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int Render(World *GameWorld, RenderFrame *ScreenData)
+{
+	if (GameWorld == NULL || ScreenData == NULL || ScreenData->Renderer == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	// main camera
+	SDL_SetRenderDrawColor(ScreenData->Renderer, 0, 0, 0, 0xFF);
+	SDL_RenderClear(ScreenData->Renderer);
+
+	RenderEngine(GameWorld->MainCamera, GameWorld, ScreenData->Renderer);
+
+    FPSCounter();
+
+	renderTexts(GameWorld->MainCamera, GameWorld, ScreenData->Renderer);
+	
+	SDL_RenderPresent(ScreenData->Renderer);
+
+	
+	return LEMON_SUCCESS;
+}
+
 
 void initialiseCameraViews(CameraView list[VIEW_COUNT])
 {
@@ -397,238 +625,6 @@ void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Render
 
 	return;
 }
-
-
-int StartUpLemonEngine(void)
-{
-	putConsoleString("\nStarting up...\n");
-
-	// SDL initialisation
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))// | SDL_INIT_GAMEPAD))
-	{
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Failed to initialise SDL! \nEnsure SDL3.dll is in directory with executable.", NULL);
-		return LEMON_ERROR;
-	}
-
-	if (!TTF_Init())
-	{
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Failed to initialise TTF! \nEnsure SDL3_ttf.dll is in directory with executable.", NULL);
-		return LEMON_ERROR;
-	}
-
-	if (initialiseScreen(&ScreenData, H_RESOLUTION, V_RESOLUTION, false) != LEMON_SUCCESS)
-	{
-		return LEMON_ERROR;
-	}
-
-	if (initialiseAudio() != LEMON_SUCCESS)
-	{
-		return LEMON_ERROR;
-	}
-
-    // initialise text data to ensure pointers are null
-    DebugSettings.DebugFont = NULL;
-    initialiseFontList(&TextSettings.FontList);
-    initialiseTextList(&DebugSettings.DebugTexts);
-    initialiseTextList(&TextSettings.TextList);
-
-    SetEngineSettingsToDefault();
-	SetRenderSettingsToDefault();
-	SetTextSettingsToDefault();
-	SetDebugSettingsToDefault();
-
-	GamePadInput.gamepad = NULL;
-    ClearInput();
-
-	srand(RANDOM_SEED);
-
-	putConsoleString("Engine initialised!\n");
-
-
-	return LEMON_SUCCESS;
-}
-
-
-int initialiseWorld(World *GameWorld)
-{
-	// Game world creation
-	memset(GameWorld, 0, sizeof(World));
-	ResetCamera(&GameWorld->MainCamera);
-    initialiseCameraViews(GameWorld->views);
-
-	GameWorld->GameState = EMPTY_GAME;
-	GameWorld->TextQueue = NULL;
-	GameWorld->CurrentCutscene = NO_CUTSCENE;
-	GameWorld->SceneActionQueue = NULL;
-
-	// Check for resource data access
-	if (CheckResourceData() == MISSING_DATA)
-	{
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Missing Data", 
-			"Missing Lemon resource data! \nPlease check that the LemonData folder is available and in the same directory as the executable.", ScreenData.Window);
-		return MISSING_DATA;
-	}
-
-	
-	// Object controller creation
-	GameWorld->ObjectList = createObjectController();
-
-	if (GameWorld->ObjectList == NULL)
-	{
-		return LEMON_ERROR;
-	}
-
-	putConsoleString("Object Controller initialised!\n");
-
-
-	// Load backgrounds
-	initialiseBackGround(&GameWorld->WorldBackground);
-
-	InitialisePlayerData(&GameWorld->Player);
-	putConsoleString("Initialised Player!\n");
-
-	SetGravity(GameWorld, 1.0, 180.0);
-
-	GameWorld->PhysicsType = PLATFORMER;
-
-	putConsoleString("World Initialised!\n");
-
-	return LEMON_SUCCESS;
-}
-
-
-int CloseGame(World *GameWorld, RenderFrame *ScreenData)
-{
-	// Clear game data and cleanup
-	destroyWorld(GameWorld);
-
-	cleanUpAudioData();
-
-	cleanUpSDLRenderer(ScreenData);
-
-    SDL_Quit();
-    TTF_Quit();
-
-
-	return LEMON_SUCCESS;
-}
-
-
-// Updates 60 times per second (can be modified)
-int GameTick(World *GameWorld)
-{
-	if (GameWorld == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	// Input acknowledgement is delayed until the next frame by doing this so that gameFrame can use this frame's input correctly
-	keyboard[ACKNOWLEDGE_INPUT] = 1;
-
-	MasterControls(GameWorld, ScreenData.Window);
-
-	if (DebugSettings.PauseEngine == ENGINE_PAUSED)
-	{
-		return ACTION_DISABLED;
-	}
-
-	TickNum++;
-
-	CameraControl(GameWorld, &GameWorld->MainCamera);
-
-	UpdateCutscene(GameWorld);
-
-	updateObjects(GameWorld);
-
-	updateTextBoxes(GameWorld);
-
-	return LEMON_SUCCESS;
-}
-
-
-// Updates every frame
-int GameFrame(World *GameWorld)
-{
-	if (GameWorld == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	HandleGameEvents(GameWorld, &ScreenData);
-
-	if (DebugSettings.PauseEngine == ENGINE_PAUSED)
-	{
-		return ACTION_DISABLED;
-	}
-
-	updateObjectsFrame(GameWorld);
-
-	updateObjectDisplays(GameWorld);		// for allowing animations to happen between ticks; not being restricted to multiples/factors of gameTick amount
-
-
-	return LEMON_SUCCESS;
-}
-
-
-int RenderEngine(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
-{
-	if (GameWorld == NULL || Screen == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	if (fabs(renderCamera.zoomX - 1.0) > 0.001 || fabs(renderCamera.zoomY - 1.0) > 0.001)
-	{
-		renderCamera.zoomedWidth = renderCamera.width / renderCamera.zoomX;
-		renderCamera.zoomedHeight = renderCamera.height / renderCamera.zoomY;
-	}
-	else
-	{
-		renderCamera.zoomedWidth = renderCamera.width;
-		renderCamera.zoomedHeight = renderCamera.height;
-	}
-
-	SDL_SetRenderScale(Screen, renderCamera.zoomX, renderCamera.zoomY);
-	SDL_SetRenderLogicalPresentation(Screen, renderCamera.width, renderCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
-
-	renderBackGroundSprite(renderCamera, &GameWorld->WorldBackground, Screen);
-
-	drawObjects(renderCamera, GameWorld, Screen);
-
-	if (RenderSettings.drawHitboxes == 1)
-	{
-		drawHitboxes(renderCamera, GameWorld, Screen);
-	}
-
-	return LEMON_SUCCESS;
-}
-
-
-int Render(World *GameWorld, RenderFrame *ScreenData)
-{
-	if (GameWorld == NULL || ScreenData == NULL || ScreenData->Renderer == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	// main camera
-	SDL_SetRenderDrawColor(ScreenData->Renderer, 0, 0, 0, 0xFF);
-	SDL_RenderClear(ScreenData->Renderer);
-
-	RenderEngine(GameWorld->MainCamera, GameWorld, ScreenData->Renderer);
-
-    FPSCounter();
-
-	renderTexts(GameWorld->MainCamera, GameWorld, ScreenData->Renderer);
-	
-	SDL_RenderPresent(ScreenData->Renderer);
-
-	
-	return LEMON_SUCCESS;
-}
-
-
-
 
 Uint64 TickNumber(void)
 {
@@ -1077,18 +1073,18 @@ void keyPressedWhen(int key, bool keyMap)
 
 void updateCustomKeys(void)
 {
-	keyPressedWhen(LMN_LEFT, keyboard['A'] || keyboard[LMN_LEFTARROW] || GamePadInput.dPadLeft);
-	keyPressedWhen(LMN_RIGHT, keyboard['D'] || keyboard[LMN_RIGHTARROW] || GamePadInput.dPadRight);
-	keyPressedWhen(LMN_UP, keyboard['W'] || keyboard[LMN_UPARROW] || GamePadInput.dPadUp);
-	keyPressedWhen(LMN_DOWN, keyboard['S'] || keyboard[LMN_DOWNARROW] || GamePadInput.dPadDown);
+	keyPressedWhen(LMN_LEFT, keyboard['A'] || keyboard[LMN_LEFTARROW] || GamePadInput.dPadLeft || (GamePadInput.leftStickX < -0.9));
+	keyPressedWhen(LMN_RIGHT, keyboard['D'] || keyboard[LMN_RIGHTARROW] || GamePadInput.dPadRight || (GamePadInput.leftStickX > 0.9));
+	keyPressedWhen(LMN_UP, keyboard['W'] || keyboard[LMN_UPARROW] || GamePadInput.dPadUp || (GamePadInput.leftStickY > 0.9));
+	keyPressedWhen(LMN_DOWN, keyboard['S'] || keyboard[LMN_DOWNARROW] || GamePadInput.dPadDown || (GamePadInput.leftStickY < -0.9));
 
 	keyPressedWhen(LMN_JUMP, keyboard[LMN_SPACE] || GamePadInput.southButton);
 	keyPressedWhen(LMN_INTERACT, keyboard['E'] || keyboard['Z'] || GamePadInput.westButton);
 	keyPressedWhen(LMN_INTERACT2, keyboard['Q'] || keyboard['X'] || GamePadInput.northButton);
 	keyPressedWhen(LMN_INTERACT3, keyboard['R'] || keyboard['C'] || GamePadInput.eastButton);
 
-	keyPressedWhen(LMN_TEXT_CONFIRM, keyboard[LMN_INTERACT] || keyboard[LMN_ENTER] || GamePadInput.westButton);
 	keyPressedWhen(LMN_TEXT_SKIP, keyboard[LMN_INTERACT2] || keyboard[LMN_SPACE] || MouseInput.RightButton || GamePadInput.eastButton);
+	keyPressedWhen(LMN_TEXT_CONFIRM, keyboard[LMN_INTERACT] || keyboard[LMN_ENTER] || GamePadInput.westButton);
 	keyPressedWhen(LMN_MENU_CONFIRM, keyboard[LMN_INTERACT] || keyboard[LMN_ENTER] || GamePadInput.westButton);
 
 	return;
@@ -1330,6 +1326,8 @@ int getGamepadInput(SDL_GamepadButtonEvent *event)
 int updateGamepadAxis(SDL_GamepadAxisEvent *event)
 {
 	float value = fClamp(((float)event->value) / 32767.0, -1.0, 1.0);
+
+	putConsoleStringTS("Axis event with value %d -> %f", event->value, value);
 
 	switch(event->axis)
 	{
