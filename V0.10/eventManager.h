@@ -145,6 +145,8 @@ int ConsoleCommand_Cutscene(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_Load(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
+int ConsoleCommand_DebugText(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
 int ConsoleCommand_Pause(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_SetPos(char input[USER_INPUT_MAX_LEN], World *GameWorld);
@@ -155,7 +157,9 @@ int ConsoleCommand_SetCamZoom(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_SetTickRate(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
-int ConsoleCommand_DebugText(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+int ConsoleCommand_Save(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+int ConsoleCommand_SetGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_Help(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 

@@ -6,6 +6,8 @@ int loadSave(int saveFile, int flags[GAME_FLAG_COUNT], World *GameWorld);
 
 int loadSettings(int settingsFile, World *GameWorld);
 
+int saveGame(World *GameWorld);
+
 int loadSaveData(const char *fileName, int flags[GAME_FLAG_COUNT], World *GameWorld);
 
 int loadLevelData(World *GameWorld, FILE *fPtr);
@@ -22,9 +24,13 @@ int loadObjectIndices(Object *input, ObjectController *ObjectList, FILE *file);
 
 int checkFileHeader(FILE *fPtr, const char FileType[]);
 
-void closeFile(FILE *file);
+FILE* encodeLEMFile(FILE *file);
+
+FILE* decodeLEMFile(FILE *file);
 
 FILE* openFile(const char fileName[], const char rootPath[], const char header[]);
+
+void closeFile(FILE *file);
 
 int getCurrentLineNumber(FILE *fPtr);
 

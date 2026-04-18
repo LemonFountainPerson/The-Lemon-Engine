@@ -107,10 +107,46 @@ int loadSettings(int settingsFile, World *GameWorld)
 	return loadSaveData(fileName, NULL, GameWorld);
 }
 
+#define SAVE_FILE_HEADER "--SAVE_DATA--"
+int saveGame(World *GameWorld)
+{
+	char path[MAX_LEN * 2] = SAVEDATA_ROOT;
+	strcat(path, "SaveFile0.txt");
+	FILE *fPtr = fopen(path, "wb+");
+
+	if (fPtr == NULL)
+	{
+		return INVALID_DATA;
+	}
+
+	// write header
+	fwrite(LEMON_VERSION, sizeof(char), strlen(LEMON_VERSION), fPtr);
+	fwrite("\n", sizeof(char), 1, fPtr);
+	fwrite(SAVE_FILE_HEADER, sizeof(char), strlen(SAVE_FILE_HEADER), fPtr);
+	fwrite("\n", sizeof(char), 1, fPtr);
+
+	char buffer[MAX_LEN] = {0};
+
+	fwrite("GameFlags: {", sizeof(char), 12, fPtr);
+	for (int i = 0; i < GAME_FLAG_COUNT; i++)
+	{
+		snprintf(buffer, MAX_LEN, "\n%d", GameFlags[i]);
+		fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+	}
+	fwrite(" }\n", sizeof(char), 3, fPtr);
+
+	fwrite("ENDFILE", sizeof(char), 7, fPtr);
+
+	encodeLEMFile(fPtr);
+
+	fclose(fPtr);
+
+	return LEMON_SUCCESS;
+}
 
 int loadSaveData(const char *fileName, int flags[GAME_FLAG_COUNT], World *GameWorld)
 {
-	FILE *fPtr = openFile(fileName, SAVEDATA_ROOT, "--SAVE_DATA--");
+	FILE *fPtr = openFile(fileName, SAVEDATA_ROOT, SAVE_FILE_HEADER);
 
 	if (fPtr == NULL)
 	{
@@ -756,7 +792,7 @@ int checkFileHeader(FILE *fPtr, const char FileType[])
 
 	if (DEBUG_MODE)
 	{
-		readData = getNextArg(fPtr, charBuffer, 32);
+		readData = getNextArg(fPtr, charBuffer, strlen(LEMON_VERSION) + 20);
 		return LEMON_SUCCESS;
 	}
 
@@ -827,15 +863,6 @@ FILE* decodeLEMFile(FILE *file)
 	return file;
 }
 
-
-void closeFile(FILE *file)
-{
-    if (file)
-    {
-        fclose(file);
-    }
-}
-
 FILE* openFile(const char fileName[], const char rootPath[], const char header[])
 {
 	if (rootPath == NULL || fileName == NULL || header == NULL)
@@ -884,6 +911,14 @@ FILE* openFile(const char fileName[], const char rootPath[], const char header[]
 	}
 
 	return fPtr;
+}
+
+void closeFile(FILE *file)
+{
+    if (file)
+    {
+        fclose(file);
+    }
 }
 
 

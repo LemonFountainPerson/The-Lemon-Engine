@@ -44,7 +44,7 @@
 
 #define RANDOM_SEED time(NULL)
 
-#define GAME_FLAG_COUNT 100  
+#define GAME_FLAG_COUNT 64  
 
 #define MAX_OBJECTS 5000
 #define OBJECT_NAME_LENGTH 24

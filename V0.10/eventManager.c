@@ -1338,6 +1338,10 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 		"[spriteset/audio/...] - load some data type into the engine to be used later", 
 		ConsoleCommand_Load);
 
+	NEWCOMMAND("debugtext", 
+		"[info/...] - show info on debug text or manipulate them", 
+		ConsoleCommand_DebugText);
+
 	NEWCOMMAND("pause", 
 		"- toggle engine pause state", 
 		ConsoleCommand_Pause);
@@ -1350,13 +1354,17 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 		"- set the main camera X and Y position", 
 		ConsoleCommand_SetCamPos);
 
-	NEWCOMMAND("setcampos", 
+	NEWCOMMAND("setcamzoom", 
 		"- set the main camera X and Y zoom, default: 1.0, 1.0", 
 		ConsoleCommand_SetCamZoom);
 
-	NEWCOMMAND("debugtext", 
-		"[info/...] - show info on debug text or manipulate them", 
-		ConsoleCommand_DebugText);
+	NEWCOMMAND("settickrate", 
+		"- set a new tickrate (GameTicks per second)", 
+		ConsoleCommand_SetTickRate);
+
+	NEWCOMMAND("save", "- save the game", ConsoleCommand_Save);
+
+	NEWCOMMAND("setgameflag", "- set a gameflag to a new value", ConsoleCommand_SetGameFlag);
 
 	NEWCOMMAND("help", 
 		"[command] - see information on a specific command or just type 'help' to see all help info", 
@@ -2111,6 +2119,28 @@ int ConsoleCommand_SetTickRate(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int rate = parseArgumentAsInt(input);
 	setTickRate(rate);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_Save(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	saveGame(GameWorld);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_SetGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	int index = parseArgumentAsInt(input);
+	int newValue = parseArgumentAsInt(input);
+
+	if (index < 0 || index >= GAME_FLAG_COUNT)
+	{
+		return INVALID_DATA;
+	}
+
+	GameFlags[index] = newValue;
 
 	return LEMON_SUCCESS;
 }
