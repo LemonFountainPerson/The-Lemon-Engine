@@ -127,6 +127,9 @@ int saveGame(World *GameWorld)
 
 	char buffer[MAX_LEN] = {0};
 
+	snprintf(buffer, MAX_LEN, "Level: %d\n", GameWorld->level);
+	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+
 	fwrite("GameFlags: {", sizeof(char), 12, fPtr);
 	for (int i = 0; i < GAME_FLAG_COUNT; i++)
 	{

@@ -1130,6 +1130,9 @@ void executeCommand(char inputSource[], World *GameWorld)
 			return;	
 		}
 	}
+
+	putConsoleString("'%s' command unrecognised", arg);
+	return;
 }
 
 
@@ -1363,6 +1366,8 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 		ConsoleCommand_SetTickRate);
 
 	NEWCOMMAND("save", "- save the game", ConsoleCommand_Save);
+
+	NEWCOMMAND("loadsave", "[SAVEID] - load a save file", ConsoleCommand_LoadSave);
 
 	NEWCOMMAND("setgameflag", "- set a gameflag to a new value", ConsoleCommand_SetGameFlag);
 
@@ -2126,6 +2131,14 @@ int ConsoleCommand_SetTickRate(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 int ConsoleCommand_Save(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	saveGame(GameWorld);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_LoadSave(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	int save = parseArgumentAsInt(input);
+	loadSave(save, GameFlags, GameWorld);
 
 	return LEMON_SUCCESS;
 }

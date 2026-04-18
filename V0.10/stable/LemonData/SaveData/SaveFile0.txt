@@ -1,7 +1,8 @@
 V0.10
 --SAVE_DATA--
+Level: 1
 GameFlags: {
-3
+0
 0
 0
 0
