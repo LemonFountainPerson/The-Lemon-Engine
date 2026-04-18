@@ -100,6 +100,28 @@ void addTypedCommand(const char input[]);
 
 Object* parseArgumentToFindObject(const char input[USER_INPUT_MAX_LEN], ObjectController *ObjectList);
 
+void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS]);
+
 void displayObjectInfoConsole(Object *input);
+
+
+int usedMemoryConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+int objectConsoleCommands(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+int eventConsoleCommands(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+int listInfoConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+int camvViewConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+int soundConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+int cutsceneConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+int loadConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+int helpConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
 
 void renderConsole(World *GameWorld, SDL_Renderer *Screen);

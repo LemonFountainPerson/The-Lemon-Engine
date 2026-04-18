@@ -133,6 +133,7 @@ int StartUpLemonEngine(void)
     initialiseFontList(&TextSettings.FontList);
     initialiseTextList(&DebugSettings.DebugTexts);
     initialiseTextList(&TextSettings.TextList);
+    createConsoleCommands(DebugSettings.commands);
 
     SetEngineSettingsToDefault();
 	SetRenderSettingsToDefault();

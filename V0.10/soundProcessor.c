@@ -78,7 +78,7 @@ SoundInstance* PlaySound(const char fileName[], const char folderName[], Channel
 		// data hasn't been loaded yet; schedule it
 		while (!SDL_TryLockMutex(scheduleLock)) {}
 
-		if (scheduledSounds == ASYNC_AUDIO_CLOSED && !PERMANENT_ASYNC_AUDIO_LOADER)
+		if (scheduledSounds == ASYNC_AUDIO_CLOSED)
 		{
 			scheduledSounds = 1;
 			SDL_DetachThread(SDL_CreateThread(&asyncAudioLoad, "Audio Loader", NULL));
@@ -250,8 +250,6 @@ void startSound(SoundInstance *sound, MIX_Audio *audio)
 		MIX_PlayTrack(sound->audio, propertiesContainer);
 		MIX_SetTrackLoops(sound->audio, sound->repeats - 1);
 	}
-
-	printf("\n%d -> %d", sound->repeats, MIX_GetTrackLoops(sound->audio));
 
 	sound->state = SOUND_PLAYING;
 
@@ -516,7 +514,7 @@ int asyncAudioLoad(void *data)
 	}
 
 	int count = 1;
-	while(closeAllThreads == false && (count > 0 || PERMANENT_ASYNC_AUDIO_LOADER))
+	while(closeAllThreads == false && count > 0)
 	{
 		// attempt to find/load the data
 		for (int channel = 0; channel < CHANNEL_COUNT; channel++)
@@ -553,13 +551,6 @@ int asyncAudioLoad(void *data)
 				sound = sound->nextSound;
 			}
 		}
-
-		// unnecessary to start timer if this thread is permanent
-		if (PERMANENT_ASYNC_AUDIO_LOADER)
-		{
-			continue;
-		}
-
 
 		// if none left, begin timer to close thread
 		Uint64 start = SDL_GetTicks();
@@ -974,10 +965,6 @@ int initialiseAudio(void)
 	    scheduleLock = SDL_CreateMutex();
 	    threadLock = SDL_CreateMutex();
 	    closeAllThreads = false;
-	    if (PERMANENT_ASYNC_AUDIO_LOADER)
-	    {
-	    	SDL_DetachThread(SDL_CreateThread(&asyncAudioLoad, "Audio Loader", NULL));
-	    }
 	}
 
 	return LEMON_SUCCESS;

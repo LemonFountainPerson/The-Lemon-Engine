@@ -129,9 +129,6 @@ process for a noticable amount of time.
    -  Asynchronous sound loading can be disabled altogether by setting 'ASYNC_AUDIO_LOADER' to false in config.h.
    -  'ASYNC_AUDIO_SIZE_THRESHOLD' controls the minimum size the audio file must be in bytes for it to be loaded asynchronously. This is to avoid unnecessary overhead when 
       loading very small sound files. 
-   -  This seperate thread can either be a permanent one running in the background or a temporary one only created when its needed, depending on the 
-      'ASYNC_AUDIO_LOADER_PERMANENT' constant defined in config.h. When not permanent, the thread will close itself when a certain amount of miliseconds have passed with 
-      no data to load, definable with 'ASYNC_AUDIO_LOADER_PERSIST_MS'.
   
 
 

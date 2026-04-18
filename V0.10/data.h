@@ -953,6 +953,15 @@ typedef struct InputHistory
 } InputHistory;
 
 
+typedef int (*ConsoleCommandFunction)(char *, World *);
+
+typedef struct ConsoleCommand
+{
+	char name[MAX_LEN];
+	char helpString[HELP_STRING_MAX];
+	ConsoleCommandFunction function;
+} ConsoleCommand;
+
 typedef struct Camera 
 {
 	float CameraX;
@@ -1288,6 +1297,7 @@ typedef struct DebugConfig
 	int scrollVal;
 	bool TypingInConsole;
 	bool consoleFocus;
+	ConsoleCommand commands[MAX_CONSOLE_COMMANDS];
 
 	char userInputString[USER_INPUT_MAX_LEN];
 	InputHistory userInputHistory;

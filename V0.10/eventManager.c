@@ -1105,6 +1105,7 @@ void executeCommand(char inputSource[], World *GameWorld)
 	DebugSettings.scrollVal = 0;
 
 	putConsoleString("> %s", input);
+	addInputHistory(input, &DebugSettings.userInputHistory);
 
 	if (GameWorld == NULL || GameWorld->ObjectList == NULL)
 	{
@@ -1113,10 +1114,25 @@ void executeCommand(char inputSource[], World *GameWorld)
 
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	DebugSettings.argIndex = 0;
-	ObjectController *ObjectList = GameWorld->ObjectList;
-
+	
 	parseArgument(input, arg);
 	stringToLower(arg);
+
+	for (int i = 0; i < MAX_CONSOLE_COMMANDS; i++)
+	{
+		if (strcmp(DebugSettings.commands[i].name, arg) == 0)
+		{
+			if (DebugSettings.commands[i].function(input, GameWorld) != LEMON_SUCCESS)
+			{
+				goto Command_Unrecognised;
+			}
+			else
+			{
+				return;
+			}
+		}
+	}
+
 
 	if (strcmp(arg, "loadlevel") == 0 || strcmp(arg, "level") == 0)
 	{
@@ -1212,222 +1228,16 @@ void executeCommand(char inputSource[], World *GameWorld)
 
 		switchBackGroundSprite(ID, set, &GameWorld->WorldBackground);
 	}
-	else if (strcmp(arg, "load") == 0)
+	else if (strcmp(arg, "createobject") == 0 || strcmp(arg, "addobject") == 0)
 	{
-		parseArgument(input, arg);
-
-		if (strcmp(arg, "spriteset") == 0)
+		int ID = parseArgumentAsInt(input);
+		int args[7] = {0};
+		for (int i = 0; i < 7; i++)
 		{
-			int ID = parseArgumentAsInt(input);
-
-			createNewSpriteSet(&ObjectList->spriteSets, ID);
-		}
-		else
-		{
-			goto Command_Unrecognised;
-		}
-	}
-	else if (strcmp(arg, "sound") == 0 || strcmp(arg, "snd") == 0)
-	{
-		parseArgument(input, arg);
-
-		if (strcmp(arg, "play") == 0)
-		{
-			char name[USER_INPUT_MAX_LEN] = {0};
-			char folder[USER_INPUT_MAX_LEN] = {0};
-			parseArgument(input, name);
-			parseArgument(input, folder);
-			float volume = parseArgumentAsFloat(input);
-			ChannelName channel = parseArgumentAsInt(input);
-
-			PlaySound(name, strcmp(folder, "NULL") ? folder : NULL, channel, volume);
-		}
-		else
-		{
-			goto Command_Unrecognised;
-		}
-	}
-	else if (strcmp(arg, "list") == 0 || strcmp(arg, "listinfo") == 0)
-	{
-		parseArgument(input, arg);
-
-		if (strcmp(arg, "object") == 0 || strcmp(arg, "objects") == 0)
-		{
-			Object *cursor = ObjectList->firstObject;
-
-			while (cursor != NULL)
-			{
-				putConsoleString("%s - Index: %d  ID: %d (%s)  State: %d (%s)", 
-					cursor->name, cursor->index, cursor->ObjectID, getObjectIDName(cursor->ObjectID), cursor->State, getObjectStateName(cursor->State));
-				cursor = cursor->nextObject;
-			}
-		}
-		else if (strcmp(arg, "text") == 0)
-		{
-			printTextsinfo(&TextSettings.TextList, "TextList");
-		}
-		else if (strcmp(arg, "fonts") == 0)
-		{
-			FontList *list = &TextSettings.FontList;
-
-			for (int i = 0; i < MAX_LOADED_FONTS; i++)
-			{
-				if (list->font[i] != NULL)
-				{
-					putConsoleString("Slot %d '%s'  ", i, list->name[i]);
-				}
-				else
-				{
-					putConsoleString("Slot %d (Empty)", i);
-				}
-			}
-		}
-		else if (strcmp(arg, "debugtext") == 0)
-		{
-			printTextsinfo(&DebugSettings.DebugTexts, "Debug Textlist");
-		}
-		else if (strcmp(arg, "spritesets") == 0)
-		{
-			SpriteSet *set = ObjectList->spriteSets.start;
-			putConsoleString("Spritesets loaded:");
-
-			while (set != NULL)
-			{
-				putConsoleString("Spriteset: %d ->", set->setID);
-				set = set->nextSet;
-			}
-
-			putConsoleString("End of list");
-		}
-		else if (strcmp(arg, "camviews") == 0 || strcmp(arg, "cameraviews") == 0)
-		{
-			printCameraViewInfo(GameWorld->views);
-		}
-		else if (strcmp(arg, "layers") == 0)
-		{
-			for (int i = BACKGROUND; i < LAYER_COUNT; i++)
-			{
-				putConsoleString("%d: %s", i, getLayerName(i));
-			}
-		}
-		else
-		{
-			goto Command_Unrecognised;
-		}
-	}
-	else if (strcmp(arg, "object") == 0 || strcmp(arg, "obj") == 0)
-	{
-		parseArgument(input, arg);
-
-		Object *object = parseArgumentToFindObject(input, ObjectList);
-		if (object == NULL)
-		{
-			return;
+			args[i] = parseArgumentAsInt(input);
 		}
 
-		char flag[USER_INPUT_MAX_LEN] = {0};
-		parseArgumentFlag(input, flag);
-
-		if (strcmp(arg, "info") == 0)
-		{
-			displayObjectInfoConsole(object);
-		}
-		else if (strcmp(arg, "setpos") == 0)
-		{
-			float x = parseArgumentAsFloat(input);
-			float y = parseArgumentAsFloat(input);
-
-			if (strcmp(flag, "-snaptogrid") == 0 || strcmp(flag, "-grid") == 0)
-			{
-				snapPositionToTileGrid(object, x, y);
-			}
-			else
-			{
-				GoTo(object, x, y);
-			}
-		}
-		else if (strcmp(arg, "setname") == 0)
-		{
-			parseArgument(input, arg);
-			setObjectName(object, arg);
-		}
-		else if (strcmp(arg, "polygon") == 0)
-		{
-			Polygon *poly = getPolygon(object);
-
-			if (poly == NULL)
-			{
-				putConsoleString("'%s' has no polygon component", object->name);
-				return;
-			}
-
-			if (poly->quad)
-			{
-				putConsoleString("Num of vertices: %d\nQuad polygon: Yes", poly->vertices);
-			}
-			else
-			{
-				putConsoleString("Num of vertices: %d\nQuad polygon: No", poly->vertices);
-			}
-		}
-		else if (strcmp(arg, "physics") == 0)
-		{
-			PhysicsComponent *phys = getPhysicsComponent(object);
-
-			if (phys == NULL)
-			{
-				putConsoleString("'%s' has no physics component", object->name);
-				return;
-			}
-
-			if (phys->gravity)
-			{
-				putConsoleString("Gravity: enabled");
-			}
-			else
-			{
-				putConsoleString("Gravity: disabled");
-			}
-		}
-		else if (strcmp(arg, "timer") == 0)
-		{
-			Timer *timer = getTimer(object);
-
-			if (timer == NULL)
-			{
-				putConsoleString("'%s' has no timer component", object->name);
-				return;
-			}
-
-			putConsoleString("Tick Started: %lld \nTimer length: %d \nTimer paused: %d", 
-				timer->startTick, timer->timerLength, timer->pause);
-		}
-		else if (strcmp(arg, "removecomponents") == 0)
-		{
-			removeComponents(object, ObjectList);
-		}
-		else
-		{
-			goto Command_Unrecognised;
-		}
-		
-	}
-	else if (strcmp(arg, "create") == 0 || strcmp(arg, "add") == 0)
-	{
-		parseArgument(input, arg);
-
-		if (strcmp(arg, "object") == 0 || strcmp(arg, "obj") == 0)
-		{
-			int ID = parseArgumentAsInt(input);
-			int args[7] = {0};
-			for (int i = 0; i < 7; i++)
-			{
-				args[i] = parseArgumentAsInt(input);
-			}
-
-			AddObject(GameWorld, ID, args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
-		}
-		
+		AddObject(GameWorld, ID, args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
 	}
 	else if (strcmp(arg, "vsync") == 0) 
 	{
@@ -1443,257 +1253,6 @@ void executeCommand(char inputSource[], World *GameWorld)
 		GameWorld->MainCamera.zoomX += parseArgumentAsFloat(input);
 		GameWorld->MainCamera.zoomY += parseArgumentAsFloat(input);
 	}
-	else if (strcmp(arg, "test") == 0) 
-	{
-		addCameraView(3000.0, 250.0, 1000, 750, 1000.0, 100.0, 600.0, 338.0, BACKGROUND, GameWorld);
-		AddParticle(GameWorld, STATIC, 3000.0, 250.0, LOOP_INDEFINITELY, 0);
-	}
-	else if (strcmp(arg, "camview") == 0 || strcmp(arg, "cameraview") == 0)
-	{
-		parseArgument(input, arg);
-		
-		if (strcmp(arg, "clear") == 0)
-		{
-			removeAllCameraViews(GameWorld);
-		}
-		else if (strcmp(arg, "add") == 0)
-		{
-			char flag[USER_INPUT_MAX_LEN] = {0};
-			parseArgumentFlag(input, flag);
-
-			float camX = parseArgumentAsFloat(input);
-			float camY = parseArgumentAsFloat(input);				
-
-			float screenX = parseArgumentAsFloat(input);
-			float screenY = parseArgumentAsFloat(input);
-			float width = parseArgumentAsFloat(input);
-			float height = parseArgumentAsFloat(input);
-			Layer layer = parseArgumentAsInt(input);
-
-			if (strcmp(flag, "-main") != 0)
-			{
-				addMainCameraView(screenX, screenY, width, height, layer, GameWorld);
-			}
-			else
-			{
-				addCameraView(camX, camY, GameWorld->MainCamera.width, GameWorld->MainCamera.height, screenX, screenY, width, height, layer, GameWorld);
-			}
-		}
-		else if (strcmp(arg, "attach") == 0)
-		{
-			int index = parseArgumentAsInt(input);
-			Object *attach = parseArgumentToFindObject(input, ObjectList);
-			
-			if (attach == NULL)
-			{
-				return;
-			}
-
-			attachCameraViewToObject(getCameraView(GameWorld, index), attach);
-		}
-		else if (strcmp(arg, "setrefresh") == 0)
-		{
-			int index = parseArgumentAsInt(input);
-			CameraView *camView = getCameraView(GameWorld, index);
-
-			if (camView == NULL)
-			{
-				return;
-			}
-
-			camView->ticksUntilRefresh = parseArgumentAsInt(input);
-		}
-		else
-		{
-			goto Command_Unrecognised;
-		}
-	}
-	else if (strcmp(arg, "event") == 0)
-	{
-		parseArgument(input, arg);
-
-		if (strcmp(arg, "changescreensize") == 0 || strcmp(arg, "setscreensize") == 0)
-		{
-			int width = parseArgumentAsInt(input);
-			int height = parseArgumentAsInt(input);
-			changeScreenSize(width, height, GameWorld);
-		}
-		else if (strcmp(arg, "changescreensizescaled") == 0)
-		{
-			int width = parseArgumentAsInt(input);
-			int height = parseArgumentAsInt(input);
-			changeScreenSizeScaled(width, height, GameWorld);
-		}
-		else if (strcmp(arg, "disablefullscreen") == 0 || strcmp(arg, "nofullscreen") == 0)
-		{
-			disableFullscreen(GameWorld);
-		}
-		else if (strcmp(arg, "enablefullscreen") == 0 || strcmp(arg, "fullscreen") == 0)
-		{
-			enableFullscreen(GameWorld);
-		}
-		else if (strcmp(arg, "enablefullscreenscaled") == 0 || strcmp(arg, "fullscreenscaled") == 0)
-		{
-			enableFullscreenScaled(GameWorld);
-		}
-		else if (strcmp(arg, "switchlevel") == 0)
-		{
-			int level = parseArgumentAsInt(input);
-			switchLevel(level, GameWorld);
-		}
-		else if (strcmp(arg, "playcutscene") == 0)
-		{
-			int scene = parseArgumentAsInt(input);
-			playCutscene(scene, GameWorld);
-		}
-		else if (strcmp(arg, "playcutscenefromfile") == 0)
-		{
-			parseArgument(input, arg);
-			playCutsceneFromFile(arg, GameWorld);
-		}
-		else if (strcmp(arg, "deleteenv") == 0 || strcmp(arg, "deleteenvironment") == 0)
-		{
-			scheduleEnvironmentDeletion(GameWorld);
-		}
-		else if (strcmp(arg, "streampart") == 0 || strcmp(arg, "streampartition") == 0)
-		{
-			int partID = parseArgumentAsInt(input);
-			streamPartition(partID, GameWorld);
-		}
-		else
-		{
-			goto Command_Unrecognised;
-		}
-		
-	}
-	else if (strcmp(arg, "cutscene") == 0 || strcmp(arg, "cscene") == 0)
-	{
-		parseArgument(input, arg);
-
-		if (strcmp(arg, "play") == 0 || strcmp(arg, "start") == 0)
-		{
-			parseArgument(input, arg);
-
-			if (inRange(arg[0], '0', '9'))
-			{
-				initialiseCutscene(atoi(arg), GameWorld);
-			}
-			else
-			{
-				initialiseCutsceneFromFile(arg, GameWorld);
-			}
-		}
-		else
-		{
-			goto Command_Unrecognised;
-		}
-		
-	}
-	else if (strcmp(arg, "usedmemory") == 0 || strcmp(arg, "usedmem") == 0)
-	{
-		parseArgument(input, arg);
-		double total = 0.0;
-
-		if (strcmp(arg, "text") == 0)
-		{
-			total = (double)sizeof(TextSettings) / 1000.0;
-		}
-		else if (strcmp(arg, "debug") == 0)
-		{
-			total = (double)sizeof(DebugSettings) / 1000.0;
-		}
-		else if (strcmp(arg, "world") == 0 || strcmp(arg, "gameworld") == 0)
-		{
-			total = (double)sizeof(World) / 1000.0;
-		}
-		else if (strcmp(arg, "objlist") == 0 || strcmp(arg, "objectlist") == 0)
-		{
-			total = (double)sizeof(ObjectController) / 1000.0;
-		}
-		else if (strcmp(arg, "components") == 0 || strcmp(arg, "comps") == 0)
-		{
-			total = (double)sizeof(ComponentData) / 1000.0;
-			double objectSize = (double)sizeof(ObjectList->objectComponents.Objects) / 1000.0;
-			double boxSize = (double)sizeof(ObjectList->objectComponents.PhysicsBoxes) / 1000.0;
-			double displaySize = (double)sizeof(ObjectList->objectComponents.Displays) / 1000.0;
-
-			putConsoleString("\nObjects: %.2fkb \nPhysicsBoxes: %.2fkb \nDisplayDatas: %.2fkb \nComponents: %.2fkb", 
-				objectSize, boxSize, displaySize, total - objectSize - displaySize - boxSize);
-		}
-		else if (strcmp(arg, "objects") == 0)
-		{
-			total = (double)sizeof(ObjectList->objectComponents.Objects) / 1000.0;
-		}
-		else if (strcmp(arg, "displays") == 0)
-		{
-			total = (double)sizeof(ObjectList->objectComponents.Displays) / 1000.0;
-		}
-		else if (strcmp(arg, "physboxes") == 0 || strcmp(arg, "physicsboxes") == 0)
-		{
-			total = (double)sizeof(ObjectList->objectComponents.PhysicsBoxes) / 1000.0;
-		}
-		else if (strcmp(arg, "animations") == 0)
-		{
-			SpriteSet *set = ObjectList->spriteSets.start;
-			int setCount = 0;
-			int animCount = 0;
-			int frameCount = 0;
-			int spriteCount = 0;
-			double textureData = 0;
-
-			float width = 0;
-			float height = 0;
-
-			if (EngineSettings.DefaultTexture != NULL)
-			{
-				spriteCount++;
-				SDL_GetTextureSize(EngineSettings.DefaultTexture->texture, &width, &height);
-				textureData += width * height;
-			}
-
-			while (set != NULL)
-			{
-				Animation *anim = set->Animations;
-				while (anim != NULL)
-				{
-					AnimationFrame *frame = anim->animationData;
-
-					while (frame != NULL)
-					{
-						frame = frame->nextFrame;
-						frameCount++;
-					}
-
-					anim = anim->nextAnimation;
-					animCount++;
-				}
-
-				Sprite *sprite = set->firstSprite;
-				while (sprite != NULL)
-				{
-					SDL_GetTextureSize(sprite->texture, &width, &height);
-					textureData += width * height;
-					sprite = sprite->nextSprite;
-					spriteCount++;
-				}
-
-
-				set = set->nextSet;
-				setCount++;
-			}
-
-			putConsoleString("Spritesets: %d  Animations: %d  AnimationFrames: %d  Sprites: %d \nTexture data estimate: %.2lfkb", 
-				setCount, animCount, frameCount, spriteCount, textureData / 1000.0);
-			total = (double)((sizeof(SpriteSet) * setCount) + (sizeof(Animation) * animCount) + (sizeof(AnimationFrame) * frameCount) + (sizeof(Sprite) * spriteCount)) + textureData;
-			total /= 1000.0;
-		}
-		else
-		{
-			goto Command_Unrecognised;
-		}
-		
-		putConsoleString("Total used: %.2lfkb", total);
-	}
 	else if (strcmp(arg, "debugtext") == 0 || strcmp(arg, "tt2") == 0)
 	{
 		parseArgument(input, arg);
@@ -1706,12 +1265,6 @@ void executeCommand(char inputSource[], World *GameWorld)
 		{
 			goto Command_Unrecognised;
 		}
-	}
-	else if (strcmp(arg, "help") == 0)
-	{
-		putConsoleString("quit  -  Close the game \nversion  -  see Version info \nswitchLevel/level [ID/name]  -  switch the level using an ID or a name");
-		putConsoleString("tick  -  show the current tick rate \ntickRate [val]  -  set a new tickRate (per second) \ndebug [val]  -  set the debug mode");
-		putConsoleString("pause - toggle the engine pause state \nusedmem_[something]  -  See how much memory is being consumed by some data");
 	}
 	else if (strcmp(arg, "quit") == 0 || strcmp(arg, "closegame") == 0)
 	{
@@ -1731,9 +1284,6 @@ void executeCommand(char inputSource[], World *GameWorld)
 		putConsoleString("'%s' command unrecognised", arg);
 		return;
 	}
-
-
-	addInputHistory(input, &DebugSettings.userInputHistory);
 }
 
 
@@ -1834,6 +1384,621 @@ bool parseBooleanCommand(const char input[USER_INPUT_MAX_LEN])
 	{
 		return false;
 	}
+}
+
+
+
+Object* parseArgumentToFindObject(const char input[USER_INPUT_MAX_LEN], ObjectController *ObjectList)
+{
+	char buffer[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, buffer);
+
+	if (inRange(buffer[0], '0', '9'))
+	{
+		int index = atoi(buffer);
+
+		if (index >= MAX_OBJECTS)
+		{
+			putConsoleString("'%d' index out of bounds. Valid range 0 <-> %d", index, MAX_OBJECTS - 1);
+			return NULL;
+		}
+
+		return &ObjectList->objectComponents.Objects[index];
+	}
+	else
+	{
+		Object *object = FindObject(buffer, ObjectList);
+		if (object == NULL)
+		{
+			putConsoleString("Cannot find '%s' from objectlist.", buffer);
+		}
+
+		return object;
+	}
+}
+
+#define NEWCOMMAND(x, y, z) strcpy(commandList[i].name, x); strcpy(commandList[i].helpString, y); commandList[i].function = &z; i++;
+
+void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
+{
+	memset(commandList, 0, MAX_CONSOLE_COMMANDS * sizeof(ConsoleCommand));
+
+	int i = 0;
+
+	NEWCOMMAND("list", 
+		"list [objects/text/fonts/spritesets/...] - lists current instances of requested data", 
+		listInfoConsoleCommand);
+
+	NEWCOMMAND("object", 
+		"object [INDEX/NAME] [info/setpos/setname/...] - perform various actions on a specific object, identified by either their index number or name", 
+		objectConsoleCommands);
+
+	NEWCOMMAND("usedmemory", 
+		"usedmemory [objects/animations/text/...] - check how much memory in kilobytes is being currently used by the engine for specific data", 
+		usedMemoryConsoleCommand);
+
+	NEWCOMMAND("event", 
+		"event [setscreensize/enablefullscreen/switchlevel/...] - trigger a specific GameEvent", 
+		eventConsoleCommands);
+
+	NEWCOMMAND("camview", 
+		"camview [add/clear/attach/...] - add or modify camera views in the gameworld", 
+		eventConsoleCommands);
+
+	NEWCOMMAND("sound", 
+		"sound [play/...] - play or modify sounds", 
+		soundConsoleCommand);
+
+	NEWCOMMAND("cutscene", 
+		"cutscene [play/start/...] - play or manipulate cutscenes", 
+		cutsceneConsoleCommand);
+
+	NEWCOMMAND("load", 
+		"load [spriteset/audio/...] - load some data type into the engine to be used later", 
+		loadConsoleCommand);
+
+	NEWCOMMAND("help", 
+		"help [command] - see information on a specific command or just type help to see all help info", 
+		helpConsoleCommand);
+
+
+	return;
+}
+
+void displayObjectInfoConsole(Object *input)
+{
+	if (input == NULL)
+	{
+		return;
+	}
+
+	putConsoleString("\nObject Information: \nName: '%s'\nID: %d (%s)", input->name, input->ObjectID, getObjectIDName(input->ObjectID));
+	putConsoleString("Index: %d \nCurrent State: %d (%s)", input->index, input->State, getObjectStateName(input->State));
+
+	if (input->Parent == NULL)
+	{
+		putConsoleString("Parent: \n    None");
+	}
+	else
+	{
+		Object *parent = input->Parent;
+		putConsoleString("Parent: \n    Name: %s \n    ID: %d (%s)", parent->name, parent->ObjectID, getObjectIDName(parent->ObjectID));
+		putConsoleString("    Index: %d \n    Current State: %d (%s)", parent->index, parent->State, getObjectStateName(parent->State));
+	}
+
+	Layer objLayer = getDisplayLayer(input);
+	putConsoleString("XPos: %f  YPos: %f \nLayer: %d (%s)", input->ObjectBox->xPos, input->ObjectBox->yPos, objLayer, getLayerName(objLayer));
+}
+
+int usedMemoryConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	ObjectController *ObjectList = GameWorld->ObjectList;
+	char arg[USER_INPUT_MAX_LEN] = {0};
+
+	parseArgument(input, arg);
+	double total = 0.0;
+
+	if (strcmp(arg, "text") == 0)
+	{
+		total = (double)sizeof(TextSettings) / 1000.0;
+	}
+	else if (strcmp(arg, "debug") == 0)
+	{
+		total = (double)sizeof(DebugSettings) / 1000.0;
+	}
+	else if (strcmp(arg, "world") == 0 || strcmp(arg, "gameworld") == 0)
+	{
+		total = (double)sizeof(World) / 1000.0;
+	}
+	else if (strcmp(arg, "objlist") == 0 || strcmp(arg, "objectlist") == 0)
+	{
+		total = (double)sizeof(ObjectController) / 1000.0;
+	}
+	else if (strcmp(arg, "components") == 0 || strcmp(arg, "comps") == 0)
+	{
+		total = (double)sizeof(ComponentData) / 1000.0;
+	}
+	else if (strcmp(arg, "objects") == 0)
+	{
+		total = (double)sizeof(ObjectList->objectComponents.Objects) / 1000.0;
+	}
+	else if (strcmp(arg, "displays") == 0)
+	{
+		total = (double)sizeof(ObjectList->objectComponents.Displays) / 1000.0;
+	}
+	else if (strcmp(arg, "physboxes") == 0 || strcmp(arg, "physicsboxes") == 0)
+	{
+		total = (double)sizeof(ObjectList->objectComponents.PhysicsBoxes) / 1000.0;
+	}
+	else if (strcmp(arg, "animations") == 0)
+	{
+		SpriteSet *set = ObjectList->spriteSets.start;
+		int setCount = 0;
+		int animCount = 0;
+		int frameCount = 0;
+		int spriteCount = 0;
+		double textureData = 0;
+
+		float width = 0;
+		float height = 0;
+
+		if (EngineSettings.DefaultTexture != NULL)
+		{
+			spriteCount++;
+			SDL_GetTextureSize(EngineSettings.DefaultTexture->texture, &width, &height);
+			textureData += width * height;
+		}
+
+		while (set != NULL)
+		{
+			Animation *anim = set->Animations;
+			while (anim != NULL)
+			{
+				AnimationFrame *frame = anim->animationData;
+
+				while (frame != NULL)
+				{
+					frame = frame->nextFrame;
+					frameCount++;
+				}
+
+				anim = anim->nextAnimation;
+				animCount++;
+			}
+
+			Sprite *sprite = set->firstSprite;
+			while (sprite != NULL)
+			{
+				SDL_GetTextureSize(sprite->texture, &width, &height);
+				textureData += width * height;
+				sprite = sprite->nextSprite;
+				spriteCount++;
+			}
+
+
+			set = set->nextSet;
+			setCount++;
+		}
+
+		putConsoleString("Spritesets: %d  Animations: %d  AnimationFrames: %d  Sprites: %d \nTexture data estimate: %.2lfkb", 
+			setCount, animCount, frameCount, spriteCount, textureData / 1000.0);
+		total = (double)((sizeof(SpriteSet) * setCount) + (sizeof(Animation) * animCount) + (sizeof(AnimationFrame) * frameCount) + (sizeof(Sprite) * spriteCount)) + textureData;
+		total /= 1000.0;
+	}
+	else
+	{
+		return INVALID_DATA;
+	}
+	
+	putConsoleString("Total used: %.2lfkb", total);
+
+	return LEMON_SUCCESS;
+}
+
+int objectConsoleCommands(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	ObjectController *ObjectList = GameWorld->ObjectList;
+	char arg[USER_INPUT_MAX_LEN] = {0};
+
+	parseArgument(input, arg);
+
+	Object *object = parseArgumentToFindObject(input, ObjectList);
+	if (object == NULL)
+	{
+		return INVALID_DATA;
+	}
+
+	char flag[USER_INPUT_MAX_LEN] = {0};
+	parseArgumentFlag(input, flag);
+
+	if (strcmp(arg, "info") == 0)
+	{
+		displayObjectInfoConsole(object);
+	}
+	else if (strcmp(arg, "setpos") == 0)
+	{
+		float x = parseArgumentAsFloat(input);
+		float y = parseArgumentAsFloat(input);
+
+		if (strcmp(flag, "-snaptogrid") == 0 || strcmp(flag, "-grid") == 0)
+		{
+			snapPositionToTileGrid(object, x, y);
+		}
+		else
+		{
+			GoTo(object, x, y);
+		}
+	}
+	else if (strcmp(arg, "setname") == 0)
+	{
+		parseArgument(input, arg);
+		setObjectName(object, arg);
+	}
+	else if (strcmp(arg, "polygon") == 0)
+	{
+		Polygon *poly = getPolygon(object);
+
+		if (poly == NULL)
+		{
+			putConsoleString("'%s' has no polygon component", object->name);
+			return LEMON_SUCCESS;
+		}
+
+		if (poly->quad)
+		{
+			putConsoleString("Num of vertices: %d\nQuad polygon: Yes", poly->vertices);
+		}
+		else
+		{
+			putConsoleString("Num of vertices: %d\nQuad polygon: No", poly->vertices);
+		}
+	}
+	else if (strcmp(arg, "physics") == 0)
+	{
+		PhysicsComponent *phys = getPhysicsComponent(object);
+
+		if (phys == NULL)
+		{
+			putConsoleString("'%s' has no physics component", object->name);
+			return LEMON_SUCCESS;
+		}
+
+		if (phys->gravity)
+		{
+			putConsoleString("Gravity: enabled");
+		}
+		else
+		{
+			putConsoleString("Gravity: disabled");
+		}
+	}
+	else if (strcmp(arg, "timer") == 0)
+	{
+		Timer *timer = getTimer(object);
+
+		if (timer == NULL)
+		{
+			putConsoleString("'%s' has no timer component", object->name);
+			return LEMON_SUCCESS;
+		}
+
+		putConsoleString("Tick Started: %lld \nTimer length: %d \nTimer paused: %d", 
+			timer->startTick, timer->timerLength, timer->pause);
+	}
+	else if (strcmp(arg, "removecomponents") == 0)
+	{
+		removeComponents(object, ObjectList);
+	}
+	else if (strcmp(arg, "delete") == 0)
+	{
+		object->State = TO_BE_DELETED;
+	}
+	else
+	{
+		return INVALID_DATA;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+int eventConsoleCommands(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	char arg[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, arg);
+
+	if (strcmp(arg, "changescreensize") == 0 || strcmp(arg, "setscreensize") == 0)
+	{
+		int width = parseArgumentAsInt(input);
+		int height = parseArgumentAsInt(input);
+		changeScreenSize(width, height, GameWorld);
+	}
+	else if (strcmp(arg, "changescreensizescaled") == 0)
+	{
+		int width = parseArgumentAsInt(input);
+		int height = parseArgumentAsInt(input);
+		changeScreenSizeScaled(width, height, GameWorld);
+	}
+	else if (strcmp(arg, "disablefullscreen") == 0 || strcmp(arg, "nofullscreen") == 0)
+	{
+		disableFullscreen(GameWorld);
+	}
+	else if (strcmp(arg, "enablefullscreen") == 0 || strcmp(arg, "fullscreen") == 0)
+	{
+		enableFullscreen(GameWorld);
+	}
+	else if (strcmp(arg, "enablefullscreenscaled") == 0 || strcmp(arg, "fullscreenscaled") == 0)
+	{
+		enableFullscreenScaled(GameWorld);
+	}
+	else if (strcmp(arg, "switchlevel") == 0)
+	{
+		int level = parseArgumentAsInt(input);
+		switchLevel(level, GameWorld);
+	}
+	else if (strcmp(arg, "playcutscene") == 0)
+	{
+		int scene = parseArgumentAsInt(input);
+		playCutscene(scene, GameWorld);
+	}
+	else if (strcmp(arg, "playcutscenefromfile") == 0)
+	{
+		parseArgument(input, arg);
+		playCutsceneFromFile(arg, GameWorld);
+	}
+	else if (strcmp(arg, "deleteenv") == 0 || strcmp(arg, "deleteenvironment") == 0)
+	{
+		scheduleEnvironmentDeletion(GameWorld);
+	}
+	else if (strcmp(arg, "streampart") == 0 || strcmp(arg, "streampartition") == 0)
+	{
+		int partID = parseArgumentAsInt(input);
+		streamPartition(partID, GameWorld);
+	}
+	else
+	{
+		return INVALID_DATA;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+int listInfoConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	ObjectController *ObjectList = GameWorld->ObjectList;
+	char arg[USER_INPUT_MAX_LEN] = {0};
+
+	parseArgument(input, arg);
+
+	if (strcmp(arg, "object") == 0 || strcmp(arg, "objects") == 0)
+	{
+		Object *cursor = ObjectList->firstObject;
+
+		while (cursor != NULL)
+		{
+			putConsoleString("%s - Index: %d  ID: %d (%s)  State: %d (%s)", 
+				cursor->name, cursor->index, cursor->ObjectID, getObjectIDName(cursor->ObjectID), cursor->State, getObjectStateName(cursor->State));
+			cursor = cursor->nextObject;
+		}
+	}
+	else if (strcmp(arg, "text") == 0)
+	{
+		printTextsinfo(&TextSettings.TextList, "TextList");
+	}
+	else if (strcmp(arg, "fonts") == 0)
+	{
+		FontList *list = &TextSettings.FontList;
+
+		for (int i = 0; i < MAX_LOADED_FONTS; i++)
+		{
+			if (list->font[i] != NULL)
+			{
+				putConsoleString("Slot %d '%s'  ", i, list->name[i]);
+			}
+			else
+			{
+				putConsoleString("Slot %d (Empty)", i);
+			}
+		}
+	}
+	else if (strcmp(arg, "debugtext") == 0)
+	{
+		printTextsinfo(&DebugSettings.DebugTexts, "Debug Textlist");
+	}
+	else if (strcmp(arg, "spritesets") == 0)
+	{
+		SpriteSet *set = ObjectList->spriteSets.start;
+		putConsoleString("Spritesets loaded:");
+
+		while (set != NULL)
+		{
+			putConsoleString("Spriteset: %d ->", set->setID);
+			set = set->nextSet;
+		}
+
+		putConsoleString("End of list");
+	}
+	else if (strcmp(arg, "camviews") == 0 || strcmp(arg, "cameraviews") == 0)
+	{
+		printCameraViewInfo(GameWorld->views);
+	}
+	else if (strcmp(arg, "layers") == 0)
+	{
+		for (int i = BACKGROUND; i < LAYER_COUNT; i++)
+		{
+			putConsoleString("%d: %s", i, getLayerName(i));
+		}
+	}
+	else
+	{
+		return INVALID_DATA;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+int camvViewConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	char arg[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, arg);
+		
+	if (strcmp(arg, "clear") == 0)
+	{
+		removeAllCameraViews(GameWorld);
+	}
+	else if (strcmp(arg, "add") == 0)
+	{
+		char flag[USER_INPUT_MAX_LEN] = {0};
+		parseArgumentFlag(input, flag);
+
+		float camX = parseArgumentAsFloat(input);
+		float camY = parseArgumentAsFloat(input);				
+
+		float screenX = parseArgumentAsFloat(input);
+		float screenY = parseArgumentAsFloat(input);
+		float width = parseArgumentAsFloat(input);
+		float height = parseArgumentAsFloat(input);
+		Layer layer = parseArgumentAsInt(input);
+
+		if (strcmp(flag, "-main") != 0)
+		{
+			addMainCameraView(screenX, screenY, width, height, layer, GameWorld);
+		}
+		else
+		{
+			addCameraView(camX, camY, GameWorld->MainCamera.width, GameWorld->MainCamera.height, screenX, screenY, width, height, layer, GameWorld);
+		}
+	}
+	else if (strcmp(arg, "attach") == 0)
+	{
+		int index = parseArgumentAsInt(input);
+		Object *attach = parseArgumentToFindObject(input, GameWorld->ObjectList);
+		
+		if (attach == NULL)
+		{
+			return INVALID_DATA;
+		}
+
+		attachCameraViewToObject(getCameraView(GameWorld, index), attach);
+	}
+	else if (strcmp(arg, "setrefresh") == 0)
+	{
+		int index = parseArgumentAsInt(input);
+		CameraView *camView = getCameraView(GameWorld, index);
+
+		if (camView == NULL)
+		{
+			return INVALID_DATA;
+		}
+
+		camView->ticksUntilRefresh = parseArgumentAsInt(input);
+	}
+	else
+	{
+		return INVALID_DATA;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+int soundConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	char arg[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, arg);
+
+	if (strcmp(arg, "play") == 0)
+	{
+		char name[USER_INPUT_MAX_LEN] = {0};
+		char folder[USER_INPUT_MAX_LEN] = {0};
+		parseArgument(input, name);
+		parseArgument(input, folder);
+		float volume = parseArgumentAsFloat(input);
+		ChannelName channel = parseArgumentAsInt(input);
+
+		PlaySound(name, strcmp(folder, "NULL") ? folder : NULL, channel, volume);
+	}
+	else
+	{
+		return INVALID_DATA;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+int cutsceneConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	char arg[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, arg);
+
+	if (strcmp(arg, "play") == 0 || strcmp(arg, "start") == 0)
+	{
+		parseArgument(input, arg);
+
+		if (inRange(arg[0], '0', '9'))
+		{
+			initialiseCutscene(atoi(arg), GameWorld);
+		}
+		else
+		{
+			initialiseCutsceneFromFile(arg, GameWorld);
+		}
+	}
+	else
+	{
+		return INVALID_DATA;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+int loadConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	char arg[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, arg);
+
+	if (strcmp(arg, "spriteset") == 0)
+	{
+		int ID = parseArgumentAsInt(input);
+
+		createNewSpriteSet(&GameWorld->ObjectList->spriteSets, ID);
+	}
+	else if (strcmp(arg, "audio") == 0)
+	{
+		parseArgument(input, arg);
+		char folder[USER_INPUT_MAX_LEN] = {0};
+
+		parseArgument(input, folder);
+
+		loadAudio(arg, folder);
+	}
+	else
+	{
+		return INVALID_DATA;
+	}
+
+		return LEMON_SUCCESS;
+}
+
+int helpConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	char arg[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, arg);
+
+	// find matching command to print help string for
+	for (int i = 0; i < MAX_CONSOLE_COMMANDS; i++)
+	{
+		// if arg is empty; print all help strings
+		if (strcmp(DebugSettings.commands[i].name, arg) == 0 || arg[0] == '\0')
+		{
+			putConsoleString(DebugSettings.commands[i].helpString);
+
+			if (arg[0] != '\0')
+			{
+				return LEMON_SUCCESS;
+			}
+		}
+	}
+
+	return LEMON_SUCCESS;
 }
 
 
@@ -1997,60 +2162,6 @@ void addTypedCommand(const char input[])
 	DebugSettings.cursorXPos = getCursorPos();
 }
 
-Object* parseArgumentToFindObject(const char input[USER_INPUT_MAX_LEN], ObjectController *ObjectList)
-{
-	char buffer[USER_INPUT_MAX_LEN] = {0};
-	parseArgument(input, buffer);
-
-	if (inRange(buffer[0], '0', '9'))
-	{
-		int index = atoi(buffer);
-
-		if (index >= MAX_OBJECTS)
-		{
-			putConsoleString("'%d' index out of bounds. Valid range 0 <-> %d", index, MAX_OBJECTS - 1);
-			return NULL;
-		}
-
-		return &ObjectList->objectComponents.Objects[index];
-	}
-	else
-	{
-		Object *object = FindObject(buffer, ObjectList);
-		if (object == NULL)
-		{
-			putConsoleString("Cannot find '%s' from objectlist.", buffer);
-		}
-
-		return object;
-	}
-}
-
-void displayObjectInfoConsole(Object *input)
-{
-	if (input == NULL)
-	{
-		return;
-	}
-
-	putConsoleString("\nObject Information: \nName: '%s'\nID: %d (%s)", input->name, input->ObjectID, getObjectIDName(input->ObjectID));
-	putConsoleString("Index: %d \nCurrent State: %d (%s)", input->index, input->State, getObjectStateName(input->State));
-
-	if (input->Parent == NULL)
-	{
-		putConsoleString("Parent: \n    None");
-	}
-	else
-	{
-		Object *parent = input->Parent;
-		putConsoleString("Parent: \n    Name: %s \n    ID: %d (%s)", parent->name, parent->ObjectID, getObjectIDName(parent->ObjectID));
-		putConsoleString("    Index: %d \n    Current State: %d (%s)", parent->index, parent->State, getObjectStateName(parent->State));
-	}
-
-	Layer objLayer = getDisplayLayer(input);
-	putConsoleString("XPos: %f  YPos: %f \nLayer: %d (%s)", input->ObjectBox->xPos, input->ObjectBox->yPos, objLayer, getLayerName(objLayer));
-
-}
 
 void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 {

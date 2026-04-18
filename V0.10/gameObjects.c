@@ -3230,7 +3230,7 @@ int UpdateCoin(Object *coin, World *GameWorld)
 		Player->coinCount++;
 		AddParticle(GameWorld, SPARKLE, coinBox->xPos + 20 - (rand() % 40), coinBox->yPos + 20 - (rand() % 40), 1, 0);
 		MarkObjectForDeletion(coin);
-		PlaySoundRepeat("Coin_Collect", "Objects", OBJECT_SFX, 0.75, 3);
+		PlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.75);
 	}
 
 /*
