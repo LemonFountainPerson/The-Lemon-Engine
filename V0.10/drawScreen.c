@@ -18,11 +18,6 @@ int drawPlayerHitboxes(Camera inputCamera, World *gameWorld, SDL_Renderer *Scree
 		return MISSING_DATA;
 	}
 
-	if (RenderSettings.drawPlayer == 0)
-	{
-		return ACTION_DISABLED;
-	}
-
 	PlayerData *player = &gameWorld->Player;
 
 	renderHitbox(inputCamera, &player->InteractBox, Screen);
@@ -182,14 +177,12 @@ int drawObjects(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 		return MISSING_DATA;
 	}
 
-	if (RenderSettings.drawSprites == 0)
+	if (RenderSettings.drawSprites == false)
 	{
 		return ACTION_DISABLED;
 	}
 
 	RenderSettings.drawnObjects = 0;
-	RenderSettings.drawnParticles = 0;
-	RenderSettings.drawnHudElements = 0;
 
 	inputCamera.CameraX += (float)((inputCamera.width - inputCamera.zoomedWidth) >> 1);
 	inputCamera.CameraY += (float)((inputCamera.zoomedHeight - inputCamera.height) >> 1);
@@ -216,7 +209,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 		
 		if (drawLayer == HUD)
 		{
-			if (RenderSettings.drawHUD == 0)
+			if (RenderSettings.drawHUD == false)
 			{
 				continue;
 			}
@@ -246,12 +239,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 		}
 		else
 		{
-			if (drawLayer == PARTICLES && RenderSettings.drawParticles == 0)
-			{
-				continue;
-			}
-
-			if (drawLayer != PARTICLES && RenderSettings.drawObjects == 0)
+			if (drawLayer == PARTICLES && RenderSettings.drawParticles == false)
 			{
 				continue;
 			}
@@ -284,7 +272,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 
 void drawHitboxes(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 {
-	if (Screen == NULL || RenderSettings.drawHitboxes == 0)
+	if (Screen == NULL || RenderSettings.drawHitboxes == false)
 	{
 		return;
 	}
@@ -749,7 +737,7 @@ int renderBackGroundSprite(Camera inputCamera, BackgroundData *WorldBackground, 
 		bgRenderMode = WorldBackground->BackgroundSpriteBuffer->RenderMode;
 	}
 
-	if (RenderSettings.drawBackGround == 0)
+	if (RenderSettings.drawBackGround == false)
 	{
 		return ACTION_DISABLED;
 	}

@@ -497,14 +497,14 @@ void removeAllCameraViews(World *GameWorld)
 
 void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Renderer *Screen, Layer drawLayer)
 {
-	if (RenderSettings.drawCamViews == 0)
+	if (RenderSettings.drawCamViews == false)
 	{
 		return;
 	}
 
-	int prevHUD = RenderSettings.drawHUD;
-	RenderSettings.drawHUD = 0;
-	RenderSettings.drawCamViews = 0;
+	bool prevHUD = RenderSettings.drawHUD;
+	RenderSettings.drawHUD = false;
+	RenderSettings.drawCamViews = false;
 
 	SDL_SetRenderDrawColor(Screen, 0x00, 0x00, 0x00, 0xFF);
 
@@ -622,7 +622,7 @@ void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Render
 	}
 
 	RenderSettings.drawHUD = prevHUD;
-	RenderSettings.drawCamViews = 1;
+	RenderSettings.drawCamViews = true;
 
 	return;
 }
@@ -1081,12 +1081,12 @@ void updateCustomKeys(void)
 
 	keyPressedWhen(LMN_JUMP, keyboard[LMN_SPACE] || GamePadInput.southButton);
 	keyPressedWhen(LMN_INTERACT, keyboard['E'] || keyboard['Z'] || GamePadInput.westButton);
-	keyPressedWhen(LMN_INTERACT2, keyboard['Q'] || keyboard['X'] || GamePadInput.northButton);
-	keyPressedWhen(LMN_INTERACT3, keyboard['R'] || keyboard['C'] || GamePadInput.eastButton);
+	keyPressedWhen(LMN_INTERACT2, keyboard['Q'] || keyboard['X'] || GamePadInput.eastButton);
+	keyPressedWhen(LMN_INTERACT3, keyboard['R'] || keyboard['C'] || GamePadInput.northButton);
 
-	keyPressedWhen(LMN_TEXT_SKIP, keyboard[LMN_INTERACT2] || keyboard[LMN_SPACE] || MouseInput.RightButton || GamePadInput.eastButton);
-	keyPressedWhen(LMN_TEXT_CONFIRM, keyboard[LMN_INTERACT] || keyboard[LMN_ENTER] || GamePadInput.westButton);
-	keyPressedWhen(LMN_MENU_CONFIRM, keyboard[LMN_INTERACT] || keyboard[LMN_ENTER] || GamePadInput.westButton);
+	keyPressedWhen(LMN_TEXT_SKIP, keyboard[LMN_INTERACT2] || MouseInput.RightButton || keyboard[LMN_LSHIFT]);
+	keyPressedWhen(LMN_TEXT_CONFIRM, keyboard[LMN_INTERACT] || MouseInput.LeftButton || keyboard[LMN_ENTER]);
+	keyPressedWhen(LMN_MENU_CONFIRM, keyboard[LMN_INTERACT] || keyboard[LMN_ENTER]);
 
 	return;
 }
@@ -1713,24 +1713,6 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 		}
 	}
 
-	if (keyboard['8'] == 1)
-	{
-    	RenderSettings.drawSprites = (RenderSettings.drawSprites + 1) % 2;
-    	putConsoleString("\nToggling draw Sprites: %d", RenderSettings.drawSprites);
-	}
-
-	if (keyboard['9'] == 1)
-	{
-		RenderSettings.drawBackGround = (RenderSettings.drawBackGround + 1) % 2;
-		putConsoleString("\nToggling draw background: %d", RenderSettings.drawBackGround);
-	}
-
-	if (keyboard['0'] == 1)
-	{
-		RenderSettings.drawHitboxes = (RenderSettings.drawHitboxes + 1) % 2;
-		putConsoleString("\nToggling draw hitboxes: %d", RenderSettings.drawHitboxes);
-	}
-
 	if (keyboard[LMN_UPARROW] == 1 && RenderSettings.drawHitboxes == 1)
 	{ 
 		RenderSettings.HitboxOutlineThickness++;
@@ -1940,15 +1922,13 @@ void SetEngineSettingsToDefault(void)
 
 void SetRenderSettingsToDefault(void)
 {
-	RenderSettings.drawSprites = 1;
-	RenderSettings.drawBackGround = 1;
-	RenderSettings.drawObjects = 1;
-	RenderSettings.drawParticles = 1;
-	RenderSettings.drawHUD = 1;
-	RenderSettings.drawPlayer = 1;
-	RenderSettings.drawCamViews = 1;
+	RenderSettings.drawSprites = true;
+	RenderSettings.drawBackGround = true;
+	RenderSettings.drawParticles = true;
+	RenderSettings.drawHUD = true;
+	RenderSettings.drawCamViews = true;
 
-	RenderSettings.drawHitboxes = 0;
+	RenderSettings.drawHitboxes = false;
 	RenderSettings.HitboxOutlineThickness = 4;
 
 	RenderSettings.maxObjects = MAX_OBJECTS_RENDER;
@@ -1956,8 +1936,6 @@ void SetRenderSettingsToDefault(void)
 	RenderSettings.maxUIElements = MAX_HUD_ELEMENTS_RENDER;
 
 	RenderSettings.drawnObjects = 0;
-	RenderSettings.drawnParticles = 0;
-	RenderSettings.drawnHudElements = 0;
 
 	RenderSettings.RendersPerSecond = 0;
 	RenderSettings.RenderDelta = 1;

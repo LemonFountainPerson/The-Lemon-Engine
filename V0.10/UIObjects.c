@@ -464,7 +464,7 @@ bool MenuControl(Object *MenuController, World *GameWorld)
 	}
 
 
-	if (keyboard[LMN_MENU_CONFIRM] == 1 || MenuController->Action == MOUSECLICK_INTERRUPT)
+	if ((keyboard[LMN_MENU_CONFIRM] == 1 && MouseInput.LeftButton != 1) || MenuController->Action == MOUSECLICK_INTERRUPT)
 	{
 		AcknowledgeHeldButtons();
 		MenuController->Action = IDLE;
@@ -1542,7 +1542,6 @@ int handleOptionPrompt(TextBox *inputText, World *GameWorld)
 			{
 				optionData->SelectedOption = clamp(i, 0, optionData->numberOfOptions - 1);
 				i = optionData->numberOfOptions;
-				selectOption = buttonPressed(MOUSE_LEFT);
 			}
 
 			i++;

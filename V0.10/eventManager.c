@@ -1114,7 +1114,7 @@ void executeCommand(char inputSource[], World *GameWorld)
 
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	DebugSettings.argIndex = 0;
-	
+
 	parseArgument(input, arg);
 	stringToLower(arg);
 
@@ -1124,165 +1124,11 @@ void executeCommand(char inputSource[], World *GameWorld)
 		{
 			if (DebugSettings.commands[i].function(input, GameWorld) != LEMON_SUCCESS)
 			{
-				goto Command_Unrecognised;
+				putConsoleString("'%s' command unrecognised", arg);
 			}
-			else
-			{
-				return;
-			}
+		
+			return;	
 		}
-	}
-
-
-	if (strcmp(arg, "loadlevel") == 0 || strcmp(arg, "level") == 0)
-	{
-		int level = parseArgumentAsInt(input);
-		switchLevel(level, GameWorld);
-	}
-	else if (strcmp(arg, "currentlevel") == 0 || strcmp(arg, "getcurrentlevel") == 0)
-	{
-		putConsoleString("Current level ID: %d", GameWorld->level);
-	}
-	else if (strcmp(arg, "tickrate") == 0 || strcmp(arg, "settickrate") == 0)
-	{
-		int rate = parseArgumentAsInt(input);
-		setTickRate(rate);
-	}
-	else if (strcmp(arg, "tick") == 0)
-	{
-		putConsoleStringTS("Tickrate: %d", EngineSettings.GameTicksPerSecond);
-	}
-	else if (strcmp(arg, "pause") == 0)
-	{
-		DebugSettings.PauseEngine = (DebugSettings.PauseEngine + 1) % 2;
-
-		if (DebugSettings.PauseEngine == 1)
-		{
-			putConsoleStringTS("Engine is now paused.");
-		}
-		else
-		{
-			putConsoleStringTS("Engine is now unpaused.");
-		}
-	}
-	else if (strcmp(arg, "hitboxes") == 0 || strcmp(arg, "drawhitboxes") == 0)
-	{
-		RenderSettings.drawHitboxes = parseArgumentAsInt(input);
-	}
-	else if (strcmp(arg, "drawsprites") == 0)
-	{
-		RenderSettings.drawSprites = parseArgumentAsInt(input);
-	}
-	else if (strcmp(arg, "drawbackground") == 0)
-	{
-		RenderSettings.drawBackGround = parseArgumentAsInt(input);
-	}
-	else if (strcmp(arg, "fps") == 0)
-	{
-		DebugSettings.FPSCounter = parseBooleanCommand(input);
-	}
-	else if (strcmp(arg, "hitboxoutline") == 0 || strcmp(arg, "hitboxborder") == 0)
-	{
-		RenderSettings.HitboxOutlineThickness = parseArgumentAsInt(input);
-	}
-	else if (strcmp(arg, "setpos") == 0 || strcmp(arg, "setplayerpos") == 0)
-	{
-		float x = parseArgumentAsFloat(input);
-		float y = parseArgumentAsFloat(input);
-
-		GoTo(GameWorld->Player.PlayerPtr, x, y);
-	}
-	else if (strcmp(arg, "setcampos") == 0 || strcmp(arg, "setcamerapos") == 0)
-	{
-		float x = parseArgumentAsFloat(input);
-		float y = parseArgumentAsFloat(input);
-
-		setCameraPos(&GameWorld->MainCamera, x, y);
-	}
-	else if (strcmp(arg, "debug") == 0)
-	{
-		DebugSettings.DebugTextDisplayMode = parseArgumentAsInt(input);
-	}
-	else if (strcmp(arg, "showevents") == 0)
-	{
-		DebugSettings.showEvents = parseBooleanCommand(input);
-	}
-	else if (strcmp(arg, "showsceneactions") == 0)
-	{
-		DebugSettings.showSceneActions = parseBooleanCommand(input);
-	}
-	else if (strcmp(arg, "showspritesets") == 0)
-	{
-		DebugSettings.showSpriteset = parseBooleanCommand(input);
-	}
-	else if (strcmp(arg, "gamestateoverride") == 0 && DEBUG_MODE)
-	{
-		int ID = parseArgumentAsInt(input);
-
-		GameWorld->GameState = ID;
-	}
-	else if (strcmp(arg, "background") == 0 || strcmp(arg, "bg") == 0)
-	{
-		int ID = parseArgumentAsInt(input);
-		int set = parseArgumentAsInt(input);
-
-		switchBackGroundSprite(ID, set, &GameWorld->WorldBackground);
-	}
-	else if (strcmp(arg, "createobject") == 0 || strcmp(arg, "addobject") == 0)
-	{
-		int ID = parseArgumentAsInt(input);
-		int args[7] = {0};
-		for (int i = 0; i < 7; i++)
-		{
-			args[i] = parseArgumentAsInt(input);
-		}
-
-		AddObject(GameWorld, ID, args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
-	}
-	else if (strcmp(arg, "vsync") == 0) 
-	{
-		setVsync(parseBooleanCommand(input));
-	}
-	else if (strcmp(arg, "setcamzoom") == 0 || strcmp(arg, "setcamerazoom") == 0)
-	{
-		GameWorld->MainCamera.zoomX = parseArgumentAsFloat(input);
-		GameWorld->MainCamera.zoomY = parseArgumentAsFloat(input);
-	}
-	else if (strcmp(arg, "changecamzoom") == 0 || strcmp(arg, "changecamerazoom") == 0)
-	{
-		GameWorld->MainCamera.zoomX += parseArgumentAsFloat(input);
-		GameWorld->MainCamera.zoomY += parseArgumentAsFloat(input);
-	}
-	else if (strcmp(arg, "debugtext") == 0 || strcmp(arg, "tt2") == 0)
-	{
-		parseArgument(input, arg);
-
-		if (strcmp(arg, "info") == 0)
-		{
-			printTextsinfo(&DebugSettings.DebugTexts, "TextList");
-		}
-		else 
-		{
-			goto Command_Unrecognised;
-		}
-	}
-	else if (strcmp(arg, "quit") == 0 || strcmp(arg, "closegame") == 0)
-	{
-		GameWorld->GameState = CLOSE_GAME;
-	}
-	else if (strcmp(arg, "version") == 0)
-	{
-		putConsoleString("\n%s\n%s\nFile Reader: %s", LEMON_ENGINE_INFO, LEMON_VERSION, FILE_READER_VERSION);
-		if (DEBUG_MODE)
-		{
-			putConsoleString("Running in Debug mode");
-		}
-	}
-	else
-	{
-		Command_Unrecognised:
-		putConsoleString("'%s' command unrecognised", arg);
-		return;
 	}
 }
 
@@ -1371,7 +1217,7 @@ void parseArgumentFlag(char input[USER_INPUT_MAX_LEN], char argDest[USER_INPUT_M
 	return;
 }
 
-bool parseBooleanCommand(const char input[USER_INPUT_MAX_LEN])
+bool parseArgumentAsBoolean(const char input[USER_INPUT_MAX_LEN])
 {
 	char buffer[USER_INPUT_MAX_LEN] = {0};
 	parseArgument(input, buffer);
@@ -1417,7 +1263,8 @@ Object* parseArgumentToFindObject(const char input[USER_INPUT_MAX_LEN], ObjectCo
 	}
 }
 
-#define NEWCOMMAND(x, y, z) strcpy(commandList[i].name, x); strcpy(commandList[i].helpString, y); commandList[i].function = &z; i++;
+
+#define NEWCOMMAND(cName, cHelp, cFunc) strcpy(commandList[i].name, cName); strcpy(commandList[i].helpString, cHelp); commandList[i].function = &cFunc; i++;
 
 void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 {
@@ -1425,72 +1272,223 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 
 	int i = 0;
 
+	NEWCOMMAND("version", "- check engine version information", ConsoleCommand_Version);
+
+	NEWCOMMAND("quit", "- quit the game", ConsoleCommand_Quit);
+
+	NEWCOMMAND("tick", "- check current tick number", ConsoleCommand_Tick);
+
+	NEWCOMMAND("show", "[events/spritesets/sceneactions/...] - show when a new event/spriteset/etc. is created", ConsoleCommand_Show);
+
+	NEWCOMMAND("vsync", "[true/false] - toggle screen vertical sync", ConsoleCommand_Vsync);
+
+	NEWCOMMAND("debug", "[0/1/2/...] - set the debug mode", ConsoleCommand_Debug);
+
+	NEWCOMMAND("fps", "- show the engine's current frames per second", ConsoleCommand_Fps);
+
+	NEWCOMMAND("draw", 
+		"[sprites/hitboxes/backgrounds/camviews/hud/particles] [true/false] - toggle whether a certain element is drawn or not", 
+		ConsoleCommand_Draw);
+
+	NEWCOMMAND("hitboxthickness", 
+		"[THICKNESS] - set the hitbox thickness in pixels for when hitboxes are being drawn", 
+		ConsoleCommand_HitboxThickness);
+
 	NEWCOMMAND("list", 
-		"list [objects/text/fonts/spritesets/...] - lists current instances of requested data", 
-		listInfoConsoleCommand);
+		"[objects/text/fonts/spritesets/...] - lists current instances of requested data", 
+		ConsoleCommand_List);
+
+	NEWCOMMAND("addobject", 
+		"[OBJECTID] [XPOS] [YPOS] [ARG1] [ARG2] [ARG3] [ARG4] [ARG5] - create a new object, equivalent to 'object_add [OBJECTID] ...'", 
+		ConsoleCommand_AddObject);
 
 	NEWCOMMAND("object", 
-		"object [INDEX/NAME] [info/setpos/setname/...] - perform various actions on a specific object, identified by either their index number or name", 
-		objectConsoleCommands);
+		"[INDEX/NAME] [info/setpos/setname/add/delete/...] - perform various actions on a specific object, identified by either their index number or name", 
+		ConsoleCommand_Object);
 
 	NEWCOMMAND("usedmemory", 
-		"usedmemory [objects/animations/text/...] - check how much memory in kilobytes is being currently used by the engine for specific data", 
-		usedMemoryConsoleCommand);
+		"[objects/animations/text/...] - check how much memory in kilobytes is being currently used by the engine for specific data", 
+		ConsoleCommand_UsedMemory);
+
+	NEWCOMMAND("background", 
+		"[BACKGROUNDID] - change the background sprite", 
+		ConsoleCommand_BackGround);
+
+	NEWCOMMAND("level", 
+		"[LEVELID] - switch to a new level", 
+		ConsoleCommand_Level);
 
 	NEWCOMMAND("event", 
-		"event [setscreensize/enablefullscreen/switchlevel/...] - trigger a specific GameEvent", 
-		eventConsoleCommands);
+		"[setscreensize/enablefullscreen/switchlevel/...] - trigger a specific GameEvent", 
+		ConsoleCommand_Event);
 
 	NEWCOMMAND("camview", 
-		"camview [add/clear/attach/...] - add or modify camera views in the gameworld", 
-		eventConsoleCommands);
+		"[add/clear/attach/...] - add or modify camera views in the gameworld", 
+		ConsoleCommand_CamView);
 
 	NEWCOMMAND("sound", 
-		"sound [play/...] - play or modify sounds", 
-		soundConsoleCommand);
+		"[play/...] - play or modify sounds", 
+		ConsoleCommand_Sound);
 
 	NEWCOMMAND("cutscene", 
-		"cutscene [play/start/...] - play or manipulate cutscenes", 
-		cutsceneConsoleCommand);
+		"[play/start/...] - play or manipulate cutscenes", 
+		ConsoleCommand_Cutscene);
 
 	NEWCOMMAND("load", 
-		"load [spriteset/audio/...] - load some data type into the engine to be used later", 
-		loadConsoleCommand);
+		"[spriteset/audio/...] - load some data type into the engine to be used later", 
+		ConsoleCommand_Load);
+
+	NEWCOMMAND("pause", 
+		"- toggle engine pause state", 
+		ConsoleCommand_Pause);
+
+	NEWCOMMAND("setpos", 
+		"- set the player X and Y position", 
+		ConsoleCommand_SetPos);
+
+	NEWCOMMAND("setcampos", 
+		"- set the main camera X and Y position", 
+		ConsoleCommand_SetCamPos);
+
+	NEWCOMMAND("setcampos", 
+		"- set the main camera X and Y zoom, default: 1.0, 1.0", 
+		ConsoleCommand_SetCamZoom);
+
+	NEWCOMMAND("debugtext", 
+		"[info/...] - show info on debug text or manipulate them", 
+		ConsoleCommand_DebugText);
 
 	NEWCOMMAND("help", 
-		"help [command] - see information on a specific command or just type help to see all help info", 
-		helpConsoleCommand);
+		"[command] - see information on a specific command or just type 'help' to see all help info", 
+		ConsoleCommand_Help);
 
 
+	if (DEBUG_MODE)
+	{
+		putConsoleString("Loaded %d commands.", i);
+	}
+	
 	return;
 }
 
-void displayObjectInfoConsole(Object *input)
+int ConsoleCommand_Version(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
-	if (input == NULL)
+	putConsoleString("\n%s\n%s\nFile Reader: %s", LEMON_ENGINE_INFO, LEMON_VERSION, FILE_READER_VERSION);
+	if (DEBUG_MODE)
 	{
-		return;
+		putConsoleString("Running in Debug mode");
 	}
 
-	putConsoleString("\nObject Information: \nName: '%s'\nID: %d (%s)", input->name, input->ObjectID, getObjectIDName(input->ObjectID));
-	putConsoleString("Index: %d \nCurrent State: %d (%s)", input->index, input->State, getObjectStateName(input->State));
+	return LEMON_SUCCESS;
+}
 
-	if (input->Parent == NULL)
+int ConsoleCommand_Quit(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	GameWorld->GameState = CLOSE_GAME;
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_Tick(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	putConsoleStringTS("Tickrate: %d", EngineSettings.GameTicksPerSecond);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_Show(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	char arg[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, arg);
+	stringToLower(arg);
+
+	if (strcmp(arg, "events") == 0)
 	{
-		putConsoleString("Parent: \n    None");
+		DebugSettings.showEvents = parseArgumentAsBoolean(input);
+	}
+	else if (strcmp(arg, "sceneactions") == 0)
+	{
+		DebugSettings.showSceneActions = parseArgumentAsBoolean(input);
+	}
+	else if (strcmp(arg, "spritesets") == 0)
+	{
+		DebugSettings.showSpriteset = parseArgumentAsBoolean(input);
 	}
 	else
 	{
-		Object *parent = input->Parent;
-		putConsoleString("Parent: \n    Name: %s \n    ID: %d (%s)", parent->name, parent->ObjectID, getObjectIDName(parent->ObjectID));
-		putConsoleString("    Index: %d \n    Current State: %d (%s)", parent->index, parent->State, getObjectStateName(parent->State));
+		return INVALID_DATA;
 	}
 
-	Layer objLayer = getDisplayLayer(input);
-	putConsoleString("XPos: %f  YPos: %f \nLayer: %d (%s)", input->ObjectBox->xPos, input->ObjectBox->yPos, objLayer, getLayerName(objLayer));
+	return LEMON_SUCCESS;
 }
 
-int usedMemoryConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+int ConsoleCommand_Vsync(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	setVsync(parseArgumentAsBoolean(input));
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_Debug(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	DebugSettings.DebugTextDisplayMode = parseArgumentAsInt(input);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_Fps(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	DebugSettings.FPSCounter = parseArgumentAsBoolean(input);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_Draw(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	char arg[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, arg);
+
+	if (strcmp(arg, "hitboxes") == 0)
+	{
+		RenderSettings.drawHitboxes = parseArgumentAsBoolean(input);
+	}
+	else if (strcmp(arg, "sprites") == 0)
+	{
+		RenderSettings.drawSprites = parseArgumentAsBoolean(input);
+	}
+	else if (strcmp(arg, "background") == 0)
+	{
+		RenderSettings.drawBackGround = parseArgumentAsBoolean(input);
+	}
+	else if (strcmp(arg, "camviews") == 0)
+	{
+		RenderSettings.drawCamViews = parseArgumentAsBoolean(input);
+	}
+	else if (strcmp(arg, "hud") == 0)
+	{
+		RenderSettings.drawHUD = parseArgumentAsBoolean(input);
+	}
+	else if (strcmp(arg, "particles") == 0)
+	{
+		RenderSettings.drawParticles = parseArgumentAsBoolean(input);
+	}
+	else
+	{
+		return INVALID_DATA;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_HitboxThickness(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	RenderSettings.HitboxOutlineThickness = parseArgumentAsInt(input);
+
+	return LEMON_SUCCESS;
+}
+
+
+int ConsoleCommand_UsedMemory(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	ObjectController *ObjectList = GameWorld->ObjectList;
 	char arg[USER_INPUT_MAX_LEN] = {0};
@@ -1595,7 +1593,21 @@ int usedMemoryConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int objectConsoleCommands(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+int ConsoleCommand_AddObject(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	int ID = parseArgumentAsInt(input);
+	int args[7] = {0};
+	for (int i = 0; i < 7; i++)
+	{
+		args[i] = parseArgumentAsInt(input);
+	}
+
+	AddObject(GameWorld, ID, args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_Object(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	ObjectController *ObjectList = GameWorld->ObjectList;
 	char arg[USER_INPUT_MAX_LEN] = {0};
@@ -1693,6 +1705,10 @@ int objectConsoleCommands(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	{
 		object->State = TO_BE_DELETED;
 	}
+	else if (strcmp(arg, "add") == 0)
+	{
+		ConsoleCommand_AddObject(input, GameWorld);
+	}
 	else
 	{
 		return INVALID_DATA;
@@ -1701,7 +1717,50 @@ int objectConsoleCommands(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int eventConsoleCommands(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+void displayObjectInfoConsole(Object *input)
+{
+	if (input == NULL)
+	{
+		return;
+	}
+
+	putConsoleString("\nObject Information: \nName: '%s'\nID: %d (%s)", input->name, input->ObjectID, getObjectIDName(input->ObjectID));
+	putConsoleString("Index: %d \nCurrent State: %d (%s)", input->index, input->State, getObjectStateName(input->State));
+
+	if (input->Parent == NULL)
+	{
+		putConsoleString("Parent: \n    None");
+	}
+	else
+	{
+		Object *parent = input->Parent;
+		putConsoleString("Parent: \n    Name: %s \n    ID: %d (%s)", parent->name, parent->ObjectID, getObjectIDName(parent->ObjectID));
+		putConsoleString("    Index: %d \n    Current State: %d (%s)", parent->index, parent->State, getObjectStateName(parent->State));
+	}
+
+	Layer objLayer = getDisplayLayer(input);
+	putConsoleString("XPos: %f  YPos: %f \nLayer: %d (%s)", input->ObjectBox->xPos, input->ObjectBox->yPos, objLayer, getLayerName(objLayer));
+}
+
+int ConsoleCommand_BackGround(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	int ID = parseArgumentAsInt(input);
+	int set = parseArgumentAsInt(input);
+
+	switchBackGroundSprite(ID, set, &GameWorld->WorldBackground);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_Level(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	int level = parseArgumentAsInt(input);
+	switchLevel(level, GameWorld);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_Event(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	parseArgument(input, arg);
@@ -1762,7 +1821,7 @@ int eventConsoleCommands(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int listInfoConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+int ConsoleCommand_List(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	ObjectController *ObjectList = GameWorld->ObjectList;
 	char arg[USER_INPUT_MAX_LEN] = {0};
@@ -1836,7 +1895,7 @@ int listInfoConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int camvViewConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+int ConsoleCommand_CamView(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	parseArgument(input, arg);
@@ -1900,7 +1959,7 @@ int camvViewConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int soundConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+int ConsoleCommand_Sound(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	parseArgument(input, arg);
@@ -1924,7 +1983,7 @@ int soundConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int cutsceneConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+int ConsoleCommand_Cutscene(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	parseArgument(input, arg);
@@ -1950,7 +2009,7 @@ int cutsceneConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int loadConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+int ConsoleCommand_Load(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	parseArgument(input, arg);
@@ -1978,20 +2037,100 @@ int loadConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 		return LEMON_SUCCESS;
 }
 
-int helpConsoleCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+int ConsoleCommand_DebugText(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	parseArgument(input, arg);
+
+	if (strcmp(arg, "info") == 0)
+	{
+		printTextsinfo(&DebugSettings.DebugTexts, "TextList");
+	}
+	else 
+	{
+		return INVALID_DATA;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_Pause(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	DebugSettings.PauseEngine = (DebugSettings.PauseEngine + 1) % 2;
+
+	if (DebugSettings.PauseEngine == 1)
+	{
+		putConsoleStringTS("Engine is now paused.");
+	}
+	else
+	{
+		putConsoleStringTS("Engine is now unpaused.");
+	}
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_SetPos(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	float x = parseArgumentAsFloat(input);
+	float y = parseArgumentAsFloat(input);
+
+	GoTo(GameWorld->Player.PlayerPtr, x, y);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_SetCamPos(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	float x = parseArgumentAsFloat(input);
+	float y = parseArgumentAsFloat(input);
+
+	setCameraPos(&GameWorld->MainCamera, x, y);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_SetCamZoom(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	if (input[DebugSettings.argIndex] == 0)
+	{
+		GameWorld->MainCamera.zoomX = 1.0;
+		GameWorld->MainCamera.zoomY = 1.0;
+		return LEMON_SUCCESS;
+	}
+
+	float zoomX =  parseArgumentAsFloat(input);
+	float zoomY =  parseArgumentAsFloat(input);
+	GameWorld->MainCamera.zoomX = zoomX;
+	GameWorld->MainCamera.zoomY = zoomY;
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_SetTickRate(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	int rate = parseArgumentAsInt(input);
+	setTickRate(rate);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_Help(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	char arg[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, arg);
+
+	ConsoleCommand *commands = DebugSettings.commands;
 
 	// find matching command to print help string for
 	for (int i = 0; i < MAX_CONSOLE_COMMANDS; i++)
 	{
 		// if arg is empty; print all help strings
-		if (strcmp(DebugSettings.commands[i].name, arg) == 0 || arg[0] == '\0')
+		if (strcmp(commands[i].name, arg) == 0 || arg[0] == '\0')
 		{
-			putConsoleString(DebugSettings.commands[i].helpString);
+			putConsoleString("%s %s", commands[i].name, commands[i].helpString);
 
-			if (arg[0] != '\0')
+			if (arg[0] != '\0' || commands[i].name[0] == '\0')
 			{
 				return LEMON_SUCCESS;
 			}

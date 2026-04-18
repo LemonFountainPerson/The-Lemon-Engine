@@ -1250,13 +1250,11 @@ typedef struct EngineConfig
 
 typedef struct RenderConfig
 {
-	int drawSprites;
-	int drawBackGround;
-	int drawObjects;
-	int drawPlayer;
-	int drawHUD;
-	int drawParticles;
-	int drawCamViews;
+	bool drawSprites;
+	bool drawBackGround;
+	bool drawHUD;
+	bool drawParticles;
+	bool drawCamViews;
 
 	int drawHitboxes;
 	int HitboxOutlineThickness;
@@ -1266,8 +1264,6 @@ typedef struct RenderConfig
 	int maxUIElements;
 
 	int drawnObjects;
-	int drawnParticles;
-	int drawnHudElements;
 
 	int RendersPerSecond;
 	Uint64 RenderDelta;
