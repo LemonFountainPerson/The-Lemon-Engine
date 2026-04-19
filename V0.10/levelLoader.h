@@ -2,13 +2,13 @@ int loadLevel(World *GameWorld, int level);
 
 int loadPartition(World *GameWorld, int partID);
 
-int loadSave(int saveFile, int flags[GAME_FLAG_COUNT], World *GameWorld);
+int loadSave(int saveFile, World *GameWorld);
 
 int loadSettings(int settingsFile, World *GameWorld);
 
-int saveGame(World *GameWorld);
+int saveGame(int saveFile, World *GameWorld);
 
-int loadSaveData(const char *fileName, int flags[GAME_FLAG_COUNT], World *GameWorld);
+int loadSaveData(const char *fileName, World *GameWorld);
 
 int loadLevelData(World *GameWorld, FILE *fPtr);
 

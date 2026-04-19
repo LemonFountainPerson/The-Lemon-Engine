@@ -23,7 +23,7 @@ TextConfig TextSettings = {0};
 
 DebugConfig DebugSettings = {0};
 
-int GameFlags[GAME_FLAG_COUNT] = {0};
+GameFlag GameFlags[GAME_FLAG_COUNT] = {0};
 
 
 Uint64 TickNum = 0;
@@ -626,6 +626,131 @@ void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Render
 
 	return;
 }
+
+
+int hashGameFlag(const char name[])
+{
+	unsigned int hash = 5381;
+
+	int i = 0;
+
+	while (name[i] != '\0' && i < MAX_LEN)
+	{
+		hash = (hash * 33) + name[i];
+		i++;
+	}
+
+	return (int)(hash % GAME_FLAG_COUNT);
+}
+
+void addGameFlag(int startValue, const char name[])
+{
+	int length = strlen(name);
+	if (length >= MAX_LEN || name[0] == '\0')
+	{
+		return;
+	}
+
+	int index = hashGameFlag(name);
+	int count = 0;
+
+	while (GameFlags[index].name[0] != '\0' && count < GAME_FLAG_COUNT)
+	{
+		if (strcmp(GameFlags[index].name, name) == 0)
+		{
+			// If there is a game flag with a matching name already, do not add
+			return;
+		}
+
+		index = (index + 1) % GAME_FLAG_COUNT;
+		count++;
+	}
+
+	if (GameFlags[index].name[0] == '\0')
+	{
+		strcpy(GameFlags[index].name, name);
+		GameFlags[index].value = startValue;
+		GameFlags[index].nameLength = length;
+	}
+
+	return;
+}
+
+// returns value
+int checkGameFlag(const char name[])
+{
+	if (strlen(name) >= MAX_LEN || name[0] == '\0')
+	{
+		return -1;
+	}
+
+	int index = hashGameFlag(name);
+	int count = 0;
+
+	while (GameFlags[index].name[0] != '\0' && count < GAME_FLAG_COUNT)
+	{
+		if (strcmp(GameFlags[index].name, name) == 0)
+		{
+			return GameFlags[index].value;
+		}
+
+		count++;
+		index = (index + 1) % GAME_FLAG_COUNT;
+	}
+
+	return -1;
+}
+
+// returns index
+int getGameFlag(const char name[])
+{
+	if (strlen(name) >= MAX_LEN || name[0] == '\0')
+	{
+		return -1;
+	}
+
+	int index = hashGameFlag(name);
+	int count = 0;
+
+	while (GameFlags[index].name[0] != '\0' && count < GAME_FLAG_COUNT)
+	{
+		if (strcmp(GameFlags[index].name, name) == 0)
+		{
+			return index;
+		}
+		
+		count++;
+		index = (index + 1) % GAME_FLAG_COUNT;
+	}
+
+	return -1;
+}
+
+void setGameFlag(const char name[], int newValue)
+{
+	if (strlen(name) >= MAX_LEN || name[0] == '\0')
+	{
+		return;
+	}
+
+	int index = hashGameFlag(name);
+	int count = 0;
+
+	while (GameFlags[index].name[0] != '\0' && count < GAME_FLAG_COUNT)
+	{
+		if (strcmp(GameFlags[index].name, name) == 0)
+		{
+			GameFlags[index].value = newValue;
+			return;
+		}
+		
+		count++;
+		index = (index + 1) % GAME_FLAG_COUNT;
+	}
+
+	return;
+}
+
 
 Uint64 TickNumber(void)
 {

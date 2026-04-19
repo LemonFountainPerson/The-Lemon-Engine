@@ -81,37 +81,11 @@ int loadPartition(World *GameWorld, int partID)
 }
 
 
-int loadSave(int saveFile, int flags[GAME_FLAG_COUNT], World *GameWorld)
-{
-	if (flags == NULL || GameWorld == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	char fileName[MAX_LEN] = {0};
-	snprintf(fileName, MAX_LEN, "SaveFile%d", saveFile);
-
-	return loadSaveData(fileName, flags, GameWorld);
-}
-
-int loadSettings(int settingsFile, World *GameWorld)
-{
-	if (GameWorld == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	char fileName[MAX_LEN] = {0};
-	snprintf(fileName, MAX_LEN, "SettingsFile%d", settingsFile);
-
-	return loadSaveData(fileName, NULL, GameWorld);
-}
-
 #define SAVE_FILE_HEADER "--SAVE_DATA--"
-int saveGame(World *GameWorld)
+int saveGame(int saveFile, World *GameWorld)
 {
-	char path[MAX_LEN * 2] = SAVEDATA_ROOT;
-	strcat(path, "SaveFile0.txt");
+	char path[MAX_LEN * 2] = {0};
+	snprintf(path, MAX_LEN * 2, "%sSaveFile%d.txt", SAVEDATA_ROOT, saveFile);
 	FILE *fPtr = fopen(path, "wb+");
 
 	if (fPtr == NULL)
@@ -125,7 +99,8 @@ int saveGame(World *GameWorld)
 	fwrite(SAVE_FILE_HEADER, sizeof(char), strlen(SAVE_FILE_HEADER), fPtr);
 	fwrite("\n", sizeof(char), 1, fPtr);
 
-	char buffer[MAX_LEN] = {0};
+	char buffer[MAX_LEN + 20] = {0};
+	char name[MAX_LEN] = {0};
 
 	snprintf(buffer, MAX_LEN, "Level: %d\n", GameWorld->level);
 	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
@@ -133,8 +108,13 @@ int saveGame(World *GameWorld)
 	fwrite("GameFlags: {", sizeof(char), 12, fPtr);
 	for (int i = 0; i < GAME_FLAG_COUNT; i++)
 	{
-		snprintf(buffer, MAX_LEN, "\n%d", GameFlags[i]);
-		fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+		if (GameFlags[i].name[0] != '\0')
+		{
+			memset(name, 0, MAX_LEN);
+			memcpy(name, GameFlags[i].name, GameFlags[i].nameLength);
+			snprintf(buffer, MAX_LEN + 20, "\n\"%s\": %d", name, GameFlags[i].value);
+			fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+		}
 	}
 	fwrite(" }\n", sizeof(char), 3, fPtr);
 
@@ -147,7 +127,33 @@ int saveGame(World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int loadSaveData(const char *fileName, int flags[GAME_FLAG_COUNT], World *GameWorld)
+int loadSave(int saveFile, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	char fileName[MAX_LEN] = {0};
+	snprintf(fileName, MAX_LEN, "SaveFile%d", saveFile);
+
+	return loadSaveData(fileName, GameWorld);
+}
+
+int loadSettings(int settingsFile, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	char fileName[MAX_LEN] = {0};
+	snprintf(fileName, MAX_LEN, "SettingsFile%d", settingsFile);
+
+	return loadSaveData(fileName, GameWorld);
+}
+
+int loadSaveData(const char *fileName, World *GameWorld)
 {
 	FILE *fPtr = openFile(fileName, SAVEDATA_ROOT, SAVE_FILE_HEADER);
 
@@ -212,17 +218,30 @@ int loadSaveData(const char *fileName, int flags[GAME_FLAG_COUNT], World *GameWo
 
 			consumeStatement(fPtr, '{');
 
-			if (flags == NULL)
-			{
-				consumeStatement(fPtr, '}');
-				goto Next_Save_Instruction;
-			}
-
 			int i = 0;
-			while (hasNextArgInt(fPtr) && i < GAME_FLAG_COUNT)
+			int index;
+			int flagValue = 0;
+			while (i < GAME_FLAG_COUNT)
 			{
-				flags[i] = getNextArgInt(fPtr);
 				i++;
+				getNextArg(fPtr, readPhrase, MAX_LEN);
+				index = getGameFlag(readPhrase);
+				consumeStatement(fPtr, ':');
+
+				if (!hasNextArgInt(fPtr))
+				{
+					break;
+				}
+
+				flagValue = getNextArgInt(fPtr);
+				if (index >= 0)
+				{
+					GameFlags[index].value = flagValue;
+				}
+				else
+				{
+					addGameFlag(flagValue, readPhrase);
+				}
 			}
 
 			consumeStatement(fPtr, '}');
@@ -1071,13 +1090,31 @@ int skipCommentInFile(FILE *fPtr)
 
 int loadConditionalStatement(World *GameWorld, FILE *fPtr)
 {
-	int flagIndex = getNextArgInt(fPtr);
-
-	if (!inRange(flagIndex, 0, GAME_FLAG_COUNT - 1))
+	int flagIndex;
+	
+	if (hasNextArgInt(fPtr))
 	{
-		// this will result in the level load being aborted
-		putConsoleString("\nInvalid game flag index! Got: %d \nGame flags can only go from 0 to %d", flagIndex, GAME_FLAG_COUNT - 1);
-		return INVALID_DATA;
+		flagIndex = getNextArgInt(fPtr);
+
+		if (!inRange(flagIndex, 0, GAME_FLAG_COUNT - 1))
+		{
+			// this will result in the level load being aborted
+			putConsoleString("\nInvalid game flag index! Got: %d \nGame flags can only go from 0 to %d", flagIndex, GAME_FLAG_COUNT - 1);
+			return INVALID_DATA;
+		}
+	}
+	else
+	{
+		char name[MAX_LEN] = {0};
+
+		getNextArg(fPtr, name, MAX_LEN);
+		flagIndex = getGameFlag(name);
+
+		if (!inRange(flagIndex, 0, GAME_FLAG_COUNT - 1))
+		{
+			putConsoleString("\nGameFlag '%s' does not exist", name);
+			return INVALID_DATA;
+		}
 	}
 
 	long filePosition = ftell(fPtr);
@@ -1096,27 +1133,27 @@ int loadConditionalStatement(World *GameWorld, FILE *fPtr)
 
 	if (strcmp("=", buffer) == 0)
 	{	
-		conditionMet = (GameFlags[flagIndex] == compareValue);
+		conditionMet = (GameFlags[flagIndex].value == compareValue);
 	}
 	else if (strcmp("!=", buffer) == 0)
 	{
-		conditionMet = (GameFlags[flagIndex] != compareValue);
+		conditionMet = (GameFlags[flagIndex].value != compareValue);
 	}
 	else if (strcmp(">", buffer) == 0)
 	{
-		conditionMet = (GameFlags[flagIndex] > compareValue);
+		conditionMet = (GameFlags[flagIndex].value > compareValue);
 	}
 	else if (strcmp("<", buffer) == 0)
 	{
-		conditionMet = (GameFlags[flagIndex] < compareValue);
+		conditionMet = (GameFlags[flagIndex].value < compareValue);
 	}
 	else if (strcmp(">=", buffer) == 0)
 	{
-		conditionMet = (GameFlags[flagIndex] >= compareValue);
+		conditionMet = (GameFlags[flagIndex].value >= compareValue);
 	}
 	else if (strcmp("<=", buffer) == 0)
 	{
-		conditionMet = (GameFlags[flagIndex] <= compareValue);
+		conditionMet = (GameFlags[flagIndex].value <= compareValue);
 	}
 	else
 	{

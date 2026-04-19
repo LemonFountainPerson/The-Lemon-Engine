@@ -55,6 +55,15 @@ void removeAllCameraViews(World *GameWorld);
 void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Renderer *Screen, Layer drawLayer);
 
 
+void addGameFlag(int startValue, const char name[]);
+
+int checkGameFlag(const char name[]);
+
+int getGameFlag(const char name[]);
+
+void setGameFlag(const char name[], int newValue);
+
+
 void putConsoleString(const char input[], ...);
 
 void putConsoleStringTS(const char input[], ...);

@@ -1172,21 +1172,44 @@ void parseArgument(const char input[USER_INPUT_MAX_LEN], char argDest[USER_INPUT
 
 int parseArgumentAsInt(const char input[USER_INPUT_MAX_LEN])
 {
+	int prevPos = DebugSettings.argIndex;
+
 	char buffer[USER_INPUT_MAX_LEN] = {0};
 	parseArgument(input, buffer);
 
 	if (!inRange(buffer[0], '0', '9'))
 	{
+		DebugSettings.argIndex = prevPos;
 		return 0;
 	}
 
 	return atoi(buffer);
 }
 
-float parseArgumentAsFloat(const char input[USER_INPUT_MAX_LEN])
+bool nextArgumentIsNumber(const char input[USER_INPUT_MAX_LEN])
 {
+	int prevPos = DebugSettings.argIndex;
+
 	char buffer[USER_INPUT_MAX_LEN] = {0};
 	parseArgument(input, buffer);
+
+	DebugSettings.argIndex = prevPos;
+
+	return inRange(buffer[0], '0', '9');
+}
+
+float parseArgumentAsFloat(const char input[USER_INPUT_MAX_LEN])
+{
+	int prevPos = DebugSettings.argIndex;
+
+	char buffer[USER_INPUT_MAX_LEN] = {0};
+	parseArgument(input, buffer);
+
+	if (!inRange(buffer[0], '0', '9'))
+	{
+		DebugSettings.argIndex = prevPos;
+		return 0;
+	}
 
 	return atof(buffer);
 }
@@ -1335,9 +1358,11 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 
 	NEWCOMMAND(SetTickRate, "set a new tickrate (GameTicks per second)", "settickrate [newTickRate]");
 
-	NEWCOMMAND(Save, "save the game", "save");
+	NEWCOMMAND(Save, "save the game", "save [saveID]");
 
 	NEWCOMMAND(LoadSave, "load a save file", "loadsave [saveID]");
+
+	NEWCOMMAND(AddGameFlag, "add a new gameflag with a unique identifying name", "addgameflag [name] [startValue]");
 
 	NEWCOMMAND(SetGameFlag, "set a gameflag to a new value", "setgameflag [gameFlag] [newValue]");
 
@@ -2098,7 +2123,8 @@ int ConsoleCommand_SetTickRate(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 int ConsoleCommand_Save(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
-	saveGame(GameWorld);
+	int save = parseArgumentAsInt(input);
+	saveGame(save, GameWorld);
 
 	return LEMON_SUCCESS;
 }
@@ -2106,22 +2132,48 @@ int ConsoleCommand_Save(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 int ConsoleCommand_LoadSave(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int save = parseArgumentAsInt(input);
-	loadSave(save, GameFlags, GameWorld);
+	loadSave(save, GameWorld);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_AddGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	char name[USER_INPUT_MAX_LEN] = {0};
+
+	parseArgument(input, name);
+
+	int startVal = parseArgumentAsInt(input);
+
+	addGameFlag(startVal, name);
 
 	return LEMON_SUCCESS;
 }
 
 int ConsoleCommand_SetGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
-	int index = parseArgumentAsInt(input);
+	int index;
+
+	if (nextArgumentIsNumber(input))
+	{
+		index = parseArgumentAsInt(input);
+	}
+	else
+	{
+		char name[USER_INPUT_MAX_LEN] = {0};
+		parseArgument(input, name);
+		index = getGameFlag(name);
+	}
+
 	int newValue = parseArgumentAsInt(input);
 
 	if (index < 0 || index >= GAME_FLAG_COUNT)
 	{
-		return INVALID_DATA;
+		putConsoleString("GameFlag does not exist");
+		return LEMON_SUCCESS;
 	}
 
-	GameFlags[index] = newValue;
+	GameFlags[index].value = newValue;
 
 	return LEMON_SUCCESS;
 }
@@ -2392,7 +2444,7 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 		}
 	}
 
-	// render             `pkg-config --libs --cflags sdl3`
+	// render text history
 	box.y += insideSpacing;
 
     AddDebugText(all, box.x, box.y, textWidth, DTFORMAT_JUSTIFY_TOP);

@@ -56,7 +56,7 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 		break;
 
 	case TEST_SCENE_2:
-		GameFlags[0]++;
+		GameFlags[0].value++;
 
 		ifElse(ifGreaterThan(0, 1, TEST_SCENE_2_AGAIN, GameWorld), NO_CUTSCENE);	// equivalent to 'ifGreaterThan(0, 1, TEST_SCENE_2_AGAIN, GameWorld)'
 		SayText("A small tomato is really just a cherry.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
@@ -220,7 +220,18 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 	}
 	else if (strcmp(inputString, "IFVARIABLE:") == 0)
 	{
-		int index = getNextArgInt(fPtr);
+		int index;
+
+		if (hasNextArgInt(fPtr))
+		{
+		 	index = getNextArgInt(fPtr);
+		}
+		else
+		{
+			getNextArg(fPtr, inputString, MAX_LEN);
+			index = getGameFlag(inputString);
+		}
+		
 		getNextArg(fPtr, textBoxString, 2);
 		int value = getNextArgInt(fPtr);
 
@@ -612,19 +623,19 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 	case SCENE_CHANGE_VARIABLE_BY:
 		{
-			GameFlags[currentData.variableArgs[0]] += currentData.variableArgs[1];
+			GameFlags[currentData.variableArgs[0]].value += currentData.variableArgs[1];
 		} break;
 
 	case SCENE_SET_VARIABLE_TO:
 		{
-			GameFlags[currentData.variableArgs[0]] = currentData.variableArgs[1];
+			GameFlags[currentData.variableArgs[0]].value = currentData.variableArgs[1];
 		} break;
 
 	case SCENE_IF_EQUALS:
 		{
 			SceneBranchData branchData = currentData.branchData;
 
-			if (GameFlags[branchData.variableIndex] == branchData.comparisonValue)
+			if (GameFlags[branchData.variableIndex].value == branchData.comparisonValue)
 			{
 				if (branchData.ifTrueString[0] != 0)
 				{
@@ -652,7 +663,7 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 		{
 			SceneBranchData branchData = currentData.branchData;
 
-			if (GameFlags[branchData.variableIndex] < branchData.comparisonValue)
+			if (GameFlags[branchData.variableIndex].value < branchData.comparisonValue)
 			{
 				if (branchData.ifTrueString[0] != 0)
 				{
@@ -680,7 +691,7 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 		{
 			SceneBranchData branchData = currentData.branchData;
 	
-			if (GameFlags[branchData.variableIndex] > branchData.comparisonValue)
+			if (GameFlags[branchData.variableIndex].value > branchData.comparisonValue)
 			{
 				if (branchData.ifTrueString[0] != 0)
 				{

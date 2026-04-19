@@ -9,13 +9,13 @@ AddSprite: 	Sparkle6	Particles	SINGLE
 AddSprite: 	Sparkle7	Particles	SINGLE
 
 AddSprite: 	static1		Particles	SINGLE
-AddSprite: 	static2		Particles	SINGLE
-AddSprite: 	static3		Particles	SINGLE
-AddSprite: 	static4		Particles	SINGLE
-AddSprite: 	static5		Particles	SINGLE
-AddSprite: 	static6		Particles	SINGLE
-AddSprite: 	static7		Particles	SINGLE
-AddSprite: 	static8		Particles	SINGLE
+>AddSprite: 	static2		Particles	SINGLE
+>AddSprite: 	static3		Particles	SINGLE
+>AddSprite: 	static4		Particles	SINGLE
+>AddSprite: 	static5		Particles	SINGLE
+>AddSprite: 	static6		Particles	SINGLE
+>AddSprite: 	static7		Particles	SINGLE
+>AddSprite: 	static8		Particles	SINGLE
 
 NewAnimation: 	Sparkle		30
 AddFrame:	Sparkle1

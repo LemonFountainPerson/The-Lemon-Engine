@@ -545,7 +545,7 @@ int SaveMenu(Object *MenuController, World *GameWorld)
 		switch (MenuController->arg2)
 		{
 			case 0:
-				loadSave(1, GameFlags, GameWorld);
+				loadSave(1, GameWorld);
 				break;
 
 			case 1:

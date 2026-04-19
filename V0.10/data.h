@@ -802,6 +802,14 @@ typedef struct playerData
 } PlayerData;
 
 
+typedef struct GameFlag
+{
+	char name[MAX_LEN];
+	int nameLength;
+	int value;
+} GameFlag;
+
+
 typedef enum GameEventID
 {
 	NO_EVENT = 0,
@@ -944,14 +952,6 @@ typedef struct FontList
 	TTF_Font *font[MAX_LOADED_FONTS];
 } FontList;
 
-typedef struct InputHistory
-{
-	int head;
-	int searchIndex;
-	int entries;
-	char inputs[USER_INPUT_HISTORY_LEN][CONSOLE_STRING_LENGTH];
-} InputHistory;
-
 
 typedef int (*ConsoleCommandFunction)(char *, World *);
 
@@ -962,6 +962,15 @@ typedef struct ConsoleCommand
 	char formatString[MAX_LEN];
 	ConsoleCommandFunction function;
 } ConsoleCommand;
+
+typedef struct InputHistory
+{
+	int head;
+	int searchIndex;
+	int entries;
+	char inputs[USER_INPUT_HISTORY_LEN][CONSOLE_STRING_LENGTH];
+} InputHistory;
+
 
 typedef struct Camera 
 {
@@ -1332,17 +1341,17 @@ typedef struct String
 
 
 //Global variables/data
-EXPORT extern RenderFrame ScreenData;
+extern RenderFrame ScreenData;
 
-EXPORT extern float deltaTime;
+extern float deltaTime;
 
-EXPORT extern MouseData MouseInput;
+extern MouseData MouseInput;
 
-EXPORT extern GamePadData GamePadInput;
+extern GamePadData GamePadInput;
 
-EXPORT extern int keyboard[INPUT_COUNT];
+extern int keyboard[INPUT_COUNT];
 
-EXPORT extern int GameFlags[GAME_FLAG_COUNT];
+extern GameFlag GameFlags[GAME_FLAG_COUNT];
 
 extern EngineConfig EngineSettings;
 
