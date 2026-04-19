@@ -1266,8 +1266,12 @@ Object* parseArgumentToFindObject(const char input[USER_INPUT_MAX_LEN], ObjectCo
 	}
 }
 
-
-#define NEWCOMMAND(cName, cHelp, cFunc) strcpy(commandList[i].name, cName); strcpy(commandList[i].helpString, cHelp); commandList[i].function = &cFunc; i++;
+// macro used to create new command; name and function are derived from cName
+#define NEWCOMMAND(cName, cHelp, cFormat) 	strcpy(commandList[i].name, #cName);\
+											stringToLower(commandList[i].name);\
+											strcpy(commandList[i].helpString, cHelp);\
+											strcpy(commandList[i].formatString, cFormat);\
+											commandList[i].function = &ConsoleCommand_##cName; i++;
 
 void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 {
@@ -1275,105 +1279,69 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 
 	int i = 0;
 
-	NEWCOMMAND("version", "- check engine version information", ConsoleCommand_Version);
+	NEWCOMMAND(Version, "check engine version information", "version");
 
-	NEWCOMMAND("quit", "- quit the game", ConsoleCommand_Quit);
+	NEWCOMMAND(Quit, "quit the game", "quit");
 
-	NEWCOMMAND("tick", "- check current tick number", ConsoleCommand_Tick);
+	NEWCOMMAND(Tick, "check current tick number", "tick");
 
-	NEWCOMMAND("show", "[events/spritesets/sceneactions/...] - show when a new event/spriteset/etc. is created", ConsoleCommand_Show);
+	NEWCOMMAND(Show, "show when a new event/spriteset/etc. is created", "show [events/spritesets/sceneactions/...] [true/false]");
 
-	NEWCOMMAND("vsync", "[true/false] - toggle screen vertical sync", ConsoleCommand_Vsync);
+	NEWCOMMAND(Vsync, "toggle screen vertical sync", "vsync [true/false]");
 
-	NEWCOMMAND("debug", "[0/1/2/...] - set the debug mode", ConsoleCommand_Debug);
+	NEWCOMMAND(Debug, "set the debug mode", "debug [0/1/2/...]");
 
-	NEWCOMMAND("fps", "- show the engine's current frames per second", ConsoleCommand_Fps);
+	NEWCOMMAND(Fps, "show the engine's current frames per second", "fps");
 
-	NEWCOMMAND("draw", 
-		"[sprites/hitboxes/backgrounds/camviews/hud/particles] [true/false] - toggle whether a certain element is drawn or not", 
-		ConsoleCommand_Draw);
+	NEWCOMMAND(Draw, "toggle whether a certain element is drawn or not", 
+		"draw [sprites/hitboxes/backgrounds/camviews/hud/particles] [true/false]");
 
-	NEWCOMMAND("hitboxthickness", 
-		"[THICKNESS] - set the hitbox thickness in pixels for when hitboxes are being drawn", 
-		ConsoleCommand_HitboxThickness);
+	NEWCOMMAND(HitboxThickness, "set the hitbox thickness in pixels for when hitboxes are being drawn", "hitboxthickness [THICKNESS]");
 
-	NEWCOMMAND("list", 
-		"[objects/text/fonts/spritesets/...] - lists current instances of requested data", 
-		ConsoleCommand_List);
+	NEWCOMMAND(List, "lists current instances of requested data", "list [objects/text/fonts/spritesets/...]");
 
-	NEWCOMMAND("addobject", 
-		"[OBJECTID] [XPOS] [YPOS] [ARG1] [ARG2] [ARG3] [ARG4] [ARG5] - create a new object, equivalent to 'object_add [OBJECTID] ...'", 
-		ConsoleCommand_AddObject);
+	NEWCOMMAND(AddObject, "create a new object, equivalent to 'object_add [OBJECTID] ...'", 
+		"addobject [OBJECTID] [XPOS] [YPOS] [ARG1] [ARG2] [ARG3] [ARG4] [ARG5]");
 
-	NEWCOMMAND("object", 
-		"[INDEX/NAME] [info/setpos/setname/add/delete/...] - perform various actions on a specific object, identified by either their index number or name", 
-		ConsoleCommand_Object);
+	NEWCOMMAND(Object, "perform various actions on a specific object, identified by their index number or name", 
+		"object [INDEX/NAME] [info/setpos/setname/add/delete/...]");
 
-	NEWCOMMAND("usedmemory", 
-		"[objects/animations/text/...] - check how much memory in kilobytes is being currently used by the engine for specific data", 
-		ConsoleCommand_UsedMemory);
+	NEWCOMMAND(UsedMemory, "check how much memory in kilobytes is currently being used for specific data", 
+		"usedmemory [objects/animations/text/...]");
 
-	NEWCOMMAND("background", 
-		"[BACKGROUNDID] - change the background sprite", 
-		ConsoleCommand_BackGround);
+	NEWCOMMAND(BackGround, "change the background sprite", "background [backGroundID]");
 
-	NEWCOMMAND("level", 
-		"[LEVELID] - switch to a new level", 
-		ConsoleCommand_Level);
+	NEWCOMMAND(Level, "switch to a new level", "level [LEVELID]");
 
-	NEWCOMMAND("event", 
-		"[setscreensize/enablefullscreen/switchlevel/...] - trigger a specific GameEvent", 
-		ConsoleCommand_Event);
+	NEWCOMMAND(Event, "trigger a specific GameEvent", "event [setscreensize/enablefullscreen/switchlevel/...]");
 
-	NEWCOMMAND("camview", 
-		"[add/clear/attach/...] - add or modify camera views in the gameworld", 
-		ConsoleCommand_CamView);
+	NEWCOMMAND(CamView, "add or modify camera views in the gameworld", "camview [add/clear/attach/...]");
 
-	NEWCOMMAND("sound", 
-		"[play/...] - play or modify sounds", 
-		ConsoleCommand_Sound);
+	NEWCOMMAND(Sound, "play or modify sounds", "sound [play/...]");
 
-	NEWCOMMAND("cutscene", 
-		"[play/start/...] - play or manipulate cutscenes", 
-		ConsoleCommand_Cutscene);
+	NEWCOMMAND(Cutscene, "play or manipulate cutscenes", "cutscene [play/start/...]");
 
-	NEWCOMMAND("load", 
-		"[spriteset/audio/...] - load some data type into the engine to be used later", 
-		ConsoleCommand_Load);
+	NEWCOMMAND(Load, "load some data type into the engine to be used later", "load [spriteset/audio/...]");
 
-	NEWCOMMAND("debugtext", 
-		"[info/...] - show info on debug text or manipulate them", 
-		ConsoleCommand_DebugText);
+	NEWCOMMAND(DebugText, "show info on debug text or manipulate them", "DebugText [info/...]");
 
-	NEWCOMMAND("pause", 
-		"- toggle engine pause state", 
-		ConsoleCommand_Pause);
+	NEWCOMMAND(Pause, "toggle engine pause state", "pause");
 
-	NEWCOMMAND("setpos", 
-		"- set the player X and Y position", 
-		ConsoleCommand_SetPos);
+	NEWCOMMAND(SetPos, "set the player X and Y position", "setPos [x] [y]");
 
-	NEWCOMMAND("setcampos", 
-		"- set the main camera X and Y position", 
-		ConsoleCommand_SetCamPos);
+	NEWCOMMAND(SetCamPos, "set the main camera X and Y position", "setcampos [x] [y]");
 
-	NEWCOMMAND("setcamzoom", 
-		"- set the main camera X and Y zoom, default: 1.0, 1.0", 
-		ConsoleCommand_SetCamZoom);
+	NEWCOMMAND(SetCamZoom, "set the main camera X and Y zoom, default: 1.0, 1.0", "setcamzoom [xZoom] [yZoom]");
 
-	NEWCOMMAND("settickrate", 
-		"- set a new tickrate (GameTicks per second)", 
-		ConsoleCommand_SetTickRate);
+	NEWCOMMAND(SetTickRate, "set a new tickrate (GameTicks per second)", "settickrate [newTickRate]");
 
-	NEWCOMMAND("save", "- save the game", ConsoleCommand_Save);
+	NEWCOMMAND(Save, "save the game", "save");
 
-	NEWCOMMAND("loadsave", "[SAVEID] - load a save file", ConsoleCommand_LoadSave);
+	NEWCOMMAND(LoadSave, "load a save file", "loadsave [saveID]");
 
-	NEWCOMMAND("setgameflag", "- set a gameflag to a new value", ConsoleCommand_SetGameFlag);
+	NEWCOMMAND(SetGameFlag, "set a gameflag to a new value", "setgameflag [gameFlag] [newValue]");
 
-	NEWCOMMAND("help", 
-		"[command] - see information on a specific command or just type 'help' to see all help info", 
-		ConsoleCommand_Help);
+	NEWCOMMAND(Help, "see information on a specific command or just type 'help' to see all help info", "help [command]");
 
 
 	if (DEBUG_MODE)
@@ -2168,12 +2136,17 @@ int ConsoleCommand_Help(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	// find matching command to print help string for
 	for (int i = 0; i < MAX_CONSOLE_COMMANDS; i++)
 	{
+		if (commands[i].name[0] == '\0')
+		{
+			return LEMON_SUCCESS;
+		}
+
 		// if arg is empty; print all help strings
 		if (strcmp(commands[i].name, arg) == 0 || arg[0] == '\0')
 		{
-			putConsoleString("%s %s", commands[i].name, commands[i].helpString);
+			putConsoleString("%s - %s", commands[i].formatString, commands[i].helpString);
 
-			if (arg[0] != '\0' || commands[i].name[0] == '\0')
+			if (arg[0] != '\0')
 			{
 				return LEMON_SUCCESS;
 			}

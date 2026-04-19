@@ -959,6 +959,7 @@ typedef struct ConsoleCommand
 {
 	char name[MAX_LEN];
 	char helpString[HELP_STRING_MAX];
+	char formatString[MAX_LEN];
 	ConsoleCommandFunction function;
 } ConsoleCommand;
 
