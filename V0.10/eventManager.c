@@ -1248,7 +1248,7 @@ bool parseArgumentAsBoolean(const char input[USER_INPUT_MAX_LEN])
 	char buffer[USER_INPUT_MAX_LEN] = {0};
 	parseArgument(input, buffer);
 
-	if (strcmp(buffer, "true") == 0 || strcmp(buffer, "1") == 0)
+	if (strcmp(buffer, "true") == 0 || buffer[0] == '1')
 	{
 		return true;
 	}

@@ -361,6 +361,7 @@ CameraView* addCameraViewToList(float camX, float camY, int camWidth, int camHei
 		{
 			list[i].active = true;
 
+			ResetCamera(&list[i].cam);
 			list[i].cam.CameraX = camX;
 			list[i].cam.CameraY = camY;
 			list[i].cam.width = camWidth;
