@@ -8,6 +8,8 @@ int loadSettings(int settingsFile, World *GameWorld);
 
 int saveGame(int saveFile, World *GameWorld);
 
+int saveSettings(int saveFile, World *GameWorld);
+
 int loadSaveData(const char *fileName, World *GameWorld);
 
 int loadLevelData(World *GameWorld, FILE *fPtr);
@@ -53,6 +55,8 @@ int loadRepeatingObject(World *GameWorld, FILE *fPtr, int *objectsLoaded);
 
 int loadObjectRepeated(World *GameWorld, FILE *fPtr);
 
+int getNextArgGameFlag(FILE *fPtr);
+
 int loadLevelFlag(World *GameWorld, FILE *fPtr);
 
 int loadConditionalStatement(World *GameWorld, FILE *fPtr);
@@ -81,6 +85,8 @@ int getNextArg(FILE *fPtr, char buffer[], int capacity);
 int getNextArgInt(FILE *fPtr);
 
 bool hasNextArgInt(FILE *fPtr);
+
+bool getNextArgBool(FILE *fPtr);
 
 float getNextArgFloat(FILE *fPtr);
 

@@ -129,9 +129,8 @@ int StartUpLemonEngine(void)
 	}
 
     // initialise text data to ensure pointers are null
-    DebugSettings.DebugFont = NULL;
     initialiseFontList(&TextSettings.FontList);
-    initialiseTextList(&DebugSettings.DebugTexts);
+    initialiseTextList(&TextSettings.DebugTexts);
     initialiseTextList(&TextSettings.TextList);
     createConsoleCommands(DebugSettings.commands);
 
@@ -644,7 +643,7 @@ int hashGameFlag(const char name[])
 	return (int)(hash % GAME_FLAG_COUNT);
 }
 
-void addGameFlag(int startValue, const char name[])
+void addGameFlag(const char name[], int startValue)
 {
 	int length = strlen(name);
 	if (length >= MAX_LEN || name[0] == '\0')
@@ -836,7 +835,7 @@ ObjectController* createObjectController(void)
 
 	if (newController == NULL)
 	{
-		putConsoleString("\nError: Could not allocate space for Object Controller.\n\n");
+		putConsoleError("Error: Could not allocate space for Object Controller.\n\n");
 		return NULL;
 	}
 
@@ -1225,7 +1224,9 @@ void ClearInput(void)
 		keyboard[i] = 0;	
 	}
 
-	AcknowledgeMouse();
+	memset(&MouseInput, 0, sizeof(MouseData));
+	MouseInput.wheelX = 0.0;
+	MouseInput.wheelY = 0.0;
 
 	return;
 }
@@ -1621,7 +1622,7 @@ int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullsc
 	ScreenData->textEngine = TTF_CreateRendererTextEngine(ScreenData->Renderer);
 	if (ScreenData->textEngine == NULL)
 	{
-		putConsoleString("Failed to create Text renderer.");
+		putConsoleError("Failed to create Text renderer.");
 	}
 
 	SetWindowTitle("Lemon Engine");							// Initial window title
@@ -1649,7 +1650,7 @@ bool SetWindowIcon(const char fileName[])
 
 	if (icon == NULL)
 	{
-		putConsoleString("\nError loading window icon: %s", SDL_GetError());
+		putConsoleError("Error loading window icon: %s", SDL_GetError());
 		return false;
 	}
 	
@@ -1906,23 +1907,49 @@ void putConsoleStringTS(const char input[], ...)
 		return;
 	}
 
+	char buffer[CONSOLE_STRING_LENGTH] = {0};
+	snprintf(buffer, CONSOLE_STRING_LENGTH, "[Tick: %llu] %s", TickNum, input);
+
 	va_list argptr;
     va_start(argptr, input);
-    vsnprintf(DebugSettings.ConsoleString, CONSOLE_STRING_LENGTH, input, argptr);
+    vsnprintf(DebugSettings.ConsoleString, CONSOLE_STRING_LENGTH, buffer, argptr);
     va_end(argptr);
 
-    char buffer[CONSOLE_STRING_LENGTH + 20] = {0};
-    snprintf(buffer, CONSOLE_STRING_LENGTH + 20, "[Tick: %llu] %s", TickNum, DebugSettings.ConsoleString);
-
-    addInputHistory(buffer, &DebugSettings.consoleHistory);
+    addInputHistory(DebugSettings.ConsoleString, &DebugSettings.consoleHistory);
 
    	if (DEBUG_MODE)
     {
-    	printf("[Tick: %llu] %s\n", TickNum, DebugSettings.ConsoleString);
+    	printf("%s\n", DebugSettings.ConsoleString);
     	fflush(stdout);
     }
 	
 	return;
+}
+
+void putConsoleError(const char input[], ...)
+{
+	if (input[0] < 9 || !DebugSettings.showErrors)
+	{
+		return;
+	}
+
+	char errorString[CONSOLE_STRING_LENGTH] = {0};
+	snprintf(errorString, CONSOLE_STRING_LENGTH, "Error: %s", input);
+
+	va_list argptr;
+    va_start(argptr, input);
+    vsnprintf(DebugSettings.ConsoleString, CONSOLE_STRING_LENGTH, errorString, argptr);
+    va_end(argptr);
+
+    addInputHistory(DebugSettings.ConsoleString, &DebugSettings.consoleHistory);
+
+    if (DEBUG_MODE)
+    {
+    	printf("%s\n", DebugSettings.ConsoleString);
+    	fflush(stdout);
+    }
+
+    return;
 }
 
 void addInputHistory(const char input[], InputHistory *history)
@@ -2073,9 +2100,22 @@ void SetRenderSettingsToDefault(void)
 
 void SetTextSettingsToDefault(void)
 {
-	TextSettings.defaultTextSize = 44;
+	TextSettings.defaultTextPointSize = 44.0;
 	TextSettings.portraitSize = 200;
 	strcpy(TextSettings.defaultFont, DEFAULT_FONT);
+
+	TextSettings.DebugTextColour.r = 255;
+	TextSettings.DebugTextColour.g = 255;
+	TextSettings.DebugTextColour.b = 255;
+	TextSettings.DebugTextColour.a = SDL_ALPHA_TRANSPARENT;
+	TextSettings.DebugTextPointSize = 18.0;
+
+	if (TextSettings.FontList.font[0] == NULL)
+	{
+		loadFontWithSize("PTSansBold.ttf", "DebugFont", TextSettings.DebugTextPointSize);
+	}
+
+	RemoveAllTexts(&TextSettings.DebugTexts);
 }
 
 void SetDebugSettingsToDefault(void)
@@ -2086,29 +2126,10 @@ void SetDebugSettingsToDefault(void)
 	DebugSettings.CameraInfo = 0;
 	DebugSettings.DebugOverlay = 0;
 	DebugSettings.SoundInfo = 0;
-	DebugSettings.showEvents = false;
-	DebugSettings.showSceneActions = false;
-	DebugSettings.showSpriteset = false;
-
-	DebugSettings.DebugTextColour.r = 255;
-	DebugSettings.DebugTextColour.g = 255;
-	DebugSettings.DebugTextColour.b = 255;
-	DebugSettings.DebugTextColour.a = SDL_ALPHA_TRANSPARENT;
-	DebugSettings.DebugTextPointSize = 18.0;
-
-	if (DebugSettings.DebugFont == NULL)
-	{
-		char fontName[MAX_LEN] = FONT_ROOT;
-		strcat(fontName, "PTSansBold.ttf");
-		DebugSettings.DebugFont = TTF_OpenFont(fontName, DebugSettings.DebugTextPointSize);
-
-		if (DebugSettings.DebugFont == NULL)
-		{ 
-	    	putConsoleString("\nFailed to load font! (%s)\n", SDL_GetError());
-		}
-	}
-
-	RemoveAllTexts(&DebugSettings.DebugTexts);
+	DebugSettings.showEvents = DEBUG_MODE ? true : false;
+	DebugSettings.showSceneActions = DEBUG_MODE ? true : false;
+	DebugSettings.showSpriteset = DEBUG_MODE ? true : false;
+	DebugSettings.showErrors = DEBUG_MODE ? true : false;
 
 	DebugSettings.ConsoleTextEnabled = DEBUG_MODE ? CONSOLE_ONLY_ERRORS : CONSOLE_TEXT_DISABLED;
 	DebugSettings.TypingInConsole = SDL_TextInputActive(ScreenData.Window);

@@ -25,18 +25,16 @@ int PlayNewObjectAnimation(const char desiredName[], int loopCount, Object *inpu
 int SwitchAnimation(const char desiredName[], int loopCount, DisplayData *inputData);
 
 
-int PlayAnimationAfterOther(const char desiredName[], const char otherAnim[], int loopCount, DisplayData *inputData);
-
-
-int PlayAnimationAfterOtherPrefix(const char desiredName[], const char otherPrefix[], int loopCount, DisplayData *inputData);
-
-
 int getAnimationIndex(const char animationName[], DisplayData *inputData);
 
 
 bool playingAnimation(DisplayData *inputData);
 
+bool playingThisAnimation(DisplayData *inputData, const char name[]);
+
 bool objectPlayingAnimation(Object *input);
+
+bool objectPlayingThisAnimation(Object *input, const char name[]);
 
 
 int iterateAnimation(DisplayData *inputData, float deltaTime);

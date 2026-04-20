@@ -121,6 +121,7 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 
 		case EVENT_MOVE_OBJECT:
 			{
+				// need a better method than this
 				int index = (int)EventData->ObjectGoTo[2];
 				ObjectController *ObjectList = GameWorld->ObjectList;
 				if (index < 0 || index >= EngineSettings.MaxObjects || ObjectList == NULL)
@@ -1158,7 +1159,7 @@ void parseArgument(const char input[USER_INPUT_MAX_LEN], char argDest[USER_INPUT
 
 		i++;
 
-		if (input[DebugSettings.argIndex] == '"' || (!enclosedCommand && (input[DebugSettings.argIndex] == '_' || input[DebugSettings.argIndex] < 33)) )
+		if (input[DebugSettings.argIndex] == '"' || (!enclosedCommand && input[DebugSettings.argIndex] < 33) )
 		{
 			DebugSettings.argIndex++;
 			break;
@@ -1308,7 +1309,7 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 
 	NEWCOMMAND(Tick, "check current tick number", "tick");
 
-	NEWCOMMAND(Show, "show when a new event/spriteset/etc. is created", "show [events/spritesets/sceneactions/...] [true/false]");
+	NEWCOMMAND(Show, "show when a new event/spriteset/etc. is created", "show [events/spritesets/sceneactions/errors/...] [true/false]");
 
 	NEWCOMMAND(Vsync, "toggle screen vertical sync", "vsync [true/false]");
 
@@ -1358,15 +1359,23 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 
 	NEWCOMMAND(SetTickRate, "set a new tickrate (GameTicks per second)", "settickrate [newTickRate]");
 
-	NEWCOMMAND(Save, "save the game", "save [saveID]");
+	NEWCOMMAND(Save, "save the game to a slot", "save [saveID]");
 
 	NEWCOMMAND(LoadSave, "load a save file", "loadsave [saveID]");
 
+	NEWCOMMAND(SaveSettings, "save current settings to a slot", "savesettings [settingsID]");
+
+	NEWCOMMAND(LoadSettings, "load a settings file", "loadsettings [settingsID]");
+
 	NEWCOMMAND(AddGameFlag, "add a new gameflag with a unique identifying name", "addgameflag [name] [startValue]");
 
-	NEWCOMMAND(SetGameFlag, "set a gameflag to a new value", "setgameflag [gameFlag] [newValue]");
+	NEWCOMMAND(SetGameFlag, "set a gameflag to a new value", "setgameflag [NAME/INDEX] [newValue]");
+
+	NEWCOMMAND(CheckGameFlag, "check the current value of a GameFlag", "checkgameflag [NAME/INDEX]");
 
 	NEWCOMMAND(Help, "see information on a specific command or just type 'help' to see all help info", "help [command]");
+
+	NEWCOMMAND(DoABarrelRoll, "does a barrel roll.", "barrelroll");
 
 
 	if (DEBUG_MODE)
@@ -1419,6 +1428,10 @@ int ConsoleCommand_Show(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	else if (strcmp(arg, "spritesets") == 0)
 	{
 		DebugSettings.showSpriteset = parseArgumentAsBoolean(input);
+	}
+	else if (strcmp(arg, "errors") == 0)
+	{
+		DebugSettings.showErrors = parseArgumentAsBoolean(input);
 	}
 	else
 	{
@@ -1867,7 +1880,7 @@ int ConsoleCommand_List(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	else if (strcmp(arg, "debugtext") == 0)
 	{
-		printTextsinfo(&DebugSettings.DebugTexts, "Debug Textlist");
+		printTextsinfo(&TextSettings.DebugTexts, "Debug Textlist");
 	}
 	else if (strcmp(arg, "spritesets") == 0)
 	{
@@ -1876,11 +1889,9 @@ int ConsoleCommand_List(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 		while (set != NULL)
 		{
-			putConsoleString("Spriteset: %d ->", set->setID);
+			putConsoleString("Spriteset: %d (%s)", set->setID, getObjectIDName(set->setID));
 			set = set->nextSet;
 		}
-
-		putConsoleString("End of list");
 	}
 	else if (strcmp(arg, "camviews") == 0 || strcmp(arg, "cameraviews") == 0)
 	{
@@ -2024,7 +2035,7 @@ int ConsoleCommand_Load(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	{
 		int ID = parseArgumentAsInt(input);
 
-		createNewSpriteSet(&GameWorld->ObjectList->spriteSets, ID);
+		loadSpriteSet(GameWorld->ObjectList, ID);
 	}
 	else if (strcmp(arg, "audio") == 0)
 	{
@@ -2050,7 +2061,11 @@ int ConsoleCommand_DebugText(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 	if (strcmp(arg, "info") == 0)
 	{
-		printTextsinfo(&DebugSettings.DebugTexts, "TextList");
+		printTextsinfo(&TextSettings.DebugTexts, "TextList");
+	}
+	else if (strcmp(arg, "clear") == 0)
+	{
+		RemoveAllTexts(&TextSettings.DebugTexts);
 	}
 	else 
 	{
@@ -2129,10 +2144,25 @@ int ConsoleCommand_Save(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
+int ConsoleCommand_SaveSettings(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	int save = parseArgumentAsInt(input);
+	saveSettings(save, GameWorld);
+
+	return LEMON_SUCCESS;
+}
+
 int ConsoleCommand_LoadSave(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int save = parseArgumentAsInt(input);
 	loadSave(save, GameWorld);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_LoadSettings(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	loadSettings(parseArgumentAsInt(input), GameWorld);
 
 	return LEMON_SUCCESS;
 }
@@ -2145,7 +2175,7 @@ int ConsoleCommand_AddGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 	int startVal = parseArgumentAsInt(input);
 
-	addGameFlag(startVal, name);
+	addGameFlag(name, startVal);
 
 	return LEMON_SUCCESS;
 }
@@ -2178,6 +2208,34 @@ int ConsoleCommand_SetGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
+int ConsoleCommand_CheckGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	int index;
+
+	if (nextArgumentIsNumber(input))
+	{
+		index = parseArgumentAsInt(input);
+	}
+	else
+	{
+		char name[USER_INPUT_MAX_LEN] = {0};
+		parseArgument(input, name);
+		index = getGameFlag(name);
+	}
+
+	if (index < 0 || index >= GAME_FLAG_COUNT)
+	{
+		putConsoleString("GameFlag does not exist");
+	}
+	else
+	{
+		putConsoleString("(%d)\"%s\": %d", index, GameFlags[index].name, GameFlags[index].value);
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
 int ConsoleCommand_Help(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
@@ -2205,6 +2263,31 @@ int ConsoleCommand_Help(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 		}
 	}
 
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_DoABarrelRoll(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	Object *player = GameWorld->Player.PlayerPtr;
+	if (player == NULL)
+	{
+		return LEMON_SUCCESS;
+	}
+
+	if (player->State == PAUSE_STATE)
+	{
+		if (objectPlayingThisAnimation(player, "DoABarrelRoll"))
+		{
+			player->State = DEFAULT_STATE;
+			stopAnimation(player->ObjectDisplay);
+		}
+	}
+	else if (player->State == DEFAULT_STATE)
+	{
+		player->State = PAUSE_STATE;
+		PlayAnimation("BarrelRoll", 0, player->ObjectDisplay);
+	}
+	
 	return LEMON_SUCCESS;
 }
 
@@ -2317,6 +2400,8 @@ void updateTypedCommand(SDL_Window *window, World *GameWorld)
 	}
 
 	ClearInput();
+
+	return;
 }
 
 void startTypedCommand(SDL_Window *window)
@@ -2408,10 +2493,6 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 	SDL_RenderFillRect(Screen, &box);
 	box.y += consoleHeight;
 
-	if (DebugSettings.DebugFont == NULL)
-	{
-		return;
-	}
 
 	// render cursor
 	box.w = 2.0;

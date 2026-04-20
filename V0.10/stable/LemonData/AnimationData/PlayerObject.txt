@@ -35,6 +35,16 @@ AddFrame:	StickManJump	0	0	315
 AddFrame:	StickManJump	0	0	330
 AddFrame:	StickManJump	0	0	345
 
+NewAnimation:	BarrelRoll	30
+AddFrame:	StickMan	0	0	0
+AddFrame:	StickMan	0	0	45
+AddFrame:	StickMan	0	0	90
+AddFrame:	StickMan	0	0	135
+AddFrame:	StickMan	0	0	180
+AddFrame:	StickMan	0	0	225
+AddFrame:	StickMan	0	0	270
+AddFrame:	StickMan	0	0	315
+
 ENDFILE
 
 

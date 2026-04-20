@@ -1276,7 +1276,7 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 
 int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, DebugTextFormatting format)
 {
-	TextList *list = &DebugSettings.DebugTexts;
+	TextList *list = &TextSettings.DebugTexts;
 	if (inputPhrase == NULL || strlen(inputPhrase) < 1 || list->count >= MAX_TEXT_TEXTURES)
 	{
 		return INVALID_DATA;
@@ -1296,11 +1296,6 @@ int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, Debu
 		return ACTION_DISABLED;
 	}
 	
-	if (DebugSettings.DebugFont == NULL)
-	{
-		return MISSING_DATA;
-	}
-
 	list->count++;
 
     if (format == DTFORMAT_LIST_SOUND)
@@ -1320,7 +1315,7 @@ int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, Debu
     
     if (TextsArray[index].text == NULL)
     {
-    	TextsArray[index].text = TTF_CreateText(ScreenData.textEngine, DebugSettings.DebugFont, inputPhrase, wrapwidth);
+    	TextsArray[index].text = TTF_CreateText(ScreenData.textEngine, getFont("DebugFont"), inputPhrase, wrapwidth);
     }
     else
     {
@@ -1341,12 +1336,12 @@ int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, Debu
 
 float getCursorPos(void)
 {
-	if (DebugSettings.userInputIndex < 1 || DebugSettings.DebugFont == NULL)
+	if (DebugSettings.userInputIndex < 1)
 	{
 		return 0.0;
 	}
 
-	SDL_Surface *text = TTF_RenderText_Blended_Wrapped(DebugSettings.DebugFont, DebugSettings.userInputString, DebugSettings.userInputIndex, DebugSettings.DebugTextColour, 0);
+	SDL_Surface *text = TTF_RenderText_Blended_Wrapped(getFont("DebugFont"), DebugSettings.userInputString, DebugSettings.userInputIndex, TextSettings.DebugTextColour, 0);
 
     if (text == NULL)
     {
@@ -1384,12 +1379,13 @@ void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
     	DisplayDebugInfo(renderCamera, GameWorld, Screen);	
     }
 
-    RenderTextList(&DebugSettings.DebugTexts, renderCamera);
-    RemoveAllTexts(&DebugSettings.DebugTexts);
+    RenderTextList(&TextSettings.DebugTexts, renderCamera);
+    RemoveAllTexts(&TextSettings.DebugTexts);
 
     SDL_SetRenderScale(Screen, renderCamera.zoomX, renderCamera.zoomY);
     SDL_SetRenderLogicalPresentation(Screen, renderCamera.width, renderCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
 
+    return;
 }
 
 void RenderTextList(TextList *list, Camera inputCamera)

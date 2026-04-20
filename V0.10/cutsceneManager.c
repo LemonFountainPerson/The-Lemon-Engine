@@ -202,37 +202,34 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 	{
 		return Wait(getNextArgFloat(fPtr), GameWorld);
 	}
-	else if (strcmp(inputString, "ENDCUTSCENE") == 0 || strcmp(inputString, "END_CUTSCENE") == 0)
+	else if (strcmp(inputString, "ENDCUTSCENE") == 0)
 	{
 		END_SCENE_HERE;
 	}
-	else if (strcmp(inputString, "CHANGEVARIABLEBY:") == 0 || strcmp(inputString, "CHANGEVARIABLE:") == 0)
+	else if (strcmp(inputString, "CHANGEGAMEFLAG:") == 0 || strcmp(inputString, "INCREMENTGAMEFLAG:") == 0 || strcmp(inputString, "DECREMENTGAMEFLAG:") == 0)
 	{
-		int index = getNextArgInt(fPtr);
+		int index = getNextArgGameFlag(fPtr);
+		
 		int value = getNextArgInt(fPtr);
+		if (strcmp(inputString, "DECREMENTGAMEFLAG:") == 0)
+		{
+			value = -value;
+		}
+
 		return changeVariableBy(index, value, GameWorld);
 	}
-	else if (strcmp(inputString, "SETVARIABLETO:") == 0 || strcmp(inputString, "SETVARIABLE:") == 0)
+	else if (strcmp(inputString, "SETGAMEFLAG:") == 0 || strcmp(inputString, "SETFLAG:") == 0)
 	{
-		int index = getNextArgInt(fPtr);
+		int index = getNextArgGameFlag(fPtr);
+
 		int value = getNextArgInt(fPtr);
 		return setVariableTo(index, value, GameWorld);
 	}
 	else if (strcmp(inputString, "IFVARIABLE:") == 0)
 	{
-		int index;
+		int index = getNextArgGameFlag(fPtr);
 
-		if (hasNextArgInt(fPtr))
-		{
-		 	index = getNextArgInt(fPtr);
-		}
-		else
-		{
-			getNextArg(fPtr, inputString, MAX_LEN);
-			index = getGameFlag(inputString);
-		}
-		
-		getNextArg(fPtr, textBoxString, 2);
+		getNextArg(fPtr, textBoxString, 3);
 		int value = getNextArgInt(fPtr);
 
 		getNextArg(fPtr, inputString, MAX_LEN);

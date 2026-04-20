@@ -1035,7 +1035,7 @@ int ApplyTextPresets(TextBox *inputText, const char Portrait[], TextPreset input
 
 	strcpy(inputText->textBoxSprite, "TextBox_Basic");
 	inputText->LineSpacing = 50;
-	inputText->TextSize = TextSettings.defaultTextSize;
+	inputText->TextSize = TextSettings.defaultTextPointSize;
 
 	switch (inputPreset)
 	{
@@ -1185,7 +1185,7 @@ TextBox* CreateText(const char inputPhrase[], World *GameWorld)
 	newText->Counter = 0;
 	newText->textDelayFrames = 0;
 	newText->LineSpacing = 50;
-	newText->TextSize = 44;
+	newText->TextSize = TextSettings.defaultTextPointSize;
 	newText->textIndex = -1;
 
 	memset(newText->font, 0, FONT_FILE_NAME_MAX);
@@ -1367,7 +1367,7 @@ int displayNextCharacter(TextBox *inputText, World *GameWorld)
 			createTextBoxPortrait(inputText, GameWorld);
 		}
 
-		insertLineBreaks(inputText->textPhrase, inputText->textLengthSize - inputText->TextSize);
+		insertLineBreaks(inputText->textPhrase, inputText->textLengthSize - (int)inputText->TextSize);
 
 		inputText->textIndex = -1;
 		inputText->currentXPos = inputText->boxOffsetX;
@@ -1416,7 +1416,7 @@ int displayNextCharacter(TextBox *inputText, World *GameWorld)
 
 
 	// Spawn next character		
-	if (inputText->currentXPos - inputText->boxOffsetX + inputText->TextSize > inputText->textLengthSize || decodedChar == '\n')
+	if (inputText->currentXPos - inputText->boxOffsetX + (int)inputText->TextSize > inputText->textLengthSize || decodedChar == '\n')
 	{
 		inputText->currentXPos = inputText->boxOffsetX;
 		inputText->currentYPos -= inputText->LineSpacing;
@@ -1890,7 +1890,7 @@ TTF_Font* loadFont(const char *desiredFont, const char *newName)
 		strcat(fontName, ".ttf");
 	}
 	
-	newFont = TTF_OpenFont(fontName, TextSettings.defaultTextSize);
+	newFont = TTF_OpenFont(fontName, TextSettings.defaultTextPointSize);
 
 	if (newFont == NULL)
 	{ 
@@ -1905,6 +1905,18 @@ TTF_Font* loadFont(const char *desiredFont, const char *newName)
 	list->head = (head + 1) % MAX_LOADED_FONTS;
 
 	return newFont;
+}
+
+TTF_Font* loadFontWithSize(const char *desiredFont, const char *newName, float pointSize)
+{
+	TTF_Font *font = loadFont(desiredFont, newName);
+
+	if (font != NULL)
+	{
+		TTF_SetFontSize(font, pointSize);
+	}
+
+	return font;
 }
 
 TTF_Font* getFont(const char *name)
@@ -1978,7 +1990,7 @@ void cleanUpTexts(TextList *list)
 void cleanUpTextData(RenderFrame *ScreenData)
 {
 	cleanUpTexts(&TextSettings.TextList);
-	cleanUpTexts(&DebugSettings.DebugTexts);
+	cleanUpTexts(&TextSettings.DebugTexts);
 
 	TTF_Font **fonts = TextSettings.FontList.font;
 	for (int i = 0; i < MAX_LOADED_FONTS; i++)
@@ -1990,12 +2002,6 @@ void cleanUpTextData(RenderFrame *ScreenData)
 		}
 	}
 	TextSettings.FontList.head = 0;
-
-	if (DebugSettings.DebugFont != NULL)
-	{
-		TTF_CloseFont(DebugSettings.DebugFont);
-		DebugSettings.DebugFont = NULL;
-	}
 
 	if (ScreenData->textEngine != NULL)
 	{
@@ -2020,8 +2026,8 @@ int initialiseTextCharacter(Object *inputCharacter, char charValue, World *GameW
 
 	inputCharacter->Parent = inputText->boxPtr;
 	inputCharacter->ParentLink = MOTION_LINK;
-	inputCharacter->ObjectBox->xSize = inputText->TextSize;
-	inputCharacter->ObjectBox->ySize = inputText->TextSize;
+	inputCharacter->ObjectBox->xSize = (int)inputText->TextSize;
+	inputCharacter->ObjectBox->ySize = (int)inputText->TextSize;
 
 	if (charValue > 32 && charValue < 123)
 	{

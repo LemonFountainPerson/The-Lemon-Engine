@@ -351,6 +351,10 @@ typedef enum Flags
 	LOAD_PART_TRIGGER,
 	SWITCH_TO_NEW_PART_TRIGGER,
 	LOAD_PART,
+	ADD_GAME_FLAG,
+	SET_GAME_FLAG,
+	INCREMENT_GAME_FLAG,
+	DECREMENT_GAME_FLAG,
 	UNDEFINED_FLAG
 } Flags;
 
@@ -920,7 +924,7 @@ typedef struct TextBox
 	int currentYPos;
 
 	int LineSpacing;	// space between lines 
-	int TextSize;    	// width and height of text characters
+	float TextSize;    	// width and height of text characters
 
 	int textIndex;
 	SDL_Color color;
@@ -1285,11 +1289,15 @@ typedef struct RenderConfig
 typedef struct TextConfig
 {
 	int portraitSize;
-	int defaultTextSize;
+	float defaultTextPointSize;
 	char defaultFont[FONT_FILE_NAME_MAX];
 
 	TextList TextList;
 	FontList FontList;
+
+	SDL_Color DebugTextColour;
+	float DebugTextPointSize;
+	TextList DebugTexts;
 } TextConfig;
 
 
@@ -1322,11 +1330,7 @@ typedef struct DebugConfig
 	bool showEvents;
 	bool showSceneActions;
 	bool showSpriteset;
-
-	SDL_Color DebugTextColour;
-	float DebugTextPointSize;
-	TTF_Font *DebugFont;
-	TextList DebugTexts;
+	bool showErrors;
 } DebugConfig;
 
 

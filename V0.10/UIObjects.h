@@ -105,6 +105,8 @@ void initialiseFontList(FontList *input);
 
 TTF_Font* loadFont(const char *desiredFont, const char *newName);
 
+TTF_Font* loadFontWithSize(const char *desiredFont, const char *newName, float pointSize);
+
 TTF_Font* getFont(const char *name);
 
 void setFontSize(const char *name, int size);

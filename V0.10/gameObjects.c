@@ -522,14 +522,22 @@ SpriteSet* loadSpriteSet(ObjectController *ObjectList, int ObjectID)
 
 	// Fill sprite set with sprites/animations
 
-	// Searches for a file named "Object [ObjectID]" as default if name does not exist
+	
 	newSet = loadSpriteSetFromFile(getObjectIDName(ObjectID), &ObjectList->spriteSets, ObjectID);
+
+	// Searches for a file named "Object [ObjectID]" as default if name does not exist
 	if (newSet == NULL)
 	{
 		char defaultName[32] = {0};
 		snprintf(defaultName, 32, "Object %d", ObjectID);
 
 		newSet = loadSpriteSetFromFile(defaultName, &ObjectList->spriteSets, ObjectID);
+	}
+
+	// No such file exists, initialise with empty spriteset
+	if (newSet == NULL)
+	{
+		newSet = createNewSpriteSet(&ObjectList->spriteSets, ObjectID);
 	}
 
 	return newSet;
@@ -5626,6 +5634,7 @@ int ResolveAllYCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 	{
 		if (evaluateIfCollidePush(movingBox, currentObject->ObjectBox))
 		{
+			putConsoleString("%s trying to push", getSolidTypeName(movingBox->solid));
 			PhysicsBox *collideBox = currentObject->ObjectBox;
 
 			float prevYVel = collideBox->yVelocity;

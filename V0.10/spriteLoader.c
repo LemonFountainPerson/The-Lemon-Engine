@@ -12,7 +12,7 @@ int switchBackGroundSprite(int spriteID, int desiredSetID, BackgroundData *input
 
 	if (currentSet == NULL)
 	{
-		putConsoleString("\nNo sprite set for Backgrounds found");
+		putConsoleError("No sprite set for Backgrounds found");
 		return MISSING_DATA;
 	}
 
@@ -48,7 +48,7 @@ int switchBackGroundSprite(int spriteID, int desiredSetID, BackgroundData *input
 
 	if (currentSprite == NULL || currentSprite->spriteID != spriteID)
 	{
-		putConsoleString("\nCould not find sprite %d for Background set %d", spriteID, desiredSetID);
+		putConsoleError("Could not find sprite %d for Background set %d", spriteID, desiredSetID);
 		return MISSING_DATA;
 	}
 
@@ -65,7 +65,7 @@ int switchBackGroundSpriteName(const char spriteName[], int desiredSetID, Backgr
 
 	if (currentSet == NULL)
 	{
-		putConsoleString("\nCould not find set ID %d from backgrounds", desiredSetID);
+		putConsoleError("Could not find set ID %d from backgrounds", desiredSetID);
 		return MISSING_DATA;
 	}
 
@@ -80,7 +80,7 @@ int switchBackGroundSpriteName(const char spriteName[], int desiredSetID, Backgr
 
 	if (currentSprite == NULL || strcmp(currentSprite->name, spriteName) != 0)
 	{
-		putConsoleString("\nCould not find sprite '%s' for Background set %d", spriteName, desiredSetID);
+		putConsoleError("Could not find sprite '%s' for Background set %d", spriteName, desiredSetID);
 		return MISSING_DATA;
 	}
 
@@ -121,7 +121,7 @@ int loadSpriteFromPath(Sprite *inputSprite, const char inputPath[])
 	
 	// couldn't find any file
 	result = FILE_NOT_FOUND;
-	putConsoleString("\nImage load failed! %s", path);
+	putConsoleError("Image load failed! %s", path);
 
 	strcpy(path + strlen(SPRITE_ROOT), DEFAULT_TEXTURE);
 
@@ -129,7 +129,7 @@ int loadSpriteFromPath(Sprite *inputSprite, const char inputPath[])
 
 	if (inputSprite->texture == NULL)
 	{
-		putConsoleString("\nError: Object Sprite data missing. Is the default texture missing?\n");
+		putConsoleError("Object Sprite data missing. Is the default texture missing?\n");
 		free(inputSprite);
 
 		return LEMON_ERROR;
@@ -143,7 +143,7 @@ int loadSpriteFromPath(Sprite *inputSprite, const char inputPath[])
 
 	if (inputSprite->width * inputSprite->height > 90000000)	// just in case
 	{
-		putConsoleString("\nError: Object Sprite too large.\n");
+		putConsoleError("Object Sprite too large.\n");
 		free(inputSprite);
 
 		return LEMON_ERROR;
@@ -215,7 +215,7 @@ SpriteSet* createNewSpriteSet(SpriteSetList *setList, int desiredSetID)
 
 	if (newSet == NULL)
 	{
-		putConsoleString("\nCould not allocate memory for new sprite set! %d", desiredSetID);
+		putConsoleError("Could not allocate memory for new sprite set! %d", desiredSetID);
 		return NULL;
 	}
 
@@ -275,7 +275,7 @@ SpriteSet* createNewSpriteSet(SpriteSetList *setList, int desiredSetID)
 	
 	if (DebugSettings.showSpriteset)
 	{
-		putConsoleStringTS("Creating new spriteset with ID: %d", desiredSetID);
+		putConsoleStringTS("Creating new spriteset with ID: %d\n", desiredSetID);
 	}
 
 	return newSet;
@@ -307,7 +307,7 @@ Sprite* loadSprite(const char spriteName[], const char folderName[], RenderMode 
 
 	if (newSprite == NULL)
 	{
-		putConsoleString("\nCould not allocate memory for new sprite! %s", spriteName);
+		putConsoleError("Could not allocate memory for new sprite! %s", spriteName);
 		return NULL;
 	}
 
@@ -414,7 +414,7 @@ int getSpriteIndex(const char spriteName[], DisplayData *inputData)
 
 	if (result == -1)
 	{
-		putConsoleString("\nCould not find sprite %s", spriteName);
+		putConsoleError("Could not find sprite %s", spriteName);
 	}
 
 	return result;
@@ -518,7 +518,7 @@ int switchSprite(int spriteID, int spriteSet, DisplayData *inputData)
 
 		if (currentSet->setID != spriteSet)
 		{
-			putConsoleString("\nCouldn't find sprite set %d", spriteSet);
+			putConsoleError("Couldn't find sprite set %d", spriteSet);
 			return MISSING_DATA;
 		}
 	}
@@ -557,7 +557,7 @@ int switchSprite(int spriteID, int spriteSet, DisplayData *inputData)
 	{
 		if (spriteID != 1)
 		{
-			putConsoleString("\nCould not find sprite %d from sprite set %d", spriteID, spriteSet);
+			putConsoleError("Could not find sprite %d from sprite set %d", spriteID, spriteSet);
 		}
 
 		// Switch to Default if it exists
@@ -655,7 +655,7 @@ int switchSpriteByName(const char spriteName[], int spriteSet, DisplayData *inpu
 	if (currentSprite == NULL || strcmp(currentSprite->name, desiredSpriteName) != 0)
 	{
 		// Switch to Default if it exists
-		putConsoleString("\nCould not find sprite '%s' from sprite set %d", desiredSpriteName, spriteSet);
+		putConsoleError("Could not find sprite '%s' from sprite set %d", desiredSpriteName, spriteSet);
 
 		inputData->spriteBuffer = EngineSettings.DefaultTexture;
 		inputData->currentSprite = -1;

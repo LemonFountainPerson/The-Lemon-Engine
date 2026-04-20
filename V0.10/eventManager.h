@@ -159,13 +159,21 @@ int ConsoleCommand_SetTickRate(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 int ConsoleCommand_Save(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
+int ConsoleCommand_SaveSettings(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
 int ConsoleCommand_LoadSave(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+int ConsoleCommand_LoadSettings(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_AddGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_SetGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
+int ConsoleCommand_CheckGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
 int ConsoleCommand_Help(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+int ConsoleCommand_DoABarrelRoll(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 
 void renderConsole(World *GameWorld, SDL_Renderer *Screen);

@@ -10,22 +10,23 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 		return NULL;
 	}
 
-	char argBuffer[MAX_LEN + 1] = {0};
-
-	Animation *newAnimation = NULL;
-	SpriteSet *newSet = createNewSpriteSet(setList, desiredID);
-
-	if (newSet == NULL)
-	{
-		return NULL;
-	}
-
 	FILE *fPtr = openFile(FileName, ANIMATION_ROOT, "--ANIMATION--");
 
 	if (fPtr == NULL)
 	{
 		return NULL;
 	}
+
+	SpriteSet *newSet = createNewSpriteSet(setList, desiredID);
+
+	if (newSet == NULL)
+	{
+		closeFile(fPtr);
+		return NULL;
+	}
+
+	char argBuffer[MAX_LEN + 1] = {0};
+	Animation *newAnimation = NULL;
 
 	while (!endOfFile(fPtr))
 	{
@@ -373,44 +374,6 @@ int PlayNewObjectAnimation(const char desiredName[], int loopCount, Object *inpu
 }
 
 
-int PlayAnimationAfterOther(const char desiredName[], const char otherAnim[], int loopCount, DisplayData *inputData)
-{
-	if (inputData == NULL || inputData->animationBuffer == NULL) { return MISSING_DATA; }
-	
-	if (strcmp(inputData->animationBuffer->name, otherAnim) != 0 || inputData->currentAnimation != 0)
-	{
-		return EXECUTION_UNNECESSARY;
-	}
-
-	PlayAnimation(desiredName, loopCount, inputData);
-
-
-	return LEMON_SUCCESS;
-}
-
-
-int PlayAnimationAfterOtherPrefix(const char desiredName[], const char otherPrefix[], int loopCount, DisplayData *inputData)
-{
-	if (inputData == NULL || inputData->animationBuffer == NULL) { return MISSING_DATA; }
-
-	int i = strlen(otherPrefix);
-
-	char buffer[MAX_LEN];
-	strcpy(buffer, inputData->animationBuffer->name);
-	buffer[i] = 0;
-	
-	if (strcmp(buffer, otherPrefix) != 0 || inputData->currentAnimation != 0)
-	{
-		return EXECUTION_UNNECESSARY;
-	}
-
-	PlayAnimation(desiredName, loopCount, inputData);
-
-
-	return LEMON_SUCCESS;
-}
-
-
 int getAnimationIndex(const char animationName[], DisplayData *inputData)
 {
 	if (inputData == NULL || inputData->spriteSetSource == NULL || animationName == NULL)
@@ -451,9 +414,23 @@ bool playingAnimation(DisplayData *inputData)
 	return (inputData->currentAnimation != 0);
 }
 
+bool playingThisAnimation(DisplayData *inputData, const char name[])
+{
+	if (inputData == NULL || inputData->currentAnimation == 0 || inputData->animationBuffer == NULL)
+	{
+		return false;
+	}
+	return (strcmp(inputData->animationBuffer->name, name) == 0);
+}
+
 bool objectPlayingAnimation(Object *input)
 {
 	return playingAnimation(getDisplay(input));
+}
+
+bool objectPlayingThisAnimation(Object *input, const char name[])
+{
+	return playingThisAnimation(getDisplay(input), name);
 }
 
 
@@ -538,7 +515,7 @@ Animation* initialiseNewAnimation(const char animationName[], float frameRate, S
 {
 	if (inputSet == NULL)
 	{
-		putConsoleString("Missing SpriteSet for new animation!");
+		putConsoleError("Missing SpriteSet for new animation!");
 		return NULL;
 	}
 
@@ -606,7 +583,7 @@ AnimationFrame* addSpriteToAnimation(const char spriteName[], Animation *inputAn
 
 	if (currentSprite == NULL)
 	{
-		putConsoleString("\nCould not find sprite for animation: %s", spriteName);
+		putConsoleError("Could not find sprite for animation: %s", spriteName);
 		currentSprite = EngineSettings.DefaultTexture;
 	}
 	else if (EngineSettings.DefaultTexture != NULL && strcmp(spriteName, EngineSettings.DefaultTexture->name) == 0)
