@@ -184,7 +184,7 @@ int saveSettings(int saveFile, World *GameWorld)
 	writeBooleanPhrase(fPtr, "DrawParticles", RenderSettings.drawParticles);
 	writeBooleanPhrase(fPtr, "DrawCamViews", RenderSettings.drawCamViews);
 
-	snprintf(buffer, MAX_LEN, "MaxFrameRate: %d", RenderSettings.RendersPerSecond);
+	snprintf(buffer, MAX_LEN, "MaxFrameRate: %d\n", RenderSettings.RendersPerSecond);
 	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
 
 	fwrite("ENDFILE", sizeof(char), 7, fPtr);
@@ -2258,7 +2258,7 @@ bool getNextArgBool(FILE *fPtr)
 
 	if (!strcmp(buffer, "false") || !strcmp(buffer, "no"))
 	{
-		return true;
+		return false;
 	}
 
 	fseek(fPtr, filePos, SEEK_SET);

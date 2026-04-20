@@ -1,0 +1,12 @@
+V0.10
+--SAVE_DATA--
+Resolution: 1280 720
+Fullscreen: false
+Vsync: true
+DrawSprites: true
+DrawBackGround: false
+DrawHUD: true
+DrawParticles: true
+DrawCamViews: true
+MaxFrameRate: 20000
+ENDFILE
