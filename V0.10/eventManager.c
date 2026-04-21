@@ -14,7 +14,7 @@ int StartGame(World *GameWorld)
 	}
 
 	// Logic for handle flow of menus and levels, etc can go here for game start
-	loadLevel(GameWorld, 0);
+	loadLevel(GameWorld, 1);
 
 
 	return LEMON_SUCCESS;
@@ -1633,6 +1633,11 @@ int ConsoleCommand_Object(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 	parseArgument(input, arg);
 
+	if (strcmp(arg, "add") == 0)
+	{
+		return ConsoleCommand_AddObject(input, GameWorld);
+	}
+
 	Object *object = parseArgumentToFindObject(input, ObjectList);
 	if (object == NULL)
 	{
@@ -1723,10 +1728,6 @@ int ConsoleCommand_Object(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	else if (strcmp(arg, "delete") == 0)
 	{
 		object->State = TO_BE_DELETED;
-	}
-	else if (strcmp(arg, "add") == 0)
-	{
-		ConsoleCommand_AddObject(input, GameWorld);
 	}
 	else
 	{

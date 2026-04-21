@@ -22,6 +22,7 @@ SayTextOption: "A Test cutscene from a FILE? HUH!?"	NO_PORTRAIT  2    3
 		"This is working." 0
 
 Wait: 3
+ReleaseActor: "Mysterious block"
 ChangeVariableBy: 0 1
 
 ENDFILE

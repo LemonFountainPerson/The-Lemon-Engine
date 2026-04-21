@@ -34,11 +34,12 @@ playing a cutscene.
 -> Added the 'Event_movePlayer' and 'Event_moveObject' game event functions to schedule the movement of specific objects; this can be useful across loaded levels or for 
 guaranteeing some action if physics may get in the way, for example.
 
--> Added the 'WaitUntil' instruction to the cutscene file loader. Any scene action that you wish to be complete before progressing to the next instruction can be performed
-by writing 'WaitUntil:' before the instruction.
-
--> Added the 'Repeat' instruction to the cutscene file loader. If you wish to have a scene action repeat, you can write 'Repeat:' and then the number of times you want it to
-repeat before the instruction.
+-> Added file loading support for several more scene actions:
+   -Added the 'WaitUntil' instruction to the cutscene file loader. Any scene action that you wish to be complete before progressing to the next instruction can be performed
+   by writing 'WaitUntil:' before the instruction.
+   -Added the 'Repeat' instruction to the cutscene file loader. If you wish to have a scene action repeat, you can write 'Repeat:' and then the number of times you want it to
+   repeat before the instruction.
+   -Added the 'ReleaseActor' instruction, used to unmark an object as an Actor. This means it will not be deleted once the cutscene ends, as objects marked as Actor always are.
 
 -> Added the 'TextConfig' and its associated functions to operate the new TTF text renderer. A default font can be set in config.h, and this default can be changed during runtime.
 

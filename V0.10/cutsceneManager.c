@@ -78,7 +78,7 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 	default:
 		char fileName[CUTSCENE_FILE_NAME_MAX] = {0};
 		snprintf(fileName, CUTSCENE_FILE_NAME_MAX, "Scene%d", inputID);
-		
+
 		if (LoadCutsceneFromFile(fileName, GameWorld) != LEMON_SUCCESS)
 		{
 			return LEMON_ERROR;
@@ -147,383 +147,6 @@ int LoadCutsceneFromFile(const char sceneName[], World *GameWorld)
 	}
 
 	return LEMON_SUCCESS;
-}
-
-SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_LEN], World *GameWorld, FILE *fPtr)
-{
-	stringToUpper(inputString);
-
-	if (strcmp(inputString, "SAYTEXT:") == 0)
-	{
-		getNextArg(fPtr, textBoxString, MAX_TEXT_LENGTH);
-		getNextArg(fPtr, inputString, MAX_LEN);
-		SayText(textBoxString, inputString, getNextArgInt(fPtr), GameWorld);
-	}
-	if (strcmp(inputString, "SAYTEXTOPTION:") == 0)
-	{
-		getNextArg(fPtr, textBoxString, MAX_TEXT_LENGTH);
-		getNextArg(fPtr, inputString, MAX_LEN);
-		int Preset = getNextArgInt(fPtr);
-		int numberOfOptions = getNextArgInt(fPtr);
-
-		char options[MAX_TEXT_OPTIONS][OPTION_TEXT_MAX_LEN] = {0};
-		int sceneID[MAX_TEXT_OPTIONS] = {0};
-
-		for (int i = 0; i < numberOfOptions && i < MAX_TEXT_OPTIONS; i++)
-		{
-			getNextArg(fPtr, options[i], OPTION_TEXT_MAX_LEN);
-			sceneID[i] = getNextArgInt(fPtr);
-		}
-
-		switch (numberOfOptions)
-		{
-		case 1:
-			{
-				SayTextOption(textBoxString, inputString, Preset, GameWorld, 1, 
-						options[0], playCutscene(sceneID[0], GameWorld));
-			} break;
-
-		case 2:
-			{
-				SayTextOption(textBoxString, inputString, Preset, GameWorld, 2, 
-						options[0], playCutscene(sceneID[0], GameWorld), 
-						options[1], playCutscene(sceneID[1], GameWorld));
-			} break;
-
-		case 3:
-			{
-				SayTextOption(textBoxString, inputString, Preset, GameWorld, 3, 
-						options[0], playCutscene(sceneID[0], GameWorld), 
-						options[1], playCutscene(sceneID[1], GameWorld),
-						options[2], playCutscene(sceneID[2], GameWorld));
-			} break;
-
-		case 4:
-			{
-				SayTextOption(textBoxString, inputString, Preset, GameWorld, 4, 
-						options[0], playCutscene(sceneID[0], GameWorld), 
-						options[1], playCutscene(sceneID[1], GameWorld),
-						options[2], playCutscene(sceneID[2], GameWorld),
-						options[3], playCutscene(sceneID[3], GameWorld));
-			} break;
-		 
-		default:
-			break;
-		}
-
-	}
-	else if (strcmp(inputString, "WAIT:") == 0)
-	{
-		return Wait(getNextArgFloat(fPtr), GameWorld);
-	}
-	else if (strcmp(inputString, "ENDCUTSCENE") == 0)
-	{
-		END_SCENE_HERE;
-	}
-	else if (strcmp(inputString, "CHANGEGAMEFLAG:") == 0 || strcmp(inputString, "INCREMENTGAMEFLAG:") == 0 || strcmp(inputString, "DECREMENTGAMEFLAG:") == 0)
-	{
-		int index = getNextArgGameFlag(fPtr);
-		
-		int value = getNextArgInt(fPtr);
-		if (strcmp(inputString, "DECREMENTGAMEFLAG:") == 0)
-		{
-			value = -value;
-		}
-
-		return changeVariableBy(index, value, GameWorld);
-	}
-	else if (strcmp(inputString, "SETGAMEFLAG:") == 0 || strcmp(inputString, "SETFLAG:") == 0)
-	{
-		int index = getNextArgGameFlag(fPtr);
-
-		int value = getNextArgInt(fPtr);
-		return setVariableTo(index, value, GameWorld);
-	}
-	else if (strcmp(inputString, "IFVARIABLE:") == 0)
-	{
-		int index = getNextArgGameFlag(fPtr);
-
-		getNextArg(fPtr, textBoxString, 3);
-		int value = getNextArgInt(fPtr);
-
-		getNextArg(fPtr, inputString, MAX_LEN);
-		long filePos = ftell(fPtr);
-
-		int ifTrue = NO_CUTSCENE;
-		int ifFalse = NO_CUTSCENE;
-		char ifTrueString[MAX_LEN] = {0};
-		char ifFalseString[MAX_LEN] = {0};
-
-		if (strcmp(inputString, "THEN:") == 0)
-		{
-			if (hasNextArgInt(fPtr))
-			{
-				ifTrue = getNextArgInt(fPtr);
-			}
-			else
-			{
-				getNextArg(fPtr, ifTrueString, CUTSCENE_FILE_NAME_MAX);
-			}
-
-			getNextArg(fPtr, inputString, MAX_LEN);
-		}
-
-		if (strcmp(inputString, "ELSE:") == 0)
-		{
-			if (hasNextArgInt(fPtr))
-			{
-				ifFalse = getNextArgInt(fPtr);
-			}
-			else
-			{
-				getNextArg(fPtr, ifFalseString, CUTSCENE_FILE_NAME_MAX);
-			}
-		}
-		else
-		{
-			fseek(fPtr, filePos, SEEK_SET);
-		}
-
-		SceneAction *action = mapSymbolToIfAction(index, value, ifTrue, ifFalse, textBoxString, GameWorld);
-
-		if (action != NULL)
-		{
-			// does not allow the scene currently playing to start itself, or a file with the name of "0" to play, so there is distinction between files and NO_CUTSCENE
- 			if (ifTrueString[0] != 0 && strcmp(ifTrueString, "0"))
-			{
-				strcpy(action->ActionData.branchData.ifTrueString, ifTrueString);
-			}
-		
-			if (ifFalseString[0] != 0 && strcmp(ifFalseString, "0"))
-			{
-				strcpy(action->ActionData.branchData.ifFalseString, ifFalseString);
-			}
-		}
-
-		if (ifTrueString[0] == 0 && ifFalseString[0] == 0 && ifTrue == 0 && ifFalse == 0)
-		{
-			deleteSceneAction(action, GameWorld);
-			return NULL;
-		}
-
-		return action;
-	}
-	else if (strcmp(inputString, "ANIMATEACTOR:") == 0)
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		getNextArg(fPtr, textBoxString, MAX_LEN);
-		return AnimateActor(inputString, textBoxString, getNextArgInt(fPtr), GameWorld);
-	}
-	else if (strcmp(inputString, "SETACTORSPRITE:") == 0)
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		getNextArg(fPtr, textBoxString, MAX_LEN);
-		return SwitchActorSprite(inputString, textBoxString, GameWorld);
-	}
-	else if (strcmp(inputString, "SETACTORPOS:") == 0)
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		float xPos =  getNextArgFloat(fPtr);
-		return SetActorPosition(inputString, xPos, getNextArgFloat(fPtr), GameWorld);
-	}
-	else if (strcmp(inputString, "MOVEACTOR:") == 0)
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		float xMove = getNextArgFloat(fPtr);
-		float yMove = getNextArgFloat(fPtr);
-		int repeatTimes = getNextArgInt(fPtr);
-		return MoveActor(inputString, xMove, yMove, repeatTimes, GameWorld);
-	}
-	else if (strcmp(inputString, "MOVEACTORX:") == 0)
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		float xMove = getNextArgFloat(fPtr);
-		int repeatTimes = getNextArgInt(fPtr);
-		return MoveActorX(inputString, xMove, repeatTimes, GameWorld);
-	}
-	else if (strcmp(inputString, "MOVEACTORY:") == 0)
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		float yMove = getNextArgFloat(fPtr);
-		int repeatTimes = getNextArgInt(fPtr);
-		return MoveActorY(inputString, yMove, repeatTimes, GameWorld);
-	}
-	else if (strcmp(inputString, "ROTATEACTOR:") == 0)
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		double rotation = (double)getNextArgFloat(fPtr);
-		int repeat = getNextArgInt(fPtr);
-		return RotateActor(inputString, rotation, repeat, GameWorld);
-	}
-	else if (strcmp(inputString, "SETACTORDIRECTION:") == 0)
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		return SetActorDirection(inputString, (double)getNextArgFloat(fPtr), GameWorld);
-	}
-	else if (strcmp(inputString, "HIDEACTOR:") == 0)
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		return HideActor(inputString, GameWorld);
-	}
-	else if (strcmp(inputString, "SHOWACTOR:") == 0)
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		return ShowActor(inputString, GameWorld);
-	}
-	else if (strcmp(inputString, "CREATEACTOR:") == 0)
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		int ID = getNextArgInt(fPtr);
-		float xPos = getNextArgFloat(fPtr);
-		float yPos = getNextArgFloat(fPtr);
-		return CreateActor(inputString, ID, xPos, yPos, GameWorld);
-	}
-	else if (strcmp(inputString, "SETACTORLAYER:") == 0)
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		return SetActorLayer(inputString, getNextArgInt(fPtr), GameWorld);
-	}
-	else if (strcmp(inputString, "PLAYSOUND:") == 0)
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		getNextArg(fPtr, textBoxString, MAX_LEN);
-		int channel = getNextArgInt(fPtr);
-		float volume = getNextArgFloat(fPtr);
-
-		return SceneAction_PlaySound(inputString, textBoxString, channel, volume, GameWorld);
-	}
-	else if (strcmp(inputString, "SETCHANNELVOL:") == 0)
-	{
-		int channel = getNextArgFloat(fPtr);
-		float volume = getNextArgFloat(fPtr);
-		return SceneAction_SetSoundChannelVolume(channel, volume, GameWorld);
-	}
-	else if (strcmp(inputString, "CHANGECHANNELVOL:") == 0)
-	{
-		int channel = getNextArgInt(fPtr);
-		float volume = getNextArgFloat(fPtr);
-		return SceneAction_ChangeSoundChannelVolume(channel, volume, GameWorld);
-	}
-	else if (strcmp(inputString, "SETCAMERAPOS:") == 0)
-	{
-		float xPos = getNextArgFloat(fPtr);
-		float yPos = getNextArgFloat(fPtr);
-		return SceneAction_SetCameraPosition(xPos, yPos, GameWorld);
-	}
-	else if (strcmp(inputString, "MOVECAMERA:") == 0)
-	{
-		float xMove = getNextArgFloat(fPtr);
-		float yMove = getNextArgFloat(fPtr);
-		return SceneAction_MoveCamera(xMove, yMove, getNextArgInt(fPtr), GameWorld);
-	}
-	else if (!strcmp(inputString, "SMOOTHMOVECAMERATO:") || !strcmp(inputString, "MOVECAMERATO:"))
-	{
-		float xPos = getNextArgFloat(fPtr);
-		float yPos = getNextArgFloat(fPtr);
-		return SceneAction_MoveCameraSmooth(xPos, yPos, getNextArgFloat(fPtr), GameWorld);
-	}
-	else if (!strcmp(inputString, "SETCAMERAZOOM:") || !strcmp(inputString, "SETZOOM:"))
-	{
-		float xZoom = getNextArgFloat(fPtr);
-		float yZoom = getNextArgFloat(fPtr);
-		return SceneAction_SetZoom(xZoom, yZoom, GameWorld);
-	}
-	else if (!strcmp(inputString, "SETCAMERAZOOM:") || !strcmp(inputString, "SETZOOM:"))
-	{
-		float xZoom = getNextArgFloat(fPtr);
-		float yZoom = getNextArgFloat(fPtr);
-		return SceneAction_ChangeZoom(xZoom, yZoom, getNextArgInt(fPtr), GameWorld);
-	}
-	else if (!strcmp(inputString, "PLACEWALL:") || !strcmp(inputString, "PLACEINVISWALL:") || !strcmp(inputString, "PLACEINVISIBLEWALL"))
-	{
-		int xPos = getNextArgInt(fPtr);
-		int yPos = getNextArgInt(fPtr);
-		int xSize = getNextArgInt(fPtr);
-		int ySize = getNextArgInt(fPtr);
-
-		// add 'CamRelative' or 'OnScreen' after the command to place the wall relative to the camera position
-		if (!atEndOfLine(fPtr))
-		{
-			getNextArg(fPtr, inputString, MAX_LEN); 
-			stringToUpper(inputString);
-
-			if (!strcmp(inputString, "CAMRELATIVE") || !strcmp(inputString, "ONSCREEN"))
-			{
-				return placeInvisibleWall(xPos + (int)GameWorld->MainCamera.CameraX, yPos + (int)GameWorld->MainCamera.CameraY, xSize, ySize, GameWorld);
-			}
-		}
-
-		return placeInvisibleWall(xPos, yPos, xSize, ySize, GameWorld);
-	}
-	else if (!strcmp(inputString, "ENABLEPLAYER") || !strcmp(inputString, "ALLOWPLAYERCONTROL"))
-	{
-		return enablePlayer(GameWorld);
-	}
-	else if (!strcmp(inputString, "DISABLEPLAYER") || !strcmp(inputString, "REMOVEPLAYERCONTROL"))
-	{
-		return disablePlayer(GameWorld);
-	}
-	else if (!strcmp(inputString, "STATICSCENE:"))
-	{
-		bool staticScene = getNextArgBool(fPtr);
-
-		if (!staticScene)
-		{
-			GameWorld->GameState = GAMEPLAY;
-		}
-	}
-	else if (!strcmp(inputString, "WAITUNTIL:") && strcmp(textBoxString, "Wait_Until:"))
-	{
-		getNextArg(fPtr, inputString, MAX_LEN);
-		strcpy(textBoxString, "Wait_Until:");	// prevents 2 or more wait untils from happening in a row
-
-		WaitUntil(loadSceneAction(inputString, textBoxString, GameWorld, fPtr));
-	}
-	else if (!strcmp(inputString, "REPEAT:") && strcmp(textBoxString, "Repeat_Instruction:"))
-	{
-		int repeatTimes = getNextArgInt(fPtr);
-
-		getNextArg(fPtr, inputString, MAX_LEN);
-
-		if (inputString[0] != '{')
-		{
-			return NULL;
-		}
-
-		SceneAction *instructions = NULL;
-		int count = 0;
-
-		while (inputString[0] != '}')
-		{
-			getNextArg(fPtr, inputString, MAX_LEN);
-
-			if (inputString[0] == '}')
-			{
-				continue;
-			}
-		
-			strcpy(textBoxString, "Repeat_Instruction:");	
-			if (instructions == NULL)
-			{
-				instructions = loadSceneAction(inputString, textBoxString, GameWorld, fPtr);
-			}
-			else
-			{
-				loadSceneAction(inputString, textBoxString, GameWorld, fPtr);
-			}
-			count++;
-		}
-		
-		RepeatArray(repeatTimes, count, instructions);
-	}
-	else if (inputString[0] == '>')
-	{
-		skipCommentInFile(fPtr);
-	}
-
-	// add all other commands here
-
-	return NULL;
 }
 
 
@@ -865,8 +488,10 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 	case SCENE_RELEASE_ACTOR:
 		{
 			inputAction->repeatTimes = 0;
+			putConsoleStringTS("Hello");
 			if (inputAction->ActorObject != NULL && inputAction->ActorObject->State == ACTOR_STATE)
 			{
+				putConsoleStringTS("Hello again");
 				inputAction->ActorObject->State = DEFAULT_STATE;
 			}
 		} break;
@@ -930,13 +555,13 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 			}
 		} break;
 
-	case SCENE_SET_SCREEN_ZOOM:
+	case SCENE_SET_CAMERA_ZOOM:
 		{
 			GameWorld->MainCamera.zoomX = currentData.zoomScales[0];
 			GameWorld->MainCamera.zoomY = currentData.zoomScales[1];
 		} break;
 
-	case SCENE_CHANGE_SCREEN_ZOOM:
+	case SCENE_CHANGE_CAMERA_ZOOM:
 		{
 			GameWorld->MainCamera.zoomX += currentData.zoomScales[0];
 			GameWorld->MainCamera.zoomY += currentData.zoomScales[1];
@@ -960,6 +585,484 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
+
+SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_LEN], World *GameWorld, FILE *fPtr)
+{
+	stringToUpper(inputString);
+
+	if (strcmp(inputString, "SAYTEXT:") == 0)
+	{
+		getNextArg(fPtr, textBoxString, MAX_TEXT_LENGTH);
+		getNextArg(fPtr, inputString, MAX_LEN);
+		SayText(textBoxString, inputString, getNextArgInt(fPtr), GameWorld);
+	}
+	if (strcmp(inputString, "SAYTEXTOPTION:") == 0)
+	{
+		getNextArg(fPtr, textBoxString, MAX_TEXT_LENGTH);
+		getNextArg(fPtr, inputString, MAX_LEN);
+		int Preset = getNextArgInt(fPtr);
+		int numberOfOptions = getNextArgInt(fPtr);
+
+		char options[MAX_TEXT_OPTIONS][OPTION_TEXT_MAX_LEN] = {0};
+		int sceneID[MAX_TEXT_OPTIONS] = {0};
+
+		for (int i = 0; i < numberOfOptions && i < MAX_TEXT_OPTIONS; i++)
+		{
+			getNextArg(fPtr, options[i], OPTION_TEXT_MAX_LEN);
+			sceneID[i] = getNextArgInt(fPtr);
+		}
+
+		switch (numberOfOptions)
+		{
+		case 1:
+			{
+				SayTextOption(textBoxString, inputString, Preset, GameWorld, 1, 
+						options[0], playCutscene(sceneID[0], GameWorld));
+			} break;
+
+		case 2:
+			{
+				SayTextOption(textBoxString, inputString, Preset, GameWorld, 2, 
+						options[0], playCutscene(sceneID[0], GameWorld), 
+						options[1], playCutscene(sceneID[1], GameWorld));
+			} break;
+
+		case 3:
+			{
+				SayTextOption(textBoxString, inputString, Preset, GameWorld, 3, 
+						options[0], playCutscene(sceneID[0], GameWorld), 
+						options[1], playCutscene(sceneID[1], GameWorld),
+						options[2], playCutscene(sceneID[2], GameWorld));
+			} break;
+
+		case 4:
+			{
+				SayTextOption(textBoxString, inputString, Preset, GameWorld, 4, 
+						options[0], playCutscene(sceneID[0], GameWorld), 
+						options[1], playCutscene(sceneID[1], GameWorld),
+						options[2], playCutscene(sceneID[2], GameWorld),
+						options[3], playCutscene(sceneID[3], GameWorld));
+			} break;
+		 
+		default:
+			break;
+		}
+
+	}
+	else if (strcmp(inputString, "WAIT:") == 0)
+	{
+		return Wait(getNextArgFloat(fPtr), GameWorld);
+	}
+	else if (strcmp(inputString, "ENDCUTSCENE") == 0)
+	{
+		END_SCENE_HERE;
+	}
+	else if (strcmp(inputString, "CHANGEGAMEFLAG:") == 0 || strcmp(inputString, "INCREMENTGAMEFLAG:") == 0 || strcmp(inputString, "DECREMENTGAMEFLAG:") == 0)
+	{
+		int index = getNextArgGameFlag(fPtr);
+		
+		int value = getNextArgInt(fPtr);
+		if (strcmp(inputString, "DECREMENTGAMEFLAG:") == 0)
+		{
+			value = -value;
+		}
+
+		return changeVariableBy(index, value, GameWorld);
+	}
+	else if (strcmp(inputString, "SETGAMEFLAG:") == 0 || strcmp(inputString, "SETFLAG:") == 0)
+	{
+		int index = getNextArgGameFlag(fPtr);
+
+		int value = getNextArgInt(fPtr);
+		return setVariableTo(index, value, GameWorld);
+	}
+	else if (strcmp(inputString, "IFVARIABLE:") == 0)
+	{
+		int index = getNextArgGameFlag(fPtr);
+
+		getNextArg(fPtr, textBoxString, 3);
+		int value = getNextArgInt(fPtr);
+
+		getNextArg(fPtr, inputString, MAX_LEN);
+		long filePos = ftell(fPtr);
+
+		int ifTrue = NO_CUTSCENE;
+		int ifFalse = NO_CUTSCENE;
+		char ifTrueString[MAX_LEN] = {0};
+		char ifFalseString[MAX_LEN] = {0};
+
+		if (strcmp(inputString, "THEN:") == 0)
+		{
+			if (hasNextArgInt(fPtr))
+			{
+				ifTrue = getNextArgInt(fPtr);
+			}
+			else
+			{
+				getNextArg(fPtr, ifTrueString, CUTSCENE_FILE_NAME_MAX);
+			}
+
+			getNextArg(fPtr, inputString, MAX_LEN);
+		}
+
+		if (strcmp(inputString, "ELSE:") == 0)
+		{
+			if (hasNextArgInt(fPtr))
+			{
+				ifFalse = getNextArgInt(fPtr);
+			}
+			else
+			{
+				getNextArg(fPtr, ifFalseString, CUTSCENE_FILE_NAME_MAX);
+			}
+		}
+		else
+		{
+			fseek(fPtr, filePos, SEEK_SET);
+		}
+
+		SceneAction *action = mapSymbolToIfAction(index, value, ifTrue, ifFalse, textBoxString, GameWorld);
+
+		if (action != NULL)
+		{
+			// does not allow the scene currently playing to start itself, or a file with the name of "0" to play, so there is distinction between files and NO_CUTSCENE
+ 			if (ifTrueString[0] != 0 && strcmp(ifTrueString, "0"))
+			{
+				strcpy(action->ActionData.branchData.ifTrueString, ifTrueString);
+			}
+		
+			if (ifFalseString[0] != 0 && strcmp(ifFalseString, "0"))
+			{
+				strcpy(action->ActionData.branchData.ifFalseString, ifFalseString);
+			}
+		}
+
+		if (ifTrueString[0] == 0 && ifFalseString[0] == 0 && ifTrue == 0 && ifFalse == 0)
+		{
+			deleteSceneAction(action, GameWorld);
+			return NULL;
+		}
+
+		return action;
+	}
+	else if (strcmp(inputString, "ANIMATEACTOR:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		getNextArg(fPtr, textBoxString, MAX_LEN);
+		return AnimateActor(inputString, textBoxString, getNextArgInt(fPtr), GameWorld);
+	}
+	else if (strcmp(inputString, "SETACTORSPRITE:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		getNextArg(fPtr, textBoxString, MAX_LEN);
+		return SwitchActorSprite(inputString, textBoxString, GameWorld);
+	}
+	else if (strcmp(inputString, "SETACTORPOS:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		float xPos =  getNextArgFloat(fPtr);
+		return SetActorPosition(inputString, xPos, getNextArgFloat(fPtr), GameWorld);
+	}
+	else if (strcmp(inputString, "MOVEACTOR:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		float xMove = getNextArgFloat(fPtr);
+		float yMove = getNextArgFloat(fPtr);
+		int repeatTimes = getNextArgInt(fPtr);
+		return MoveActor(inputString, xMove, yMove, repeatTimes, GameWorld);
+	}
+	else if (strcmp(inputString, "MOVEACTORX:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		float xMove = getNextArgFloat(fPtr);
+		int repeatTimes = getNextArgInt(fPtr);
+		return MoveActorX(inputString, xMove, repeatTimes, GameWorld);
+	}
+	else if (strcmp(inputString, "MOVEACTORY:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		float yMove = getNextArgFloat(fPtr);
+		int repeatTimes = getNextArgInt(fPtr);
+		return MoveActorY(inputString, yMove, repeatTimes, GameWorld);
+	}
+	else if (strcmp(inputString, "ROTATEACTOR:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		double rotation = (double)getNextArgFloat(fPtr);
+		int repeat = getNextArgInt(fPtr);
+		return RotateActor(inputString, rotation, repeat, GameWorld);
+	}
+	else if (strcmp(inputString, "SETACTORDIRECTION:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		return SetActorDirection(inputString, (double)getNextArgFloat(fPtr), GameWorld);
+	}
+	else if (strcmp(inputString, "HIDEACTOR:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		return HideActor(inputString, GameWorld);
+	}
+	else if (strcmp(inputString, "SHOWACTOR:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		return ShowActor(inputString, GameWorld);
+	}
+	else if (strcmp(inputString, "CREATEACTOR:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		int ID = getNextArgInt(fPtr);
+		float xPos = getNextArgFloat(fPtr);
+		float yPos = getNextArgFloat(fPtr);
+		return CreateActor(inputString, ID, xPos, yPos, GameWorld);
+	}
+	else if (strcmp(inputString, "RELEASEACTOR:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		return ReleaseActor(inputString, GameWorld);
+	}
+	else if (strcmp(inputString, "SETACTORLAYER:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		return SetActorLayer(inputString, getNextArgInt(fPtr), GameWorld);
+	}
+	else if (strcmp(inputString, "PLAYSOUND:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		getNextArg(fPtr, textBoxString, MAX_LEN);
+		int channel = getNextArgInt(fPtr);
+		float volume = getNextArgFloat(fPtr);
+
+		return SceneAction_PlaySound(inputString, textBoxString, channel, volume, GameWorld);
+	}
+	else if (strcmp(inputString, "SETCHANNELVOL:") == 0)
+	{
+		int channel = getNextArgFloat(fPtr);
+		float volume = getNextArgFloat(fPtr);
+		return SceneAction_SetSoundChannelVolume(channel, volume, GameWorld);
+	}
+	else if (strcmp(inputString, "CHANGECHANNELVOL:") == 0)
+	{
+		int channel = getNextArgInt(fPtr);
+		float volume = getNextArgFloat(fPtr);
+		return SceneAction_ChangeSoundChannelVolume(channel, volume, GameWorld);
+	}
+	else if (strcmp(inputString, "SETCAMERAPOS:") == 0)
+	{
+		float xPos = getNextArgFloat(fPtr);
+		float yPos = getNextArgFloat(fPtr);
+		return SceneAction_SetCameraPosition(xPos, yPos, GameWorld);
+	}
+	else if (strcmp(inputString, "MOVECAMERA:") == 0)
+	{
+		float xMove = getNextArgFloat(fPtr);
+		float yMove = getNextArgFloat(fPtr);
+		return SceneAction_MoveCamera(xMove, yMove, getNextArgInt(fPtr), GameWorld);
+	}
+	else if (!strcmp(inputString, "SMOOTHMOVECAMERATO:") || !strcmp(inputString, "MOVECAMERATO:"))
+	{
+		float xPos = getNextArgFloat(fPtr);
+		float yPos = getNextArgFloat(fPtr);
+		return SceneAction_MoveCameraSmooth(xPos, yPos, getNextArgFloat(fPtr), GameWorld);
+	}
+	else if (!strcmp(inputString, "SETCAMERAZOOM:") || !strcmp(inputString, "SETZOOM:"))
+	{
+		float xZoom = getNextArgFloat(fPtr);
+		float yZoom = getNextArgFloat(fPtr);
+		return SceneAction_SetZoom(xZoom, yZoom, GameWorld);
+	}
+	else if (!strcmp(inputString, "SETCAMERAZOOM:") || !strcmp(inputString, "SETZOOM:"))
+	{
+		float xZoom = getNextArgFloat(fPtr);
+		float yZoom = getNextArgFloat(fPtr);
+		return SceneAction_ChangeZoom(xZoom, yZoom, getNextArgInt(fPtr), GameWorld);
+	}
+	else if (!strcmp(inputString, "PLACEWALL:") || !strcmp(inputString, "PLACEINVISWALL:") || !strcmp(inputString, "PLACEINVISIBLEWALL"))
+	{
+		int xPos = getNextArgInt(fPtr);
+		int yPos = getNextArgInt(fPtr);
+		int xSize = getNextArgInt(fPtr);
+		int ySize = getNextArgInt(fPtr);
+
+		// add 'CamRelative' or 'OnScreen' after the command to place the wall relative to the camera position
+		if (!atEndOfLine(fPtr))
+		{
+			getNextArg(fPtr, inputString, MAX_LEN); 
+			stringToUpper(inputString);
+
+			if (!strcmp(inputString, "CAMRELATIVE") || !strcmp(inputString, "ONSCREEN"))
+			{
+				return placeInvisibleWall(xPos + (int)GameWorld->MainCamera.CameraX, yPos + (int)GameWorld->MainCamera.CameraY, xSize, ySize, GameWorld);
+			}
+		}
+
+		return placeInvisibleWall(xPos, yPos, xSize, ySize, GameWorld);
+	}
+	else if (!strcmp(inputString, "ENABLEPLAYER") || !strcmp(inputString, "ALLOWPLAYERCONTROL"))
+	{
+		return enablePlayer(GameWorld);
+	}
+	else if (!strcmp(inputString, "DISABLEPLAYER") || !strcmp(inputString, "REMOVEPLAYERCONTROL"))
+	{
+		return disablePlayer(GameWorld);
+	}
+	else if (!strcmp(inputString, "STATICSCENE:"))
+	{
+		bool staticScene = getNextArgBool(fPtr);
+
+		if (!staticScene)
+		{
+			GameWorld->GameState = GAMEPLAY;
+		}
+	}
+	else if (!strcmp(inputString, "WAITUNTIL:") && strcmp(textBoxString, "Wait_Until:"))
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		strcpy(textBoxString, "Wait_Until:");	// prevents 2 or more wait untils from happening in a row
+
+		WaitUntil(loadSceneAction(inputString, textBoxString, GameWorld, fPtr));
+	}
+	else if (!strcmp(inputString, "REPEAT:") && strcmp(textBoxString, "Repeat_Instruction:"))
+	{
+		int repeatTimes = getNextArgInt(fPtr);
+
+		getNextArg(fPtr, inputString, MAX_LEN);
+
+		if (inputString[0] != '{')
+		{
+			return NULL;
+		}
+
+		SceneAction *instructions = NULL;
+		int count = 0;
+
+		while (inputString[0] != '}')
+		{
+			getNextArg(fPtr, inputString, MAX_LEN);
+
+			if (inputString[0] == '}')
+			{
+				continue;
+			}
+		
+			strcpy(textBoxString, "Repeat_Instruction:");	
+			if (instructions == NULL)
+			{
+				instructions = loadSceneAction(inputString, textBoxString, GameWorld, fPtr);
+			}
+			else
+			{
+				loadSceneAction(inputString, textBoxString, GameWorld, fPtr);
+			}
+			count++;
+		}
+		
+		RepeatArray(repeatTimes, count, instructions);
+	}
+
+	// add all other commands here
+
+	return NULL;
+}
+
+const char* getSceneActionName(SceneActionID input)
+{
+	switch (input)
+	{
+	case SCENE_END:
+		return "End cutscene";
+
+	case SCENE_WAIT:
+		return "Wait";
+
+	case SCENE_SAY_TEXT:
+		return "Say Text";
+
+	case SCENE_CREATE_ACTOR:
+		return "Create Actor";
+
+	case SCENE_HIDE_ACTOR:
+		return "Hide Actor";
+
+	case SCENE_SHOW_ACTOR:
+		return "Show Actor";
+
+	case SCENE_RELEASE_ACTOR:
+		return "Release Actor";
+
+	case SCENE_IF_EQUALS:
+	case SCENE_IF_LESS_THAN:
+	case SCENE_IF_GREATER_THAN:
+		return "Conditional Branch (If statement)";
+
+	case SCENE_ROTATE_ACTOR:
+		return "Rotate Actor";
+
+	case SCENE_ANIMATE_ACTOR:
+		return "Animate Actor";
+
+	case SCENE_MOVE_ACTOR_X:
+	case SCENE_MOVE_ACTOR_Y:
+	case SCENE_MOVE_ACTOR:
+		return "Move Actor";
+
+	case SCENE_PLACE_INVISIBLE_WALL:
+		return "Place invisible wall";
+
+	case SCENE_MOVE_CAMERA:
+		return "Move Camera";
+
+	case SCENE_MOVE_CAMERA_SMOOTH:
+		return "Move Camera smoothly";
+
+	case SCENE_SET_CAMERA_POS:
+		return "Set Camera Position";
+
+	case SCENE_SET_CAMERA_ZOOM:
+		return "Set Camera zoom";
+
+	case SCENE_CHANGE_CAMERA_ZOOM:
+		return "Change Camera zoom";
+
+	case SCENE_SET_ACTOR_POS:
+		return "Set Actor position";
+
+	case SCENE_SET_ACTOR_LAYER:
+		return "Set Actor layer";
+
+	case SCENE_SET_ACTOR_SPRITE:
+		return "Set Actor Sprite";
+
+	case SCENE_SET_ACTOR_DIRECTION:
+		return "Set Actor direction";
+
+	case SCENE_ENABLE_PLAYER:
+		return "Enable Player";
+
+	case SCENE_DISABLE_PLAYER:
+		return "Disable Player";
+		
+	case SCENE_TRIGGER_GAME_EVENT:
+		return "Trigger GameEvent";
+
+	case SCENE_CHANGE_VARIABLE_BY:
+		return "Change GameFlag";
+
+	case SCENE_SET_VARIABLE_TO:
+		return "Set GameFlag";
+
+	case SCENE_PLAY_SOUND:
+		return "Play sound";
+
+	case SCENE_SET_CHANNEL_VOL:
+		return "Set channel volume";
+
+	case SCENE_CHANGE_CHANNEL_VOL:
+		return "Change channel volume";
+
+	default:
+		return "Unmapped SceneAction";
+	}
+}
 
 int EndCutscene(World *GameWorld)
 {
@@ -2070,7 +2173,7 @@ SceneAction* SceneAction_SetZoom(float zoomX, float zoomY, World *GameWorld)
 		return NULL;
 	}
 
-	SceneAction *newAction = createSceneAction(SCENE_SET_SCREEN_ZOOM, GameWorld);
+	SceneAction *newAction = createSceneAction(SCENE_SET_CAMERA_ZOOM, GameWorld);
 	if (newAction == NULL)
 	{
 		return NULL;
@@ -2090,7 +2193,7 @@ SceneAction* SceneAction_ChangeZoom(float zoomX, float zoomY, int repeatTimes, W
 		return NULL;
 	}
 
-	SceneAction *newAction = createSceneAction(SCENE_CHANGE_SCREEN_ZOOM, GameWorld);
+	SceneAction *newAction = createSceneAction(SCENE_CHANGE_CAMERA_ZOOM, GameWorld);
 	if (newAction == NULL)
 	{
 		return NULL;
@@ -2153,7 +2256,7 @@ SceneAction* createSceneAction(SceneActionID newActionID, World *GameWorld)
 
 	if (DebugSettings.showSceneActions)
 	{
-		putConsoleStringTS("Running scene action ID: %d", newActionID);
+		putConsoleStringTS("Running scene action ID: %d (%s)", newActionID, getSceneActionName(newActionID));
 	}
 
 	return newAction;

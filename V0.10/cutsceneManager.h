@@ -12,8 +12,10 @@ int updateSceneActions(World *GameWorld);
 
 int RunSceneAction(SceneAction *inputAction, World *GameWorld);
 
-int EndCutscene(World *GameWorld);
+const char* getSceneActionName(SceneActionID input);
 
+
+int EndCutscene(World *GameWorld);
 
 int WaitUntil(SceneAction *inputAction);
 
