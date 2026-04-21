@@ -2,10 +2,5 @@ V0.10
 --SAVE_DATA--
 Level: 1
 GameFlags: {
-"has": 0
-"is": 0
-"ate cheesecrusts?": 0
-"wearing": 0
-"player_finished_campaign": 0
-"secrets": 0 }
+"Flag 1": 0 }
 ENDFILE

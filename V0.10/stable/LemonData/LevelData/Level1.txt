@@ -27,13 +27,13 @@ OBJECT:		1	5920 320 20 2 4
 ////OBJECT:	2	3428	0	256	64	-1
 ////OBJECT:	16	1472	1120	3264	64	
 ////OBJECT:	17	1472	0	0 	900
-OBJECT:	18, 	3200, 64, 64, 64
+OBJECT:	18, 	3200, 64, 64, 64	setname {pushbox}
 
 			
 ////OBJECT:	9	3000	96	2500	4000	6	105
 
-REPEAT: times = 20, XOffset = 64, times=8, YOffset=64, 
-{ OBJECT: 8 2200 192 }
+>REPEAT: times = 20, XOffset = 64, times=8, YOffset=64, 
+>{ OBJECT: 8 2200 192 }
 
 
 ////OBJECT:	2	6500	0	128	192	

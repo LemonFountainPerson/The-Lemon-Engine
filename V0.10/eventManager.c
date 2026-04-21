@@ -2038,6 +2038,17 @@ int ConsoleCommand_Cutscene(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 			initialiseCutsceneFromFile(arg, GameWorld);
 		}
 	}
+	else if (strcmp(arg, "stop") == 0)
+	{
+		if (GameWorld->CurrentCutscene != NO_CUTSCENE)
+		{
+			GameWorld->CurrentCutscene = END_CUTSCENE;
+			if (GameWorld->TextQueue != NULL)
+			{
+				clearTextQueue(GameWorld);
+			}
+		}
+	}
 	else
 	{
 		return INVALID_DATA;

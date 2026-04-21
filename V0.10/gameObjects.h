@@ -273,7 +273,7 @@ int UpdateParticle(World *GameWorld, Object *particle);
 int CustomParticleBehaviour(World *GameWorld, Object *particle);
 
 
-int UpdateGateSwitch(PlayerData player, Object *gateSwitch, ObjectController *ObjectList);
+int UpdateGateSwitch(Object *gateSwitch, World *GameWorld);
 
 int toggleGateSwitch(Object *gateSwitch, ObjectController *ObjectList);
 
@@ -289,11 +289,11 @@ int UpdateHorizontalPlatform(Object *platform);
 int UpdateVerticalPlatform(Object *platform);
 
 
-int UpdateDoor(PlayerData Player, Object *Door, World *GameWorld);
+int UpdateDoor(Object *Door, World *GameWorld);
 
 int TeleportPlayerToExitDoor(Object *Door, World *GameWorld);
 
-int UpdateLevelDoor(PlayerData Player, Object *Door, World *GameWorld);
+int UpdateLevelDoor(Object *Door, World *GameWorld);
 
 
 
@@ -364,7 +364,7 @@ int putObjectIntoCollisionGrid(Object *input, ObjectController *list);
 int* getObjectIndicesAtGridCell(float xPos, float yPos, ObjectController *list);
 
 
-int CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox);
+bool CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox);
 
 bool checkBoxOverlapsBoxBroad(PhysicsBox *inputBox, PhysicsBox *compareBox);
 

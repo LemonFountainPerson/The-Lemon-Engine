@@ -918,13 +918,13 @@ TextBox* SayText(const char inputPhrase[], const char Portrait[], TextPreset inp
 {
 	TextBox *newText = CreateText(inputPhrase, GameWorld);
 
-	ApplyTextPresets(newText, Portrait, inputPreset);
-
 	// if position of box should be automated, you can do it here
 	if (newText == NULL)
 	{
 		return NULL;
 	}
+
+	ApplyTextPresets(newText, Portrait, inputPreset);
 
 	// int topTextLocation = (screenHeight >> 1) - 100;
 	// int bottomTextLocation = 280 - (screenHeight >> 1);
@@ -946,39 +946,42 @@ TextBox* SayTextOption(const char inputPhrase[], const char Portrait[], TextPres
 
 	TextBox *newText = CreateText(inputPhrase, GameWorld);
 
-	ApplyTextPresets(newText, Portrait, inputPreset);
+	va_list args;
+    va_start(args, numberOfOptions);
+
+    GameEvent *eventTrigger;
+    struct TextOptionPrompt optionData = {0};	// temp location for arguments; must be loaded as events need to be removed even if text box is failed to be created
+    optionData.numberOfOptions = numberOfOptions;
+
+    for (int i = 0; i < numberOfOptions; i++)
+    {
+    	strcpy(optionData.optionNames[i], va_arg(args, char*));
+
+    	eventTrigger = va_arg(args, GameEvent*);
+
+    	if (eventTrigger != NULL)
+    	{
+    		removeEventToTriggerLater(eventTrigger, &optionData.optionTriggers[i], GameWorld);
+    	}
+    	else
+    	{
+    		optionData.optionTriggers[i].EventID = NO_EVENT;
+    	}
+    }
+
+    va_end(args);
 
 	if (newText == NULL)
 	{
 		return NULL;
 	}
 
+	ApplyTextPresets(newText, Portrait, inputPreset);
+
 	newText->textTypeSetting = TEXTBOX_OPTION_PROMPT;
-	newText->textTypeData.OptionPrompt.numberOfOptions = numberOfOptions;
-	newText->textTypeData.OptionPrompt.SelectedOption = 0;
-	struct TextOptionPrompt *textData = &newText->textTypeData.OptionPrompt;
 
-	va_list args;
-    va_start(args, numberOfOptions);
-
-    GameEvent *eventTrigger;
-    for (int i = 0; i < numberOfOptions; i++)
-    {
-    	strcpy(textData->optionNames[i], va_arg(args, char*));
-
-    	eventTrigger = va_arg(args, GameEvent*);
-
-    	if (eventTrigger != NULL)
-    	{
-    		removeEventToTriggerLater(eventTrigger, &textData->optionTriggers[i], GameWorld);
-    	}
-    	else
-    	{
-    		textData->optionTriggers[i].EventID = NO_EVENT;
-    	}
-    }
-
-    va_end(args);
+	memcpy(&newText->textTypeData.OptionPrompt, &optionData, sizeof(struct TextOptionPrompt));
+	
 
 	return newText;
 }
@@ -1148,8 +1151,7 @@ TextBox* CreateText(const char inputPhrase[], World *GameWorld)
 	}
 	else
 	{
-		TextBox *currentText;
-		currentText = GameWorld->TextQueue;
+		TextBox *currentText = GameWorld->TextQueue;
 
 		int i = 0;
 

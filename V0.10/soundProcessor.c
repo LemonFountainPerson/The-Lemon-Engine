@@ -38,7 +38,7 @@ SoundInstance* PlaySound(const char fileName[], const char folderName[], Channel
 	
 	if (newSound == NULL)
 	{
-		putConsoleString("\nFailed to initialise new sound instance.");
+		putConsoleError("Failed to initialise new sound instance.");
 		return NULL;
 	}
 
@@ -98,7 +98,7 @@ SoundInstance* PlaySound(const char fileName[], const char folderName[], Channel
 		MIX_Audio *loadedAudio = loadAudio(newSound->name, newSound->folder);
 		if (loadedAudio == NULL)
 		{
-			putConsoleString("\nCouldn't find audio file '%s'", fileName);
+			putConsoleError("Couldn't find audio file '%s'", fileName);
 			return NULL;
 		}
 
@@ -235,7 +235,7 @@ void startSound(SoundInstance *sound, MIX_Audio *audio)
 {
 	if (!MIX_SetTrackAudio(sound->audio, audio))
 	{
-		putConsoleString("\nCouldn't play audio '%s': %s", sound->name, SDL_GetError());
+		putConsoleError("Couldn't play audio '%s': %s", sound->name, SDL_GetError());
 		return;
 	}
 

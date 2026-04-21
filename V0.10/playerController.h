@@ -30,7 +30,7 @@ int PlayerJump(PlayerData *Player, bool jump);
 int HandlePlayerInteract(PlayerData *Player);
 
 
-bool PlayerInteractingWithBox(PlayerData Player, PhysicsBox *inputBox);
+bool PlayerInteractingWithBox(PhysicsBox *inputBox, World *GameWorld);
 
 
 int checkIfGrounded(World *GameWorld, PhysicsBox *inputBox);

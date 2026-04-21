@@ -67,11 +67,6 @@ int CameraControl(World *GameWorld, Camera *inputCamera)
 		} break;
 	}
 
-	if (GameWorld->GameState == CUTSCENE)
-	{
-		camMode = FREE_ROAM_RESTRICTED;
-	}
-
 	// Move camera
 	switch(camMode)
 	{

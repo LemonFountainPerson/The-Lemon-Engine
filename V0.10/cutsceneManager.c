@@ -1071,7 +1071,7 @@ int EndCutscene(World *GameWorld)
 		return MISSING_DATA;
 	}
 
-	if (GameWorld->CurrentCutscene == NO_CUTSCENE || GameWorld->TextQueue != NULL)
+	if (GameWorld->CurrentCutscene == NO_CUTSCENE)
 	{
 		return EXECUTION_UNNECESSARY;
 	}

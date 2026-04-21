@@ -2022,17 +2022,17 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject)
 
 		case GATE_SWITCH_TIMED:
 		case GATE_SWITCH:
-			UpdateGateSwitch(GameWorld->Player, inputObject, GameWorld->ObjectList);
+			UpdateGateSwitch(inputObject, GameWorld);
 		break;
 
 
 		case DOOR:
-			UpdateDoor(GameWorld->Player, inputObject, GameWorld);
+			UpdateDoor(inputObject, GameWorld);
 			break;
 
 
 		case LEVEL_DOOR:
-			UpdateLevelDoor(GameWorld->Player, inputObject, GameWorld);
+			UpdateLevelDoor(inputObject, GameWorld);
 			break;
 
 
@@ -2046,7 +2046,7 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject)
 
 			PhysicsBox *PlayerBox = GameWorld->Player.PlayerBox;
 
-			if (PlayerInteractingWithBox(GameWorld->Player, inputObject->ObjectBox) && PlayerBox != NULL)
+			if (PlayerInteractingWithBox(inputObject->ObjectBox, GameWorld) && PlayerBox != NULL)
 			{
 				if (PlayerBox->xPos > inputObject->ObjectBox->xPos + (inputObject->ObjectBox->xSize >> 1))
 				{
@@ -3394,9 +3394,9 @@ int CustomParticleBehaviour(World *GameWorld, Object *particle)
 }
 
 
-int UpdateGateSwitch(PlayerData player, Object *gateSwitch, ObjectController *ObjectList)
+int UpdateGateSwitch(Object *gateSwitch, World *GameWorld)
 {
-	if (gateSwitch == NULL || ObjectList == NULL)
+	if (gateSwitch == NULL || GameWorld->ObjectList == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -3406,12 +3406,12 @@ int UpdateGateSwitch(PlayerData player, Object *gateSwitch, ObjectController *Ob
 	// Action = switch off/on (0/1) state
 	// arg3 = timerLength
 
-	if (PlayerInteractingWithBox(player, gateSwitch->ObjectBox))
+	if (PlayerInteractingWithBox(gateSwitch->ObjectBox, GameWorld))
 	{
 		gateSwitch->Action = (gateSwitch->Action + 1) % 2;
 
 		// Update any gates
-		toggleGateSwitch(gateSwitch, ObjectList);
+		toggleGateSwitch(gateSwitch, GameWorld->ObjectList);
 
 		if (gateSwitch->Action == 1 && gateSwitch->ObjectID == GATE_SWITCH_TIMED)
 		{
@@ -3429,7 +3429,7 @@ int UpdateGateSwitch(PlayerData player, Object *gateSwitch, ObjectController *Ob
 	if (gateSwitch->Action == 1 && gateSwitch->ObjectID == GATE_SWITCH_TIMED && timerExpired(gateSwitch))
 	{
 		gateSwitch->Action = 0;
-		toggleGateSwitch(gateSwitch, ObjectList);
+		toggleGateSwitch(gateSwitch, GameWorld->ObjectList);
 	}
 
 	return LEMON_SUCCESS;
@@ -3818,22 +3818,24 @@ int UpdateVerticalPlatform(Object *platform)
 }
 
 
-int UpdateDoor(PlayerData Player, Object *Door, World *GameWorld)
+int UpdateDoor(Object *Door, World *GameWorld)
 {
 	// arg1, arg2: [x/y]Pos of destination
-	if (Player.PlayerPtr == NULL || Player.PlayerBox == NULL || Door == NULL)
+
+	Object *player = GameWorld->Player.PlayerPtr;
+	if (player == NULL || Door == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (PlayerInteractingWithBox(Player, Door->ObjectBox) && Player.PlayerPtr->State == DEFAULT_STATE)
+	if (PlayerInteractingWithBox(Door->ObjectBox, GameWorld) && player->State == DEFAULT_STATE)
 	{
-		float savedXPos = Player.PlayerBox->xPos;
-		float savedYPos = Player.PlayerBox->yPos;
+		float savedXPos = player->ObjectBox->xPos;
+		float savedYPos = player->ObjectBox->yPos;
 
-		GoTo(Player.PlayerPtr, Door->arg1, Door->arg2);
+		GoTo(player, Door->arg1, Door->arg2);
 
-		if (GetCollidingObject(Player.PlayerBox, GameWorld->ObjectList) != NULL)
+		if (GetCollidingObject(player->ObjectBox, GameWorld->ObjectList) != NULL)
 		{
 			SayText("The door seems to be blocked on the other side.", NO_PORTRAIT, BASIC_FADE, GameWorld);
 			SayTextOption("", NO_PORTRAIT, BASIC_FADE, GameWorld, 3, 
@@ -3853,7 +3855,7 @@ int UpdateDoor(PlayerData Player, Object *Door, World *GameWorld)
 				"hm... lemme think about it", playCutscene(TEST_SCENE_2, GameWorld));
 		}
 
-		GoTo(Player.PlayerPtr, savedXPos, savedYPos);
+		GoTo(player, savedXPos, savedYPos);
 	}
 
 	return LEMON_SUCCESS;
@@ -3880,17 +3882,20 @@ int TeleportPlayerToExitDoor(Object *Door, World *GameWorld)
 }
 
 
-int UpdateLevelDoor(PlayerData Player, Object *Door, World *GameWorld)
+int UpdateLevelDoor(Object *Door, World *GameWorld)
 {
 	// arg1: Level to load
 	// arg4: Open/close state
 	// arg2, arg3: X/Y for Player at start of level
-	if (Player.PlayerPtr == NULL || Door == NULL)
+
+	Object *player = GameWorld->Player.PlayerPtr;
+
+	if (Door == NULL || player == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (Door->arg4 == 0 && PlayerInteractingWithBox(Player, Door->ObjectBox) && Player.PlayerPtr->State == DEFAULT_STATE)
+	if (Door->arg4 == 0 && PlayerInteractingWithBox(Door->ObjectBox, GameWorld) && player->State == DEFAULT_STATE)
 	{
 		Door->arg4 = 1;
 		SayText("It's a door... \nIt eminates a strange glow.", NO_PORTRAIT, BASIC_FADE, GameWorld);
@@ -4599,7 +4604,7 @@ bool MouseClickedObject(Object *input, Camera inputCam)
 
 bool checkBoxOverlapsBoxBroad(PhysicsBox *inputBox, PhysicsBox *compareBox)
 {
-	if (inputBox == compareBox)
+	if (inputBox == compareBox || inputBox->xSize < 1 || inputBox->ySize < 1 || compareBox->xSize < 1 || compareBox->ySize < 1)
 	{
 		return false;
 	}
@@ -4616,7 +4621,7 @@ bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 		return false;
 	}
 
-	if (inputBox == compareBox || inputBox->xSize <= 0 || inputBox->ySize <= 0 || compareBox->xSize <= 0 || compareBox->ySize <= 0)
+	if (inputBox == compareBox || inputBox->xSize < 1 || inputBox->ySize < 1 || compareBox->xSize < 1 || compareBox->ySize < 1)
 	{
 		return false;
 	}
@@ -4696,21 +4701,21 @@ bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 }
 
 
-int CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
+bool CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 {
 	if (inputBox == NULL || compareBox == NULL)
 	{
-		return MISSING_DATA;
+		return false;
 	}
 
 	if (compareBox->collideLayer != inputBox->collideLayer)
 	{
-		return 0;
+		return false;
 	}
 
 	if (CheckBoxOverlapsBox(inputBox, compareBox) == false)
 	{
-		return 0;
+		return false;
 	}
 
 
@@ -4719,21 +4724,21 @@ int CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 		case IGNORE_SOLID:
 			if (compareBox->solid == SOLID)
 			{
-				return 0;
+				return false;
 			}
 			break;
 
 		case IGNORE_SELF:
 			if (compareBox->solid == inputBox->solid)
 			{
-				return 0;
+				return false;
 			}
 			break;
 
 		case ONLY_BODIES:
 			if (compareBox->solid != BODY)
 			{
-				return 0;
+				return false;
 			}
 			break;
 
@@ -4746,26 +4751,26 @@ int CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 		case IGNORE_SOLID:
 			if (inputBox->solid == SOLID)
 			{
-				return 0;
+				return false;
 			}
 			break;
 
 		case IGNORE_SELF:
 			if (compareBox->solid == inputBox->solid)
 			{
-				return 0;
+				return false;
 			}
 			break;
 
 		case ONLY_BODIES:
 			if (inputBox->solid != BODY)
 			{
-				return 0;
+				return false;
 			}
 			break;
 
 		case GET_IGNORED:
-			return 0;
+			return false;
 
 		default:
 		break;
@@ -4778,17 +4783,17 @@ int CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 		{
 			if (compareBox->yVelocity > inputBox->yVelocity || compareBox->crouch == true || compareBox->prevYPos < (inputBox->prevYPos + inputBox->ySize - 1) )
 			{
-				return 0;
+				return false;
 			}
 		} break;
 
 		case UNSOLID:
-		return 0;
+		return false;
 
 		case BODY:
 		if (compareBox->solid == BODY)
 		{
-			return 0;
+			return false;
 		}
 		break;
 
@@ -4803,19 +4808,19 @@ int CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 		{
 			if (inputBox->yVelocity > compareBox->yVelocity || inputBox->crouch == true || inputBox->prevYPos < (compareBox->prevYPos + compareBox->ySize - 1) )
 			{
-				return 0;
+				return false;
 			}
 		} break;
 
 		case UNSOLID:
-		return 0;
+		return false;
 			
 		default:
 		break;
 	}
 
 
-	return 1;
+	return true;
 }
 
 
@@ -4907,7 +4912,7 @@ Object* GetCollidingObjectFast(PhysicsBox *inputBox, ObjectController *ObjectLis
 			continue;
 		}
 
-		if (CheckBoxCollidesBox(inputBox, &boxes[index]) == 1)
+		if (CheckBoxCollidesBox(inputBox, &boxes[index]))
 		{
 			return &objects[index];
 		}
@@ -4938,13 +4943,18 @@ Object* GetCollidingObject(PhysicsBox *inputBox, ObjectController *ObjectList)
 	{
 		i--;
 
+		if (inputBox->solid == SOLID)
+		{
+			putConsoleString("%d %d", checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox), CheckBoxCollidesBox(inputBox, currentObject->ObjectBox));
+		}
+
 		if (currentObject->ObjectBox->solid == UNSOLID || !checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox))
 		{
 			currentObject = currentObject->nextObject;
 			continue;
 		}
 
-		if (CheckBoxCollidesBox(inputBox, currentObject->ObjectBox) == 1)
+		if (CheckBoxCollidesBox(inputBox, currentObject->ObjectBox))
 		{
 			return currentObject;
 		}
@@ -5369,7 +5379,7 @@ int resolveForwardCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 				collideBox->direction = tempDirection;
 				collideBox->forwardVelocity = tempVelocity;
 
-				if (CheckBoxCollidesBox(movingBox, collideBox) == 1)
+				if (CheckBoxCollidesBox(movingBox, collideBox))
 				{
 					movingBox->yPos = lastStepY;
 					movingBox->xPos = lastStepX;
@@ -5387,14 +5397,14 @@ int resolveForwardCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 				// edge tolerance
 				int slopeClimb = 5;
 
-				while (slopeClimb > 0 && CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
+				while (slopeClimb > 0 && CheckBoxCollidesBox(movingBox, currentObject->ObjectBox))
 				{
 					movingBox->yPos += sinVal;
 					movingBox->xPos -= cosVal;
 					slopeClimb--;
 				}
 
-				if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
+				if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox))
 				{
 					movingBox->yPos = lastStepY;
 					movingBox->xPos = lastStepX;
@@ -5480,13 +5490,19 @@ int ResolveAllXCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 			float prevXPos = collideBox->xPos;
 			float prevYPos = collideBox->yPos;
 
+			SolidType prevSolid = movingBox->solid;
+
+			ResolveXCollisionByPush(movingBox, collideBox);
+
+			movingBox->solid = UNSOLID;
 			ResolveAllXCollision(collideBox, ObjectList);
+			movingBox->solid = prevSolid;
 
 			if (GetCollidingObject(collideBox, ObjectList) == NULL)
 			{
-				collideBox->xPos = prevXPos;
-				collideBox->yPos = prevYPos;
-				ResolveXCollisionByPush(movingBox, collideBox);
+				//collideBox->xPos = prevXPos;
+				//collideBox->yPos = prevYPos;
+				//ResolveXCollisionByPush(movingBox, collideBox);
 			}
 			else
 			{
@@ -5646,14 +5662,19 @@ int ResolveAllYCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 
 			float prevXPos = collideBox->xPos;
 			float prevYPos = collideBox->yPos;
+			SolidType prevSolid = movingBox->solid;
 
+			ResolveYCollisionByPush(movingBox, collideBox);
+
+			movingBox->solid = UNSOLID;
 			ResolveAllYCollision(collideBox, ObjectList);
+			movingBox->solid = prevSolid;
 
 			if (GetCollidingObject(collideBox, ObjectList) == NULL)
 			{
-				collideBox->xPos = prevXPos;
-				collideBox->yPos = prevYPos;
-				ResolveYCollisionByPush(movingBox, collideBox);
+				//collideBox->xPos = prevXPos;
+				//collideBox->yPos = prevYPos;
+				//ResolveYCollisionByPush(movingBox, collideBox);
 			}
 			else
 			{

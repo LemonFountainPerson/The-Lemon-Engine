@@ -26,7 +26,7 @@ int loadObjectIndices(Object *input, ObjectController *ObjectList, FILE *file);
 
 int checkFileHeader(FILE *fPtr, const char FileType[]);
 
-FILE* encodeLEMFile(FILE *file);
+void encodeLEMFile(FILE *file, const char name[MAX_LEN * 2]);
 
 FILE* decodeLEMFile(FILE *file);
 

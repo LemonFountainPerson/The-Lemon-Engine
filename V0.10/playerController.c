@@ -175,13 +175,6 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 
 		HandlePlayerInteract(Player);
 	}
-	else
-	{
-		Player->InteractBox.xSize = 0;
-		Player->InteractBox.ySize = 0;
-		Player->InteractBox.solid = UNSOLID;
-	}
-
 
 	if (hAxis != 0)
 	{
@@ -274,12 +267,6 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld)
 
 		HandlePlayerInteract(Player);
 	}
-	else
-	{
-		Player->InteractBox.xSize = 0;
-		Player->InteractBox.ySize = 0;
-		Player->InteractBox.solid = UNSOLID;
-	}
 
 
 	if (hAxis != 0 || vAxis != 0)
@@ -360,46 +347,54 @@ int HandlePlayerInteract(PlayerData *Player)
 		return MISSING_DATA;
 	}
 
-	if (Player->PlayerPtr->State == ACTOR_STATE)
-	{
-		return ACTION_DISABLED;
-	}
-
 	PhysicsBox *InteractBox = &Player->InteractBox;
-	PhysicsBox *PlayerBox = Player->PlayerBox;
 
-	if (InteractBox->xSize > 0 && InteractBox->ySize > 0)
+	if (Player->PlayerPtr->State == ACTOR_STATE)
 	{
 		InteractBox->xSize = 0;
 		InteractBox->ySize = 0;
-		InteractBox->solid = UNSOLID;
+
+		return ACTION_DISABLED;
 	}
+
+	PhysicsBox *PlayerBox = Player->PlayerBox;
 	
 	if (keyboard[LMN_INTERACT] == 1)
 	{
 		InteractBox->xSize = 50;
 		InteractBox->ySize = 50;
-		InteractBox->solid = SOLID;
 		float playerCenterX = PlayerBox->xPos + (PlayerBox->xSize>>1);
 		float playerCenterY = PlayerBox->yPos + (PlayerBox->ySize>>1);
 
 		InteractBox->xPos = playerCenterX - (InteractBox->xSize>>1) + (PlayerBox->xFlip << 4);
 		InteractBox->yPos = playerCenterY - (InteractBox->ySize>>1);
 	}
+	else
+	{
+		InteractBox->xSize = 0;
+		InteractBox->ySize = 0;
+	}
 
 	return LEMON_SUCCESS;
 }
 
 
-// 1 for true, 0 for false
-bool PlayerInteractingWithBox(PlayerData Player, PhysicsBox *inputBox)
+bool PlayerInteractingWithBox(PhysicsBox *inputBox, World *GameWorld)
 {
-	if (inputBox == NULL)
+	if (inputBox == NULL || GameWorld == NULL)
 	{
-		return MISSING_DATA;
+		return false;
 	}
 
-	return checkBoxOverlapsBoxBroad(inputBox, &Player.InteractBox);
+	PhysicsBox *interactBox = &GameWorld->Player.InteractBox;
+
+	if (checkBoxOverlapsBoxBroad(inputBox, interactBox))
+	{
+		interactBox->xSize = 0;
+		return true;
+	}
+
+	return false;
 }
 
 

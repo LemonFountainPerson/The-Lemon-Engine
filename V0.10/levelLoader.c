@@ -95,7 +95,6 @@ int saveGame(int saveFile, World *GameWorld)
 
 	// write header
 	fwrite(LEMON_VERSION, sizeof(char), strlen(LEMON_VERSION), fPtr);
-	fwrite("\n", sizeof(char), 1, fPtr);
 	fwrite(SAVE_FILE_HEADER, sizeof(char), strlen(SAVE_FILE_HEADER), fPtr);
 	fwrite("\n", sizeof(char), 1, fPtr);
 
@@ -120,7 +119,7 @@ int saveGame(int saveFile, World *GameWorld)
 
 	fwrite("ENDFILE", sizeof(char), 7, fPtr);
 
-	encodeLEMFile(fPtr);
+	//encodeLEMFile(fPtr, path);
 
 	fclose(fPtr);
 
@@ -159,7 +158,6 @@ int saveSettings(int saveFile, World *GameWorld)
 
 	// write header
 	fwrite(LEMON_VERSION, sizeof(char), strlen(LEMON_VERSION), fPtr);
-	fwrite("\n", sizeof(char), 1, fPtr);
 	fwrite(SAVE_FILE_HEADER, sizeof(char), strlen(SAVE_FILE_HEADER), fPtr);
 	fwrite("\n", sizeof(char), 1, fPtr);
 
@@ -189,7 +187,7 @@ int saveSettings(int saveFile, World *GameWorld)
 
 	fwrite("ENDFILE", sizeof(char), 7, fPtr);
 
-	encodeLEMFile(fPtr);
+	//encodeLEMFile(fPtr, path);
 
 	fclose(fPtr);
 
@@ -954,21 +952,83 @@ int checkFileHeader(FILE *fPtr, const char FileType[])
 }
 
 
-FILE* encodeLEMFile(FILE *file)
+char circulateBit(char input, int bit)
 {
+	return (input >> bit) | (input << (8 - bit));	// 00101011
+}
 
+void encodeLEMFile(FILE *file, const char name[MAX_LEN * 2])
+{
+	printf("%x >> 2 == %x", 156, circulateBit(156, 2));	// 1001 1100 -> 0111 0000
+	char newName[MAX_LEN * 2] = {0};
+	memcpy(newName, name, MAX_LEN * 2);
+	int i = 0;
+	while (i < (MAX_LEN * 2) - 4)
+	{
+		if (newName[i] == '.')
+		{
+			strcpy(newName + i, ".lem");
+			i = MAX_LEN * 2;
+		}
+		i++;
+	}
 
+	FILE *encoded = fopen(newName, "wb");
 
-	return file;
+	char buffer[16] = {0};
+	int readData = 0;
+	fseek(file, 0, SEEK_SET);
+
+	while(!feof(file))
+	{
+		readData = fread(buffer, sizeof(char), 16, file);
+		for (i = 0; i < 16; i++)
+		{
+			buffer[i] += 2;
+		}
+
+		fwrite(buffer, sizeof(char), readData, encoded);
+	}
+
+	fclose(encoded);
+
+	return;
 }
 
 
 FILE* decodeLEMFile(FILE *file)
 {
+	FILE *decoded = fopen("temp.txt", "wb+");
 
+	char buffer[16] = {0};
+	int readData = 0;
+
+	fseek(file, 0, SEEK_SET);
+
+	int iterations = 0;
+
+	while (!feof(file) && iterations < 1000)
+	{
+		readData = fread(buffer, sizeof(char), 16, file);
+		if (readData < 16)
+		{
+			break;
+		}
+
+		for (int i = 0; i < 16; i++)
+		{
+			buffer[i] -= 2;
+		}
+
+		fwrite(buffer, sizeof(char), readData, decoded);
+
+		iterations++;
+	}
 	
+	closeFile(file);
 
-	return file;
+
+	return decoded;
 }
 
 FILE* openFile(const char fileName[], const char rootPath[], const char header[])
@@ -993,7 +1053,7 @@ FILE* openFile(const char fileName[], const char rootPath[], const char header[]
 	strcat(path, fileName);
 
 	FILE *fPtr;
-	char extensions[][10] = {"", ".lem", ".txt"};		// changing the order of this list modifies its priority; eg first it checks without ext, then with .lem, etc.
+	char extensions[][10] = {".lem", ".txt", ""};		// changing the order of this list modifies its priority; eg first it checks with .lem, then with .txt, without ext, etc.
 
 	for (int attempt = 0; attempt < 3; attempt++)
 	{
@@ -1006,11 +1066,17 @@ FILE* openFile(const char fileName[], const char rootPath[], const char header[]
 	 	}
 	}
 
-	putConsoleString("Could not find file '%s' from path: '%s'", fileName, rootPath);
+	putConsoleError("Could not find file '%s' from path: '%s'", fileName, rootPath);
 	return NULL;
 
 
 	File_Loaded:
+
+	if (strlen(path) > 3 && strcmp(path + strlen(path) - 3, "lem") == 0)
+	{
+		// lem file, decode here
+		//fPtr = decodeLEMFile(fPtr);
+	}
 
 	if (checkFileHeader(fPtr, header) != LEMON_SUCCESS)
 	{
