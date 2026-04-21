@@ -1,4 +1,5 @@
 FRV<1>--CUTSCENE_DATA--
+StaticScene: false
 PlaceWall: 1000, 64, 2, 10
 SayText: "I just changed this file!! And to test its linebreaking feature! mmmmmmm wwwwwwwww mmmmmmm wwwwwwwwww mmmmmm"    NO_PORTRAIT     2
 

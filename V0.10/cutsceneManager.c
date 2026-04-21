@@ -12,11 +12,6 @@ void prepareCutsceneEnvironment(World *GameWorld)
 	deleteAllSceneActions(GameWorld);
 	clearTextQueue(GameWorld);		
 
-	if (GameWorld->Player.PlayerPtr != NULL)
-	{
-		GameWorld->Player.PlayerPtr->State = ACTOR_STATE;
-	}
-
 	GameWorld->GameState = CUTSCENE;
 
 	return;
@@ -83,11 +78,22 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 	default:
 		char fileName[CUTSCENE_FILE_NAME_MAX] = {0};
 		snprintf(fileName, CUTSCENE_FILE_NAME_MAX, "Scene%d", inputID);
-		if (LoadCutsceneFromFile(fileName, GameWorld) == LEMON_SUCCESS)
+		
+		if (LoadCutsceneFromFile(fileName, GameWorld) != LEMON_SUCCESS)
 		{
-			GameWorld->CurrentCutscene = inputID;
+			return LEMON_ERROR;
 		}
+
+		GameWorld->CurrentCutscene = inputID;
 		break;
+	}
+
+	if (GameWorld->GameState == CUTSCENE)
+	{
+		if (GameWorld->Player.PlayerPtr != NULL)
+		{
+			GameWorld->Player.PlayerPtr->State = ACTOR_STATE;
+		}
 	}
 
 	return LEMON_SUCCESS;
@@ -131,6 +137,14 @@ int LoadCutsceneFromFile(const char sceneName[], World *GameWorld)
 	}
 
 	closeFile(fPtr);
+
+	if (GameWorld->GameState != CUTSCENE)
+	{
+		if (GameWorld->Player.PlayerPtr != NULL)
+		{
+			GameWorld->Player.PlayerPtr->State = ACTOR_STATE;
+		}
+	}
 
 	return LEMON_SUCCESS;
 }
@@ -449,6 +463,15 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 	{
 		return disablePlayer(GameWorld);
 	}
+	else if (!strcmp(inputString, "STATICSCENE:"))
+	{
+		bool staticScene = getNextArgBool(fPtr);
+
+		if (!staticScene)
+		{
+			GameWorld->GameState = GAMEPLAY;
+		}
+	}
 	else if (!strcmp(inputString, "WAITUNTIL:") && strcmp(textBoxString, "Wait_Until:"))
 	{
 		getNextArg(fPtr, inputString, MAX_LEN);
@@ -456,7 +479,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 
 		WaitUntil(loadSceneAction(inputString, textBoxString, GameWorld, fPtr));
 	}
-	else if (!strcmp(inputString, "REPEAT:") && strcmp(textBoxString, "REPEATINSTRUCTION:"))
+	else if (!strcmp(inputString, "REPEAT:") && strcmp(textBoxString, "Repeat_Instruction:"))
 	{
 		int repeatTimes = getNextArgInt(fPtr);
 

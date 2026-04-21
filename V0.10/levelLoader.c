@@ -483,7 +483,7 @@ int saveGameState(World *GameWorld)
 	BackgroundData *gameBG = &GameWorld->WorldBackground;
 	if (gameBG->BackgroundSpriteBuffer != NULL)
 	{
-		int bgIndex = getSpriteIndexSpriteSet(gameBG->BackgroundSpriteBuffer->name, gameBG->bgSpriteSets.start);
+		int bgIndex = gameBG->BackgroundSpriteBuffer->spriteID;
 		fwrite(&bgIndex, 4, 1, file);
 	}
 	else
@@ -576,25 +576,25 @@ int saveGameState(World *GameWorld)
 	}
 
 
-	int var = GameWorld->SceneActionCount;
-	fwrite(&var, 4, 1, file);
+	// int var = GameWorld->SceneActionCount;
+	// fwrite(&var, 4, 1, file);
 
-	SceneAction *action = GameWorld->SceneActionQueue;
-	while (var > 0 && action != NULL)
-	{
-		fwrite(action, sizeof(SceneAction), 1, file);
+	// SceneAction *action = GameWorld->SceneActionQueue;
+	// while (var > 0 && action != NULL)
+	// {
+	// 	fwrite(action, sizeof(SceneAction), 1, file);
 
-		int index = -1;
-		if (action->ActorObject != NULL)
-		{
-			index = action->ActorObject->index;
-		}
+	// 	int index = -1;
+	// 	if (action->ActorObject != NULL)
+	// 	{
+	// 		index = action->ActorObject->index;
+	// 	}
 
-		fwrite(&index, 4, 1, file);
+	// 	fwrite(&index, 4, 1, file);
 		
-		var--;
-		action = action->nextSceneAction;
-	}
+	// 	var--;
+	// 	action = action->nextSceneAction;
+	// }
 
 
 	fwrite("ENDFILE", 8, 1, file);
@@ -721,9 +721,6 @@ int loadGameState(World *GameWorld)
 		return MISSING_DATA;
 	}
 
-	EngineSettings.PreservedSpriteSets = 0;
-	clearLevelData(GameWorld);
-
 	char buffer[MAX_LEN] = {0};
 	readData = fread(buffer, sizeof(char), strlen(LEMON_VERSION), file);
 
@@ -733,28 +730,29 @@ int loadGameState(World *GameWorld)
 		return INVALID_DATA;
 	}
 
-	//write Gameworld data
+	BackgroundData *bgs = &GameWorld->WorldBackground;
 	ObjectController *list = GameWorld->ObjectList;
-	SpriteSetList *bgs = &GameWorld->WorldBackground.bgSpriteSets;
-	deleteAllSpriteSets(bgs);
 
-	memset(GameWorld, 0, sizeof(World));
-	memset(list, 0, sizeof(ObjectController));
+	clearLevelData(GameWorld);
+	deleteAllObjects(list);
+	deleteAllSpriteSets(&bgs->bgSpriteSets);
+	deleteAllSpriteSets(&list->spriteSets);
 
-	readData = fread(GameWorld, sizeof(World), 1, file);
-	GameWorld->ObjectList = list;
+	World copy = {0};
 
-	GameWorld->TextQueue = NULL;
-	GameWorld->SceneActionQueue = NULL;
-	GameWorld->WorldBackground.BackgroundSpriteBuffer = NULL;
+	readData = fread(&copy, sizeof(World), 1, file);
+	GameWorld->level = copy.level;
+	GameWorld->GameState = copy.GameState;
+	memcpy(&GameWorld->MainCamera, &copy.MainCamera, sizeof(Camera));
 
 	// restore backgrounds
+	GameWorld->WorldBackground.BackgroundSpriteBuffer = NULL;
 	initialiseBackGround(&GameWorld->WorldBackground);
 
-	int bgIndex;
+	int bgIndex = 0;
 	readData = fread(&bgIndex, 4, 1, file);
 
-	int bgSetIndex;
+	int bgSetIndex = 0;
 	readData = fread(&bgSetIndex, 4, 1, file);
 
 	switchBackGroundSprite(bgIndex, bgSetIndex, &GameWorld->WorldBackground);
@@ -779,8 +777,6 @@ int loadGameState(World *GameWorld)
 
 	// read objectlist
 	readData = fread(GameWorld->ObjectList, sizeof(ObjectController), 1, file);
-
-
 
 	list->FrameUpdates = NULL;
 	initialiseSpriteSetList(&list->spriteSets);
@@ -846,41 +842,41 @@ int loadGameState(World *GameWorld)
 
 
 	// # of scene actions
-	readData = fread(&i, 4, 1, file);
+	// readData = fread(&i, 4, 1, file);
 
-	while (i > 0)
-	{
-		i--;
+	// while (i > 0)
+	// {
+	// 	i--;
 
-		SceneAction *action = createSceneAction(SCENE_END, GameWorld);
-		if (action == NULL)
-		{
-			i = 0;
-			continue;
-		}
+	// 	SceneAction *action = createSceneAction(SCENE_END, GameWorld);
+	// 	if (action == NULL)
+	// 	{
+	// 		i = 0;
+	// 		continue;
+	// 	}
 
-		SceneAction *prev = action->prevSceneAction;
-		readData = fread(action, sizeof(SceneAction), 1, file);
-		action->prevSceneAction = prev;
-		action->nextSceneAction = NULL;
+	// 	SceneAction *prev = action->prevSceneAction;
+	// 	readData = fread(action, sizeof(SceneAction), 1, file);
+	// 	action->prevSceneAction = prev;
+	// 	action->nextSceneAction = NULL;
 
-		int index = -1;
-		readData = fread(&index, 4, 1, file);
+	// 	int index = -1;
+	// 	readData = fread(&index, 4, 1, file);
 
-		if (index == -1)
-		{
-			action->ActorObject = NULL;
-		}
-		else
-		{
-			action->ActorObject = &objects[index];
-		}
+	// 	if (index == -1)
+	// 	{
+	// 		action->ActorObject = NULL;
+	// 	}
+	// 	else
+	// 	{
+	// 		action->ActorObject = &objects[index];
+	// 	}
 
-		if (action->ActionID == SCENE_SAY_TEXT)
-		{
-			deleteSceneAction(action, GameWorld);
-		}
-	}
+	// 	if (action->ActionID == SCENE_SAY_TEXT)
+	// 	{
+	// 		deleteSceneAction(action, GameWorld);
+	// 	}
+	// }
 
 
 	closeFile(file);

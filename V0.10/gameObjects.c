@@ -1194,7 +1194,7 @@ void deleteLevelObjects(ObjectController *ObjectList)
 		}
 		else if ((cache->reserved & RFLAG_PRESERVE_ONCE) == RFLAG_PRESERVE_ONCE)
 		{
-			cache->reserved &= (~RFLAG_PRESERVE_ONCE);
+			cache->reserved &= (~RFLAG_PRESERVE_ONCE);	// remove 'RFLAG_PRESERVE_ONCE' and 'RFLAG_PRESERVE_OBJECT' flags at same time
 		}
 	}
 
@@ -1215,13 +1215,6 @@ int MarkObjectForDeletion(Object *inputObject)
 
 	inputObject->State = TO_BE_DELETED;
 
-
-	if (DebugSettings.ConsoleTextEnabled == CONSOLE_ALL_EVENTS)
-	{
-		//putConsoleString("Marked '%s' for deletion ---- ID: %d (%s)"), 
-		//	inputObject->name, inputObject->ObjectID, getObjectIDName(inputObject->ObjectID));
-	}
-	
 	return LEMON_SUCCESS;
 }
 
@@ -1241,8 +1234,11 @@ int UnmarkObjectForDeletion(Object *inputObject)
 	inputObject->State = DEFAULT_STATE;
 
 
-	putConsoleString("Unmarked '%s' for deletion! ---- ID: %d (%s)", 
+	if (DebugSettings.ConsoleTextEnabled == CONSOLE_ALL_EVENTS)
+	{
+		putConsoleString("Unmarked '%s' for deletion! ---- ID: %d (%s)", 
 		inputObject->name, inputObject->ObjectID, getObjectIDName(inputObject->ObjectID));
+	}
 
 
 	return LEMON_SUCCESS;
@@ -1959,7 +1955,7 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject)
 	}
 
 	bool gameStateDisable = inputObject->State == ACTOR_STATE || (GameWorld->GameState == CUTSCENE && inputObject != GameWorld->Player.PlayerPtr); 
-	bool immuneObject = inputObject->ObjectID == UI_ELEMENT || inputObject->ObjectID == UI_TEXT || inputObject->ObjectID == PARTICLE;
+	bool immuneObject = (inputObject->reserved & RFLAG_CUTSCENE_IMMUNITY) != 0;
 
 	if ((!immuneObject && gameStateDisable) || inputObject->State == PAUSE_STATE)
 	{
@@ -2280,8 +2276,20 @@ int applyMagnetisation(PhysicsBox *inputBox, PhysicsBox *GroundBox, World *GameW
 	}
 	
 	// Ensure that velocity applied is not necessary in the case of it moving against gravity
-	inputBox->PhysicsXVelocity = (GroundBox->xPos) - (GroundBox->prevXPos);
-	inputBox->PhysicsYVelocity = (GroundBox->yPos) - (GroundBox->prevYPos);
+	float prevX = inputBox->xPos;
+	float prevY = inputBox->yPos;
+
+	float xChange = (GroundBox->xPos) - (GroundBox->prevXPos);
+	float yChange = (GroundBox->yPos) - (GroundBox->prevYPos);
+
+	inputBox->xPos -= xChange;
+	inputBox->yPos -= yChange;
+
+	if (!CheckBoxCollidesBox(inputBox, GroundBox))
+	{	
+		inputBox->PhysicsXVelocity = xChange;
+		inputBox->PhysicsYVelocity = yChange;
+	}
 	
 	if (fabs(inputBox->PhysicsXVelocity) < 0.0001)
 	{
@@ -2293,6 +2301,9 @@ int applyMagnetisation(PhysicsBox *inputBox, PhysicsBox *GroundBox, World *GameW
 		inputBox->PhysicsYVelocity = 0.0;
 	}
 	
+
+	inputBox->xPos = prevX;
+	inputBox->yPos = prevY;
 
 	return LEMON_SUCCESS;
 }
@@ -3309,6 +3320,7 @@ int InitialiseParticle(Object *particle, int animation, int repeatCount, int par
 	particle->arg1 = particleLifeTime;
 	particle->ParentLink = FINAL_LINK;
 	centerOnXY(particle, particle->ObjectBox->xPos, particle->ObjectBox->yPos);
+	particle->reserved |= RFLAG_CUTSCENE_IMMUNITY;
 
 
 	switch (animation)
@@ -3712,6 +3724,7 @@ Object* InitialiseMovingPlatform(Object *inputObject, int objectID, int xPos, in
 	inputObject->Action = 1;
 	inputObject->ObjectBox->solid = JUMP_THROUGH;
 	inputObject->ObjectBox->flag = ONLY_BODIES;
+	addPhysics(inputObject, false);
 
 
 	return inputObject;
@@ -4763,7 +4776,7 @@ int CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 	{		
 		case JUMP_THROUGH:
 		{
-			if (compareBox->yVelocity > 0.0 || compareBox->crouch == true || compareBox->prevYPos < (inputBox->prevYPos + inputBox->ySize - 1) )
+			if (compareBox->yVelocity > inputBox->yVelocity || compareBox->crouch == true || compareBox->prevYPos < (inputBox->prevYPos + inputBox->ySize - 1) )
 			{
 				return 0;
 			}
@@ -4788,7 +4801,7 @@ int CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 	{
 		case JUMP_THROUGH:
 		{
-			if (inputBox->yVelocity > 0.0 || inputBox->crouch == true || inputBox->prevYPos < (compareBox->prevYPos + compareBox->ySize - 1) )
+			if (inputBox->yVelocity > compareBox->yVelocity || inputBox->crouch == true || inputBox->prevYPos < (compareBox->prevYPos + compareBox->ySize - 1) )
 			{
 				return 0;
 			}
@@ -4925,7 +4938,7 @@ Object* GetCollidingObject(PhysicsBox *inputBox, ObjectController *ObjectList)
 	{
 		i--;
 
-		if (currentObject->ObjectBox->solid == UNSOLID || checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox) == false)
+		if (currentObject->ObjectBox->solid == UNSOLID || !checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox))
 		{
 			currentObject = currentObject->nextObject;
 			continue;
@@ -5464,27 +5477,22 @@ int ResolveAllXCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 		{
 			PhysicsBox *collideBox = currentObject->ObjectBox;
 
-			float prevXVel = collideBox->xVelocity;
 			float prevXPos = collideBox->xPos;
-			SolidType prevType = movingBox->solid;
-
-			movingBox->solid = UNSOLID;
-			collideBox->xVelocity = movingBox->xVelocity;
-			collideBox->xPos += collideBox->xVelocity;
+			float prevYPos = collideBox->yPos;
 
 			ResolveAllXCollision(collideBox, ObjectList);
 
-			movingBox->solid = prevType;
-			collideBox->xVelocity = prevXVel;
-			collideBox->xPos = prevXPos;
-
-			if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
+			if (GetCollidingObject(collideBox, ObjectList) == NULL)
 			{
-				ResolveXCollision(movingBox, currentObject->ObjectBox, ObjectList);
+				collideBox->xPos = prevXPos;
+				collideBox->yPos = prevYPos;
+				ResolveXCollisionByPush(movingBox, collideBox);
 			}
 			else
 			{
-				ResolveXCollisionByPush(movingBox, collideBox);
+				collideBox->xPos = prevXPos;
+				collideBox->yPos = prevYPos;
+				ResolveXCollision(movingBox, collideBox, ObjectList);
 			}
 		}
 		else
@@ -5634,30 +5642,24 @@ int ResolveAllYCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 	{
 		if (evaluateIfCollidePush(movingBox, currentObject->ObjectBox))
 		{
-			putConsoleString("%s trying to push", getSolidTypeName(movingBox->solid));
 			PhysicsBox *collideBox = currentObject->ObjectBox;
 
-			float prevYVel = collideBox->yVelocity;
+			float prevXPos = collideBox->xPos;
 			float prevYPos = collideBox->yPos;
-			SolidType prevType = movingBox->solid;
-
-			movingBox->solid = UNSOLID;
-			collideBox->yVelocity = movingBox->yVelocity;
-			collideBox->yPos += collideBox->yVelocity;
 
 			ResolveAllYCollision(collideBox, ObjectList);
 
-			movingBox->solid = prevType;
-			collideBox->yVelocity = prevYVel;
-			collideBox->yPos = prevYPos;
-
-			if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox) == 1)
+			if (GetCollidingObject(collideBox, ObjectList) == NULL)
 			{
-				ResolveYCollision(movingBox, currentObject->ObjectBox);
+				collideBox->xPos = prevXPos;
+				collideBox->yPos = prevYPos;
+				ResolveYCollisionByPush(movingBox, collideBox);
 			}
 			else
 			{
-				ResolveYCollisionByPush(movingBox, collideBox);
+				collideBox->xPos = prevXPos;
+				collideBox->yPos = prevYPos;
+				ResolveYCollision(movingBox, collideBox);
 			}
 		}
 		else
@@ -5731,7 +5733,7 @@ int ResolveYCollision(PhysicsBox *movingBox, PhysicsBox *compareBox)
 
 		case JUMP_THROUGH:
 		{
-			if (movingBox->yVelocity < 0.1 && movingBox->crouch == false)
+			if (movingBox->yVelocity < compareBox->yVelocity + 0.001 && movingBox->crouch == false)
 			{
 				movingBox->yPos = compareBox->yPos + compareBox->ySize;
 			}

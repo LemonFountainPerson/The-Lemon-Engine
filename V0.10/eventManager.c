@@ -14,7 +14,7 @@ int StartGame(World *GameWorld)
 	}
 
 	// Logic for handle flow of menus and levels, etc can go here for game start
-	loadLevel(GameWorld, 1);
+	loadLevel(GameWorld, 0);
 
 
 	return LEMON_SUCCESS;

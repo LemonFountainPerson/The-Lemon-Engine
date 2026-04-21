@@ -4,7 +4,7 @@ Resolution: 1280 720
 Fullscreen: false
 Vsync: true
 DrawSprites: true
-DrawBackGround: false
+DrawBackGround: true
 DrawHUD: true
 DrawParticles: true
 DrawCamViews: true

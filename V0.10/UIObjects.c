@@ -112,6 +112,7 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 	setDisplayLayer(UIElement, HUD);
 	UIElement->ObjectBox->collideLayer = HUD;
 	UIElement->ObjectBox->solid = UNSOLID;
+	UIElement->reserved |= RFLAG_CUTSCENE_IMMUNITY;	// mark this object as immune to being frozen during cutscenes
 
 
 	switch(getSubType(UIElement))
@@ -843,6 +844,7 @@ int InitialiseUIText(Object *UIText, World *GameWorld)
 	setDisplayLayer(UIText, HUD);
 	UIText->ObjectBox->collideLayer = HUD;
 	UIText->ObjectBox->solid = UNSOLID;
+	UIText->reserved |= RFLAG_CUTSCENE_IMMUNITY; // mark this object as immune to being frozen during cutscenes
 
 	switch(getSubType(UIText))
 	{
