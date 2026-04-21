@@ -65,6 +65,9 @@ needs to be added. A similar mechanism was added to the cutscene scene actions, 
 'MAX_CACHED_SOUNDS' constant in config.h. (This means sounds played multiple times no longer consume huge amounts of memory, especially in quick succession.) 
 Larger sound files that would cause the game to stutter can be pre-cached to avoid this by calling 'loadAudio([fileName], [folderName])'.
 
+-> Revamped GameFlags; they are now an official component of the engine, where each flag has a name and a value, and can be created/loaded from save files, and saved automatically 
+to those save files.
+
 
 ## Structure Changes:
 
