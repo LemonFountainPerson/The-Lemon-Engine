@@ -40,6 +40,7 @@ guaranteeing some action if physics may get in the way, for example.
    -Added the 'Repeat' instruction to the cutscene file loader. If you wish to have a scene action repeat, you can write 'Repeat:' and then the number of times you want it to
    repeat before the instruction.
    -Added the 'ReleaseActor' instruction, used to unmark an object as an Actor. This means it will not be deleted once the cutscene ends, as objects marked as Actor always are.
+   -Added the 'StaticScene' command that when set to false, allows the cutscene to play during normal gameplay instead of pausing the gameWorld.
 
 -> Added the 'TextConfig' and its associated functions to operate the new TTF text renderer. A default font can be set in config.h, and this default can be changed during runtime.
 
