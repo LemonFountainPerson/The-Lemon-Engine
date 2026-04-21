@@ -4344,7 +4344,7 @@ int setSize(Object *input, int xSize, int ySize)
 }
 
 // Method for centering object size increase and handling player collisions
-int ChangeObjectXSizeBy(int change, Object *inputObject, ObjectController *ObjectList)
+int ChangeXSizeBy(int change, Object *inputObject, ObjectController *ObjectList)
 {
 	if (inputObject == NULL)
 	{
@@ -4367,7 +4367,7 @@ int ChangeObjectXSizeBy(int change, Object *inputObject, ObjectController *Objec
 }
 
 
-int ChangeObjectYSizeBy(int change, Object *inputObject, ObjectController *ObjectList)
+int ChangeYSizeBy(int change, Object *inputObject, ObjectController *ObjectList)
 {
 	if (inputObject == NULL)
 	{

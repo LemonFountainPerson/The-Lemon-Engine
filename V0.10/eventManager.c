@@ -1665,6 +1665,25 @@ int ConsoleCommand_Object(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 			GoTo(object, x, y);
 		}
 	}
+	else if (strcmp(arg, "setsize") == 0)
+	{
+		float width = parseArgumentAsInt(input);
+		float height = parseArgumentAsInt(input);
+
+		setSize(object, width, height);
+	}
+	else if (strcmp(arg, "changexsize") == 0)
+	{
+		float val = parseArgumentAsInt(input);
+
+		ChangeXSizeBy(val, object, ObjectList);
+	}
+	else if (strcmp(arg, "changeysize") == 0)
+	{
+		float val = parseArgumentAsInt(input);
+
+		ChangeYSizeBy(val, object, ObjectList);
+	}
 	else if (strcmp(arg, "setname") == 0)
 	{
 		parseArgument(input, arg);

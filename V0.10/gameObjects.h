@@ -328,9 +328,9 @@ int SetObjectDirection(Object *inputObject, float rotationDegrees);
 
 int setSize(Object *input, int xSize, int ySize);
 
-int ChangeObjectXSizeBy(int change, Object *inputObject, ObjectController *ObjectList);
+int ChangeXSizeBy(int change, Object *inputObject, ObjectController *ObjectList);
 
-int ChangeObjectYSizeBy(int change, Object *inputObject, ObjectController *ObjectList);
+int ChangeYSizeBy(int change, Object *inputObject, ObjectController *ObjectList);
 
 int setScaleSize(Object *input, float sizePercentage);
 
