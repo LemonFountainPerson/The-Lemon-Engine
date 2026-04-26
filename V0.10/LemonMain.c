@@ -1973,7 +1973,7 @@ void addInputHistory(const char input[], InputHistory *history)
 	}
 
 	memcpy(history->inputs[history->head], input, length);
-	history->inputs[history->head][length] = 0;
+	history->inputs[history->head % USER_INPUT_HISTORY_LEN][length] = 0;
 
 	history->head = (history->head + 1) % USER_INPUT_HISTORY_LEN;
 	history->searchIndex = history->head;

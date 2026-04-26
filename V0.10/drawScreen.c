@@ -368,9 +368,9 @@ int renderHitbox(Camera inputCamera, PhysicsBox *inputBox, SDL_Renderer *Screen)
 
 	if (inputBox->solid == CIRCLE)
 	{
-		int radius = inputBox->xSize >> 1;
-		xCoord += radius;
-		yCoord += inputBox->ySize >> 1;
+		int radius = inputBox->ySize >> 1;
+		xCoord += (inputBox->xSize >> 1);
+		yCoord += radius;
 		
 		for (int i = 0; i < RenderSettings.HitboxOutlineThickness && i < 50; i++)
 		{
@@ -818,6 +818,8 @@ int renderBackGroundSprite(Camera inputCamera, BackgroundData *WorldBackground, 
 		SDL_RenderTexture(Screen, backGround->texture, NULL, &renderTarget);
 		break;
 
+	case TILE:
+	case TILE_FAST:
 	case TILE_BACKGROUND:
 		renderTarget.w = (float)(inputCamera.zoomedWidth << 1);
 		renderTarget.h = (float)(inputCamera.zoomedHeight << 1);

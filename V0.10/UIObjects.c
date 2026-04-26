@@ -215,7 +215,7 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 		switchSpriteByName("MouseCursor", USE_CURRENT_SPRITESET, getDisplay(UIElement));
 		AddFrameUpdateFunction(&UpdateCursor, UIElement, GameWorld->ObjectList);
 		setDisplayLayer(UIElement, FRONT_LAYER);
-		UIElement->ObjectBox->solid = CIRCLE;
+		UIElement->ObjectBox->solid = SOLID;
 		UIElement->ObjectBox->xSize = 64;
 		UIElement->ObjectBox->ySize = 64;
 		break;

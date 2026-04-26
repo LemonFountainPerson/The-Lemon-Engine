@@ -57,8 +57,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 	switch (objectID)
 	{
 	case PROJECTILE:
-		newObject->ObjectBox->xSize = X_TILESCALE;
-		newObject->ObjectBox->ySize = 8;
+		newObject->ObjectBox->ySize = 16;
 
 		newObject->ObjectBox->forwardVelocity = 16.0;
 
@@ -4698,11 +4697,11 @@ bool checkBoxOverlapsBoxBroad(PhysicsBox *inputBox, PhysicsBox *compareBox)
 
 bool OverlapComparison_CircleCircle(PhysicsBox *circle1, PhysicsBox *circle2)
 {
-	float radius = (float)circle1->xSize / 2.0;	// use smaller so that broad check is always valid
+	float radius = (float)circle1->ySize / 2.0;	
 	float circleCenterX = circle1->xPos + radius;
 	float circleCenterY = circle1->yPos + radius;
 
-	float compareRadius = (float)circle2->xSize / 2.0;
+	float compareRadius = (float)circle2->ySize / 2.0;
 	float compareCenterX = circle2->xPos + compareRadius;
 	float compareCenterY = circle2->yPos + compareRadius;
 
@@ -4722,7 +4721,7 @@ bool OverlapComparison_CircleCircle(PhysicsBox *circle1, PhysicsBox *circle2)
 
 bool OverlapComparison_BoxCircle(PhysicsBox *box, PhysicsBox *circle)
 {
-	float radius = (float)circle->xSize / 2.0;
+	float radius = (float)circle->ySize / 2.0;
 	float circleCenterX = circle->xPos + radius;
 	float circleCenterY = circle->yPos + radius;
 
@@ -4764,7 +4763,7 @@ bool OverlapComparison_BoxCircle(PhysicsBox *box, PhysicsBox *circle)
 
 bool OverlapComparison_SlopeCircle(PhysicsBox *slope, PhysicsBox *circle)
 {
-	float radius = (float)(circle->xSize / 2);
+	float radius = (float)(circle->ySize / 2);
 	float circleCenterX = circle->xPos + radius;
 	float circleCenterY = circle->yPos + radius;
 
@@ -4772,6 +4771,11 @@ bool OverlapComparison_SlopeCircle(PhysicsBox *slope, PhysicsBox *circle)
 	if (pointOverlapsWithSlope(circleCenterX, circleCenterY, slope))
 	{
 		return true;
+	}
+
+	if (radius < 2)
+	{
+		return false;
 	}
 
 	float point1X;
@@ -4948,6 +4952,30 @@ bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 		return false;
 	}
 
+	if (compareBox->solid == CIRCLE)
+	{
+		PhysicsBox *temp = inputBox;
+		inputBox = compareBox;
+		compareBox = temp;
+	}
+
+	if (inputBox->solid == CIRCLE)
+	{
+		if (compareBox->solid == CIRCLE)
+		{
+			return OverlapComparison_CircleCircle(inputBox, compareBox);
+		}
+		else if (inputBox->solid == FLAT_SLOPE)
+		{
+			return OverlapComparison_SlopeCircle(compareBox, inputBox);
+		}
+		else
+		{
+			return OverlapComparison_BoxCircle(compareBox, inputBox);
+		}
+	}
+
+
 	int inputX = inputBox->xPos;
 	int inputXRight = inputBox->xPos + inputBox->xSize;
 	int inputY = inputBox->yPos;
@@ -4979,55 +5007,27 @@ bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 		
 		inputYTop += inputBox->yPos;
 	} 
-	else if (inputBox->solid == CIRCLE)
+
+	if (compareBox->solid == FLAT_SLOPE)
 	{
-		PhysicsBox *temp = inputBox;
-		inputBox = compareBox;
-		compareBox = temp;
-	}
-
-	switch(compareBox->solid)
-	{
-		case FLAT_SLOPE:
+		if (compareBox->xFlip == 1)
 		{
-			if (compareBox->xFlip == 1)
-			{
-				compareYTop = inputBox->xSize - compareBox->xPos + inputBox->xPos;
-			}
-			else
-			{
-				compareYTop = compareBox->xSize + compareBox->xPos - inputBox->xPos;
-			}
-			
-			compareYTop = clamp((int)((float)compareYTop * ((float)compareBox->ySize/(float)compareBox->xSize)), 0, compareBox->ySize);
-
-			if (compareBox->yFlip == -1)
-			{
-				compareY = compareBox->ySize - compareYTop + compareBox->yPos;
-				compareYTop = compareBox->ySize;
-			}
-			
-			compareYTop += compareBox->yPos;
-		} break;
-
-		case CIRCLE:
+			compareYTop = inputBox->xSize - compareBox->xPos + inputBox->xPos;
+		}
+		else
 		{
-			if (inputBox->solid == CIRCLE)
-			{
-				return OverlapComparison_CircleCircle(inputBox, compareBox);
-			}
-			else if (inputBox->solid == FLAT_SLOPE)
-			{
-				return OverlapComparison_SlopeCircle(inputBox, compareBox);
-			}
-			else
-			{
-				return OverlapComparison_BoxCircle(inputBox, compareBox);
-			}
-		} break;
-			
-		default:
-		break;
+			compareYTop = compareBox->xSize + compareBox->xPos - inputBox->xPos;
+		}
+		
+		compareYTop = clamp((int)((float)compareYTop * ((float)compareBox->ySize/(float)compareBox->xSize)), 0, compareBox->ySize);
+
+		if (compareBox->yFlip == -1)
+		{
+			compareY = compareBox->ySize - compareYTop + compareBox->yPos;
+			compareYTop = compareBox->ySize;
+		}
+		
+		compareYTop += compareBox->yPos;
 	}
 
 
@@ -5832,13 +5832,7 @@ int ResolveAllXCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 			ResolveAllXCollision(collideBox, ObjectList);
 			movingBox->solid = prevSolid;
 
-			if (GetCollidingObject(collideBox, ObjectList) == NULL)
-			{
-				//collideBox->xPos = prevXPos;
-				//collideBox->yPos = prevYPos;
-				//ResolveXCollisionByPush(movingBox, collideBox);
-			}
-			else
+			if (GetCollidingObject(collideBox, ObjectList) != NULL)
 			{
 				collideBox->xPos = prevXPos;
 				collideBox->yPos = prevYPos;
@@ -6004,13 +5998,7 @@ int ResolveAllYCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 			ResolveAllYCollision(collideBox, ObjectList);
 			movingBox->solid = prevSolid;
 
-			if (GetCollidingObject(collideBox, ObjectList) == NULL)
-			{
-				//collideBox->xPos = prevXPos;
-				//collideBox->yPos = prevYPos;
-				//ResolveYCollisionByPush(movingBox, collideBox);
-			}
-			else
+			if (GetCollidingObject(collideBox, ObjectList) != NULL)
 			{
 				collideBox->xPos = prevXPos;
 				collideBox->yPos = prevYPos;
