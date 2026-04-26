@@ -399,7 +399,7 @@ CameraView* addCameraView(float camX, float camY, int camWidth, int camHeight, f
 
 CameraView* addMainCameraView(float viewX, float viewY, float width, float height, Layer drawLayer, World *GameWorld)
 {
-	return addCameraViewToList(0.0, 0.0, 0, 0, viewX, viewY, width, height, drawLayer, true, GameWorld->views);
+	return addCameraViewToList(0.0, 0.0, 1, 1, viewX, viewY, width, height, drawLayer, true, GameWorld->views);
 }
 
 void attachCameraViewToObject(CameraView *input, Object *attach)
@@ -576,20 +576,32 @@ void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Render
 			continue;
 		}
 
+		if (list[i].nextRender > TickNumber())
+		{
+			goto Skip_CamView_Rerender;
+		}
+
 		if (list[i].target == NULL)
 		{
-			list[i].target = SDL_CreateTexture(Screen, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, list[i].cam.zoomedWidth, list[i].cam.zoomedHeight);
+			int width, height;
+			if (list[i].useMainCam)
+			{
+				width = mainCam.zoomedWidth;
+				height = mainCam.zoomedHeight;
+			}
+			else
+			{
+				width = list[i].cam.zoomedWidth;
+				height = list[i].cam.zoomedHeight;
+			}
+
+			list[i].target = SDL_CreateTexture(Screen, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
 
 			if (list[i].target == NULL)
 			{
 				removeCameraView(&list[i]);
 				continue;
 			}
-		}
-
-		if (list[i].nextRender > TickNumber())
-		{
-			goto Skip_CamView_Rerender;
 		}
 
 		SDL_Texture *previousTarget = SDL_GetRenderTarget(Screen);
@@ -2138,6 +2150,8 @@ void SetDebugSettingsToDefault(void)
 	DebugSettings.cursorXPos = 0.0;
 
 	DebugSettings.PauseEngine = ENGINE_UNPAUSED;
+
+	DebugSettings.noclip = false;
 }
 
 

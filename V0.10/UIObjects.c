@@ -214,7 +214,10 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 	case MOUSE_CURSOR:
 		switchSpriteByName("MouseCursor", USE_CURRENT_SPRITESET, getDisplay(UIElement));
 		AddFrameUpdateFunction(&UpdateCursor, UIElement, GameWorld->ObjectList);
-		setDisplayLayer(UIElement,FRONT_LAYER);
+		setDisplayLayer(UIElement, FRONT_LAYER);
+		UIElement->ObjectBox->solid = CIRCLE;
+		UIElement->ObjectBox->xSize = 64;
+		UIElement->ObjectBox->ySize = 64;
 		break;
 
 	default:
@@ -397,22 +400,22 @@ int UpdateCursor(Object *Cursor, World *GameWorld)
 
 		if (PlayerBox != NULL && Cursor->Action == IDLE)
 		{
-			Object *Bullet1 = AddNamedObject(GameWorld, "PlayerBullet", PROJECTILE, 0, 0);
-			centerOnObject(Bullet1, PlayerBox);
-			PointObjectToMouse(Bullet1, GameWorld);
+			Object *Bullet = AddNamedObject(GameWorld, "PlayerBullet", PROJECTILE, 0, 0);
+			addBulletComponentWithCollision(Bullet, PlayerBox, 40, SPARKLE);
+			PointObjectToMouse(Bullet, GameWorld);
+			
+			Bullet = AddNamedObject(GameWorld, "PlayerBullet", PROJECTILE, 0, 0);
+			addBulletComponentWithCollision(Bullet, PlayerBox, 40, SPARKLE);
+			PointObjectToMouse(Bullet, GameWorld);
+			RotateObject(Bullet, 17.5);
 
-			Object *Bullet2 = AddNamedObject(GameWorld, "PlayerBullet", PROJECTILE, 0, 0);
-			centerOnObject(Bullet2, PlayerBox);
-			PointObjectToMouse(Bullet2, GameWorld);
-			RotateObject(Bullet2, 17.5);
-
-			Object *Bullet3 = AddNamedObject(GameWorld, "PlayerBullet", PROJECTILE, 0, 0);
-			centerOnObject(Bullet3, PlayerBox);
-			PointObjectToMouse(Bullet3, GameWorld);
-			RotateObject(Bullet3, -17.5);
+			Bullet = AddNamedObject(GameWorld, "PlayerBullet", PROJECTILE, 0, 0);
+			addBulletComponentWithCollision(Bullet, PlayerBox, 40, SPARKLE);
+			PointObjectToMouse(Bullet, GameWorld);
+			RotateObject(Bullet, -17.5);
 
 			Cursor->Action = MOUSECLICK_INTERRUPT;
-			Cursor->arg2 = 2;
+			Cursor->arg2 = 3;
 		}
 	}
 

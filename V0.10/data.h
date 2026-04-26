@@ -666,6 +666,22 @@ typedef struct HealthComponent
 } HealthComponent;
 
 
+typedef struct BulletComponent
+{
+	Object *owner;
+
+	ParticleSubType particleType;
+	int particleRepeat;
+	int particleLifeTime;
+
+	bool bulletCollide;
+	int bulletLifeTime;
+
+	int damage;
+} BulletComponent;
+
+
+
 typedef struct TileMap
 {
 	unsigned int centerTileX;
@@ -713,12 +729,12 @@ typedef struct Polygon
 typedef union ComponentType
 {
 	HealthComponent HealthComponent;
+	BulletComponent BulletComponent;
 	TileMap TileMap;
 	Timer Timer;
 	StopWatch StopWatch;
 	PhysicsComponent PhysicsComponent;
 	Polygon Polygon;
-
 } ComponentType;
 
 typedef struct SparseList
@@ -739,10 +755,10 @@ typedef struct ComponentData
 	DisplayData Displays[MAX_OBJECTS];
 
 	SparseList HealthComponent;
+	SparseList BulletComponent;
 	SparseList TileMap;
 	SparseList Timer;
 	SparseList StopWatch;
-	SparseList HurtComponent;
 	SparseList PhysicsComponent;
 	SparseList Polygon;
 
@@ -1333,6 +1349,8 @@ typedef struct DebugConfig
 	bool showSceneActions;
 	bool showSpriteset;
 	bool showErrors;
+
+	bool noclip;
 } DebugConfig;
 
 

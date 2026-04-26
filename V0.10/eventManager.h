@@ -175,5 +175,7 @@ int ConsoleCommand_Help(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_DoABarrelRoll(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
+int ConsoleCommand_Noclip(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
 
 void renderConsole(World *GameWorld, SDL_Renderer *Screen);

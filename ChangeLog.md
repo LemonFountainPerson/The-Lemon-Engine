@@ -70,6 +70,8 @@ Larger sound files that would cause the game to stutter can be pre-cached to avo
 -> Revamped GameFlags; they are now an official component of the engine, where each flag has a name and a value, and can be created/loaded from save files, and saved automatically 
 to those save files.
 
+-> The 'CIRCLE' solidtype is now correctly visuallised and detected by other hitboxes.
+
 
 ## Structure Changes:
 

@@ -108,6 +108,12 @@ FuncResult UpdatePlayer(PlayerData *Player, World *GameWorld)
 		return ACTION_DISABLED;
 	}
 
+	if (DebugSettings.noclip)
+	{
+		playerNoclip(Player);
+		return LEMON_SUCCESS;
+	}
+
 	if (GameWorld->PhysicsType == PLATFORMER)
 	{
 		PlayerPlatformerPhysics(Player, GameWorld);
@@ -120,6 +126,41 @@ FuncResult UpdatePlayer(PlayerData *Player, World *GameWorld)
 	animatePlayer(Player);
 
 	return LEMON_SUCCESS;
+}
+
+
+void playerNoclip(PlayerData *Player)
+{
+	PhysicsBox *playerBox = Player->PlayerBox;
+	playerBox->solid = UNSOLID;
+
+	if (keyboard[LMN_LEFT])
+	{
+		playerBox->xVelocity -= 2.5;
+	}
+
+	if (keyboard[LMN_RIGHT])
+	{
+		playerBox->xVelocity += 2.5;
+	}
+
+	if (keyboard[LMN_UP])
+	{
+		playerBox->yVelocity += 2.5;
+	}
+
+	if (keyboard[LMN_DOWN])
+	{
+		playerBox->yVelocity -= 2.5;
+	}
+
+	playerBox->xVelocity *= 0.88;
+	playerBox->yVelocity *= 0.88;
+	playerBox->forwardVelocity = 0.0;
+
+	HandlePlayerInteract(Player);
+	
+	return;
 }
 
 

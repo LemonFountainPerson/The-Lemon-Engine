@@ -18,6 +18,9 @@ int PlayerObjectAboutToBeDeleted(PlayerData *Player);
 FuncResult UpdatePlayer(PlayerData *Player, World *GameWorld);
 
 
+void playerNoclip(PlayerData *Player);
+
+
 int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld);
 
 

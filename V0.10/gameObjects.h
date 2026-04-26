@@ -209,6 +209,15 @@ int inflictDamage(int damage, Object *input);
 bool isHurt(Object *input);
 
 
+BulletComponent* addBulletComponent(Object *input, Object *owner, int damage, ParticleSubType particleType);
+
+BulletComponent* addBulletComponentWithCollision(Object *input, Object *owner, int damage, ParticleSubType particleType);
+
+bool isBullet(Object *input);
+
+void bulletCollision(Object *bulletObject, World *GameWorld);
+
+
 int addTileMap(Object *input, unsigned int centerTileX, unsigned int centerTileY, unsigned int tileSize);
 
 TileMap* getTileMap(Object *input);
@@ -369,6 +378,10 @@ bool CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox);
 bool checkBoxOverlapsBoxBroad(PhysicsBox *inputBox, PhysicsBox *compareBox);
 
 bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox);
+
+bool pointOverlapsWithSlope(float x, int y, PhysicsBox *slope);
+
+bool circleOverlapsWithLine(float x1, float y1, float x2, float y2, float circleCenterX, float circleCenterY, float radius);
 
 
 Object* GetOverlappingObject(PhysicsBox *inputBox, ObjectController *ObjectList);

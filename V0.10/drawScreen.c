@@ -2,7 +2,7 @@
 
 
 // Controls what symbol is printed for each tile
-const Uint32 colourMap[32] = {	0x00FF00FF, 0x00FF1010, 0x0000FF10, 0x00FFAA00, 0x00F8F800, 0x000010FF, 0x00AAFF10, 0x0000DDDD,
+const Uint32 colourMap[32] = {	0x00FF00FF, 0x00FF1010, 0x00FF1010, 0x00FFAA00, 0x00F8F800, 0x000010FF, 0x00AAFF10, 0x0000DDDD,
 								0x00AAEE30, 0xFF11BB44, 0xFF0F449F, 0xFF009070, 0xFF006010, 0xFF701010, 0xFF1C1010, 0xFF101C10,
 								0xFF2C1010, 0xFF102C10, 0xFF10103C, 0xFF40201C, 0xFF019E30, 0xFF0514CE, 0xFFE86AA3, 0xFF0A4321,
 								0xFF2C1010, 0xFF102C10, 0xFF10103C, 0xFF40201C, 0xFF019E30, 0xFF0514CE, 0xFFE86AA3, 0xFF0A4321};
@@ -305,6 +305,52 @@ void drawHitboxes(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 }
 
 
+void drawHitboxCircle(SDL_Renderer *Screen, float xCoord, float yCoord, int radius)
+{
+	int offsetx = 0;
+	int offsety = radius;
+	int status = 0;
+
+	int d = radius - 1;
+
+    while (offsety >= offsetx) 
+    {
+        status += SDL_RenderPoint(Screen, xCoord + offsetx, yCoord + offsety);
+        status += SDL_RenderPoint(Screen, xCoord + offsety, yCoord + offsetx);
+        status += SDL_RenderPoint(Screen, xCoord - offsetx, yCoord + offsety);
+        status += SDL_RenderPoint(Screen, xCoord - offsety, yCoord + offsetx);
+        status += SDL_RenderPoint(Screen, xCoord + offsetx, yCoord - offsety);
+        status += SDL_RenderPoint(Screen, xCoord + offsety, yCoord - offsetx);
+        status += SDL_RenderPoint(Screen, xCoord - offsetx, yCoord - offsety);
+        status += SDL_RenderPoint(Screen, xCoord - offsety, yCoord - offsetx);
+
+        if (status < 0) 
+        {
+            status = -1;
+            break;
+        }
+
+        if (d >= (2 * offsetx))
+        {
+            d -= (2 * offsetx) + 1;
+            offsetx += 1;
+        }
+        else if (d < 2 * (radius - offsety)) 
+        {
+            d += 2 * offsety - 1;
+            offsety -= 1;
+        }
+        else 
+        {
+            d += 2 * (offsety - offsetx - 1);
+            offsety -= 1;
+            offsetx += 1;
+        }
+    }
+
+    return;
+}
+
 int renderHitbox(Camera inputCamera, PhysicsBox *inputBox, SDL_Renderer *Screen)
 {
 	if (inputBox == NULL)
@@ -316,15 +362,31 @@ int renderHitbox(Camera inputCamera, PhysicsBox *inputBox, SDL_Renderer *Screen)
 
 	SDL_SetRenderDrawColor(Screen, (colour & 0x00FF0000) >> 16, (colour & 0x0000FF00) >> 8, (colour & 0x000000FF), 0xFF);
 	
-	SDL_FRect Hitbox;
 
 	float xCoord = (inputCamera.width >> 1) + inputBox->xPos - inputCamera.CameraX;
 	float yCoord = inputCamera.CameraY + (inputCamera.height >> 1) - inputBox->yPos - inputBox->ySize;
+
+	if (inputBox->solid == CIRCLE)
+	{
+		int radius = inputBox->xSize >> 1;
+		xCoord += radius;
+		yCoord += inputBox->ySize >> 1;
+		
+		for (int i = 0; i < RenderSettings.HitboxOutlineThickness && i < 50; i++)
+		{
+			drawHitboxCircle(Screen, xCoord, yCoord, radius);
+			radius -= 1;
+		}
+	
+		return LEMON_SUCCESS;
+	}
+
+	SDL_FRect Hitbox;
 	Hitbox.x = xCoord;
 	Hitbox.y = yCoord;
 	Hitbox.h = (float)inputBox->ySize;
 
-	if (RenderSettings.HitboxOutlineThickness > 99)
+	if (RenderSettings.HitboxOutlineThickness > 50)
 	{
 		Hitbox.w = (float)inputBox->xSize;
 		SDL_RenderFillRect(Screen, &Hitbox);

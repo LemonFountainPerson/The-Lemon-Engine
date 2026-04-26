@@ -14,7 +14,7 @@ int StartGame(World *GameWorld)
 	}
 
 	// Logic for handle flow of menus and levels, etc can go here for game start
-	loadLevel(GameWorld, 1);
+	loadLevel(GameWorld, 0);
 
 
 	return LEMON_SUCCESS;
@@ -1377,6 +1377,8 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 
 	NEWCOMMAND(DoABarrelRoll, "does a barrel roll.", "barrelroll");
 
+	NEWCOMMAND(Noclip, "toggles noclip.", "noclip");
+
 
 	if (DEBUG_MODE)
 	{
@@ -1955,7 +1957,7 @@ int ConsoleCommand_CamView(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 		float height = parseArgumentAsFloat(input);
 		Layer layer = parseArgumentAsInt(input);
 
-		if (strcmp(flag, "-main") != 0)
+		if (strcmp(flag, "-main") == 0)
 		{
 			addMainCameraView(screenX, screenY, width, height, layer, GameWorld);
 		}
@@ -2317,6 +2319,27 @@ int ConsoleCommand_DoABarrelRoll(char input[USER_INPUT_MAX_LEN], World *GameWorl
 	{
 		player->State = PAUSE_STATE;
 		PlayAnimation("BarrelRoll", 0, player->ObjectDisplay);
+	}
+	
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_Noclip(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	DebugSettings.noclip = !DebugSettings.noclip;
+
+	if (DebugSettings.noclip == true)
+	{
+		putConsoleString("NoClip is on");
+	}
+	else
+	{
+		putConsoleString("NoClip is off");
+
+		if (GameWorld->Player.PlayerBox != NULL)
+		{
+			GameWorld->Player.PlayerBox->solid = BODY;
+		}
 	}
 	
 	return LEMON_SUCCESS;

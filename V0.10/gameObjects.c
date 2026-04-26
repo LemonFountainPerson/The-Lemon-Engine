@@ -61,7 +61,6 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 		newObject->ObjectBox->ySize = 8;
 
 		newObject->ObjectBox->forwardVelocity = 16.0;
-		newObject->ObjectBox->solid = UNSOLID;
 
 		setRenderModeOverride(newObject, SINGLE);
 		break;
@@ -2066,34 +2065,6 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject)
 			UpdatePlayer(&GameWorld->Player, GameWorld);
 			break;
 
-
-		case PROJECTILE:
-			{
-				inputObject->arg1++;
-
-				if (inputObject->arg1 > 200)
-				{
-					MarkObjectForDeletion(inputObject);
-				}
-
-				inputObject->ObjectBox->solid = SOLID;
-				Object *hitTarget = GetCollidingObject(inputObject->ObjectBox, GameWorld->ObjectList);
-				inputObject->ObjectBox->solid = UNSOLID;
-
-				if (hitTarget == NULL || hitTarget == GameWorld->Player.PlayerPtr)
-				{
-					break;
-				}	
-
-				MarkObjectForDeletion(inputObject);
-
-				centerOnObject(AddParticle(GameWorld, SPARKLE, 0, 0, 1, 0), inputObject);
-
-				inflictDamage(40, hitTarget);
-			}
-			break;
-
-
 		default:
 			break;
 	}
@@ -2466,6 +2437,7 @@ int ResolveAllObjects(ObjectController *ObjectList, WorldPhysics pType)
 #define removeComponentType(x, y) 	removeComponent(x, &currentComponents->y)
 #define addComponentType(x, y) 		(y *)addComponent(x, &currentComponents->y)
 #define getComponentType(x, y) 		(y *)getComponent(x, &currentComponents->y)
+#define hasComponentType(x, y)		(currentComponents->y.sparse[x->index] >= 0)
 
 
 int initialiseComponents(ObjectController *input)
@@ -2479,6 +2451,7 @@ int initialiseComponents(ObjectController *input)
 
 	// initialise new components here
 	initComponentType(HealthComponent);
+	initComponentType(BulletComponent);
 	initComponentType(TileMap);
 	initComponentType(Timer);
 	initComponentType(StopWatch);
@@ -2499,6 +2472,7 @@ int removeComponents(Object *input, ObjectController *ObjectList)
 
 	// remove new components here
 	removeComponentType(input, HealthComponent);
+	removeComponentType(input, BulletComponent);
 	removeComponentType(input, TileMap);
 	removeComponentType(input, Timer);
 	removeComponentType(input, StopWatch);
@@ -2669,12 +2643,12 @@ PhysicsComponent* getPhysicsComponent(Object *input)
 
 bool HasPhysics(Object *input)
 {
-	if (input == NULL)
+	if (input == NULL || (input->reserved & RFLAG_DISABLE_PHYSICS) != 0)
 	{
 		return false;
 	}
 
-	return (currentComponents->PhysicsComponent.sparse[input->index] >= 0);
+	return hasComponentType(input, PhysicsComponent);
 }
 
 bool HasGravity(Object *input)
@@ -2698,12 +2672,15 @@ void updatePhysicsComponents(ComponentData *data, World *GameWorld)
 
 	SparseList *List = &data->PhysicsComponent;
 	ComponentType *denseList = List->dense;
+	PhysicsComponent *phys;
 
 	for (int i = List->storedComponents - 1; i >= 0; i--)
 	{
-		if (denseList[i].PhysicsComponent.gravity)
+		phys = &denseList[i].PhysicsComponent;
+
+		if (phys->gravity && (phys->object->reserved & RFLAG_DISABLE_PHYSICS) == 0)
 		{
-			ApplyGravity(denseList[i].PhysicsComponent.object, GameWorld);
+			ApplyGravity(phys->object, GameWorld);
 		}
 	}
 }
@@ -2911,6 +2888,111 @@ bool isHurt(Object *input)
 	}
 
 	return (TickNumber() < health->startTick + health->duration);
+}
+
+
+BulletComponent* addBulletComponent(Object *input, Object *owner, int damage, ParticleSubType particleType)
+{
+	BulletComponent *newBullet = addComponentType(input, BulletComponent);
+
+	if (newBullet == NULL)
+	{
+		return NULL;
+	}
+
+	newBullet->damage = damage;
+	newBullet->owner = owner;
+	newBullet->particleType = particleType;
+	newBullet->particleRepeat = 1;
+	newBullet->particleLifeTime = 0;
+	newBullet->bulletCollide = false;
+	newBullet->bulletLifeTime = 200;
+
+	input->ObjectBox->solid = CIRCLE;
+	input->ObjectBox->flag = GET_IGNORED;
+	centerOnObject(input, owner);
+
+	return newBullet;
+}
+
+BulletComponent* addBulletComponentWithCollision(Object *input, Object *owner, int damage, ParticleSubType particleType)
+{
+	BulletComponent *newBullet = addBulletComponent(input, owner, damage, particleType);
+
+	if (newBullet == NULL)
+	{
+		return NULL;
+	}
+
+	newBullet->bulletCollide = true;
+
+	return newBullet;
+}
+
+
+bool isBullet(Object *input)
+{
+	if (input == NULL)
+	{		
+		return false;
+	}
+
+	return hasComponentType(input, BulletComponent);
+}
+
+
+void bulletCollision(Object *bulletObject, World *GameWorld)
+{
+	BulletComponent *bulletInfo = getComponentType(bulletObject, BulletComponent);
+	if (bulletInfo == NULL)
+	{
+		return;
+	}
+
+	bulletInfo->bulletLifeTime--;
+
+	if (bulletInfo->bulletLifeTime < 1)
+	{
+		MarkObjectForDeletion(bulletObject);
+		return;
+	}
+
+	SparseList *healthList = &GameWorld->ObjectList->objectComponents.HealthComponent;
+	int index = 0;
+	PhysicsBox *boxes = GameWorld->ObjectList->objectComponents.PhysicsBoxes;
+	Object *objects = GameWorld->ObjectList->objectComponents.Objects;
+
+	for (int i = 0; i < healthList->storedComponents; i++)
+	{
+		index = healthList->denseID[i];
+
+		if (CheckBoxOverlapsBox(bulletObject->ObjectBox, &boxes[index]))
+		{
+			MarkObjectForDeletion(bulletObject);
+
+			centerOnObject(AddParticle(GameWorld, bulletInfo->particleType, 0, 0, bulletInfo->particleRepeat, bulletInfo->particleLifeTime), bulletObject);
+
+			inflictDamage(bulletInfo->damage, &objects[index]);
+		}
+	}
+
+	if (!bulletInfo->bulletCollide)
+	{
+		return;
+	}
+
+	Object *hitObject = GetCollidingObject(bulletObject->ObjectBox, GameWorld->ObjectList);
+
+	if (hitObject == NULL || hitObject == bulletInfo->owner)
+	{
+		return;
+	}	
+
+	MarkObjectForDeletion(bulletObject);
+
+	centerOnObject(AddParticle(GameWorld, bulletInfo->particleType, 0, 0, bulletInfo->particleRepeat, bulletInfo->particleLifeTime), bulletObject);
+
+	return;
 }
 
 
@@ -3918,7 +4000,7 @@ int UpdateLevelDoor(Object *Door, World *GameWorld)
 
 int ApplyGravity(Object *inputObject, World *GameWorld)
 {
-	if ((inputObject->reserved & RFLAG_DISABLE_PHYSICS) != 0)
+	if (inputObject == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -4614,6 +4696,246 @@ bool checkBoxOverlapsBoxBroad(PhysicsBox *inputBox, PhysicsBox *compareBox)
 }
 
 
+bool OverlapComparison_CircleCircle(PhysicsBox *circle1, PhysicsBox *circle2)
+{
+	float radius = (float)circle1->xSize / 2.0;	// use smaller so that broad check is always valid
+	float circleCenterX = circle1->xPos + radius;
+	float circleCenterY = circle1->yPos + radius;
+
+	float compareRadius = (float)circle2->xSize / 2.0;
+	float compareCenterX = circle2->xPos + compareRadius;
+	float compareCenterY = circle2->yPos + compareRadius;
+
+	float distX = circleCenterX - compareCenterX;
+  	float distY = circleCenterY - compareCenterY;
+  	float distance = (distX*distX) + (distY*distY);
+
+	if (distance >= (radius + compareRadius) * (radius + compareRadius))
+	{
+		return false;
+	}
+	else 
+	{
+		return true;
+	}
+}
+
+bool OverlapComparison_BoxCircle(PhysicsBox *box, PhysicsBox *circle)
+{
+	float radius = (float)circle->xSize / 2.0;
+	float circleCenterX = circle->xPos + radius;
+	float circleCenterY = circle->yPos + radius;
+
+
+	float compareEdgeX = circleCenterX;
+	float compareEdgeY = circleCenterY;
+
+	if (circleCenterX < box->xPos)         
+	{
+		compareEdgeX = box->xPos;      
+	}
+  	else if (circleCenterX > box->xPos + box->xSize) 
+  	{
+  		compareEdgeX = box->xPos + box->xSize;  
+  	}
+  	if (circleCenterY < box->yPos)         
+  	{
+  		compareEdgeY = box->yPos;      // top edge
+  	}
+  	else if (circleCenterY > box->yPos + box->ySize) 
+  	{
+  		compareEdgeY = box->yPos + box->ySize;   // bottom edge
+  	}
+
+
+ 	float distX = circleCenterX - compareEdgeX;
+  	float distY = circleCenterY - compareEdgeY;
+  	float distance = (distX*distX) + (distY*distY);
+
+  	if (distance <= radius * radius) 
+  	{
+   	 	return true;
+  	}
+  	else
+  	{
+  		return false;
+  	}
+}
+
+bool OverlapComparison_SlopeCircle(PhysicsBox *slope, PhysicsBox *circle)
+{
+	float radius = (float)(circle->xSize / 2);
+	float circleCenterX = circle->xPos + radius;
+	float circleCenterY = circle->yPos + radius;
+
+	// check center of circle first
+	if (pointOverlapsWithSlope(circleCenterX, circleCenterY, slope))
+	{
+		return true;
+	}
+
+	float point1X;
+	float point1Y;
+	float point2X;
+	float point2Y;
+
+	if (slope->xFlip == 1)
+	{
+		point1X = slope->xPos + slope->xSize;
+	 	point1Y = slope->yPos;
+	 	point2X = slope->xPos + slope->xSize; 
+		point2Y = slope->yPos + slope->ySize;
+	}
+	else
+	{
+		point1X = slope->xPos;
+	 	point1Y = slope->yPos;
+	 	point2X = slope->xPos; 
+		point2Y = slope->yPos + slope->ySize;
+	}
+
+	if (circleOverlapsWithLine(point1X, point1Y, point2X, point2Y, circleCenterX, circleCenterY, radius))
+	{
+		return true;
+	}
+
+	if (slope->yFlip == 1)
+	{
+		point1X = slope->xPos;
+	 	point1Y = slope->yPos;
+	 	point2X = slope->xPos + slope->xSize; 
+		point2Y = slope->yPos;
+	}
+	else
+	{
+		point1X = slope->xPos;
+	 	point1Y = slope->yPos + slope->ySize;
+	 	point2X = slope->xPos + slope->xSize; 
+		point2Y = slope->yPos + slope->ySize;
+	}
+
+	if (circleOverlapsWithLine(point1X, point1Y, point2X, point2Y, circleCenterX, circleCenterY, radius))
+	{
+		return true;
+	}
+
+	if (slope->yFlip + slope->xFlip != 0)
+	{
+		point1X = slope->xPos;
+	 	point1Y = slope->yPos;
+	 	point2X = slope->xPos + slope->xSize; 
+		point2Y = slope->yPos + slope->ySize;
+	}
+	else
+	{
+		point1X = slope->xPos;
+	 	point1Y = slope->yPos + slope->ySize;
+	 	point2X = slope->xPos + slope->xSize; 
+		point2Y = slope->yPos;
+	}
+
+	if (circleOverlapsWithLine(point1X, point1Y, point2X, point2Y, circleCenterX, circleCenterY, radius))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool pointOverlapsWithSlope(float x, int y, PhysicsBox *slope)
+{
+	float slopeRight = slope->xPos + slope->xSize;
+	float slopeTop = slope->yPos + slope->ySize;
+
+	float point1X;
+	float point1Y;
+	float point2X;
+	float point2Y;
+
+	if (slope->xFlip == 1)
+	{
+		if (x > slopeRight)
+		{
+			return false;
+		}
+
+		point1X = slope->xPos;
+		point2X = slopeRight;
+	}
+	else
+	{
+		if (x < slope->xPos)
+		{
+			return false;
+		}
+
+		point1X = slopeRight;
+		point2X = slope->xPos;
+	}
+
+	if (slope->yFlip == 1)
+	{
+		if (y < slope->yPos)
+		{
+			return false;
+		}
+
+		point1Y = slope->yPos;
+		point2Y = slopeTop;
+	}
+	else
+	{
+		if (y > slopeTop)
+		{
+			return false;
+		}
+
+		point1Y = slopeTop;
+		point2Y = slope->yPos;
+	}
+
+	bool isLeft = ((point2X - point1X)*(y - point1Y)) - ((point2Y - point1Y)*(x - point1X)) > 0;
+
+	if (slope->xFlip + slope->yFlip != 0)
+	{
+		return !isLeft;
+	}
+	else
+	{
+		return isLeft;
+	}
+}
+
+bool circleOverlapsWithLine(float x1, float y1, float x2, float y2, float circleCenterX, float circleCenterY, float radius)
+{
+	float distX = x1 - x2;
+	float distY = y1 - y2;
+	float len = sqrt( (distX*distX) + (distY*distY) );
+
+	if (len < 0.01)
+	{
+		return true;
+	}
+
+	float dot = ( ((circleCenterX-x1) * (x2-x1)) + ((circleCenterY-y1) * (y2-y1)) ) / pow(len, 2);
+
+	float closestX = x1 + (dot * (x2-x1));
+	float closestY = y1 + (dot * (y2-y1));
+
+	if ((closestX > x1) == (closestX > x2) && (closestY > y1) == (closestY > y2)) 
+	{
+		return false;
+	}
+
+	distX = closestX - circleCenterX;
+	distY = closestY - circleCenterY;
+	float distance = sqrt( (distX*distX) + (distY*distY) );
+
+	return distance <= radius;
+}
+
+
+
 bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 {
 	if (inputBox == NULL || compareBox == NULL)
@@ -4631,42 +4953,38 @@ bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 	int inputY = inputBox->yPos;
 	int inputYTop = inputBox->yPos + inputBox->ySize;
 
-
 	int compareX = compareBox->xPos;
 	int compareXRight = compareBox->xPos + compareBox->xSize;
 	int compareY = compareBox->yPos;
 	int compareYTop = compareBox->yPos + compareBox->ySize;
 
-
-	switch(inputBox->solid)
+	if (inputBox->solid == FLAT_SLOPE)
 	{
-		case FLAT_SLOPE:
+		if (inputBox->xFlip == 1)
 		{
-			if (inputBox->xFlip == 1)
-			{
-				inputYTop = ((compareBox->xPos + compareBox->xSize - inputBox->xPos) * ((float)inputBox->ySize/(float)inputBox->xSize));
-			}
-			else
-			{
-				inputYTop = ((inputBox->xSize - compareBox->xPos + inputBox->xPos) * ((float)inputBox->ySize/(float)inputBox->xSize));
-			}
-			
-			inputYTop = fClamp(inputYTop, 0.0, (float)inputBox->ySize);
+			inputYTop = compareBox->xSize - inputBox->xPos + compareBox->xPos;
+		}
+		else
+		{
+			inputYTop = inputBox->xSize + inputBox->xPos - compareBox->xPos;
+		}
+		
+		inputYTop = clamp((int)((float)inputYTop * ((float)inputBox->ySize/(float)inputBox->xSize)), 0, inputBox->ySize);
 
-			if (inputBox->yFlip == -1)
-			{
-				inputY = inputBox->ySize - inputYTop + inputBox->yPos;
-				inputYTop = inputBox->ySize;
-			}
-			
-			inputYTop += inputBox->yPos;
-		} break;
-			
-
-		default:
-		break;
+		if (inputBox->yFlip == -1)
+		{
+			inputY = inputBox->ySize - inputYTop + inputBox->yPos;
+			inputYTop = inputBox->ySize;
+		}
+		
+		inputYTop += inputBox->yPos;
+	} 
+	else if (inputBox->solid == CIRCLE)
+	{
+		PhysicsBox *temp = inputBox;
+		inputBox = compareBox;
+		compareBox = temp;
 	}
-
 
 	switch(compareBox->solid)
 	{
@@ -4674,14 +4992,14 @@ bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 		{
 			if (compareBox->xFlip == 1)
 			{
-				compareYTop = ((inputBox->xPos + inputBox->xSize - compareBox->xPos) * ((float)compareBox->ySize/(float)compareBox->xSize));
+				compareYTop = inputBox->xSize - compareBox->xPos + inputBox->xPos;
 			}
 			else
 			{
-				compareYTop = ((compareBox->xSize - (inputBox->xPos - compareBox->xPos)) * ((float)compareBox->ySize/(float)compareBox->xSize));
+				compareYTop = compareBox->xSize + compareBox->xPos - inputBox->xPos;
 			}
-
-			compareYTop = fClamp(compareYTop, 0.0, (float)compareBox->ySize);
+			
+			compareYTop = clamp((int)((float)compareYTop * ((float)compareBox->ySize/(float)compareBox->xSize)), 0, compareBox->ySize);
 
 			if (compareBox->yFlip == -1)
 			{
@@ -4690,6 +5008,22 @@ bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 			}
 			
 			compareYTop += compareBox->yPos;
+		} break;
+
+		case CIRCLE:
+		{
+			if (inputBox->solid == CIRCLE)
+			{
+				return OverlapComparison_CircleCircle(inputBox, compareBox);
+			}
+			else if (inputBox->solid == FLAT_SLOPE)
+			{
+				return OverlapComparison_SlopeCircle(inputBox, compareBox);
+			}
+			else
+			{
+				return OverlapComparison_BoxCircle(inputBox, compareBox);
+			}
 		} break;
 			
 		default:
@@ -4943,11 +5277,6 @@ Object* GetCollidingObject(PhysicsBox *inputBox, ObjectController *ObjectList)
 	{
 		i--;
 
-		if (inputBox->solid == SOLID)
-		{
-			putConsoleString("%d %d", checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox), CheckBoxCollidesBox(inputBox, currentObject->ObjectBox));
-		}
-
 		if (currentObject->ObjectBox->solid == UNSOLID || !checkBoxOverlapsBoxBroad(inputBox, currentObject->ObjectBox))
 		{
 			currentObject = currentObject->nextObject;
@@ -5177,6 +5506,11 @@ int MoveObject(Object *inputObject, World *GameWorld)
 	moveObjectX(inputObject, ObjectList);
 	moveObjectY(inputObject, ObjectList);
 	moveObjectForward(inputObject, ObjectList);
+
+	if (isBullet(inputObject))
+	{
+		bulletCollision(inputObject, GameWorld);
+	}
 
 	PhysicsBox *inputBox = inputObject->ObjectBox;
 	inputBox->xPos = fClamp(inputBox->xPos, -EngineSettings.WorldBoundX, EngineSettings.WorldBoundX - inputBox->xSize);
