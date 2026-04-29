@@ -37,9 +37,9 @@ int HandleGameEvents(World *GameWorld, RenderFrame *ScreenData)
 	}
 
 
-	if (keyboard[LMN_ESCAPE] == 1)
+	if (keyboard[LMN_MENU_OPEN] == 1)
 	{
-		AcknowledgeButton(LMN_ESCAPE);
+		AcknowledgeButton(LMN_MENU_OPEN);
 
 		if (GameWorld->GamePaused == 0)
 		{
@@ -1119,13 +1119,16 @@ void executeCommand(char inputSource[], World *GameWorld)
 	parseArgument(input, arg);
 	stringToLower(arg);
 
+	// crashing when typing many commands?
 	for (int i = 0; i < MAX_CONSOLE_COMMANDS; i++)
 	{
-		if (strcmp(DebugSettings.commands[i].name, arg) == 0)
+		ConsoleCommandFunction command = DebugSettings.commands[i].function;
+		
+		if (command != NULL && strcmp(DebugSettings.commands[i].name, arg) == 0)
 		{
-			if (DebugSettings.commands[i].function(input, GameWorld) != LEMON_SUCCESS)
+			if (command(input, GameWorld) != LEMON_SUCCESS)
 			{
-				putConsoleString("'%s' command unrecognised", arg);
+				putConsoleString("command unrecognised");
 			}
 		
 			return;	
@@ -1307,7 +1310,11 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 
 	NEWCOMMAND(Quit, "quit the game", "quit");
 
+	NEWCOMMAND(Restart, "restart the game", "restart");
+
 	NEWCOMMAND(Tick, "check current tick number", "tick");
+	
+	NEWCOMMAND(Fullscreen, "toggle fullscreen (equivalent to calling 'event enablefullscreen' or 'event disablefullscreen')", "fullscreen");
 
 	NEWCOMMAND(Show, "show when a new event/spriteset/etc. is created", "show [events/spritesets/sceneactions/errors/...] [true/false]");
 
@@ -1406,9 +1413,34 @@ int ConsoleCommand_Quit(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
+int ConsoleCommand_Restart(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	destroyWorld(GameWorld);
+
+	initialiseWorld(GameWorld);
+
+	StartGame(GameWorld);
+
+	return LEMON_SUCCESS;
+}
+
 int ConsoleCommand_Tick(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	putConsoleStringTS("Tickrate: %d", EngineSettings.GameTicksPerSecond);
+
+	return LEMON_SUCCESS;
+}
+
+int ConsoleCommand_Fullscreen(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	if (ScreenData.Fullscreen)
+	{
+		disableFullscreen(GameWorld);
+	}
+	else
+	{
+		enableFullscreen(GameWorld);
+	}
 
 	return LEMON_SUCCESS;
 }
@@ -1469,7 +1501,7 @@ int ConsoleCommand_Draw(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	parseArgument(input, arg);
 
-	if (strcmp(arg, "hitboxes") == 0)
+	if (strcmp(arg, "hitboxes") == 0 || strcmp(arg, "hitbox") == 0)
 	{
 		RenderSettings.drawHitboxes = parseArgumentAsBoolean(input);
 	}

@@ -107,7 +107,13 @@ int ConsoleCommand_Version(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_Quit(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
+int ConsoleCommand_Restart(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
 int ConsoleCommand_Tick(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+int ConsoleCommand_SetCameraZoom(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+int ConsoleCommand_Fullscreen(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_Show(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 

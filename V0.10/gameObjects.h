@@ -421,12 +421,6 @@ int ResolveYCollision(PhysicsBox *movingBox, PhysicsBox *compareBox);
 int ApplyYPhysics(PhysicsBox *inputBox, PhysicsBox *physicsBox);
 
 
-int ResolveXCollisionByPush(PhysicsBox *movingBox, PhysicsBox *compareBox);
-
-
-int ResolveYCollisionByPush(PhysicsBox *movingBox, PhysicsBox *compareBox);
-
-
 int ResolveAllXCollisionsByPush(PhysicsBox *movingBox, ObjectController *ObjectList);
 
 
@@ -441,7 +435,7 @@ int ApplyForwardPhysics(PhysicsBox *inputBox, PhysicsBox *physicsBox);
 Object* CheckForGround(PhysicsBox *movingBox, World *GameWorld);
 
 
-int redoGroundCheck(Object *input, World *GameWorld);
+void redoGroundCheck(Object *input, World *GameWorld);
 
 
 int AdjustDirection(PhysicsBox *movingBox, World *GameWorld);

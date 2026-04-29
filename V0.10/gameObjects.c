@@ -1929,9 +1929,6 @@ FuncResult updateObjects(World *GameWorld)
 	// Update object state - parent-child links, deletion, etc.
 	updateObjectsState(ObjectList, GameWorld);
 
-	ResolveAllObjects(ObjectList, GameWorld->PhysicsType);
-
-
 	return LEMON_SUCCESS;
 }
 
@@ -2168,23 +2165,15 @@ int updatePreviousPosition(Object *input)
 
 int updateObjectsState(ObjectController *ObjectList, World *GameWorld)
 {
-	//Object *Objects = ObjectList->objectComponents.Objects;
-	//int i = EngineSettings.MaxObjects;
 	Object *current = ObjectList->firstObject;
-	int k = 0;
-	while (current != NULL && k < ObjectList->objectCount)
-	{	
-		// i--;
-		// if (Objects[i].State == EMPTY_OBJECT)
-		// {
-		// 	continue;
-		// }
 
+	while (current != NULL)
+	{	
 		UpdateParentChildLink(current);
 
 		if (current->State == TO_BE_DELETED)
 		{
-			if (PLAYER_OBJECT == current->ObjectID)
+			if (GameWorld->Player.PlayerPtr == current)
 			{
 				PlayerObjectAboutToBeDeleted(&GameWorld->Player);
 			}
@@ -2195,11 +2184,12 @@ int updateObjectsState(ObjectController *ObjectList, World *GameWorld)
 		{
 			UpdatePhysicsState(current, GameWorld);
 
-			k++;
-
 			current = current->nextObject;
 		}
 	}
+
+	ResolveAllObjects(ObjectList, GameWorld->PhysicsType);
+
 
 	return LEMON_SUCCESS;
 }
@@ -4080,7 +4070,7 @@ int ApplyFriction(PhysicsBox *inputBox, float forwardFriction, float xFriction, 
 
 Object* CheckForGround(PhysicsBox *movingBox, World *GameWorld)
 {
-	if (!LEMON_COLLISION_PHYSICS || GameWorld == NULL || movingBox == NULL || movingBox->solid == UNSOLID)
+	if (movingBox == NULL || movingBox->solid == UNSOLID)
 	{
 		return NULL;
 	}
@@ -4152,11 +4142,11 @@ Object* CheckForGround(PhysicsBox *movingBox, World *GameWorld)
 
 
 // Used to update ground object without affecting other values - SHOULD ONLY BE USED IN PHYSICS APPLICATIONS WHEN NECESSARY
-int redoGroundCheck(Object *input, World *GameWorld)
+void redoGroundCheck(Object *input, World *GameWorld)
 {
-	if (GameWorld->PhysicsType != PLATFORMER || !HasGravity(input))
+	if (!LEMON_COLLISION_PHYSICS || GameWorld->PhysicsType != PLATFORMER || !HasGravity(input))
 	{
-		return ACTION_DISABLED;
+		return;
 	}
 
 	PhysicsBox *inputBox = input->ObjectBox;
@@ -4171,7 +4161,7 @@ int redoGroundCheck(Object *input, World *GameWorld)
 		}
 	}
 
-	return LEMON_SUCCESS;
+	return;
 }
 
 
@@ -4570,10 +4560,7 @@ float DistanceBetween(Object *Source, Object *Target)
 	float xDiff = (box2->xPos + (box2->xSize >> 1)) - (box1->xPos + (box1->xSize >> 1));
 	float yDiff = (box2->yPos + (box2->ySize >> 1)) - (box1->yPos + (box1->ySize >> 1));
 
-	float xDistance = xDiff * xDiff;
-	float yDistance = yDiff * yDiff;
-
-	return (float)sqrt(xDistance + yDistance);
+	return sqrt( (xDiff * xDiff) + (yDiff * yDiff));
 }
 
 
@@ -5225,7 +5212,7 @@ int AssignDirection(PhysicsBox *inputBox, PhysicsBox *compareBox)
 
 Object* GetCollidingObjectFast(PhysicsBox *inputBox, ObjectController *ObjectList)
 {
-	if (!LEMON_COLLISION_PHYSICS || inputBox == NULL || inputBox->solid == UNSOLID || ObjectList == NULL)
+	if (inputBox == NULL || inputBox->solid == UNSOLID || ObjectList == NULL)
 	{
 		return NULL;
 	}
@@ -5259,7 +5246,7 @@ Object* GetCollidingObjectFast(PhysicsBox *inputBox, ObjectController *ObjectLis
 // returns pointer of object overlapping, NULL if no object is detected; has n^2 complexity, not great!
 Object* GetCollidingObject(PhysicsBox *inputBox, ObjectController *ObjectList)
 {
-	if (!LEMON_COLLISION_PHYSICS || inputBox == NULL || inputBox->solid == UNSOLID || ObjectList == NULL)
+	if (inputBox == NULL || inputBox->solid == UNSOLID || ObjectList == NULL)
 	{
 		return NULL;
 	}
@@ -5297,7 +5284,7 @@ Object* GetCollidingObject(PhysicsBox *inputBox, ObjectController *ObjectList)
 
 Object* GetOverlappingObject(PhysicsBox *inputBox, ObjectController *ObjectList)
 {
-	if (!LEMON_COLLISION_PHYSICS || inputBox == NULL || ObjectList == NULL)
+	if (inputBox == NULL || ObjectList == NULL)
 	{
 		return NULL;
 	}
@@ -5330,7 +5317,7 @@ Object* GetOverlappingObject(PhysicsBox *inputBox, ObjectController *ObjectList)
 
 Object* GetOverlappingObjectType(PhysicsBox *inputBox, int overlapObjectID, ObjectController *ObjectList)
 {
-	if (!LEMON_COLLISION_PHYSICS || inputBox == NULL || ObjectList == NULL)
+	if (inputBox == NULL || ObjectList == NULL)
 	{
 		return NULL;
 	}
@@ -5365,7 +5352,7 @@ Object* GetOverlappingObjectType(PhysicsBox *inputBox, int overlapObjectID, Obje
 
 Object* GetOverlappingSolidFast(PhysicsBox *inputBox, int solidID, ObjectController *ObjectList)
 {
-	if (!LEMON_COLLISION_PHYSICS || inputBox == NULL || inputBox->solid == UNSOLID || ObjectList == NULL)
+	if (inputBox == NULL || inputBox->solid == UNSOLID || ObjectList == NULL)
 	{
 		return NULL;
 	}
@@ -5397,7 +5384,7 @@ Object* GetOverlappingSolidFast(PhysicsBox *inputBox, int solidID, ObjectControl
 
 Object* GetOverlappingObjectSolid(PhysicsBox *inputBox, int solidID, ObjectController *ObjectList)
 {
-	if (!LEMON_COLLISION_PHYSICS || ObjectList == NULL || inputBox == NULL)
+	if (ObjectList == NULL || inputBox == NULL)
 	{
 		return NULL;
 	}
@@ -5437,7 +5424,7 @@ Object* GetOverlappingObjectSolid(PhysicsBox *inputBox, int solidID, ObjectContr
 
 Object* GetOverlappingObjectAllSolids(PhysicsBox *inputBox, ObjectController *ObjectList)
 {
-	if (!LEMON_COLLISION_PHYSICS || ObjectList == NULL || inputBox == NULL)
+	if (ObjectList == NULL || inputBox == NULL)
 	{
 		return NULL;
 	}
@@ -5475,7 +5462,7 @@ Object* GetOverlappingObjectAllSolids(PhysicsBox *inputBox, ObjectController *Ob
 	return NULL;
 }
 
-bool OverlapsObject(Object *inputObject, Object *otherObject)
+bool objectsOverlap(Object *inputObject, Object *otherObject)
 {
 	if (inputObject == NULL || otherObject == NULL)
 	{
@@ -5584,7 +5571,7 @@ bool evaluateIfCollidePush(PhysicsBox *movingBox, PhysicsBox *collideBox)
 
 int AdjustDirection(PhysicsBox *movingBox, World *GameWorld)
 {	
-	if (!LEMON_COLLISION_PHYSICS || GameWorld == NULL || GameWorld->ObjectList == NULL || movingBox == NULL)
+	if (GameWorld == NULL || GameWorld->ObjectList == NULL || movingBox == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -5740,6 +5727,7 @@ int resolveForwardCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 
 				if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox))
 				{
+					putConsoleStringTS("name: %s", currentObject->name);
 					movingBox->yPos = lastStepY;
 					movingBox->xPos = lastStepX;
 
@@ -5747,7 +5735,6 @@ int resolveForwardCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 
 					return LEMON_SUCCESS;
 				}
-				
 			}
 			
 
@@ -5805,7 +5792,7 @@ int ApplyForwardPhysics(PhysicsBox *inputBox, PhysicsBox *physicsBox)
 
 int ResolveAllXCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 {
-	if (!LEMON_COLLISION_PHYSICS || movingBox == NULL || ObjectList == NULL)
+	if (movingBox == NULL || ObjectList == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -5826,7 +5813,7 @@ int ResolveAllXCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 
 			SolidType prevSolid = movingBox->solid;
 
-			ResolveXCollisionByPush(movingBox, collideBox);
+			ResolveXCollision(collideBox, movingBox, ObjectList);
 
 			movingBox->solid = UNSOLID;
 			ResolveAllXCollision(collideBox, ObjectList);
@@ -5868,6 +5855,25 @@ int ResolveXCollision(PhysicsBox *movingBox, PhysicsBox *compareBox, ObjectContr
 
 	int prevXPosInt = movingBox->prevXPos;
 
+	if (movingBox->solid == CIRCLE)
+	{
+		if (compareBox->solid == CIRCLE)
+		{
+			float radius = (float)(movingBox->ySize >> 1);
+			float compareRadius = (float)(compareBox->ySize >> 1);
+
+			float prevDistX = (movingBox->prevXPos + (movingBox->xSize >> 1)) - (compareBox->xPos + (compareBox->xSize >> 1));
+			float prevDistY = (movingBox->prevYPos + (movingBox->ySize >> 1)) - (compareBox->yPos + (compareBox->ySize >> 1));
+			float direction = atan2(prevDistX, prevDistY);
+
+			movingBox->xPos = compareBox->xPos + ((radius + compareRadius) * sin(direction));
+			movingBox->yPos = compareBox->yPos + ((radius + compareRadius) * cos(direction));
+
+			ApplyXPhysics(movingBox, compareBox);
+
+			return LEMON_SUCCESS;
+		}
+	}
 
 	switch(compareBox->solid)
 	{
@@ -5973,7 +5979,7 @@ int ApplyXPhysics(PhysicsBox *inputBox, PhysicsBox *physicsBox)
 
 int ResolveAllYCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 {
-	if (!LEMON_COLLISION_PHYSICS || movingBox == NULL || ObjectList == NULL)
+	if (movingBox == NULL || ObjectList == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -5992,7 +5998,7 @@ int ResolveAllYCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 			float prevYPos = collideBox->yPos;
 			SolidType prevSolid = movingBox->solid;
 
-			ResolveYCollisionByPush(movingBox, collideBox);
+			ResolveYCollision(collideBox, movingBox);
 
 			movingBox->solid = UNSOLID;
 			ResolveAllYCollision(collideBox, ObjectList);
@@ -6028,21 +6034,40 @@ int ResolveYCollision(PhysicsBox *movingBox, PhysicsBox *compareBox)
 	}
 
 
-	int objY = compareBox->yPos;
 	int ObjYCenter = compareBox->yPos + (compareBox->ySize >> 1);
 
 	int prevYPosInt = movingBox->prevYPos;
+
+	if (movingBox->solid == CIRCLE)
+	{
+		if (compareBox->solid == CIRCLE)
+		{
+			float radius = (float)(movingBox->ySize >> 1);
+			float compareRadius = (float)(compareBox->ySize >> 1);
+
+			float prevDistX = (movingBox->prevXPos + (movingBox->xSize >> 1)) - (compareBox->xPos + (compareBox->xSize >> 1));
+			float prevDistY = (movingBox->prevYPos + (movingBox->ySize >> 1)) - (compareBox->yPos + (compareBox->ySize >> 1));
+			float direction = atan2(prevDistX, prevDistY);
+
+			movingBox->xPos = compareBox->xPos + ((radius + compareRadius) * sin(direction));
+			movingBox->yPos = compareBox->yPos + ((radius + compareRadius) * cos(direction));
+
+			ApplyYPhysics(movingBox, compareBox);
+
+			return LEMON_SUCCESS;
+		}
+	}
 
 	switch(compareBox->solid)
 	{
 		case FLAT_SLOPE:
 		{
-			if (compareBox->yFlip == 1 && prevYPosInt + movingBox->ySize < objY)
+			if (compareBox->yFlip == 1 && prevYPosInt + movingBox->ySize < compareBox->yPos)
 			{
 				movingBox->yPos = (compareBox->yPos - movingBox->ySize);
 				break;
 			}
-			else if (compareBox->yFlip == -1 && prevYPosInt >= objY + compareBox->ySize)
+			else if (compareBox->yFlip == -1 && prevYPosInt >= compareBox->yPos + compareBox->ySize)
 			{
 				movingBox->yPos = compareBox->yPos + compareBox->ySize;
 				break;
@@ -6073,6 +6098,10 @@ int ResolveYCollision(PhysicsBox *movingBox, PhysicsBox *compareBox)
 			movingBox->yPos = slopeFloor + compareBox->yPos; 		
 		} break;
 
+		case CIRCLE:
+		{
+			
+		} break;
 
 		case JUMP_THROUGH:
 		{
@@ -6132,61 +6161,6 @@ int ApplyYPhysics(PhysicsBox *inputBox, PhysicsBox *physicsBox)
 }
 
 
-int ResolveXCollisionByPush(PhysicsBox *movingBox, PhysicsBox *compareBox)
-{
-	if (movingBox == NULL || compareBox == NULL || movingBox == compareBox)
-	{
-		return MISSING_DATA;
-	}
-
-
-	float ObjXPos = movingBox->xPos;
-	float ObjXPosRight = movingBox->xPos + movingBox->xSize;
-	float ObjYPos = movingBox->yPos;
-
-	float prevXPosRight = movingBox->prevXPos + movingBox->xSize;
-	float prevXPosCenter = movingBox->prevXPos + (movingBox->xSize >> 1);
-
-	switch(movingBox->solid)
-	{
-		case FLAT_SLOPE:
-			if (movingBox->xFlip == 1)
-			{
-				int slopeLeftEdge = (int)((compareBox->yPos - ObjYPos) / ((float)movingBox->ySize/(float)movingBox->xSize));
-				slopeLeftEdge = clamp(slopeLeftEdge, 0, movingBox->xSize);
-
-				ObjXPos = slopeLeftEdge + ObjXPos;
-				prevXPosCenter = prevXPosRight;
-			}
-			else
-			{
-				int slopeLeftEdge = (int)(movingBox->xSize - ((compareBox->yPos - ObjYPos) / ((float)movingBox->ySize/(float)movingBox->xSize)) );
-				slopeLeftEdge = clamp(slopeLeftEdge, 0, movingBox->xSize);
-
-				ObjXPosRight = slopeLeftEdge + ObjXPos;
-				prevXPosCenter = movingBox->prevXPos;
-			}
-			break;
-
-
-		default:
-			break;
-	}
-
-
-	if ((int)compareBox->xPos < (int)prevXPosCenter)
-	{
-		compareBox->xPos = ObjXPos - compareBox->xSize;
-	}
-	else
-	{
-		compareBox->xPos = ObjXPosRight;
-	}
-
-	return LEMON_SUCCESS;
-}
-
-
 int ResolveAllXCollisionsByPush(PhysicsBox *movingBox, ObjectController *ObjectList)
 {
 	if (movingBox == NULL || ObjectList == NULL)
@@ -6200,7 +6174,7 @@ int ResolveAllXCollisionsByPush(PhysicsBox *movingBox, ObjectController *ObjectL
 
 	while (collideObject != NULL && i < 16)
 	{
-		ResolveXCollisionByPush(movingBox, collideObject->ObjectBox);
+		ResolveXCollision(collideObject->ObjectBox, movingBox, ObjectList);
 
 		collideObject = GetCollidingObject(movingBox, ObjectList);	
 		i++;
@@ -6224,65 +6198,12 @@ int ResolveAllYCollisionsByPush(PhysicsBox *movingBox, ObjectController *ObjectL
 
 	while (collideObject != NULL && i < 16)
 	{
-		ResolveYCollisionByPush(movingBox, collideObject->ObjectBox);
+		ResolveYCollision(collideObject->ObjectBox, movingBox);
 
 		collideObject = GetCollidingObject(movingBox, ObjectList);	
 		i++;
 	}
 
-
-	return LEMON_SUCCESS;
-}
-
-
-int ResolveYCollisionByPush(PhysicsBox *movingBox, PhysicsBox *compareBox)
-{
-	if (movingBox == NULL || compareBox == NULL || movingBox == compareBox)
-	{
-		return MISSING_DATA;
-	}
-
-	float ObjYPos = movingBox->yPos;
-	float ObjYPosTop = movingBox->yPos + movingBox->ySize;
-
-	float prevYCenter = movingBox->prevYPos + (movingBox->ySize >> 1);
-
-
-	switch(movingBox->solid)
-	{
-		case FLAT_SLOPE:
-			if (movingBox->xFlip == 1)
-			{
-				int slopeFloor = (int)( ((compareBox->xPos + compareBox->xSize - movingBox->xPos) * ((float)movingBox->ySize/(float)movingBox->xSize)) );
-				slopeFloor = clamp(slopeFloor, 0, movingBox->ySize);
-
-				ObjYPosTop = slopeFloor + ObjYPos;
-			}
-			else
-			{
-				int slopeFloor = (int)( ((movingBox->xSize - (compareBox->xPos - movingBox->xPos)) * ((float)movingBox->ySize/(float)movingBox->xSize)) );
-				slopeFloor = clamp(slopeFloor, 0, movingBox->ySize);
-
-				ObjYPosTop = slopeFloor + ObjYPos;
-			}
-			
-			prevYCenter = movingBox->prevYPos;
-			break;
-
-
-		default:
-			break;
-	}
-
-	
-	if (compareBox->yPos < prevYCenter)
-	{
-		compareBox->yPos = ObjYPos - compareBox->ySize;
-	}
-	else
-	{
-		compareBox->yPos = ObjYPosTop; 
-	}
 
 	return LEMON_SUCCESS;
 }

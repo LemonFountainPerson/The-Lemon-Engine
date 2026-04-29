@@ -8,16 +8,16 @@ int InitialisePlayerObject(Object *Player, World *GameWorld)
 		return MISSING_DATA;
 	}
 
-	if (GameWorld->Player.PlayerPtr != NULL && GameWorld->Player.PlayerPtr->State != EMPTY_OBJECT)
-	{
-		return ACTION_DISABLED;
-	}
-
 	PhysicsBox *PlayerBox = Player->ObjectBox;
 
 	PlayerBox->xSize = 32;
 	PlayerBox->ySize = 50;
 	PlayerBox->solid = BODY;
+
+	if (GameWorld->Player.PlayerPtr != NULL && GameWorld->Player.PlayerPtr->State != EMPTY_OBJECT)
+	{
+		return ACTION_DISABLED;
+	}
 
 	GameWorld->Player.PlayerPtr = Player;
 	GameWorld->Player.PlayerBox = Player->ObjectBox;
@@ -448,7 +448,7 @@ int animatePlayer(PlayerData *Player)
 
 	DisplayData *PlayerDisplay = Player->PlayerDisplay;
 
-	if (Player->jumpProgress <= 0 || !playingAnimation(PlayerDisplay))
+	if (Player->jumpProgress <= 0)
 	{
 		PlayNewAnimation("Stand", 0, PlayerDisplay);
 	}

@@ -216,11 +216,6 @@ int drawObjects(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 			{
 				objLayer = getDisplayLayer(currentObject);
 
-				if (objLayer >= 0 && layerStarts[objLayer] == NULL)
-				{
-					layerStarts[objLayer] = currentObject;
-				}
-
 				if (drawLayer == objLayer)
 				{
 					renderObject(hudCam, currentObject, Screen);
@@ -285,10 +280,12 @@ void drawHitboxes(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 		if (getDisplayLayer(currentObject) == HUD)
 		{
 			SDL_SetRenderScale(Screen, 1.0, 1.0);
+			SDL_SetRenderLogicalPresentation(Screen, hudCamera.width, hudCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
 
 			renderHitbox(hudCamera, currentObject->ObjectBox, Screen);
 
 			SDL_SetRenderScale(Screen, inputCamera.zoomX, inputCamera.zoomY);
+			SDL_SetRenderLogicalPresentation(Screen, inputCamera.width, inputCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
 		}
 		else
 		{
@@ -1325,7 +1322,7 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 	}
 	else
 	{
-		AddDebugText(text, inputBox->xPos + renderCamera.CameraX, inputBox->yPos + renderCamera.CameraY, 0, DTFORMAT_SCREEN_RELATIVE);
+		AddDebugText(text, inputBox->xPos, inputBox->yPos, 0, DTFORMAT_CAMERA_RELATIVE);
 	}
 	
 
@@ -1368,7 +1365,7 @@ int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, Debu
 
     TextsArray[index].xPos = x;
 
-    TextsArray[index].CameraRelative = false;
+    TextsArray[index].CameraRelative = (format == DTFORMAT_CAMERA_RELATIVE);
     TextsArray[index].beingUsed = true;
     TextsArray[index].textBox = NULL;
     

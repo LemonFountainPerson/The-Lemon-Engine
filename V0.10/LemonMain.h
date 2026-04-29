@@ -26,7 +26,7 @@ EXPORT int GameFrame(World *GameWorld);
 
 EXPORT int Render(World *GameWorld, RenderFrame *ScreenData);
 
-EXPORT int RenderEngine(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen);
+EXPORT void RenderEngine(Camera *renderCamera, World *GameWorld, SDL_Renderer *Screen);
 
 
 EXPORT Uint64 TickNumber(void);
@@ -104,7 +104,7 @@ bool keyHeld(int key);
 
 void ClearInput(void);
 
-int updateMousePos(Camera inputCam);
+void updateMousePos();
 
 float getMouseXCam(Camera inputCamera);
 
@@ -114,7 +114,7 @@ int getMouseInput(SDL_MouseButtonEvent *event);
 
 int getGamepadInput(SDL_GamepadButtonEvent *event);
 
-int updateGamepadAxis(SDL_GamepadAxisEvent *event);
+void updateGamepadAxis(SDL_GamepadAxisEvent *event);
 
 
 void AcknowledgeHeldButtons(void);

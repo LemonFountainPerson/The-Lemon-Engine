@@ -8,6 +8,8 @@ LVFLAG:	SET_BG,	1, 1
 LVFLAG: START_CamPos, 1000, 0
 LVFLAG: Player_Position 1000, 200
 
-////OBJECT:	2	2000	0	192	64	-1 	
+////OBJECT:	2	2000	0	192	64	-1 
+
+OBJECT: 4, 400 10	setname {"pawn"}	
 
 ENDFILE

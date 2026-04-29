@@ -106,7 +106,7 @@ int StartUpLemonEngine(void)
 	putConsoleString("\nStarting up...\n");
 
 	// SDL initialisation
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))// | SDL_INIT_GAMEPAD))
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD))
 	{
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Failed to initialise SDL! \nEnsure SDL3.dll is in directory with executable.", NULL);
 		return LEMON_ERROR;
@@ -126,6 +126,14 @@ int StartUpLemonEngine(void)
 	if (initialiseAudio() != LEMON_SUCCESS)
 	{
 		return LEMON_ERROR;
+	}
+
+	// Check for resource data access
+	if (CheckResourceData() == MISSING_DATA)
+	{
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Missing Data", 
+			"Missing Lemon resource data! \nPlease check that the LemonData folder is available and in the same directory as the executable.", ScreenData.Window);
+		return MISSING_DATA;
 	}
 
     // initialise text data to ensure pointers are null
@@ -162,15 +170,6 @@ int initialiseWorld(World *GameWorld)
 	GameWorld->TextQueue = NULL;
 	GameWorld->CurrentCutscene = NO_CUTSCENE;
 	GameWorld->SceneActionQueue = NULL;
-
-	// Check for resource data access
-	if (CheckResourceData() == MISSING_DATA)
-	{
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Missing Data", 
-			"Missing Lemon resource data! \nPlease check that the LemonData folder is available and in the same directory as the executable.", ScreenData.Window);
-		return MISSING_DATA;
-	}
-
 	
 	// Object controller creation
 	GameWorld->ObjectList = createObjectController();
@@ -244,6 +243,10 @@ int GameTick(World *GameWorld)
 
 	updateTextBoxes(GameWorld);
 
+	#ifdef LEMON_USE_CUSTOM_CALLBACKS
+	Tick(GameWorld);
+	#endif
+
 	return LEMON_SUCCESS;
 }
 
@@ -267,42 +270,33 @@ int GameFrame(World *GameWorld)
 
 	updateObjectDisplays(GameWorld);		// for allowing animations to happen between ticks; not being restricted to multiples/factors of gameTick amount
 
+	#ifdef LEMON_USE_CUSTOM_CALLBACKS
+	Update(GameWorld);
+	#endif
 
 	return LEMON_SUCCESS;
 }
 
 
-int RenderEngine(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
+void RenderEngine(Camera *renderCamera, World *GameWorld, SDL_Renderer *Screen)
 {
-	if (GameWorld == NULL || Screen == NULL)
+	renderCamera->zoomedWidth = renderCamera->width / renderCamera->zoomX;
+	renderCamera->zoomedHeight = renderCamera->height / renderCamera->zoomY;
+
+	SDL_SetRenderScale(Screen, renderCamera->zoomX, renderCamera->zoomY);
+	SDL_SetRenderLogicalPresentation(Screen, renderCamera->width, renderCamera->height, SDL_LOGICAL_PRESENTATION_STRETCH);
+
+
+	renderBackGroundSprite(*renderCamera, &GameWorld->WorldBackground, Screen);
+
+	drawObjects(*renderCamera, GameWorld, Screen);
+
+	if (RenderSettings.drawHitboxes)
 	{
-		return MISSING_DATA;
+		drawHitboxes(*renderCamera, GameWorld, Screen);
 	}
 
-	if (fabs(renderCamera.zoomX - 1.0) > 0.001 || fabs(renderCamera.zoomY - 1.0) > 0.001)
-	{
-		renderCamera.zoomedWidth = renderCamera.width / renderCamera.zoomX;
-		renderCamera.zoomedHeight = renderCamera.height / renderCamera.zoomY;
-	}
-	else
-	{
-		renderCamera.zoomedWidth = renderCamera.width;
-		renderCamera.zoomedHeight = renderCamera.height;
-	}
-
-	SDL_SetRenderScale(Screen, renderCamera.zoomX, renderCamera.zoomY);
-	SDL_SetRenderLogicalPresentation(Screen, renderCamera.width, renderCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
-
-	renderBackGroundSprite(renderCamera, &GameWorld->WorldBackground, Screen);
-
-	drawObjects(renderCamera, GameWorld, Screen);
-
-	if (RenderSettings.drawHitboxes == 1)
-	{
-		drawHitboxes(renderCamera, GameWorld, Screen);
-	}
-
-	return LEMON_SUCCESS;
+	return;
 }
 
 
@@ -317,7 +311,7 @@ int Render(World *GameWorld, RenderFrame *ScreenData)
 	SDL_SetRenderDrawColor(ScreenData->Renderer, 0, 0, 0, 0xFF);
 	SDL_RenderClear(ScreenData->Renderer);
 
-	RenderEngine(GameWorld->MainCamera, GameWorld, ScreenData->Renderer);
+	RenderEngine(&GameWorld->MainCamera, GameWorld, ScreenData->Renderer);
 
     FPSCounter();
 
@@ -610,11 +604,11 @@ void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Render
 
 		if (list[i].useMainCam)
 		{
-			RenderEngine(mainCam, GameWorld, Screen);
+			RenderEngine(&mainCam, GameWorld, Screen);
 		}
 		else
 		{
-			RenderEngine(list[i].cam, GameWorld, Screen);
+			RenderEngine(&list[i].cam, GameWorld, Screen);
 		}
 
 		SDL_SetRenderTarget(Screen, previousTarget);
@@ -930,8 +924,6 @@ void destroyWorld(World *GameWorld)	// honestly picked this name because its fun
 
 	removeAllCameraViews(GameWorld);
 
-	memset(GameWorld, 0, sizeof(World));
-
 	GameWorld->GameState = EMPTY_GAME;
 
 	return;
@@ -1100,7 +1092,7 @@ int getExternalInput(World *GameWorld, SDL_Renderer *screen)
 	}
 
 	updateCustomKeys();
-	updateMousePos(GameWorld->MainCamera);
+	updateMousePos();
 
 
 	return LEMON_SUCCESS;
@@ -1213,8 +1205,8 @@ void updateCustomKeys(void)
 {
 	keyPressedWhen(LMN_LEFT, keyboard['A'] || keyboard[LMN_LEFTARROW] || GamePadInput.dPadLeft || (GamePadInput.leftStickX < -0.9));
 	keyPressedWhen(LMN_RIGHT, keyboard['D'] || keyboard[LMN_RIGHTARROW] || GamePadInput.dPadRight || (GamePadInput.leftStickX > 0.9));
-	keyPressedWhen(LMN_UP, keyboard['W'] || keyboard[LMN_UPARROW] || GamePadInput.dPadUp || (GamePadInput.leftStickY > 0.9));
-	keyPressedWhen(LMN_DOWN, keyboard['S'] || keyboard[LMN_DOWNARROW] || GamePadInput.dPadDown || (GamePadInput.leftStickY < -0.9));
+	keyPressedWhen(LMN_UP, keyboard['W'] || keyboard[LMN_UPARROW] || GamePadInput.dPadUp || (GamePadInput.leftStickY < -0.9));
+	keyPressedWhen(LMN_DOWN, keyboard['S'] || keyboard[LMN_DOWNARROW] || GamePadInput.dPadDown || (GamePadInput.leftStickY > 0.9));
 
 	keyPressedWhen(LMN_JUMP, keyboard[LMN_SPACE] || GamePadInput.southButton);
 	keyPressedWhen(LMN_INTERACT, keyboard['E'] || keyboard['Z'] || GamePadInput.westButton);
@@ -1222,8 +1214,10 @@ void updateCustomKeys(void)
 	keyPressedWhen(LMN_INTERACT3, keyboard['R'] || keyboard['C'] || GamePadInput.northButton);
 
 	keyPressedWhen(LMN_TEXT_SKIP, keyboard[LMN_INTERACT2] || MouseInput.RightButton || keyboard[LMN_LSHIFT]);
-	keyPressedWhen(LMN_TEXT_CONFIRM, keyboard[LMN_INTERACT] || MouseInput.LeftButton || keyboard[LMN_ENTER]);
-	keyPressedWhen(LMN_MENU_CONFIRM, keyboard[LMN_INTERACT] || keyboard[LMN_ENTER]);
+	keyPressedWhen(LMN_TEXT_CONFIRM, keyboard[LMN_INTERACT] || GamePadInput.southButton || MouseInput.LeftButton || keyboard[LMN_ENTER]);
+	keyPressedWhen(LMN_MENU_CONFIRM, keyboard[LMN_INTERACT] || GamePadInput.southButton || keyboard[LMN_ENTER]);
+	keyPressedWhen(LMN_MENU_OPEN, keyboard[LMN_ESCAPE] || GamePadInput.start);
+	
 
 	return;
 }
@@ -1317,6 +1311,8 @@ void AcknowledgeButton(LemonKeys Key)
 				}
 				break;
 
+
+
 			default:
 				return;
 		}
@@ -1332,28 +1328,26 @@ void AcknowledgeButton(LemonKeys Key)
 	return;
 }
 
-int updateMousePos(Camera inputCam)
+void updateMousePos()
 {
 	SDL_GetMouseState(&MouseInput.xPos, &MouseInput.yPos);
 
 	MouseInput.xPos -= (ScreenData.screenWidth >> 1);
-	MouseInput.xPos *= (float)inputCam.width/(float)ScreenData.screenWidth;
 
 	MouseInput.yPos = ((ScreenData.screenHeight >> 1) - MouseInput.yPos);
-	MouseInput.yPos *= (float)inputCam.height/(float)ScreenData.screenHeight;
 
-	return LEMON_SUCCESS;
+	return;
 }
 
 // Get mouse position corrected for camera position and zoom (HUD layer is immune to this already, so this is only for other layers)
 float getMouseXCam(Camera inputCamera)
 {
-	return (MouseInput.xPos / inputCamera.zoomX) + inputCamera.CameraX;
+	return (MouseInput.xPos * (float)inputCamera.zoomedWidth/(float)ScreenData.screenWidth) + inputCamera.CameraX;
 }
 
 float getMouseYCam(Camera inputCamera)
 {
-	return (MouseInput.yPos / inputCamera.zoomY) + inputCamera.CameraY;
+	return (MouseInput.yPos * (float)inputCamera.zoomedHeight/(float)ScreenData.screenHeight) + inputCamera.CameraY;
 }
 
 
@@ -1363,22 +1357,27 @@ int getMouseInput(SDL_MouseButtonEvent *event)
 	{	
 		case SDL_BUTTON_LEFT:
 			MouseInput.LeftButton = event->down;
+			keyboard[MOUSE_LEFT] = event->down;
 			break;
 
 		case SDL_BUTTON_RIGHT:
 			MouseInput.RightButton = event->down;
+			keyboard[MOUSE_RIGHT] = event->down;
 			break;
 
 		case SDL_BUTTON_MIDDLE:
 			MouseInput.MiddleButton = event->down;
+			keyboard[MOUSE_MIDDLE] = event->down;
 			break;
 
 		case SDL_BUTTON_X1:
 			MouseInput.SideButton1 = event->down;
+			keyboard[MOUSE_SIDE1] = event->down;
 			break;
 
 		case SDL_BUTTON_X2:
 			MouseInput.SideButton2 = event->down;
+			keyboard[MOUSE_SIDE2] = event->down;
 			break;
 
 		default:
@@ -1396,62 +1395,77 @@ int getGamepadInput(SDL_GamepadButtonEvent *event)
 	{	
 		case SDL_GAMEPAD_BUTTON_SOUTH:
 			GamePadInput.southButton = event->down;
+			keyboard[GAMEPAD_SOUTH] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_NORTH:
 			GamePadInput.northButton = event->down;
+			keyboard[GAMEPAD_NORTH] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_EAST:
 			GamePadInput.eastButton = event->down;
+			keyboard[GAMEPAD_EAST] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_WEST:
 			GamePadInput.westButton = event->down;
+			keyboard[GAMEPAD_WEST] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_BACK:
 			GamePadInput.back = event->down;
+			keyboard[GAMEPAD_BACK] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_START:
 			GamePadInput.start = event->down;
+			keyboard[GAMEPAD_START] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_GUIDE:
 			GamePadInput.guide = event->down;
+			keyboard[GAMEPAD_GUIDE] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_DPAD_UP:
 			GamePadInput.dPadUp = event->down;
+			keyboard[GAMEPAD_DPAD_UP] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
 			GamePadInput.dPadDown = event->down;
+			keyboard[GAMEPAD_DPAD_DOWN] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
 			GamePadInput.dPadLeft = event->down;
+			keyboard[GAMEPAD_DPAD_LEFT] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
 			GamePadInput.dPadRight = event->down;
+			keyboard[GAMEPAD_DPAD_RIGHT] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
 			GamePadInput.leftShoulder = event->down;
+			keyboard[GAMEPAD_LEFT_SHOULDER] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
 			GamePadInput.rightShoulder = event->down;
+			keyboard[GAMEPAD_RIGHT_SHOULDER] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_LEFT_STICK:
 			GamePadInput.leftStick = event->down;
+			keyboard[GAMEPAD_LEFT_STICK] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
 			GamePadInput.rightStick = event->down;
+			keyboard[GAMEPAD_RIGHT_STICK] = event->down;
 			break;
 
 		default:
@@ -1463,11 +1477,18 @@ int getGamepadInput(SDL_GamepadButtonEvent *event)
 	return LEMON_SUCCESS;
 }
 
-int updateGamepadAxis(SDL_GamepadAxisEvent *event)
+void updateGamepadAxis(SDL_GamepadAxisEvent *event)
 {
-	float value = fClamp(((float)event->value) / 32767.0, -1.0, 1.0);
+	float value;
 
-	putConsoleStringTS("Axis event with value %d -> %f", event->value, value);
+	if (event->value > 0)
+	{
+		value = fClamp(((float)event->value) / 32768.0, -1.0, 1.0);
+	}
+	else
+	{
+		value = fClamp(((float)event->value) / 32767.0, -1.0, 1.0);
+	}
 
 	switch(event->axis)
 	{
@@ -1499,44 +1520,18 @@ int updateGamepadAxis(SDL_GamepadAxisEvent *event)
 		break;
 	}
 
-	return LEMON_SUCCESS;
+	return;
 }
 
 
 bool buttonPressed(int key)
 {
-	if (key < 0)
+	if (key < 0 || key >= INPUT_COUNT)
 	{
 		return false;
 	}
 
-	if (key > INPUT_COUNT)
-	{
-		switch (key)
-		{
-			case MOUSE_LEFT:
-				return (MouseInput.LeftButton == 1);
-
-			case MOUSE_RIGHT:
-				return (MouseInput.RightButton == 1);
-
-			case MOUSE_MIDDLE:
-				return (MouseInput.MiddleButton == 1); 
-
-			case MOUSE_SIDE1:
-				return (MouseInput.SideButton1 == 1);
-
-			case MOUSE_SIDE2:
-				return (MouseInput.SideButton2 == 1);
-
-			default:
-				return false;
-		}
-	}
-	else
-	{
-		return (keyboard[key] == 1);
-	}
+	return (keyboard[key] == 1);
 }
 
 bool keyPressed(int key)
@@ -1546,39 +1541,12 @@ bool keyPressed(int key)
 
 bool buttonHeld(int key)
 {
-	if (key < 0)
+	if (key < 0 || key >= INPUT_COUNT)
 	{
 		return false;
 	}
 
-
-	if (key > INPUT_COUNT)
-	{
-		switch (key)
-		{
-			case MOUSE_LEFT:
-				return (MouseInput.LeftButton > 0);
-
-			case MOUSE_RIGHT:
-				return (MouseInput.RightButton > 0);
-
-			case MOUSE_MIDDLE:
-				return (MouseInput.MiddleButton > 0);
-
-			case MOUSE_SIDE1:
-				return (MouseInput.SideButton1 > 0);
-
-			case MOUSE_SIDE2:
-				return (MouseInput.SideButton2 > 0);  
-
-			default:
-				return false;
-		}
-	}
-	else
-	{
-		return (keyboard[key] > 0);
-	}
+	return (keyboard[key] > 0);
 }
 
 bool keyHeld(int key)
@@ -1973,6 +1941,7 @@ void addInputHistory(const char input[], InputHistory *history)
 	}
 
 	memcpy(history->inputs[history->head], input, length);
+
 	history->inputs[history->head % USER_INPUT_HISTORY_LEN][length] = 0;
 
 	history->head = (history->head + 1) % USER_INPUT_HISTORY_LEN;
@@ -2000,17 +1969,19 @@ char* getPreviousInputHistory(InputHistory *history)
 
 char* getNextInputHistory(InputHistory *history)
 {
-	if (history->searchIndex == history->head)
+	if (history->searchIndex != history->head)
 	{
-		return history->inputs[history->searchIndex];
+		history->searchIndex = modulo(history->searchIndex + 1, USER_INPUT_HISTORY_LEN);
+			
+		if (history->inputs[history->searchIndex][0] == '\0')
+		{
+			history->searchIndex = modulo(history->searchIndex - 1, USER_INPUT_HISTORY_LEN);
+		} 
 	}
-
-	history->searchIndex = modulo(history->searchIndex + 1, USER_INPUT_HISTORY_LEN);
-		
-	if (history->inputs[history->searchIndex][0] == '\0')
+	else
 	{
-		history->searchIndex = modulo(history->searchIndex - 1, USER_INPUT_HISTORY_LEN);
-	} 
+		history->searchIndex = modulo(history->searchIndex, USER_INPUT_HISTORY_LEN);
+	}
 
 	return history->inputs[history->searchIndex];
 }
