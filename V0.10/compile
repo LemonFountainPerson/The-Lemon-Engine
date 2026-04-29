@@ -1,2 +1,0 @@
-#!/bin/bash
-gcc main.c LemonMain.c gameObjects.c levelLoader.c drawScreen.c playerController.c spriteLoader.c soundProcessor.c eventManager.c animations.c UIObjects.c cutsceneManager.c -o stable/LemonEngine_Linux `pkg-config --libs --cflags sdl3` -lSDL3_image -lSDL3_ttf -lSDL3_mixer -O3 -m64 -Wall -lm --all-warnings

@@ -1123,7 +1123,7 @@ void executeCommand(char inputSource[], World *GameWorld)
 	for (int i = 0; i < MAX_CONSOLE_COMMANDS; i++)
 	{
 		ConsoleCommandFunction command = DebugSettings.commands[i].function;
-		
+
 		if (command != NULL && strcmp(DebugSettings.commands[i].name, arg) == 0)
 		{
 			if (command(input, GameWorld) != LEMON_SUCCESS)
@@ -2385,9 +2385,9 @@ void updateTypedCommand(SDL_Window *window, World *GameWorld)
 {
 	if (DebugSettings.TypingInConsole == false)
 	{
-		if (keyboard[LMN_GRAVE] == 1)
+		if (keyboard[LMN_CONSOLE_OPEN] == 1)
 		{
-			AcknowledgeButton(LMN_GRAVE);
+			AcknowledgeButton(LMN_CONSOLE_OPEN);
 			startTypedCommand(window);
 		}
 
@@ -2411,7 +2411,7 @@ void updateTypedCommand(SDL_Window *window, World *GameWorld)
 		executeCommand(DebugSettings.userInputString, GameWorld);
 	}
 
-	if (buttonPressed(LMN_GRAVE))
+	if (buttonPressed(LMN_CONSOLE_OPEN))
 	{
 		SDL_StopTextInput(window);
 		DebugSettings.TypingInConsole = false;
@@ -2433,9 +2433,9 @@ void updateTypedCommand(SDL_Window *window, World *GameWorld)
 		DebugSettings.cursorXPos = getCursorPos();
 	}
 
-	if (buttonPressed(LMN_UPARROW) || MouseInput.wheelYDir > 0)
+	if (buttonPressed(LMN_UPARROW) || MouseInput.wheelYDir > 0 || GamePadInput.rightStickY > 0.9)
 	{
-		if (DebugSettings.consoleFocus)
+		if (DebugSettings.consoleFocus || GamePadInput.rightStickY > 0.9)
 		{
 			DebugSettings.scrollVal = clamp(DebugSettings.scrollVal + 1, 0, USER_INPUT_HISTORY_LEN);
 		}
@@ -2453,9 +2453,9 @@ void updateTypedCommand(SDL_Window *window, World *GameWorld)
 		}
 	}
 
-	if (buttonPressed(LMN_DOWNARROW) || MouseInput.wheelYDir < 0)
+	if (buttonPressed(LMN_DOWNARROW) || MouseInput.wheelYDir < 0 || GamePadInput.rightStickY < -0.9)
 	{
-		if (DebugSettings.consoleFocus)
+		if (DebugSettings.consoleFocus || GamePadInput.rightStickY < -0.9)
 		{
 			DebugSettings.scrollVal = clamp(DebugSettings.scrollVal - 1, 0, USER_INPUT_HISTORY_LEN);
 		}

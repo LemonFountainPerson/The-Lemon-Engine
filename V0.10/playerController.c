@@ -187,7 +187,7 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 	// Player input
 	if (!playingText(GameWorld) && PlayerObject->State != PAUSE_STATE)
 	{
-		if ((keyboard[LMN_RIGHT] != 0) - (keyboard[LMN_LEFT] != 0) == 0)
+		if (fabs(GamePadInput.leftStickX) > 0.001)
 		{
 			hAxis = GamePadInput.leftStickX;
 		}
@@ -196,7 +196,7 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 			hAxis = (float)(keyboard[LMN_RIGHT] != 0) - (keyboard[LMN_LEFT] != 0);
 		}
 
-		if ((keyboard[LMN_UP] != 0) - (keyboard[LMN_DOWN] != 0) == 0)
+		if (fabs(GamePadInput.leftStickY) > 0.001)
 		{
 			vAxis = GamePadInput.leftStickY;
 		}
@@ -256,12 +256,12 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 		Player->jumpProgress = 0;	
 	}
 
-	if (vAxis < 0 && PlayerBox->inAir < 20)
+	if (vAxis < -0.75 && PlayerBox->inAir < 20)
 	{
 		PlayerBox->crouch = 1;
 		PlayerBox->ySize = 32;
 	}
-	else if (vAxis >= 0 && spaceAboveHead)
+	else if (vAxis >= -0.5 && spaceAboveHead)
 	{
 		PlayerBox->crouch = 0;
 		PlayerBox->ySize = 50;

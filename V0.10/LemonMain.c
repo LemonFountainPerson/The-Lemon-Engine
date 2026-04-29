@@ -1051,6 +1051,8 @@ int getExternalInput(World *GameWorld, SDL_Renderer *screen)
 
     			GamePadInput.gamepad = newJoy;
     			GamePadInput.ID = new;
+
+    			putConsoleStringTS("Added gamepad with ID: %d", new);
     		}
     		else
     		{
@@ -1065,6 +1067,8 @@ int getExternalInput(World *GameWorld, SDL_Renderer *screen)
     		{
 	    		SDL_CloseGamepad(GamePadInput.gamepad);
 	    		
+	    		putConsoleStringTS("Removed gamepad with ID: %d", GamePadInput.ID);
+
     			GamePadInput.gamepad = NULL;
     			GamePadInput.ID = 0;
     		}
@@ -1205,8 +1209,8 @@ void updateCustomKeys(void)
 {
 	keyPressedWhen(LMN_LEFT, keyboard['A'] || keyboard[LMN_LEFTARROW] || GamePadInput.dPadLeft || (GamePadInput.leftStickX < -0.9));
 	keyPressedWhen(LMN_RIGHT, keyboard['D'] || keyboard[LMN_RIGHTARROW] || GamePadInput.dPadRight || (GamePadInput.leftStickX > 0.9));
-	keyPressedWhen(LMN_UP, keyboard['W'] || keyboard[LMN_UPARROW] || GamePadInput.dPadUp || (GamePadInput.leftStickY < -0.9));
-	keyPressedWhen(LMN_DOWN, keyboard['S'] || keyboard[LMN_DOWNARROW] || GamePadInput.dPadDown || (GamePadInput.leftStickY > 0.9));
+	keyPressedWhen(LMN_UP, keyboard['W'] || keyboard[LMN_UPARROW] || GamePadInput.dPadUp || (GamePadInput.leftStickY > 0.9));
+	keyPressedWhen(LMN_DOWN, keyboard['S'] || keyboard[LMN_DOWNARROW] || GamePadInput.dPadDown || (GamePadInput.leftStickY < -0.9));
 
 	keyPressedWhen(LMN_JUMP, keyboard[LMN_SPACE] || GamePadInput.southButton);
 	keyPressedWhen(LMN_INTERACT, keyboard['E'] || keyboard['Z'] || GamePadInput.westButton);
@@ -1217,6 +1221,8 @@ void updateCustomKeys(void)
 	keyPressedWhen(LMN_TEXT_CONFIRM, keyboard[LMN_INTERACT] || GamePadInput.southButton || MouseInput.LeftButton || keyboard[LMN_ENTER]);
 	keyPressedWhen(LMN_MENU_CONFIRM, keyboard[LMN_INTERACT] || GamePadInput.southButton || keyboard[LMN_ENTER]);
 	keyPressedWhen(LMN_MENU_OPEN, keyboard[LMN_ESCAPE] || GamePadInput.start);
+
+	keyPressedWhen(LMN_CONSOLE_OPEN, keyboard[LMN_GRAVE] || GamePadInput.back);
 	
 
 	return;
@@ -1233,6 +1239,19 @@ void ClearInput(void)
 	memset(&MouseInput, 0, sizeof(MouseData));
 	MouseInput.wheelX = 0.0;
 	MouseInput.wheelY = 0.0;
+
+	SDL_JoystickID padID = GamePadInput.ID;
+	SDL_Gamepad *gamepad = GamePadInput.gamepad;
+
+	memset(&GamePadInput, 0, sizeof(GamePadData));
+	GamePadInput.leftStickX = 0.0;
+	GamePadInput.leftStickY = 0.0;
+	GamePadInput.rightStickX = 0.0;
+	GamePadInput.rightStickY = 0.0;
+	GamePadInput.leftTrigger = 0.0;
+	GamePadInput.leftTrigger = 0.0;
+	GamePadInput.ID = padID;
+	GamePadInput.gamepad = gamepad;
 
 	return;
 }
@@ -1481,13 +1500,13 @@ void updateGamepadAxis(SDL_GamepadAxisEvent *event)
 {
 	float value;
 
-	if (event->value > 0)
+	if (abs(event->value) > 8000)	// SDL3 notes that gamepads consider < 8000 to be the deadzone
 	{
-		value = fClamp(((float)event->value) / 32768.0, -1.0, 1.0);
+		value = fClamp(((float)event->value) / 32767.0, -1.0, 1.0);
 	}
 	else
 	{
-		value = fClamp(((float)event->value) / 32767.0, -1.0, 1.0);
+		value = 0.0;
 	}
 
 	switch(event->axis)
@@ -1501,11 +1520,11 @@ void updateGamepadAxis(SDL_GamepadAxisEvent *event)
 		break;
 
 	case SDL_GAMEPAD_AXIS_LEFTY:
-		GamePadInput.leftStickY = value;
+		GamePadInput.leftStickY = -value;
 		break;
 
 	case SDL_GAMEPAD_AXIS_RIGHTY:
-		GamePadInput.rightStickY = value;
+		GamePadInput.rightStickY = -value;
 		break;
 
 	case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:

@@ -49,6 +49,7 @@ typedef enum LemonKeys
 	LMN_TEXT_SKIP = 159,
 	LMN_MENU_CONFIRM = 160,
 	LMN_MENU_OPEN,
+	LMN_CONSOLE_OPEN,
 
 	MOUSE_LEFT,
 	MOUSE_RIGHT,
@@ -799,7 +800,6 @@ typedef struct StackArray
 	int list[STACKARRAY_LENGTH];
 } StackArray;
 
-
 typedef struct ObjectController
 {
 	int objectCount;
@@ -979,38 +979,6 @@ typedef struct Text
 	bool beingUsed;
 
 } Text;
-
-typedef struct TextList
-{
-	Text texts[MAX_TEXT_TEXTURES];
-	int count;
-} TextList;
-
-typedef struct FontList
-{
-	int head;
-	char name[MAX_LOADED_FONTS][FONT_FILE_NAME_MAX];
-	TTF_Font *font[MAX_LOADED_FONTS];
-} FontList;
-
-
-typedef int (*ConsoleCommandFunction)(char *, World *);
-
-typedef struct ConsoleCommand
-{
-	char name[MAX_LEN];
-	char helpString[HELP_STRING_MAX];
-	char formatString[MAX_LEN];
-	ConsoleCommandFunction function;
-} ConsoleCommand;
-
-typedef struct InputHistory
-{
-	int head;
-	int searchIndex;
-	int entries;
-	char inputs[USER_INPUT_HISTORY_LEN][CONSOLE_STRING_LENGTH];
-} InputHistory;
 
 
 typedef struct Camera 
@@ -1197,6 +1165,45 @@ typedef struct SceneAction
 	struct SceneAction *prevSceneAction;
 } SceneAction;
 
+
+typedef struct TextList
+{
+	Text texts[MAX_TEXT_TEXTURES];
+	int count;
+} TextList;
+
+typedef struct FontList
+{
+	int head;
+	char name[MAX_LOADED_FONTS][FONT_FILE_NAME_MAX];
+	TTF_Font *font[MAX_LOADED_FONTS];
+} FontList;
+
+
+typedef int (*ConsoleCommandFunction)(char *, World *);
+
+typedef struct ConsoleCommand
+{
+	char name[MAX_LEN];
+	char helpString[HELP_STRING_MAX];
+	char formatString[MAX_LEN];
+	ConsoleCommandFunction function;
+} ConsoleCommand;
+
+typedef struct InputHistory
+{
+	int head;
+	int searchIndex;
+	int entries;
+	char inputs[USER_INPUT_HISTORY_LEN][CONSOLE_STRING_LENGTH];
+} InputHistory;
+
+
+typedef struct Entity
+{
+	int EntityID;
+
+} Entity;
 
 typedef struct World
 {
