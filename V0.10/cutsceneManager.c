@@ -183,19 +183,13 @@ SceneAction* updateSceneActions(SceneAction *queue, World *GameWorld)
 	}
 
 	int i = EngineSettings.MaxSceneActions;
+	FuncResult response = LEMON_SUCCESS;
 
 	while (queue != NULL && i >= 0)
 	{
 		if (queue->ActionID == SCENE_LOOP_POINT)
 		{
 			SceneLoop *data = &queue->ActionData.loopData; 
-
-			if (queue->parallelAction == true)
-			{
-				// this loop has already elapsed but had already been skipped over, so it must be part of a larger loop
-				data->currentLoop = 0;
-				queue->parallelAction = false;
-			}
 
 			data->currentLoop++;
 			if (data->currentLoop < data->repeatTimes)
@@ -211,14 +205,18 @@ SceneAction* updateSceneActions(SceneAction *queue, World *GameWorld)
 			}	
 			else
 			{
-				// mark as unparrallel to skip this loop point now that it has elapsed
-				queue->parallelAction = true;
+				// skip this loop point now that it has elapsed
+				data->currentLoop = 0;
+
+				queue = queue->nextSceneAction;
+
+				continue;
 			}
 		}
 
-		RunSceneAction(queue, GameWorld);
+		response = RunSceneAction(queue, GameWorld);
 
-		if (queue->parallelAction == false)
+		if (queue->parallelAction == false && response == LEMON_SUCCESS)
 		{
 			return queue;
 		}
@@ -235,7 +233,7 @@ SceneAction* updateSceneActions(SceneAction *queue, World *GameWorld)
 }
 
 
-int RunSceneAction(SceneAction *inputAction, World *GameWorld)
+FuncResult RunSceneAction(SceneAction *inputAction, World *GameWorld)
 {
 	if (GameWorld == NULL || inputAction == NULL)
 	{
@@ -244,7 +242,7 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 	if (inputAction->ActionID == UNDEFINED_SCENE_ACTION)
 	{
-		return INVALID_DATA;
+		return ACTION_DISABLED;
 	}
 
 	union SceneActionArguments currentData = inputAction->ActionData;
@@ -257,14 +255,11 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 	switch (inputAction->ActionID)
 	{
 	case SCENE_WAIT:
-		inputAction->ActionData.WaitTicks--;
-		if (inputAction->ActionData.WaitTicks > 0)
+		inputAction->ActionData.WaitTicks[1]--;
+		if (inputAction->ActionData.WaitTicks[1] < 1)
 		{
-			inputAction->parallelAction = false;
-		}
-		else
-		{
-			inputAction->parallelAction = true;
+			inputAction->ActionData.WaitTicks[1] = inputAction->ActionData.WaitTicks[0];
+			return ACTION_DISABLED;
 		}
 		break;
 
@@ -409,7 +404,7 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 			else
 			{
 				// Wait until animation is complete if set as non-parallel
-				inputAction->parallelAction = true;
+				return ACTION_DISABLED;
 			}
 		} break;
 
@@ -530,8 +525,6 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 	case SCENE_PLAY_SOUND:
 		{
-			putConsoleString("Playing %s from %s in %d at %f", currentData.soundData.soundName, currentData.soundData.folderName, 
-					currentData.soundData.channel, currentData.soundData.volume);
 			PlaySound(currentData.soundData.soundName, currentData.soundData.folderName, 
 					currentData.soundData.channel, currentData.soundData.volume);
 		} break;
@@ -540,6 +533,35 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 			GameWorld->MainCamera.CameraX = currentData.CameraData[0];
 			GameWorld->MainCamera.CameraY = currentData.CameraData[1];
 			break;
+
+	case SCENE_MOVE_CAMERA_TO_OBJECT:
+		{
+			PhysicsBox *objBox = inputAction->ActorObject->ObjectBox;
+			float xDest = objBox->xPos + (objBox->xSize >> 1);
+			float yDest = objBox->yPos + (objBox->ySize >> 1);
+			float speedCoefficient = currentData.CameraData[2];
+
+			float xDifference = xDest - GameWorld->MainCamera.CameraX;
+			float yDifference = yDest - GameWorld->MainCamera.CameraY;
+
+			if (fabs(xDifference) < 1.0 || speedCoefficient < 0.1)
+			{
+				GameWorld->MainCamera.CameraX = xDest;
+			}
+			else
+			{
+				GameWorld->MainCamera.CameraX += xDifference / speedCoefficient;
+			}
+
+			if (fabs(yDifference) < 1.0 || speedCoefficient < 0.1)
+			{
+				GameWorld->MainCamera.CameraY = yDest;
+			}
+			else
+			{
+				GameWorld->MainCamera.CameraY += yDifference / speedCoefficient;
+			}
+		} break;
 
 	case SCENE_MOVE_CAMERA:
 			GameWorld->MainCamera.CameraX += currentData.CameraData[0];
@@ -892,9 +914,19 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 	}
 	else if (!strcmp(inputString, "SMOOTHMOVECAMERATO:") || !strcmp(inputString, "MOVECAMERATO:"))
 	{
-		float xPos = getNextArgFloat(fPtr);
-		float yPos = getNextArgFloat(fPtr);
-		return SceneAction_MoveCameraSmooth(xPos, yPos, getNextArgFloat(fPtr), GameWorld);
+		if (hasNextArgInt(fPtr))
+		{
+			float xPos = getNextArgFloat(fPtr);
+			float yPos = getNextArgFloat(fPtr);
+
+			return SceneAction_MoveCameraSmooth(xPos, yPos, getNextArgFloat(fPtr), GameWorld);
+		}
+		else
+		{
+			char name[OBJECT_NAME_LENGTH] = {0};
+			getNextArg(fPtr, name, OBJECT_NAME_LENGTH);
+			return SceneAction_MoveCameraTo(name, getNextArgFloat(fPtr), GameWorld);
+		}
 	}
 	else if (!strcmp(inputString, "SETCAMERAZOOM:") || !strcmp(inputString, "SETZOOM:"))
 	{
@@ -970,11 +1002,9 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 			firstInstruction = firstInstruction->nextSceneAction;
 		}
 
-		while (inputString[0] != '}')
+		while (!endOfFile(fPtr))
 		{
 			getNextArg(fPtr, inputString, MAX_LEN);
-
-			putConsoleString("\n Read: %s", inputString);
 
 			if (inputString[0] == '}')
 			{
@@ -996,17 +1026,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 			count++;
 		}
 
-		SceneAction *loopPoint = createSceneAction(SCENE_LOOP_POINT, GameWorld);
-
-		if (loopPoint != NULL)
-		{
-			loopPoint->ActionData.loopData.repeatTimes = repeatTimes;
-			loopPoint->ActionData.loopData.instructionCount = count;
-
-			putConsoleString("Added loop point with %d instructions, looping %d times", count, repeatTimes);
-		}
-
-		return loopPoint;
+		return Repeat(repeatTimes, count, GameWorld);
 	}
 
 
@@ -1259,8 +1279,30 @@ SceneAction* Wait(float seconds, World *GameWorld)
 		return NULL;
 	}
 
-	newAction->ActionData.WaitTicks = (int)(seconds * EngineSettings.GameTicksPerSecond);
+	newAction->ActionData.WaitTicks[0] = (int)(seconds * EngineSettings.GameTicksPerSecond);
+	newAction->ActionData.WaitTicks[1] = newAction->ActionData.WaitTicks[0];
 	newAction->parallelAction = false;
+
+	return newAction;
+}
+
+SceneAction* Repeat(int repeatTimes, int instructions, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_LOOP_POINT, GameWorld);
+
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->parallelAction = false;
+	newAction->ActionData.loopData.repeatTimes = repeatTimes;
+	newAction->ActionData.loopData.instructionCount = instructions;
 
 	return newAction;
 }
@@ -2118,7 +2160,7 @@ SceneAction* SceneAction_MoveCamera(float xVel, float yVel, World *GameWorld)
 
 SceneAction* SceneAction_MoveCameraSmooth(float xPos, float yPos, float coefficient, World *GameWorld)
 {
-	if (GameWorld == NULL)
+	if (GameWorld == NULL || coefficient < 0.1)
 	{
 		return NULL;
 	}
@@ -2132,6 +2174,39 @@ SceneAction* SceneAction_MoveCameraSmooth(float xPos, float yPos, float coeffici
 	newAction->ActionData.CameraData[0] = xPos;
 	newAction->ActionData.CameraData[1] = yPos;
 	newAction->ActionData.CameraData[2] = coefficient;
+
+	return newAction;
+}
+
+SceneAction* SceneAction_MoveCameraTo(char objectName[], float coefficient, World *GameWorld)
+{
+	if (GameWorld == NULL || objectName == NULL || coefficient < 0.1)
+	{
+		return NULL;
+	}
+
+	if (strlen(objectName) > OBJECT_NAME_LENGTH)
+	{
+		return NULL;
+	}
+
+	Object *actorObj = FindObject(objectName, GameWorld->ObjectList);
+	if (actorObj == NULL)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_MOVE_CAMERA_TO_OBJECT, GameWorld);
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->ActionData.CameraData[0] = 0.0;
+	newAction->ActionData.CameraData[1] = 0.0;
+	newAction->ActionData.CameraData[2] = coefficient;
+
+	newAction->ActorObject = actorObj;
 
 	return newAction;
 }

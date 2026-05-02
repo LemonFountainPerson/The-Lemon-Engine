@@ -1134,7 +1134,7 @@ typedef struct SceneLoop
 union SceneActionArguments
 {
 	int SceneID;
-	int WaitTicks;
+	int WaitTicks[2];
 	float zoomScales[2];
 	struct TextBox *sceneText;
 	int animationDetails[2];
@@ -1190,6 +1190,7 @@ typedef enum SceneActionID
 	SCENE_SET_CAMERA_MODE,
 	SCENE_MOVE_CAMERA,
 	SCENE_MOVE_CAMERA_SMOOTH,
+	SCENE_MOVE_CAMERA_TO_OBJECT,
 	SCENE_SET_CAMERA_ZOOM,
 	SCENE_CHANGE_CAMERA_ZOOM,
 	UNDEFINED_SCENE_ACTION

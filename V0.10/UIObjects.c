@@ -2308,7 +2308,7 @@ void DeleteTextSceneAction(TextBox *inputText, World *GameWorld)
 	{
 		if (currentAction->ActionID == SCENE_SAY_TEXT && currentAction->ActionData.sceneText == inputText)
 		{
-			currentAction = deleteSceneAction(currentAction, GameWorld);
+			GameWorld->nextSceneAction = currentAction->nextSceneAction;
 			return;
 		}
 		else

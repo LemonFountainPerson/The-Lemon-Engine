@@ -37,8 +37,7 @@ guaranteeing some action if physics may get in the way, for example.
 -> Added file loading support for several more scene actions:
    -Added the 'WaitUntil' instruction to the cutscene file loader. Any scene action that you wish to be complete before progressing to the next instruction can be performed
    by writing 'WaitUntil:' before the instruction.
-   -Added the 'Repeat' instruction to the cutscene file loader. If you wish to have a scene action repeat, you can write 'Repeat:' and then the number of times you want it to
-   repeat before the instruction.
+   -Added the 'Repeat' instruction to the cutscene file loader. If you wish to have a set of scene actions repeat, you can write 'Repeat:' and then the number of times you want it to repeat before writing the desired instructions within curly brackets; loops can be run inside of loops.
    -Added the 'ReleaseActor' instruction, used to unmark an object as an Actor. This means it will not be deleted once the cutscene ends, as objects marked as Actor always are.
    -Added the 'StaticScene' command that when set to false, allows the cutscene to play during normal gameplay instead of pausing the gameWorld.
 

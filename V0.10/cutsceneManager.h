@@ -10,7 +10,7 @@ int UpdateCutscene(World *GameWorld);
 
 SceneAction* updateSceneActions(SceneAction *queue, World *GameWorld);
 
-int RunSceneAction(SceneAction *inputAction, World *GameWorld);
+FuncResult RunSceneAction(SceneAction *inputAction, World *GameWorld);
 
 const char* getSceneActionName(SceneActionID input);
 
@@ -18,10 +18,6 @@ const char* getSceneActionName(SceneActionID input);
 int EndCutscene(World *GameWorld);
 
 int WaitUntil(SceneAction *inputAction);
-
-int Repeat(int repeatCount, int instructionCount, ...);
-
-int RepeatArray(int repeatCount, int instructionCount, SceneAction *list);
 
 SceneAction* SceneAction_SwitchCutscene(int sceneID, World *GameWorld);
 
@@ -32,6 +28,8 @@ SceneAction* enablePlayer(World *GameWorld);
 SceneAction* disablePlayer(World *GameWorld);
 
 SceneAction* Wait(float seconds, World *GameWorld);
+
+SceneAction* Repeat(int repeatTimes, int instructions, World *GameWorld);
 
 SceneAction* setVariableTo(int variableIndex, int value, World *GameWorld);
 
@@ -104,6 +102,8 @@ SceneAction* SceneAction_SetCameraMode(int mode, World *GameWorld);
 SceneAction* SceneAction_MoveCamera(float xVel, float yVel, World *GameWorld);
 
 SceneAction* SceneAction_MoveCameraSmooth(float xPos, float yPos, float coefficient, World *GameWorld);
+
+SceneAction* SceneAction_MoveCameraTo(char objectName[], float coefficient, World *GameWorld);
 
 SceneAction* SceneAction_SetZoom(float zoomX, float zoomY, World *GameWorld);
 

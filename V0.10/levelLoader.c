@@ -1459,8 +1459,6 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	removeChar(buffer, '_', MAX_LEN);
 	stringToLower(buffer);
 
-	putConsoleString("Checking level flag %s", buffer);
-
 	// Flag Decoded
 	if (strcmp(buffer, "setbg") == 0)
 	{

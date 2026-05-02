@@ -6,27 +6,26 @@ PlaceWall: 1000, 64, 2, 10
 
 SetChannelVolume: 1 1.0
 
+
+SayText: "I just changed this file!! And to test its linebreaking feature! mmmmmmm wwwwwwwww mmmmmmm wwwwwwwwww mmmmmm"    NO_PORTRAIT     2
+
+
 Repeat: 20
 {
 	Repeat: 10
 	{
 		RotateActor: "MainPlayer" 15.0 
 		MoveActor: "MainPlayer" 3.0 0.0
-		MoveCamera: 2.0 0.0
 	}
 
-	PlaySound "Jump" "Player" 1 1.0
-	Wait: 1.5
+	PlaySound: "Jump" "Player" 1 1.0
+	Repeat: 8
+	{
+		SmoothMoveCameraTo: "MainPlayer" 6
+	}
 }
 
 SetCameraMode: 0
-
-ENDFILE
-
-
-
-
-SayText: "I just changed this file!! And to test its linebreaking feature! mmmmmmm wwwwwwwww mmmmmmm wwwwwwwwww mmmmmm"    NO_PORTRAIT     2
 
 
 EnablePlayer

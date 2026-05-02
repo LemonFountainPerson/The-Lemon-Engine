@@ -4649,6 +4649,7 @@ bool OverlapComparison_SlopeCircle(PhysicsBox *slope, PhysicsBox *circle)
 	float circleCenterX = circle->xPos + radius;
 	float circleCenterY = circle->yPos + radius;
 
+
 	// check center of circle first
 	if (pointOverlapsWithSlope(circleCenterX, circleCenterY, slope))
 	{
@@ -4847,7 +4848,7 @@ bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 		{
 			return OverlapComparison_CircleCircle(inputBox, compareBox);
 		}
-		else if (inputBox->solid == FLAT_SLOPE)
+		else if (compareBox->solid == FLAT_SLOPE)
 		{
 			return OverlapComparison_SlopeCircle(compareBox, inputBox);
 		}
