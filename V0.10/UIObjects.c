@@ -468,7 +468,7 @@ bool MenuControl(Object *MenuController, World *GameWorld)
 	}
 
 
-	if ((keyboard[LMN_MENU_CONFIRM] == 1 && MouseInput.LeftButton != 1) || MenuController->Action == MOUSECLICK_INTERRUPT)
+	if ((buttons[LMN_MENU_CONFIRM] == 1 && MouseInput.LeftButton != 1) || MenuController->Action == MOUSECLICK_INTERRUPT)
 	{
 		AcknowledgeHeldButtons();
 		MenuController->Action = IDLE;
@@ -795,7 +795,7 @@ int UpdateOptionButton(Object *Button, Camera inputCam)
 	// animate
 	if (Button->Parent->arg2 == Button->arg2)
 	{
-		if (keyboard[LMN_MENU_CONFIRM] == 1 || Button->Action == MOUSECLICK_INTERRUPT)
+		if (buttons[LMN_MENU_CONFIRM] == 1 || Button->Action == MOUSECLICK_INTERRUPT)
 		{
 			smoothSizeChangeTo(Button, 1.10, 2.0);
 		}
@@ -1312,9 +1312,9 @@ int displayText(TextBox *currentText, World *GameWorld)
 	}
 
 	// Skip text animation if skip button is held
-	if (keyboard[LMN_TEXT_SKIP] && currentText->Skippable == true)
+	if (buttons[LMN_TEXT_SKIP] && currentText->Skippable == true)
 	{
-		keyboard[LMN_TEXT_CONFIRM] = -1;
+		buttons[LMN_TEXT_CONFIRM] = -1;
 
 		if (EXPERIMENTAL_TEXT)
 		{
@@ -2273,7 +2273,7 @@ bool textSceneActionPresent(TextBox *inputText, World *GameWorld)
 		return true;
 	}
 
-	SceneAction *currentAction = GameWorld->SceneActionQueue;
+	SceneAction *currentAction = GameWorld->nextSceneAction;
 
 	while (currentAction != NULL)
 	{

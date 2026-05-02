@@ -7,24 +7,6 @@ const Uint32 colourMap[32] = {	0x00FF00FF, 0x00FF1010, 0x00FF1010, 0x00FFAA00, 0
 								0xFF2C1010, 0xFF102C10, 0xFF10103C, 0xFF40201C, 0xFF019E30, 0xFF0514CE, 0xFFE86AA3, 0xFF0A4321,
 								0xFF2C1010, 0xFF102C10, 0xFF10103C, 0xFF40201C, 0xFF019E30, 0xFF0514CE, 0xFFE86AA3, 0xFF0A4321};
 
-// global camera to be used in this file
-Camera renderCamera;
-
-
-int drawPlayerHitboxes(Camera inputCamera, World *gameWorld, SDL_Renderer *Screen)
-{
-	if (gameWorld == NULL || Screen == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	PlayerData *player = &gameWorld->Player;
-
-	renderHitbox(inputCamera, &player->InteractBox, Screen);
-
-	return LEMON_SUCCESS;
-}
-
 
 int CameraControl(World *GameWorld, Camera *inputCamera)
 {
@@ -37,6 +19,9 @@ int CameraControl(World *GameWorld, Camera *inputCamera)
 	{
 		return ACTION_DISABLED;
 	}
+
+	inputCamera->prevCameraX = inputCamera->CameraX;
+	inputCamera->prevCameraY = inputCamera->CameraY;
 
 	int camMode = inputCamera->CameraMode;
 
@@ -301,6 +286,19 @@ void drawHitboxes(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 	return;
 }
 
+void drawPlayerHitboxes(Camera inputCamera, World *gameWorld, SDL_Renderer *Screen)
+{
+	if (gameWorld == NULL || Screen == NULL)
+	{
+		return;
+	}
+
+	PlayerData *player = &gameWorld->Player;
+
+	renderHitbox(inputCamera, &player->InteractBox, Screen);
+
+	return;
+}
 
 void drawHitboxCircle(SDL_Renderer *Screen, float xCoord, float yCoord, int radius)
 {

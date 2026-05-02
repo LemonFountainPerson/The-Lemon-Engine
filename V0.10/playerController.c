@@ -19,6 +19,7 @@ int InitialisePlayerObject(Object *Player, World *GameWorld)
 		return ACTION_DISABLED;
 	}
 
+	GameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;
 	GameWorld->Player.PlayerPtr = Player;
 	GameWorld->Player.PlayerBox = Player->ObjectBox;
 	GameWorld->Player.PlayerDisplay = getDisplay(Player);
@@ -134,22 +135,22 @@ void playerNoclip(PlayerData *Player)
 	PhysicsBox *playerBox = Player->PlayerBox;
 	playerBox->solid = UNSOLID;
 
-	if (keyboard[LMN_LEFT])
+	if (buttons[LMN_LEFT])
 	{
 		playerBox->xVelocity -= 2.5;
 	}
 
-	if (keyboard[LMN_RIGHT])
+	if (buttons[LMN_RIGHT])
 	{
 		playerBox->xVelocity += 2.5;
 	}
 
-	if (keyboard[LMN_UP])
+	if (buttons[LMN_UP])
 	{
 		playerBox->yVelocity += 2.5;
 	}
 
-	if (keyboard[LMN_DOWN])
+	if (buttons[LMN_DOWN])
 	{
 		playerBox->yVelocity -= 2.5;
 	}
@@ -193,7 +194,7 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 		}
 		else
 		{
-			hAxis = (float)(keyboard[LMN_RIGHT] != 0) - (keyboard[LMN_LEFT] != 0);
+			hAxis = (float)(buttons[LMN_RIGHT] != 0) - (buttons[LMN_LEFT] != 0);
 		}
 
 		if (fabs(GamePadInput.leftStickY) > 0.001)
@@ -202,10 +203,10 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 		}
 		else
 		{
-			vAxis = (float)(keyboard[LMN_UP] != 0) - (keyboard[LMN_DOWN] != 0);
+			vAxis = (float)(buttons[LMN_UP] != 0) - (buttons[LMN_DOWN] != 0);
 		}
 
-		if (keyboard[LMN_JUMP])
+		if (buttons[LMN_JUMP])
 		{
 			jump = true;
 		}
@@ -302,9 +303,9 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld)
 	// Player input
 	if (!playingText(GameWorld) && PlayerObject->State != PAUSE_STATE)
 	{
-		hAxis = (keyboard[LMN_RIGHT] != 0) - (keyboard[LMN_LEFT] != 0);
+		hAxis = (buttons[LMN_RIGHT] != 0) - (buttons[LMN_LEFT] != 0);
 
-		vAxis = (keyboard[LMN_UP] != 0) - (keyboard[LMN_DOWN] != 0);
+		vAxis = (buttons[LMN_UP] != 0) - (buttons[LMN_DOWN] != 0);
 
 		HandlePlayerInteract(Player);
 	}
@@ -400,7 +401,7 @@ int HandlePlayerInteract(PlayerData *Player)
 
 	PhysicsBox *PlayerBox = Player->PlayerBox;
 	
-	if (keyboard[LMN_INTERACT] == 1)
+	if (buttons[LMN_INTERACT] == 1)
 	{
 		InteractBox->xSize = 50;
 		InteractBox->ySize = 50;

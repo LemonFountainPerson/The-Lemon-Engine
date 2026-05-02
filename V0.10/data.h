@@ -76,6 +76,13 @@ typedef enum LemonKeys
 	INPUT_COUNT
 } LemonKeys;
 
+typedef enum ButtonState
+{
+	BUTTON_RELEASED = 0,
+	BUTTON_PRESSED = 1,
+	BUTTON_HELD = 2
+} ButtonState;
+
 
 typedef enum ConsoleTextSetting 
 {
@@ -181,7 +188,7 @@ typedef enum Layer
 	PARTICLES,
 	HUD,
 	FRONT_LAYER,
-	LAYER_COUNT = 20,
+	LAYER_COUNT,
 	UNDEFINED_LAYER
 } Layer;
 
@@ -229,9 +236,9 @@ typedef enum CutsceneID
 typedef enum CameraState 
 {
 	FOLLOW_PLAYER = 0,
-	MENU_CAMERA = 1,
-	FREE_ROAM = 2,
-	FREE_ROAM_RESTRICTED = 3,
+	FREE_ROAM = 1,
+	FREE_ROAM_RESTRICTED = 2,
+	MENU_CAMERA = 3,
 	UNDEFINED_CAMERA_STATE
 } CameraState;
 
@@ -323,50 +330,51 @@ const char* getSolidFlagName(SolidFlag input);
 typedef enum ObjectType 
 {
 	LEVEL_FLAG_OBJ = 0,
-	SOLID_BLOCK = 1,
-	FLAT_SLOPE_FLOOR = 2,
-	JUMP_THRU_BLOCK = 3,
-	PLAYER_OBJECT = 4,
-	UI_ELEMENT = 5,
-	UI_TEXT = 6,
-	PARTICLE = 7,
-	COIN = 8,
-	MOVING_PLATFORM_HOR = 9,
-	MOVING_PLATFORM_VER = 10,
-	SPRING = 11,
-	GATE_SWITCH = 12,
-	GATE_SWITCH_TIMED = 13,
-	VERTICAL_GATE = 14,
-	HORIZONTAL_GATE = 15,
-	DOOR = 16,
-	LEVEL_DOOR = 17,
-	PUSHABLE_BOX = 18,
-	BASIC_ENEMY = 19,
-	PROJECTILE = 20,
+	SOLID_BLOCK,
+	FLAT_SLOPE_FLOOR,
+	JUMP_THRU_BLOCK,
+	PLAYER_OBJECT,
+	UI_ELEMENT,
+	UI_TEXT,
+	PARTICLE,
+	COIN,
+	SPRING,
+	MOVING_PLATFORM_HOR,
+	MOVING_PLATFORM_VER,
+	GATE_SWITCH,
+	GATE_SWITCH_TIMED,
+	VERTICAL_GATE,
+	HORIZONTAL_GATE,
+	DOOR,
+	LEVEL_DOOR,
+	PUSHABLE_BOX,
+	PROJECTILE,
+	BASIC_ENEMY,
+
 	OBJECT_TYPE_COUNT,
 	UNDEFINED_OBJECT
 } ObjectType;
 
-int getObjectID(char entry[]);
+int getObjectID(const char entry[]);
 const char* getObjectIDName(ObjectType input);
 
 
 typedef enum Flags 
 {
 	SET_BACKGROUND = 0,
-	SET_BACKGROUND_TRIGGER = 1,
-	START_LVL_WITH_CUTSCENE = 2,
-	CUTSCENE_TRIGGER = 3,
-	START_PLAYER_POSITION = 4,
-	START_CAMERA_POSITION = 5,
-	SET_CAMBOX = 6,
-	SET_CAMBOX_TRIGGER = 7,
+	SET_BACKGROUND_TRIGGER,
+	START_LVL_WITH_CUTSCENE,
+	CUTSCENE_TRIGGER,
+	START_PLAYER_POSITION,
+	START_CAMERA_POSITION,
+	SET_CAMBOX,
+	CAMERA_BOUNDARY,
 	FALSE_CAMERA_BOUNDARY,
 	LEVEL_TRIGGER,
 	LEVEL_TRIGGER_SEAMLESS,
 	SET_PLAYER_LAYER,
 	START_WITH_MUSIC,
-	PLAY_MUSIC_TRIGGER,
+	PLAY_SOUND_TRIGGER,
 	STOP_ALL_SOUND_LOOPS,
 	CACHE_TRIGGER,
 	LOAD_PART_TRIGGER,
@@ -701,13 +709,38 @@ typedef struct BulletComponent
 } BulletComponent;
 
 
-
 typedef struct TileMap
 {
 	unsigned int centerTileX;
 	unsigned int centerTileY;
 	unsigned int tileSize;
 } TileMap;
+
+typedef struct Polygon
+{
+	SDL_Vertex *vertexList;
+	int vertices;
+	bool quad;
+	int *indicies;
+} Polygon;
+
+typedef union RenderMethod
+{
+	TileMap TileMap;
+	Polygon Polygon;
+} RenderMethod;
+
+typedef enum RenderMethodType
+{
+	RENDERMETHOD_POLYGON,
+	RENDERMETHOD_TILEMAP
+} RenderMethodType;
+
+typedef struct CustomDisplay
+{
+	RenderMethodType type;
+	RenderMethod RenderMethod;
+} CustomDisplay;
 
 
 typedef struct Timer
@@ -736,14 +769,6 @@ typedef struct PhysicsComponent
 } PhysicsComponent;
 
 
-typedef struct Polygon
-{
-	SDL_Vertex *vertexList;
-	int vertices;
-	bool quad;
-	int *indicies;
-} Polygon;
-
 // downside of union approach: bad with memory use, as if any large component exists, ALL component lists will increase
 // upside of union approach: much easier to work with as existing functions do not need to be copied/rewritten
 typedef union ComponentType
@@ -751,10 +776,10 @@ typedef union ComponentType
 	HealthComponent HealthComponent;
 	BulletComponent BulletComponent;
 	TileMap TileMap;
+	Polygon Polygon;
 	Timer Timer;
 	StopWatch StopWatch;
 	PhysicsComponent PhysicsComponent;
-	Polygon Polygon;
 } ComponentType;
 
 typedef struct SparseList
@@ -762,7 +787,7 @@ typedef struct SparseList
 	char componentName[COMPONENT_NAME_LENGTH];
 	int storedComponents;
 	
-	int sparse[MAX_OBJECTS];
+	short sparse[MAX_OBJECTS];
 	int denseID[MAX_COMPONENT_SLOTS];
 	ComponentType dense[MAX_COMPONENT_SLOTS];
 } SparseList;
@@ -777,11 +802,10 @@ typedef struct ComponentData
 	SparseList HealthComponent;
 	SparseList BulletComponent;
 	SparseList TileMap;
+	SparseList Polygon;
 	SparseList Timer;
 	SparseList StopWatch;
 	SparseList PhysicsComponent;
-	SparseList Polygon;
-
 } ComponentData;
 
 typedef struct IntSparseList
@@ -868,10 +892,12 @@ typedef enum GameEventID
 	EVENT_ENABLE_FULLSCREEN_SCALE,
 	EVENT_STREAM_LEVEL_PARTITION,
 	EVENT_DELETE_ENVIRONMENT_OBJECTS,
+	EVENT_COUNT,
 	UNDEFINED_EVENT
 } GameEventID;
 
 const char* getEventName(GameEventID input);
+GameEventID getEventID(const char input[]);
 
 
 typedef union GameEventData
@@ -985,15 +1011,13 @@ typedef struct Camera
 {
 	float CameraX;
 	float CameraY;
+	float prevCameraX;
+	float prevCameraY;
+
 	float minCameraX;
 	float maxCameraX;
 	float minCameraY;
 	float maxCameraY;
-
-	float CameraXBuffer;
-	float CameraYBuffer;
-	bool CameraLatch;
-	CameraState CameraMode;
 
 	float zoomX;
 	float zoomY;
@@ -1001,6 +1025,11 @@ typedef struct Camera
 	int height;
 	int zoomedWidth;
 	int zoomedHeight;
+
+	float CameraXBuffer;
+	float CameraYBuffer;
+	bool CameraLatch;
+	CameraState CameraMode;
 } Camera;
 
 typedef struct CameraView
@@ -1095,9 +1124,17 @@ typedef struct sceneBranchData
 	char ifFalseString[CUTSCENE_FILE_NAME_MAX];
 } SceneBranchData;
 
+typedef struct SceneLoop
+{
+	int repeatTimes;
+	int currentLoop;
+	int instructionCount;
+} SceneLoop;
 
 union SceneActionArguments
 {
+	int SceneID;
+	int WaitTicks;
 	float zoomScales[2];
 	struct TextBox *sceneText;
 	int animationDetails[2];
@@ -1106,20 +1143,25 @@ union SceneActionArguments
 	struct ObjectMeta objectInfo;
 	bool hidden;
 	float CameraData[3];
+	int cameraMode;
 	Layer layer;
 	SceneBranchData branchData;
 	int variableArgs[2];
 	int invisWall[4];
 	GameEvent TriggerEvent;
+	SceneLoop loopData;
 };
 
 typedef enum SceneActionID
 {
 	SCENE_END,
+	SCENE_LOOP_START,
+	SCENE_LOOP_POINT,
+	SCENE_SWITCH_CUTSCENE,
+	SCENE_TRIGGER_GAME_EVENT,
 	SCENE_DISABLE_PLAYER,
 	SCENE_ENABLE_PLAYER,
 	SCENE_WAIT,
-	SCENE_TRIGGER_GAME_EVENT,
 	SCENE_CHANGE_VARIABLE_BY,
 	SCENE_SET_VARIABLE_TO,
 	SCENE_IF_EQUALS,
@@ -1145,6 +1187,7 @@ typedef enum SceneActionID
 	SCENE_SET_CHANNEL_VOL,
 	SCENE_CHANGE_CHANNEL_VOL,
 	SCENE_SET_CAMERA_POS,
+	SCENE_SET_CAMERA_MODE,
 	SCENE_MOVE_CAMERA,
 	SCENE_MOVE_CAMERA_SMOOTH,
 	SCENE_SET_CAMERA_ZOOM,
@@ -1156,7 +1199,6 @@ typedef struct SceneAction
 {
 	SceneActionID ActionID;
 	bool parallelAction;
-	int repeatTimes;
 
 	Object *ActorObject;
 	union SceneActionArguments ActionData;
@@ -1224,6 +1266,7 @@ typedef struct World
 	
 	CutsceneID CurrentCutscene;
 	SceneAction *SceneActionQueue;
+	SceneAction *nextSceneAction;
 	int SceneActionCount;
 
 	WorldPhysics PhysicsType;
@@ -1399,7 +1442,7 @@ extern MouseData MouseInput;
 
 extern GamePadData GamePadInput;
 
-extern int keyboard[INPUT_COUNT];
+extern ButtonState buttons[INPUT_COUNT];
 
 extern GameFlag GameFlags[GAME_FLAG_COUNT];
 

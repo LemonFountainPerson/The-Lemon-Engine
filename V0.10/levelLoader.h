@@ -90,7 +90,7 @@ bool getNextArgBool(FILE *fPtr);
 
 float getNextArgFloat(FILE *fPtr);
 
-int convertStrToInt(char str[], int size);
+int convertStrToInt(const char str[], int size);
 
 int convertIntToStr(char str[], int input);
 

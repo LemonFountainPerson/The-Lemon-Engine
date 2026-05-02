@@ -164,3 +164,23 @@
 #define LEMON_VERSION "V0.10"
 
 #endif
+
+
+/*
+
+List of callbacks when using 
+'#define LEMON_USE_CUSTOM_CALLBACKS'
+
+
+void StartGame(World *GameWorld);	// On game start (After engine boot-up)						
+
+void InitialiseObject(Object *newObject, World *GameWorld);	// Object initialisation
+
+void UpdateObject(Object *input, World *GameWorld);	// Object behaviour
+
+void Tick(World *GameWorld);	// On new GameTick
+
+void Update(World *GameWorld);	// On new frame
+
+
+*/

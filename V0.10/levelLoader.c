@@ -1450,36 +1450,19 @@ int clearLevelData(World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int getNextArgGameFlag(FILE *fPtr)
-{
-	if (fPtr == NULL)
-	{
-		return -1;
-	}
-
-	char name[MAX_LEN] = {0};
-
-	if (hasNextArgInt(fPtr))
-	{
-		return getNextArgInt(fPtr);
-	}
-	else
-	{
-		getNextArg(fPtr, name, MAX_LEN);
-		return getGameFlag(name);
-	}
-}
-
 
 int loadLevelFlag(World *GameWorld, FILE *fPtr)
 {
 	char buffer[MAX_LEN] = {0};
 
 	getNextArg(fPtr, buffer, MAX_LEN);
+	removeChar(buffer, '_', MAX_LEN);
 	stringToLower(buffer);
 
+	putConsoleString("Checking level flag %s", buffer);
+
 	// Flag Decoded
-	if (strcmp(buffer, "set_bg") == 0 || strcmp(buffer, "setbg") == 0)
+	if (strcmp(buffer, "setbg") == 0)
 	{
 		int args[3] = {0};
 
@@ -1492,7 +1475,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	
 		switchBackGroundSprite(args[0], args[1], &GameWorld->WorldBackground);
 	}
-	else if (strcmp(buffer, "set_bg_trigger") == 0 || strcmp(buffer, "setbgtrigger") == 0)
+	else if (strcmp(buffer, "setbgtrigger") == 0)
 	{
 		int args[6] = {0};
 
@@ -1505,12 +1488,12 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	
 		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], SET_BACKGROUND_TRIGGER, args[4], args[5], 0, 0), args[2], args[3]);
 	}
-	else if (strcmp(buffer, "start_cutscene") == 0 || strcmp(buffer, "startcutscene") == 0)		// START_LVL_WITH_CUTSCENE
+	else if (strcmp(buffer, "startcutscene") == 0)		// START_LVL_WITH_CUTSCENE
 	{
 		int sceneID = getNextArgInt(fPtr);
 		playCutscene(sceneID, GameWorld);
 	}
-	else if (strcmp(buffer, "cutscene_trigger") == 0 || strcmp(buffer, "cutscenetrigger") == 0)
+	else if (strcmp(buffer, "cutscenetrigger") == 0)
 	{
 		int args[5] = {0};
 
@@ -1523,7 +1506,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	
 		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], CUTSCENE_TRIGGER, args[4], 0, 0, 0), args[2], args[3]);
 	}
-	else if (strcmp(buffer, "level_trigger") == 0 || strcmp(buffer, "leveltrigger") == 0)
+	else if (strcmp(buffer, "leveltrigger") == 0)
 	{
 		int args[5] = {0};
 
@@ -1531,7 +1514,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	
 		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], LEVEL_TRIGGER, args[4], 0, 0, 0), args[2], args[3]);
 	}
-	else if (strcmp(buffer, "level_trigger_seamless") == 0 || strcmp(buffer, "leveltriggerseamless") == 0)
+	else if (strcmp(buffer, "leveltriggerseamless") == 0)
 	{
 		int args[5] = {0};
 
@@ -1539,7 +1522,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	
 		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], LEVEL_TRIGGER_SEAMLESS, args[4], 0, 0, 0), args[2], args[3]);
 	}
-	else if (strcmp(buffer, "set_cambox") == 0 || strcmp(buffer, "setcambox") == 0)
+	else if (strcmp(buffer, "setcambox") == 0)
 	{
 		int args[4] = {0};
 
@@ -1555,20 +1538,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		GameWorld->MainCamera.minCameraY = args[2];
 		GameWorld->MainCamera.maxCameraY = args[3];
 	}
-	else if (strcmp(buffer, "set_cambox_trigger") == 0 || strcmp(buffer, "setcamboxtrigger") == 0)
-	{
-		int args[8] = {0};
-
-		int returnMsg = readIntArgs(fPtr, args, 8);
-
-		if (returnMsg != 0)
-		{
-			return returnMsg;
-		}
-	
-		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], SET_CAMBOX_TRIGGER, args[4], args[5], args[6], args[7]), args[2], args[3]);
-	}
-	else if (strcmp(buffer, "start_campos") == 0 || strcmp(buffer, "campos") == 0 || strcmp(buffer, "startcampos") == 0)
+	else if (strcmp(buffer, "campos") == 0 || strcmp(buffer, "startcampos") == 0)
 	{
 		int args[2] = {0};
 
@@ -1582,7 +1552,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		GameWorld->MainCamera.CameraX = args[0];
 		GameWorld->MainCamera.CameraY = args[1];
 	}
-	else if (strcmp(buffer, "start_cammode") == 0 || strcmp(buffer, "cammode") == 0  || strcmp(buffer, "startcammode") == 0)
+	else if (strcmp(buffer, "cammode") == 0  || strcmp(buffer, "startcammode") == 0)
 	{
 		int args[1] = {0};
 
@@ -1595,7 +1565,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		GameWorld->MainCamera.CameraMode = args[0];
 	}
-	else if (strcmp(buffer, "player_position") == 0 || strcmp(buffer, "playerposition") == 0)
+	else if (strcmp(buffer, "playerposition") == 0)
 	{
 		if (GameWorld->Player.PlayerBox == NULL)
 		{
@@ -1617,7 +1587,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		GameWorld->MainCamera.CameraX = playerBox->xPos;
 		GameWorld->MainCamera.CameraY = playerBox->yPos;
 	}
-	else if (strcmp(buffer, "start_music") == 0 || strcmp(buffer, "startmusic") == 0)
+	else if (strcmp(buffer, "startmusic") == 0)
 	{
 		char nameBuffer[MAX_LEN] = {0};
 
@@ -1630,7 +1600,27 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 			PlaySoundRepeat(nameBuffer, "Music", MUSIC_CHANNEL, volume, -1);
 		}
 	}
-	else if (strcmp(buffer, "cache_trigger") == 0 || strcmp(buffer, "cachetrigger") == 0)
+	else if (strcmp(buffer, "playsoundtrigger") == 0)
+	{
+		// char nameBuffer[MAX_LEN] = {0};
+		// char folderBuffer[MAX_LEN] = {0};
+
+		// getNextArg(fPtr, nameBuffer, MAX_LEN);
+
+		// getNextArg(fPtr, folderBuffer, MAX_LEN);
+
+		// float volume = getNextArgFloat(fPtr);
+
+		// int channel = getNextArgInt(fPtr);
+
+		// int repeat = getNextArgInt(fPtr);
+		// if (repeat == 0)
+		// {
+		// 	repeat = 1;
+		// }
+
+	}
+	else if (strcmp(buffer, "cachetrigger") == 0)
 	{
 		int args[8] = {0};
 
@@ -1643,7 +1633,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], CACHE_TRIGGER, args[4], args[5], args[6], args[7]), args[2], args[3]);
 	}
-	else if (strcmp(buffer, "load_part_trigger") == 0 || strcmp(buffer, "loadparttrigger") == 0)
+	else if (strcmp(buffer, "loadparttrigger") == 0)
 	{
 		int args[5] = {0};
 
@@ -1656,7 +1646,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], LOAD_PART_TRIGGER, args[4], 0, 0, 0), args[2], args[3]);
 	}
-	else if (strcmp(buffer, "switch_to_new_part_trigger") == 0 || strcmp(buffer, "switchtonewparttrigger") == 0)
+	else if (strcmp(buffer, "switchtonewparttrigger") == 0)
 	{
 		int args[5] = {0};
 
@@ -1669,13 +1659,23 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], SWITCH_TO_NEW_PART_TRIGGER, args[4], 0, 0, 0), args[2], args[3]);
 	}
-	else if (strcmp(buffer, "load_part") == 0 || strcmp(buffer, "loadpart") == 0)
+	else if (strcmp(buffer, "loadpart") == 0)
 	{
 		int partID = getNextArgInt(fPtr);
 
 		loadPartition(GameWorld, partID);
 	}
-	else if (strcmp(buffer, "false_camera_boundary") == 0 || strcmp(buffer, "false_cam_bound") == 0 || strcmp(buffer, "falsecambound") == 0 || strcmp(buffer, "falsecameraboundary") == 0)
+	else if (strcmp(buffer, "cambound") == 0 || strcmp(buffer, "cameraboundary") == 0)
+	{
+		float xPos = getNextArgFloat(fPtr);
+		int xSize = (int)(getNextArgFloat(fPtr) - xPos);
+
+		float yPos = getNextArgFloat(fPtr);
+		int ySize = (int)(getNextArgFloat(fPtr) - yPos);
+
+		AddObject(GameWorld, LEVEL_FLAG_OBJ, xPos, yPos, CAMERA_BOUNDARY, xSize, ySize, 0, 0);
+	}
+	else if (strcmp(buffer, "falsecambound") == 0 || strcmp(buffer, "falsecameraboundary") == 0)
 	{
 		float xPos = getNextArgFloat(fPtr);
 		int xSize = (int)(getNextArgFloat(fPtr) - xPos);
@@ -1685,7 +1685,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		AddObject(GameWorld, LEVEL_FLAG_OBJ, xPos, yPos, FALSE_CAMERA_BOUNDARY, xSize, ySize, 0, 0);
 	}
-	else if (strcmp(buffer, "add_gameflag") == 0 || strcmp(buffer, "addgameflag") == 0)
+	else if (strcmp(buffer, "addgameflag") == 0)
 	{
 		char name[MAX_LEN] = {0};
 		getNextArg(fPtr, name, MAX_LEN);
@@ -1700,7 +1700,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		addGameFlag(name, startVal);
 	}
-	else if (strcmp(buffer, "set_gameflag") == 0 || strcmp(buffer, "setgameflag") == 0)
+	else if (strcmp(buffer, "setgameflag") == 0)
 	{
 		char name[MAX_LEN] = {0};
 		getNextArg(fPtr, name, MAX_LEN);
@@ -1709,14 +1709,14 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		setGameFlag(name, val);
 	}
-	else if (strcmp(buffer, "increment_gameflag") == 0 || strcmp(buffer, "incrementgameflag") == 0 || strcmp(buffer, "incgameflag") == 0)	
+	else if (strcmp(buffer, "incrementgameflag") == 0 || strcmp(buffer, "incgameflag") == 0)	
 	{
 		char name[MAX_LEN] = {0};
 		getNextArg(fPtr, name, MAX_LEN);
 
 		setGameFlag(name, checkGameFlag(name) + 1);
 	}
-	else if (strcmp(buffer, "decrement_gameflag") == 0 || strcmp(buffer, "decrementgameflag") == 0  || strcmp(buffer, "decgameflag") == 0)
+	else if (strcmp(buffer, "decrementgameflag") == 0  || strcmp(buffer, "decgameflag") == 0)
 	{
 		char name[MAX_LEN] = {0};
 		getNextArg(fPtr, name, MAX_LEN);
@@ -2328,8 +2328,29 @@ bool getNextArgBool(FILE *fPtr)
 	return false;
 }
 
+int getNextArgGameFlag(FILE *fPtr)
+{
+	if (fPtr == NULL)
+	{
+		return -1;
+	}
 
-int convertStrToInt(char str[], int size)
+	char name[MAX_LEN] = {0};
+
+	if (hasNextArgInt(fPtr))
+	{
+		return getNextArgInt(fPtr);
+	}
+	else
+	{
+		getNextArg(fPtr, name, MAX_LEN);
+		return getGameFlag(name);
+	}
+}
+
+
+
+int convertStrToInt(const char str[], int size)
 {
 	int input = 0;
 	int polarity = 1;

@@ -1,6 +1,6 @@
-V0.10
---SAVE_DATA--
+V0.10--SAVE_DATA--
 Level: 1
 GameFlags: {
+"didBarrelRoll": 1
 "Flag 1": 0 }
 ENDFILE

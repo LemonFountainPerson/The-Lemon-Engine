@@ -163,9 +163,9 @@ int UpdateCutscene(World *GameWorld)
 	}
 
 	// Play cutscene
-	updateSceneActions(GameWorld);
+	GameWorld->nextSceneAction = updateSceneActions(GameWorld->nextSceneAction, GameWorld);
 
-	if (GameWorld->SceneActionQueue == NULL || GameWorld->CurrentCutscene == END_CUTSCENE)
+	if (GameWorld->nextSceneAction == NULL || GameWorld->CurrentCutscene == END_CUTSCENE)
 	{
 		EndCutscene(GameWorld);
 	}
@@ -175,42 +175,63 @@ int UpdateCutscene(World *GameWorld)
 }
 
 
-int updateSceneActions(World *GameWorld)
+SceneAction* updateSceneActions(SceneAction *queue, World *GameWorld)
 {
-	if (GameWorld == NULL || GameWorld->SceneActionQueue == NULL)
+	if (queue == NULL)
 	{
-		return MISSING_DATA;
+		return NULL;
 	}
 
-	SceneAction *ActionPtr = GameWorld->SceneActionQueue;
 	int i = EngineSettings.MaxSceneActions;
 
-	while (ActionPtr != NULL && i >= 0)
+	while (queue != NULL && i >= 0)
 	{
-		RunSceneAction(ActionPtr, GameWorld);
-		if (GameWorld->SceneActionQueue == NULL)
+		if (queue->ActionID == SCENE_LOOP_POINT)
 		{
-			return DATA_CLEARED;
+			SceneLoop *data = &queue->ActionData.loopData; 
+
+			if (queue->parallelAction == true)
+			{
+				// this loop has already elapsed but had already been skipped over, so it must be part of a larger loop
+				data->currentLoop = 0;
+				queue->parallelAction = false;
+			}
+
+			data->currentLoop++;
+			if (data->currentLoop < data->repeatTimes)
+			{
+				int instructions = data->instructionCount;
+				while (instructions > 0 && queue->prevSceneAction != NULL)
+				{
+					instructions--;
+					queue = queue->prevSceneAction;
+				}
+
+				return queue;
+			}	
+			else
+			{
+				// mark as unparrallel to skip this loop point now that it has elapsed
+				queue->parallelAction = true;
+			}
 		}
 
-		if (ActionPtr->repeatTimes < 1)
+		RunSceneAction(queue, GameWorld);
+
+		if (queue->parallelAction == false)
 		{
-			ActionPtr = deleteSceneAction(ActionPtr, GameWorld);
-		}
-		else if (ActionPtr->parallelAction == false)
-		{
-			return LEMON_SUCCESS;
+			return queue;
 		}
 		else
 		{
-			ActionPtr = ActionPtr->nextSceneAction;
+			queue = queue->nextSceneAction;
 		}
 
 		i--;
 	}
 
 
-	return LEMON_SUCCESS;
+	return NULL;
 }
 
 
@@ -226,8 +247,6 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 		return INVALID_DATA;
 	}
 
-	inputAction->repeatTimes--;
-
 	union SceneActionArguments currentData = inputAction->ActionData;
 
 	if (inputAction->ActorObject != NULL && inputAction->ActorObject->State == EMPTY_OBJECT)
@@ -237,13 +256,26 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 	switch (inputAction->ActionID)
 	{
-	case SCENE_SAY_TEXT:
-		inputAction->repeatTimes = 1;
+	case SCENE_WAIT:
+		inputAction->ActionData.WaitTicks--;
+		if (inputAction->ActionData.WaitTicks > 0)
+		{
+			inputAction->parallelAction = false;
+		}
+		else
+		{
+			inputAction->parallelAction = true;
+		}
 		break;
 
 	case SCENE_END:
 		GameWorld->CurrentCutscene = END_CUTSCENE;
 		break;
+
+	case SCENE_SWITCH_CUTSCENE:
+		{
+			playCutscene(currentData.SceneID, GameWorld);
+		} break;
 
 	case SCENE_TRIGGER_GAME_EVENT:
 		{
@@ -370,15 +402,14 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 			int animID = currentData.animationDetails[0];
 			int loopCount = currentData.animationDetails[1];
 
-			if (inputAction->repeatTimes > 0)
+			if (actorDisplay->currentAnimation != animID)
 			{
 				PlayAnimationByIndex(animID, loopCount, actorDisplay);
 			}
-			
-			// Wait until animation is complete if set as non-parallel
-			if (inputAction->parallelAction == false && actorDisplay->currentAnimation == animID)
+			else
 			{
-				inputAction->repeatTimes = 1;
+				// Wait until animation is complete if set as non-parallel
+				inputAction->parallelAction = true;
 			}
 		} break;
 
@@ -461,8 +492,6 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 	case SCENE_SET_ACTOR_LAYER:
 		{
-			inputAction->repeatTimes = 0;
-
 			if (inputAction->ActorObject == NULL)
 			{
 				break;
@@ -473,7 +502,6 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 	case SCENE_CREATE_ACTOR:
 		{
-			inputAction->repeatTimes = 0;
 			if (inputAction->ActorObject == NULL)
 			{
 				break;
@@ -487,11 +515,8 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 	case SCENE_RELEASE_ACTOR:
 		{
-			inputAction->repeatTimes = 0;
-			putConsoleStringTS("Hello");
 			if (inputAction->ActorObject != NULL && inputAction->ActorObject->State == ACTOR_STATE)
 			{
-				putConsoleStringTS("Hello again");
 				inputAction->ActorObject->State = DEFAULT_STATE;
 			}
 		} break;
@@ -505,11 +530,10 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 	case SCENE_PLAY_SOUND:
 		{
-			RepeatSound(PlaySound(
-					currentData.soundData.soundName, currentData.soundData.folderName, 
-					currentData.soundData.channel, currentData.soundData.volume), 
-			inputAction->repeatTimes + 1);
-			inputAction->repeatTimes = 0;
+			putConsoleString("Playing %s from %s in %d at %f", currentData.soundData.soundName, currentData.soundData.folderName, 
+					currentData.soundData.channel, currentData.soundData.volume);
+			PlaySound(currentData.soundData.soundName, currentData.soundData.folderName, 
+					currentData.soundData.channel, currentData.soundData.volume);
 		} break;
 
 	case SCENE_SET_CAMERA_POS:
@@ -548,11 +572,6 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 			{
 				GameWorld->MainCamera.CameraY += yDifference / speedCoefficient;
 			}
-
-			if (fabs(xDifference) < 0.1 && fabs(yDifference) < 0.1)
-			{
-				inputAction->repeatTimes = 0;
-			}
 		} break;
 
 	case SCENE_SET_CAMERA_ZOOM:
@@ -565,6 +584,11 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 		{
 			GameWorld->MainCamera.zoomX += currentData.zoomScales[0];
 			GameWorld->MainCamera.zoomY += currentData.zoomScales[1];
+		} break;
+
+	case SCENE_SET_CAMERA_MODE:
+		{
+			GameWorld->MainCamera.CameraMode = currentData.cameraMode;
 		} break;
 
 	case SCENE_SET_CHANNEL_VOL:
@@ -588,6 +612,7 @@ int RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_LEN], World *GameWorld, FILE *fPtr)
 {
+	removeChar(inputString, '_', MAX_LEN);
 	stringToUpper(inputString);
 
 	if (strcmp(inputString, "SAYTEXT:") == 0)
@@ -596,7 +621,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 		getNextArg(fPtr, inputString, MAX_LEN);
 		SayText(textBoxString, inputString, getNextArgInt(fPtr), GameWorld);
 	}
-	if (strcmp(inputString, "SAYTEXTOPTION:") == 0)
+	else if (strcmp(inputString, "SAYTEXTOPTION:") == 0)
 	{
 		getNextArg(fPtr, textBoxString, MAX_TEXT_LENGTH);
 		getNextArg(fPtr, inputString, MAX_LEN);
@@ -652,6 +677,12 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 	else if (strcmp(inputString, "WAIT:") == 0)
 	{
 		return Wait(getNextArgFloat(fPtr), GameWorld);
+	}
+	else if (strcmp(inputString, "SWITCHCUTSCENE:") == 0 || strcmp(inputString, "PLAYCUTSCENE:") == 0)
+	{
+		int sceneID = getNextArgInt(fPtr);
+
+		return SceneAction_SwitchCutscene(sceneID, GameWorld);
 	}
 	else if (strcmp(inputString, "ENDCUTSCENE") == 0)
 	{
@@ -768,29 +799,25 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 		getNextArg(fPtr, inputString, MAX_LEN);
 		float xMove = getNextArgFloat(fPtr);
 		float yMove = getNextArgFloat(fPtr);
-		int repeatTimes = getNextArgInt(fPtr);
-		return MoveActor(inputString, xMove, yMove, repeatTimes, GameWorld);
+		return MoveActor(inputString, xMove, yMove, GameWorld);
 	}
 	else if (strcmp(inputString, "MOVEACTORX:") == 0)
 	{
 		getNextArg(fPtr, inputString, MAX_LEN);
 		float xMove = getNextArgFloat(fPtr);
-		int repeatTimes = getNextArgInt(fPtr);
-		return MoveActorX(inputString, xMove, repeatTimes, GameWorld);
+		return MoveActorX(inputString, xMove, GameWorld);
 	}
 	else if (strcmp(inputString, "MOVEACTORY:") == 0)
 	{
 		getNextArg(fPtr, inputString, MAX_LEN);
 		float yMove = getNextArgFloat(fPtr);
-		int repeatTimes = getNextArgInt(fPtr);
-		return MoveActorY(inputString, yMove, repeatTimes, GameWorld);
+		return MoveActorY(inputString, yMove, GameWorld);
 	}
 	else if (strcmp(inputString, "ROTATEACTOR:") == 0)
 	{
 		getNextArg(fPtr, inputString, MAX_LEN);
 		double rotation = (double)getNextArgFloat(fPtr);
-		int repeat = getNextArgInt(fPtr);
-		return RotateActor(inputString, rotation, repeat, GameWorld);
+		return RotateActor(inputString, rotation, GameWorld);
 	}
 	else if (strcmp(inputString, "SETACTORDIRECTION:") == 0)
 	{
@@ -834,13 +861,13 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 
 		return SceneAction_PlaySound(inputString, textBoxString, channel, volume, GameWorld);
 	}
-	else if (strcmp(inputString, "SETCHANNELVOL:") == 0)
+	else if (strcmp(inputString, "SETCHANNELVOLUME:") == 0 || strcmp(inputString, "SETCHANNELVOL:") == 0)
 	{
 		int channel = getNextArgFloat(fPtr);
 		float volume = getNextArgFloat(fPtr);
 		return SceneAction_SetSoundChannelVolume(channel, volume, GameWorld);
 	}
-	else if (strcmp(inputString, "CHANGECHANNELVOL:") == 0)
+	else if (strcmp(inputString, "CHANGECHANNELVOLUME:") == 0 || strcmp(inputString, "CHANGECHANNELVOL:") == 0)
 	{
 		int channel = getNextArgInt(fPtr);
 		float volume = getNextArgFloat(fPtr);
@@ -852,11 +879,16 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 		float yPos = getNextArgFloat(fPtr);
 		return SceneAction_SetCameraPosition(xPos, yPos, GameWorld);
 	}
+	else if (strcmp(inputString, "SETCAMERAMODE:") == 0 || strcmp(inputString, "SETCAMMODE:") == 0)
+	{
+		int mode = getNextArgInt(fPtr);
+		return SceneAction_SetCameraMode(mode, GameWorld);
+	}
 	else if (strcmp(inputString, "MOVECAMERA:") == 0)
 	{
 		float xMove = getNextArgFloat(fPtr);
 		float yMove = getNextArgFloat(fPtr);
-		return SceneAction_MoveCamera(xMove, yMove, getNextArgInt(fPtr), GameWorld);
+		return SceneAction_MoveCamera(xMove, yMove, GameWorld);
 	}
 	else if (!strcmp(inputString, "SMOOTHMOVECAMERATO:") || !strcmp(inputString, "MOVECAMERATO:"))
 	{
@@ -874,7 +906,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 	{
 		float xZoom = getNextArgFloat(fPtr);
 		float yZoom = getNextArgFloat(fPtr);
-		return SceneAction_ChangeZoom(xZoom, yZoom, getNextArgInt(fPtr), GameWorld);
+		return SceneAction_ChangeZoom(xZoom, yZoom, GameWorld);
 	}
 	else if (!strcmp(inputString, "PLACEWALL:") || !strcmp(inputString, "PLACEINVISWALL:") || !strcmp(inputString, "PLACEINVISIBLEWALL"))
 	{
@@ -921,7 +953,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 
 		WaitUntil(loadSceneAction(inputString, textBoxString, GameWorld, fPtr));
 	}
-	else if (!strcmp(inputString, "REPEAT:") && strcmp(textBoxString, "Repeat_Instruction:"))
+	else if (!strcmp(inputString, "REPEAT:"))
 	{
 		int repeatTimes = getNextArgInt(fPtr);
 
@@ -932,34 +964,51 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 			return NULL;
 		}
 
-		SceneAction *instructions = NULL;
-		int count = 0;
+		SceneAction *firstInstruction = GameWorld->SceneActionQueue;
+		while (firstInstruction != NULL && firstInstruction->nextSceneAction != NULL)
+		{
+			firstInstruction = firstInstruction->nextSceneAction;
+		}
 
 		while (inputString[0] != '}')
 		{
 			getNextArg(fPtr, inputString, MAX_LEN);
 
+			putConsoleString("\n Read: %s", inputString);
+
 			if (inputString[0] == '}')
 			{
-				continue;
+				break;
 			}
-		
-			strcpy(textBoxString, "Repeat_Instruction:");	
-			if (instructions == NULL)
-			{
-				instructions = loadSceneAction(inputString, textBoxString, GameWorld, fPtr);
-			}
-			else
-			{
-				loadSceneAction(inputString, textBoxString, GameWorld, fPtr);
-			}
+
+			loadSceneAction(inputString, textBoxString, GameWorld, fPtr);
+		}
+
+		int count = -1;
+		if (firstInstruction == NULL)
+		{
+			firstInstruction = GameWorld->SceneActionQueue;
+		}
+
+		while (firstInstruction != NULL)
+		{
+			firstInstruction = firstInstruction->nextSceneAction;
 			count++;
 		}
-		
-		RepeatArray(repeatTimes, count, instructions);
+
+		SceneAction *loopPoint = createSceneAction(SCENE_LOOP_POINT, GameWorld);
+
+		if (loopPoint != NULL)
+		{
+			loopPoint->ActionData.loopData.repeatTimes = repeatTimes;
+			loopPoint->ActionData.loopData.instructionCount = count;
+
+			putConsoleString("Added loop point with %d instructions, looping %d times", count, repeatTimes);
+		}
+
+		return loopPoint;
 	}
 
-	// add all other commands here
 
 	return NULL;
 }
@@ -970,6 +1019,9 @@ const char* getSceneActionName(SceneActionID input)
 	{
 	case SCENE_END:
 		return "End cutscene";
+
+	case SCENE_LOOP_POINT:
+		return "Loop point";
 
 	case SCENE_WAIT:
 		return "Wait";
@@ -1016,6 +1068,9 @@ const char* getSceneActionName(SceneActionID input)
 
 	case SCENE_SET_CAMERA_POS:
 		return "Set Camera Position";
+
+	case SCENE_SET_CAMERA_MODE:
+		return "Set Camera Mode";
 
 	case SCENE_SET_CAMERA_ZOOM:
 		return "Set Camera zoom";
@@ -1117,6 +1172,58 @@ int EndCutscene(World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
+int WaitUntil(SceneAction *inputAction)
+{
+	if (inputAction == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	inputAction->parallelAction = false;
+
+	return LEMON_SUCCESS;
+}
+
+
+
+SceneAction* SceneAction_SwitchCutscene(int sceneID, World *GameWorld)
+{
+	if (sceneID < 1 || GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_SWITCH_CUTSCENE, GameWorld);
+
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->ActionData.SceneID = sceneID;
+	newAction->parallelAction = false;
+
+	return newAction;
+}
+
+SceneAction* SceneAction_TriggerGameEvent(GameEvent *inputEvent, World *GameWorld)
+{
+	if (inputEvent == NULL || GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_TRIGGER_GAME_EVENT, GameWorld);
+
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	removeEventToTriggerLater(inputEvent, &newAction->ActionData.TriggerEvent, GameWorld);
+
+	return newAction;
+}
 
 SceneAction* enablePlayer(World *GameWorld)
 {
@@ -1138,81 +1245,6 @@ SceneAction* disablePlayer(World *GameWorld)
 	return createSceneAction(SCENE_DISABLE_PLAYER, GameWorld);
 }
 
-int WaitUntil(SceneAction *inputAction)
-{
-	if (inputAction == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	inputAction->parallelAction = false;
-
-	return LEMON_SUCCESS;
-}
-
-
-// helper function to create a loop that that halts on the last instruction so that all instructions in the loop finish before continuing
-int Repeat(int repeatCount, int instructionCount, ...)
-{
-	if (repeatCount < 1)
-	{
-		return EXECUTION_UNNECESSARY;
-	}
-
-	va_list args;
-    va_start(args, instructionCount);
-
-    SceneAction *instruction = NULL;
-
-    for (int i = 0; i < instructionCount; i++)
-    {
-    	instruction = va_arg(args, SceneAction*);
-    	
-    	if (instruction == NULL)
-    	{
-    		continue;
-    	}
-
-    	instruction->repeatTimes = repeatCount;
-    }
-
-    instruction->parallelAction = false;
-
-    va_end(args);
-
-    return LEMON_SUCCESS;
-}
-
-int RepeatArray(int repeatCount, int instructionCount, SceneAction *list)
-{
-	if (repeatCount < 1 || instructionCount < 1 || list == NULL)
-	{
-		return EXECUTION_UNNECESSARY;
-	}
-
-    SceneAction *instruction = list;
-
-    for (int i = 0; i < instructionCount; i++)
-    {
-    	if (instruction == NULL)
-    	{
-    		return MISSING_DATA;
-    	}
-
-    	instruction->repeatTimes = repeatCount;
-    	if (i == instructionCount - 1)
-	    {
-	    	instruction->parallelAction = false;
-	    }
-
-    	instruction = list->nextSceneAction;
-    }
-
-
-    return LEMON_SUCCESS;
-}
-
-
 SceneAction* Wait(float seconds, World *GameWorld)
 {
 	if (seconds < 0.001 || GameWorld == NULL)
@@ -1227,27 +1259,8 @@ SceneAction* Wait(float seconds, World *GameWorld)
 		return NULL;
 	}
 
-	newAction->repeatTimes = (int)(seconds * EngineSettings.GameTicksPerSecond);
+	newAction->ActionData.WaitTicks = (int)(seconds * EngineSettings.GameTicksPerSecond);
 	newAction->parallelAction = false;
-
-	return newAction;
-}
-
-SceneAction* SceneAction_triggerGameEvent(GameEvent *inputEvent, World *GameWorld)
-{
-	if (inputEvent == NULL || GameWorld == NULL)
-	{
-		return NULL;
-	}
-
-	SceneAction *newAction = createSceneAction(SCENE_TRIGGER_GAME_EVENT, GameWorld);
-
-	if (newAction == NULL)
-	{
-		return NULL;
-	}
-
-	removeEventToTriggerLater(inputEvent, &newAction->ActionData.TriggerEvent, GameWorld);
 
 	return newAction;
 }
@@ -1339,7 +1352,6 @@ SceneAction* ifEquals(int variableIndex, int value, CutsceneID cutsceneToTrigger
 		return NULL;
 	}
 
-	newAction->repeatTimes = 1;
 	newAction->parallelAction = false;	// in case it doesnt immediately delete, it wont execute potentially incorrect actions after itself
 	newAction->ActionData.branchData.elseBranchPresent = false;
 	newAction->ActionData.branchData.ifTrue = cutsceneToTrigger;
@@ -1364,7 +1376,6 @@ SceneAction* ifNotEquals(int variableIndex, int value, CutsceneID cutsceneToTrig
 		return NULL;
 	}
 
-	newAction->repeatTimes = 1;
 	newAction->parallelAction = false;	
 	newAction->ActionData.branchData.elseBranchPresent = true;
 	newAction->ActionData.branchData.ifTrue = NO_CUTSCENE;
@@ -1389,7 +1400,6 @@ SceneAction* ifLessThan(int variableIndex, int value, CutsceneID cutsceneToTrigg
 		return NULL;
 	}
 
-	newAction->repeatTimes = 1;
 	newAction->parallelAction = false;
 	newAction->ActionData.branchData.elseBranchPresent = false;
 	newAction->ActionData.branchData.ifTrue = cutsceneToTrigger;
@@ -1414,7 +1424,6 @@ SceneAction* ifLessThanEquals(int variableIndex, int value, CutsceneID cutsceneT
 		return NULL;
 	}
 
-	newAction->repeatTimes = 1;
 	newAction->parallelAction = false;
 	newAction->ActionData.branchData.elseBranchPresent = true;
 	newAction->ActionData.branchData.ifTrue = NO_CUTSCENE;
@@ -1439,7 +1448,6 @@ SceneAction* ifGreaterThan(int variableIndex, int value, CutsceneID cutsceneToTr
 		return NULL;
 	}
 
-	newAction->repeatTimes = 1;
 	newAction->parallelAction = false;	
 	newAction->ActionData.branchData.elseBranchPresent = false;
 	newAction->ActionData.branchData.ifTrue = cutsceneToTrigger;
@@ -1464,7 +1472,6 @@ SceneAction* ifGreaterThanEquals(int variableIndex, int value, CutsceneID cutsce
 		return NULL;
 	}
 
-	newAction->repeatTimes = 1;
 	newAction->parallelAction = false;	
 	newAction->ActionData.branchData.elseBranchPresent = true;
 	newAction->ActionData.branchData.ifTrue = NO_CUTSCENE;
@@ -1561,7 +1568,6 @@ SceneAction* AnimateActor(char objName[], const char animName[], int loopCount, 
 	newAction->ActorObject = actorObj;
 	newAction->ActionData.animationDetails[0] = animIndex;
 	newAction->ActionData.animationDetails[1] = loopCount;
-	newAction->repeatTimes = 2;
 
 	return newAction;
 }
@@ -1599,7 +1605,6 @@ SceneAction* SwitchActorSprite(char objName[], const char spriteName[], World *G
 
 	newAction->ActorObject = actorObj;
 	newAction->ActionData.animationDetails[0] = spriteIndex;
-	newAction->repeatTimes = 1;
 
 	return newAction;
 }
@@ -1632,13 +1637,12 @@ SceneAction* SetActorPosition(char objName[], float xPosition, float yPosition, 
 	newAction->ActorObject = actorObj;
 	newAction->ActionData.positions[0] = xPosition;
 	newAction->ActionData.positions[1] = yPosition;
-	newAction->repeatTimes = 1;
 
 	return newAction;
 }
 
 
-SceneAction* MoveActor(char objName[], float xMovement, float yMovement, short repeatTimes, World *GameWorld)
+SceneAction* MoveActor(char objName[], float xMovement, float yMovement, World *GameWorld)
 {
 	if (GameWorld == NULL || objName == NULL)
 	{
@@ -1665,13 +1669,12 @@ SceneAction* MoveActor(char objName[], float xMovement, float yMovement, short r
 	newAction->ActorObject = actorObj;
 	newAction->ActionData.positions[0] = xMovement;
 	newAction->ActionData.positions[1] = yMovement;
-	newAction->repeatTimes = repeatTimes;
 
 	return newAction;
 }
 
 
-SceneAction* MoveActorX(char objName[], float xMovement, short repeatTimes, World *GameWorld)
+SceneAction* MoveActorX(char objName[], float xMovement, World *GameWorld)
 {
 	if (GameWorld == NULL || objName == NULL)
 	{
@@ -1698,13 +1701,12 @@ SceneAction* MoveActorX(char objName[], float xMovement, short repeatTimes, Worl
 	newAction->ActorObject = actorObj;
 	newAction->ActionData.positions[0] = xMovement;
 	newAction->ActionData.positions[1] = 0.0;
-	newAction->repeatTimes = repeatTimes;
 
 	return newAction;
 }
 
 
-SceneAction* MoveActorY(char objName[], float yMovement, short repeatTimes, World *GameWorld)
+SceneAction* MoveActorY(char objName[], float yMovement, World *GameWorld)
 {
 	if (GameWorld == NULL || objName == NULL)
 	{
@@ -1731,7 +1733,6 @@ SceneAction* MoveActorY(char objName[], float yMovement, short repeatTimes, Worl
 	newAction->ActorObject = actorObj;
 	newAction->ActionData.positions[0] = yMovement;
 	newAction->ActionData.positions[1] = 0.0;
-	newAction->repeatTimes = repeatTimes;
 
 	return newAction;
 }
@@ -1769,7 +1770,7 @@ SceneAction* SetActorDirection(char objName[], double rotation, World *GameWorld
 }
 
 
-SceneAction* RotateActor(char objName[], double rotation, short repeatTimes, World *GameWorld)
+SceneAction* RotateActor(char objName[], double rotation, World *GameWorld)
 {
 	if (GameWorld == NULL || objName == NULL)
 	{
@@ -1796,7 +1797,6 @@ SceneAction* RotateActor(char objName[], double rotation, short repeatTimes, Wor
 	newAction->ActorObject = actorObj;
 	newAction->ActionData.positions[0] = rotation;
 	newAction->ActionData.positions[1] = 0.0;
-	newAction->repeatTimes = repeatTimes;
 
 	return newAction;
 }
@@ -2008,29 +2008,10 @@ SceneAction* SceneAction_PlaySound(char soundName[], char folderName[], ChannelN
 	newAction->ActionData.soundData.channel = soundChannel;
 	newAction->ActionData.soundData.volume = volume;
 	newAction->parallelAction = true;
-	newAction->repeatTimes = 1;
 
 	return newAction;
 }
 
-
-SceneAction* SceneAction_PlaySoundRepeat(char soundName[], char folderName[], ChannelName soundChannel, float volume, int repeatTimes, World *GameWorld)
-{
-	if (GameWorld == NULL || soundName == NULL || folderName == NULL)
-	{
-		return NULL;
-	}
-
-	SceneAction *newAction = SceneAction_PlaySound(soundName, folderName, soundChannel, volume, GameWorld);
-	if (newAction == NULL)
-	{
-		return NULL;
-	}
-
-	newAction->repeatTimes = repeatTimes;
-
-	return newAction;
-}
 
 
 SceneAction* SceneAction_SetSoundChannelVolume(ChannelName soundChannel, float newVolume, World *GameWorld)
@@ -2051,7 +2032,6 @@ SceneAction* SceneAction_SetSoundChannelVolume(ChannelName soundChannel, float n
 	newAction->ActionData.soundData.channel = soundChannel;
 	newAction->ActionData.soundData.volume = newVolume;
 	newAction->parallelAction = true;
-	newAction->repeatTimes = 1;
 
 	return newAction;
 }
@@ -2074,30 +2054,6 @@ SceneAction* SceneAction_ChangeSoundChannelVolume(ChannelName soundChannel, floa
 	newAction->ActionData.soundData.channel = soundChannel;
 	newAction->ActionData.soundData.volume = change;
 	newAction->parallelAction = true;
-	newAction->repeatTimes = 1;
-
-	return newAction;
-}
-
-SceneAction* SceneAction_FadeSoundChannel(ChannelName soundChannel, float fadeValue, int repeatTimes, World *GameWorld)
-{
-		if (GameWorld == NULL)
-	{
-		return NULL;
-	}
-
-	SceneAction *newAction = createSceneAction(SCENE_CHANGE_CHANNEL_VOL, GameWorld);
-	if (newAction == NULL)
-	{
-		return NULL;
-	}
-
-	strcpy(newAction->ActionData.soundData.soundName, "noSound");
-	strcpy(newAction->ActionData.soundData.folderName, "noFolder");
-	newAction->ActionData.soundData.channel = soundChannel;
-	newAction->ActionData.soundData.volume = fadeValue;
-	newAction->parallelAction = true;
-	newAction->repeatTimes = repeatTimes;
 
 	return newAction;
 }
@@ -2122,8 +2078,25 @@ SceneAction* SceneAction_SetCameraPosition(float xPos, float yPos, World *GameWo
 	return newAction;
 }
 
+SceneAction* SceneAction_SetCameraMode(int mode, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
 
-SceneAction* SceneAction_MoveCamera(float xVel, float yVel, int repeatTimes, World *GameWorld)
+	SceneAction *newAction = createSceneAction(SCENE_SET_CAMERA_MODE, GameWorld);
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->ActionData.cameraMode = mode;
+
+	return newAction;
+}
+
+SceneAction* SceneAction_MoveCamera(float xVel, float yVel, World *GameWorld)
 {
 	if (GameWorld == NULL)
 	{
@@ -2138,7 +2111,6 @@ SceneAction* SceneAction_MoveCamera(float xVel, float yVel, int repeatTimes, Wor
 
 	newAction->ActionData.CameraData[0] = xVel;
 	newAction->ActionData.CameraData[1] = yVel;
-	newAction->repeatTimes = repeatTimes;
 
 	return newAction;
 }
@@ -2160,7 +2132,6 @@ SceneAction* SceneAction_MoveCameraSmooth(float xPos, float yPos, float coeffici
 	newAction->ActionData.CameraData[0] = xPos;
 	newAction->ActionData.CameraData[1] = yPos;
 	newAction->ActionData.CameraData[2] = coefficient;
-	newAction->repeatTimes = 999;
 
 	return newAction;
 }
@@ -2186,9 +2157,9 @@ SceneAction* SceneAction_SetZoom(float zoomX, float zoomY, World *GameWorld)
 }
 
 
-SceneAction* SceneAction_ChangeZoom(float zoomX, float zoomY, int repeatTimes, World *GameWorld)
+SceneAction* SceneAction_ChangeZoom(float zoomX, float zoomY, World *GameWorld)
 {
-	if (GameWorld == NULL || repeatTimes < 1)
+	if (GameWorld == NULL)
 	{
 		return NULL;
 	}
@@ -2201,7 +2172,6 @@ SceneAction* SceneAction_ChangeZoom(float zoomX, float zoomY, int repeatTimes, W
 
 	newAction->ActionData.zoomScales[0] = zoomX;
 	newAction->ActionData.zoomScales[1] = zoomY;
-	newAction->repeatTimes = repeatTimes;
 
 	return newAction;
 }
@@ -2230,6 +2200,7 @@ SceneAction* createSceneAction(SceneActionID newActionID, World *GameWorld)
 	if (GameWorld->SceneActionQueue == NULL)
 	{
 		GameWorld->SceneActionQueue = newAction;
+		GameWorld->nextSceneAction = newAction;
 		newAction->prevSceneAction = NULL;
 	}
 	else
@@ -2252,7 +2223,6 @@ SceneAction* createSceneAction(SceneActionID newActionID, World *GameWorld)
 
 	newAction->ActionID = newActionID;
 	newAction->parallelAction = true;
-	newAction->repeatTimes = 1;
 
 	if (DebugSettings.showSceneActions)
 	{
@@ -2297,7 +2267,7 @@ SceneAction* deleteSceneAction(SceneAction *deleteAction, World *GameWorld)
 
 int deleteAllSceneActions(World *GameWorld)
 {
-	if (GameWorld == NULL)
+	if (GameWorld == NULL || GameWorld->SceneActionQueue == NULL)
 	{
 		return MISSING_DATA;
 	}

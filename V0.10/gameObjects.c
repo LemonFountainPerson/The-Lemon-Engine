@@ -1444,93 +1444,53 @@ void SetDrawPriorityToBack(ObjectController *ObjectList, Object *input)
 }
 
 
+static const char ObjectNames[OBJECT_TYPE_COUNT][64] = {
+	[LEVEL_FLAG_OBJ] = "LevelFlag",
+	[SOLID_BLOCK] = "SolidBlock",
+	[FLAT_SLOPE_FLOOR] = "FlatSlopeFloor",
+	[JUMP_THRU_BLOCK] = "JumpThroughPlatform",
+	[PLAYER_OBJECT] = "PlayerObject",
+	[UI_ELEMENT] = "UIElement",
+	[UI_TEXT] = "UIText",
+	[PARTICLE] = "Particle",
+	[COIN] = "Coin",
+	[SPRING] = "Spring",
+	[MOVING_PLATFORM_HOR] = "MovingPlatform_Horizontal",
+	[MOVING_PLATFORM_VER] = "MovingPlatform_Vertical",
+	[GATE_SWITCH] = "Gate Switch",
+	[GATE_SWITCH_TIMED] = "GateSwitchTimed",
+	[VERTICAL_GATE] = "VerticalGate",
+	[HORIZONTAL_GATE] = "HorizontalGate",
+	[DOOR] = "Door",
+	[LEVEL_DOOR] = "LevelDoor",
+	[PUSHABLE_BOX] = "PushableBox",
+	[PROJECTILE] = "Projectile",
+	[BASIC_ENEMY] = "BasicEnemy"
+};
 
-int getObjectID(char entry[])
+int getObjectID(const char entry[])
 {
 	if (entry[0] >= '0' && entry[0] <= '9')
 	{
 		return convertStrToInt(entry, 6);
 	}
 
-	stringToLower(entry);
+	char comparison[64] = {0};
+	char input[64] = {0};
 
-	if (strcmp(entry, "solidblock") == 0)
+	LemonStrncpy(input, entry, 64);
+	stringToLower(input);
+
+	for (int i = 0; i < OBJECT_TYPE_COUNT; i++)
 	{
-		return SOLID_BLOCK;
-	}
-	else if (strcmp(entry, "flatslopefloor") == 0)
-	{
-		return FLAT_SLOPE_FLOOR;
-	}
-	else if (strcmp(entry, "jumpthrublock") == 0)
-	{
-		return JUMP_THRU_BLOCK;
-	}
-	else if (strcmp(entry, "coin") == 0)
-	{
-		return COIN;
-	}
-	else if (strcmp(entry, "playerobject") == 0)
-	{
-		return PLAYER_OBJECT;
-	}
-	else if (strcmp(entry, "uielement") == 0)
-	{
-		return UI_ELEMENT;
-	}
-	else if (strcmp(entry, "uitext") == 0)
-	{
-		return UI_TEXT;
-	}
-	else if (strcmp(entry, "particle") == 0)
-	{
-		return PARTICLE;
-	}
-	else if (strcmp(entry, "movingplatformhor") == 0)
-	{
-		return MOVING_PLATFORM_HOR;
-	}
-	else if (strcmp(entry, "movingplatformver") == 0)
-	{
-		return MOVING_PLATFORM_VER;
-	}
-	else if (strcmp(entry, "spring") == 0)
-	{
-		return SPRING;
-	}
-	else if (strcmp(entry, "gateswitch") == 0)
-	{
-		return GATE_SWITCH;
-	}
-	else if (strcmp(entry, "gateswitchtimed") == 0)
-	{
-		return GATE_SWITCH_TIMED;
-	}
-	else if (strcmp(entry, "verticalgate") == 0)
-	{
-		return VERTICAL_GATE;
-	}
-	else if (strcmp(entry, "horizontalgate") == 0)
-	{
-		return HORIZONTAL_GATE;
-	}
-	else if (strcmp(entry, "door") == 0)
-	{
-		return DOOR;
-	}
-	else if (strcmp(entry, "leveldoor") == 0)
-	{
-		return LEVEL_DOOR;
-	}
-	else if (strcmp(entry, "pushablebox") == 0)
-	{
-		return PUSHABLE_BOX;
-	}
-	else if (strcmp(entry, "basicenemy") == 0)
-	{
-		return BASIC_ENEMY;
+		strcpy(comparison, ObjectNames[i]);
+		stringToLower(comparison);
+
+		if (strcmp(input, comparison) == 0)
+		{
+			return i;
+		}
 	}	
-
 
 	return UNDEFINED_OBJECT;
 }
@@ -1542,70 +1502,7 @@ const char* getObjectIDName(ObjectType input)
 		return "Undefined";
 	}
 
-	switch(input)
-	{
-	case LEVEL_FLAG_OBJ:
-		return "Level Flag";
-
-	case SPRING:
-		return "Spring";
-
-	case PARTICLE:
-		return "Particle";
-
-	case UI_ELEMENT:
-		return "UIElement";
-
-	case UI_TEXT:
-		return "UIText";
-
-	case COIN:
-		return "Coin";
-
-	case PLAYER_OBJECT:
-		return "PlayerObject";
-
-	case SOLID_BLOCK:
-		return "SolidBlock";
-
-	case LEVEL_DOOR:
-		return "LevelDoor";
-
-	case DOOR:
-		return "Door";
-
-	case VERTICAL_GATE:
-		return "VerticalGate";
-
-	case HORIZONTAL_GATE:
-		return "HorizontalGate";
-
-	case GATE_SWITCH_TIMED:
-		return "TimedGateSwitch";
-
-	case MOVING_PLATFORM_HOR:
-		return "MovingPlatform_Horizontal";
-
-	case MOVING_PLATFORM_VER:
-		return "MovingPlatform_Vertical";
-
-	case GATE_SWITCH:
-		return "GateSwitch";
-
-	case PUSHABLE_BOX:
-		return "PushableBox";
-
-	case JUMP_THRU_BLOCK:
-		return "JumpThroughPlatform";
-
-	case FLAT_SLOPE_FLOOR:
-		return "FlatSlopeFloor";
-
-	default:
-		static char name[MAX_LEN] = {0};
-		snprintf(name, MAX_LEN, "%d", input);
-		return name;
-	}
+	return ObjectNames[input];
 }
 
 const char* getObjectStateName(ObjectState input)
@@ -2476,12 +2373,11 @@ void initialiseSparseList(SparseList *input, const char name[])
 {
 	strcpy(input->componentName, name);
 	putConsoleString("Initialising %s...", name);
-	int *sparse = input->sparse;
 
 	// -1 is tombstone value (empty slot)
 	for (int i = 0; i < EngineSettings.MaxObjects; i++)
 	{
-		sparse[i] = -1;
+		input->sparse[i] = -1;
 	}
 
 	input->storedComponents = 0;
@@ -2816,7 +2712,6 @@ SDL_Vertex* getPolygonVertex(Object *input, int vertex)
 
 	return &poly->vertexList[vertex];
 }
-
 
 int addHealthComponent(Object *input, int Health)
 {
@@ -3324,7 +3219,7 @@ int UpdateCoin(Object *coin, World *GameWorld)
 	}
 
 /*
-	if (keyboard[LMN_INTERACT2] || coin->arg1 > 0)
+	if (buttons[LMN_INTERACT2] || coin->arg1 > 0)
 	{
 		if (DistanceBetween(coin, Player->PlayerPtr) < 25000.0)
 		{
@@ -3921,7 +3816,7 @@ int UpdateDoor(Object *Door, World *GameWorld)
 			SayText("....Or is it?\r\nIt just looks like a big pink and black rectangle...", "Test_Face", BASIC_FADE, GameWorld);
 
 			SayTextOption("Enter the Door?", "Test_Face", BASIC_FADE, GameWorld, 3, 
-				"Yes", Event_teleportPlayerToExitDoor(Door->Parent, GameWorld), 
+				"Yes", Event_TeleportPlayerToExitDoor(Door->Parent, GameWorld), 
 				"No", NO_ACTION,
 				"hm... lemme think about it", playCutscene(TEST_SCENE_2, GameWorld));
 		}
@@ -3978,7 +3873,7 @@ int UpdateLevelDoor(Object *Door, World *GameWorld)
 	if (Door->arg4 != 0 && GameWorld->TextQueue == NULL)
 	{
 		switchLevel(Door->arg1, GameWorld);
-		Event_movePlayer(Door->arg2, Door->arg3, GameWorld);
+		Event_MovePlayer(Door->arg2, Door->arg3, GameWorld);
 
 		Door->arg4 = 0;
 	}
@@ -5727,7 +5622,6 @@ int resolveForwardCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 
 				if (CheckBoxCollidesBox(movingBox, currentObject->ObjectBox))
 				{
-					putConsoleStringTS("name: %s", currentObject->name);
 					movingBox->yPos = lastStepY;
 					movingBox->xPos = lastStepX;
 

@@ -31,5 +31,6 @@
 #include "LemonMain.h"
 #include "levelLoader.h"
 #include "cutsceneManager.h"
+#include "console.h"
 
 #endif

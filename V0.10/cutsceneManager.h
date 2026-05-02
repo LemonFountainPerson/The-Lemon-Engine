@@ -8,7 +8,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 
 int UpdateCutscene(World *GameWorld);
 
-int updateSceneActions(World *GameWorld);
+SceneAction* updateSceneActions(SceneAction *queue, World *GameWorld);
 
 int RunSceneAction(SceneAction *inputAction, World *GameWorld);
 
@@ -22,6 +22,10 @@ int WaitUntil(SceneAction *inputAction);
 int Repeat(int repeatCount, int instructionCount, ...);
 
 int RepeatArray(int repeatCount, int instructionCount, SceneAction *list);
+
+SceneAction* SceneAction_SwitchCutscene(int sceneID, World *GameWorld);
+
+SceneAction* SceneAction_TriggerGameEvent(GameEvent *inputEvent, World *GameWorld);
 
 SceneAction* enablePlayer(World *GameWorld);
 
@@ -62,15 +66,15 @@ SceneAction* SwitchActorSprite(char objName[], const char spriteName[], World *G
 
 SceneAction* SetActorPosition(char objName[], float xPosition, float yPosition, World *GameWorld);
 
-SceneAction* MoveActor(char objName[], float xMovement, float yMovement, short repeatTimes, World *GameWorld);
+SceneAction* MoveActor(char objName[], float xMovement, float yMovement, World *GameWorld);
 
-SceneAction* MoveActorX(char objName[], float xMovement, short repeatTimes, World *GameWorld);
+SceneAction* MoveActorX(char objName[], float xMovement, World *GameWorld);
 
-SceneAction* MoveActorY(char objName[], float yMovement, short repeatTimes, World *GameWorld);
+SceneAction* MoveActorY(char objName[], float yMovement, World *GameWorld);
 
 SceneAction* SetActorDirection(char objName[], double rotation, World *GameWorld);
 
-SceneAction* RotateActor(char objName[], double rotation, short repeatTimes, World *GameWorld);
+SceneAction* RotateActor(char objName[], double rotation, World *GameWorld);
 
 SceneAction* HideActor(char objName[], World *GameWorld);
 
@@ -93,17 +97,17 @@ SceneAction* SceneAction_SetSoundChannelVolume(ChannelName soundChannel, float n
 
 SceneAction* SceneAction_ChangeSoundChannelVolume(ChannelName soundChannel, float change, World *GameWorld);
 
-SceneAction* SceneAction_FadeSoundChannel(ChannelName soundChannel, float fadeValue, int repeatTimes, World *GameWorld);
-
 SceneAction* SceneAction_SetCameraPosition(float xPos, float yPos, World *GameWorld);
 
-SceneAction* SceneAction_MoveCamera(float xVel, float yVel, int repeatTimes, World *GameWorld);
+SceneAction* SceneAction_SetCameraMode(int mode, World *GameWorld);
+
+SceneAction* SceneAction_MoveCamera(float xVel, float yVel, World *GameWorld);
 
 SceneAction* SceneAction_MoveCameraSmooth(float xPos, float yPos, float coefficient, World *GameWorld);
 
 SceneAction* SceneAction_SetZoom(float zoomX, float zoomY, World *GameWorld);
 
-SceneAction* SceneAction_ChangeZoom(float zoomX, float zoomY, int repeatTimes, World *GameWorld);
+SceneAction* SceneAction_ChangeZoom(float zoomX, float zoomY, World *GameWorld);
 
 
 SceneAction* createSceneAction(SceneActionID newActionID, World *GameWorld);

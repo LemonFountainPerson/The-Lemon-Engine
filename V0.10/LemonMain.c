@@ -6,7 +6,7 @@ RenderFrame ScreenData = {0};
 float deltaTime = 0.0;
 
 
-int keyboard[INPUT_COUNT] = {0};
+ButtonState buttons[INPUT_COUNT] = {0};
 
 MouseData MouseInput = {0};
 
@@ -224,7 +224,7 @@ int GameTick(World *GameWorld)
 	}
 
 	// Input acknowledgement is delayed until the next frame by doing this so that gameFrame can use this frame's input correctly
-	keyboard[ACKNOWLEDGE_INPUT] = 1;
+	buttons[ACKNOWLEDGE_INPUT] = 1;
 
 	MasterControls(GameWorld, ScreenData.Window);
 
@@ -658,19 +658,21 @@ void addGameFlag(const char name[], int startValue)
 	}
 
 	int index = hashGameFlag(name);
-	int count = 0;
 
-	while (GameFlags[index].name[0] != '\0' && count < GAME_FLAG_COUNT)
-	{
-		if (strcmp(GameFlags[index].name, name) == 0)
-		{
-			// If there is a game flag with a matching name already, do not add
-			return;
-		}
+	// this allows open addressing
+	// int count = 0;
 
-		index = (index + 1) % GAME_FLAG_COUNT;
-		count++;
-	}
+	// while (GameFlags[index].name[0] != '\0' && count < GAME_FLAG_COUNT)
+	// {
+	// 	if (strcmp(GameFlags[index].name, name) == 0)
+	// 	{
+	// 		// If there is a game flag with a matching name already, do not add
+	// 		return;
+	// 	}
+
+	// 	index = (index + 1) % GAME_FLAG_COUNT;
+	// 	count++;
+	// }
 
 	if (GameFlags[index].name[0] == '\0')
 	{
@@ -977,9 +979,9 @@ int getExternalInput(World *GameWorld, SDL_Renderer *screen)
 		return MISSING_DATA;
 	}
 
-	if (keyboard[ACKNOWLEDGE_INPUT])
+	if (buttons[ACKNOWLEDGE_INPUT])
 	{
-		keyboard[ACKNOWLEDGE_INPUT] = 0;
+		buttons[ACKNOWLEDGE_INPUT] = 0;
 		AcknowledgeHeldButtons();
 	}
 
@@ -1190,16 +1192,16 @@ int getKeyboardInput(SDL_KeyboardEvent *key)
 			break;
 	}
 	
-	keyboard[keyCode] = key->down;
+	buttons[keyCode] = key->down;
 
 	return LEMON_SUCCESS;
 }
 
 void keyPressedWhen(int key, bool keyMap)
 {
-	if (keyboard[key] == 0 || keyMap == 0)
+	if (buttons[key] == 0 || keyMap == 0)
 	{
-		keyboard[key] = keyMap;
+		buttons[key] = keyMap;
 	}
 
 	return;
@@ -1207,22 +1209,22 @@ void keyPressedWhen(int key, bool keyMap)
 
 void updateCustomKeys(void)
 {
-	keyPressedWhen(LMN_LEFT, keyboard['A'] || keyboard[LMN_LEFTARROW] || GamePadInput.dPadLeft || (GamePadInput.leftStickX < -0.9));
-	keyPressedWhen(LMN_RIGHT, keyboard['D'] || keyboard[LMN_RIGHTARROW] || GamePadInput.dPadRight || (GamePadInput.leftStickX > 0.9));
-	keyPressedWhen(LMN_UP, keyboard['W'] || keyboard[LMN_UPARROW] || GamePadInput.dPadUp || (GamePadInput.leftStickY > 0.9));
-	keyPressedWhen(LMN_DOWN, keyboard['S'] || keyboard[LMN_DOWNARROW] || GamePadInput.dPadDown || (GamePadInput.leftStickY < -0.9));
+	keyPressedWhen(LMN_LEFT, buttons['A'] || buttons[LMN_LEFTARROW] || GamePadInput.dPadLeft || (GamePadInput.leftStickX < -0.9));
+	keyPressedWhen(LMN_RIGHT, buttons['D'] || buttons[LMN_RIGHTARROW] || GamePadInput.dPadRight || (GamePadInput.leftStickX > 0.9));
+	keyPressedWhen(LMN_UP, buttons['W'] || buttons[LMN_UPARROW] || GamePadInput.dPadUp || (GamePadInput.leftStickY > 0.9));
+	keyPressedWhen(LMN_DOWN, buttons['S'] || buttons[LMN_DOWNARROW] || GamePadInput.dPadDown || (GamePadInput.leftStickY < -0.9));
 
-	keyPressedWhen(LMN_JUMP, keyboard[LMN_SPACE] || GamePadInput.southButton);
-	keyPressedWhen(LMN_INTERACT, keyboard['E'] || keyboard['Z'] || GamePadInput.westButton);
-	keyPressedWhen(LMN_INTERACT2, keyboard['Q'] || keyboard['X'] || GamePadInput.eastButton);
-	keyPressedWhen(LMN_INTERACT3, keyboard['R'] || keyboard['C'] || GamePadInput.northButton);
+	keyPressedWhen(LMN_JUMP, buttons[LMN_SPACE] || GamePadInput.southButton);
+	keyPressedWhen(LMN_INTERACT, buttons['E'] || buttons['Z'] || GamePadInput.westButton);
+	keyPressedWhen(LMN_INTERACT2, buttons['Q'] || buttons['X'] || GamePadInput.eastButton);
+	keyPressedWhen(LMN_INTERACT3, buttons['R'] || buttons['C'] || GamePadInput.northButton);
 
-	keyPressedWhen(LMN_TEXT_SKIP, keyboard[LMN_INTERACT2] || MouseInput.RightButton || keyboard[LMN_LSHIFT]);
-	keyPressedWhen(LMN_TEXT_CONFIRM, keyboard[LMN_INTERACT] || GamePadInput.southButton || MouseInput.LeftButton || keyboard[LMN_ENTER]);
-	keyPressedWhen(LMN_MENU_CONFIRM, keyboard[LMN_INTERACT] || GamePadInput.southButton || keyboard[LMN_ENTER]);
-	keyPressedWhen(LMN_MENU_OPEN, keyboard[LMN_ESCAPE] || GamePadInput.start);
+	keyPressedWhen(LMN_TEXT_SKIP, buttons[LMN_INTERACT2] || MouseInput.RightButton || buttons[LMN_LSHIFT]);
+	keyPressedWhen(LMN_TEXT_CONFIRM, buttons[LMN_INTERACT] || GamePadInput.southButton || MouseInput.LeftButton || buttons[LMN_ENTER]);
+	keyPressedWhen(LMN_MENU_CONFIRM, buttons[LMN_INTERACT] || GamePadInput.southButton || buttons[LMN_ENTER]);
+	keyPressedWhen(LMN_MENU_OPEN, buttons[LMN_ESCAPE] || GamePadInput.start);
 
-	keyPressedWhen(LMN_CONSOLE_OPEN, keyboard[LMN_GRAVE] || GamePadInput.back);
+	keyPressedWhen(LMN_CONSOLE_OPEN, buttons[LMN_GRAVE] || GamePadInput.back);
 	
 
 	return;
@@ -1233,7 +1235,7 @@ void ClearInput(void)
 {
 	for (int i = ACKNOWLEDGE_INPUT + 1; i < INPUT_COUNT; i++)
 	{
-		keyboard[i] = 0;	
+		buttons[i] = 0;	
 	}
 
 	memset(&MouseInput, 0, sizeof(MouseData));
@@ -1260,9 +1262,9 @@ void AcknowledgeHeldButtons(void)
 {
 	for (int i = ACKNOWLEDGE_INPUT + 1; i < INPUT_COUNT; i++)
 	{
-		if (keyboard[i] == 1)
+		if (buttons[i] == 1)
 		{
-			keyboard[i] = 2;
+			buttons[i] = 2;
 		}
 	}
 
@@ -1339,9 +1341,9 @@ void AcknowledgeButton(LemonKeys Key)
 		return;
 	}
 
-	if (keyboard[Key] == 1)
+	if (buttons[Key] == 1)
 	{
-		keyboard[Key] = 2;
+		buttons[Key] = 2;
 	}
 
 	return;
@@ -1376,27 +1378,27 @@ int getMouseInput(SDL_MouseButtonEvent *event)
 	{	
 		case SDL_BUTTON_LEFT:
 			MouseInput.LeftButton = event->down;
-			keyboard[MOUSE_LEFT] = event->down;
+			buttons[MOUSE_LEFT] = event->down;
 			break;
 
 		case SDL_BUTTON_RIGHT:
 			MouseInput.RightButton = event->down;
-			keyboard[MOUSE_RIGHT] = event->down;
+			buttons[MOUSE_RIGHT] = event->down;
 			break;
 
 		case SDL_BUTTON_MIDDLE:
 			MouseInput.MiddleButton = event->down;
-			keyboard[MOUSE_MIDDLE] = event->down;
+			buttons[MOUSE_MIDDLE] = event->down;
 			break;
 
 		case SDL_BUTTON_X1:
 			MouseInput.SideButton1 = event->down;
-			keyboard[MOUSE_SIDE1] = event->down;
+			buttons[MOUSE_SIDE1] = event->down;
 			break;
 
 		case SDL_BUTTON_X2:
 			MouseInput.SideButton2 = event->down;
-			keyboard[MOUSE_SIDE2] = event->down;
+			buttons[MOUSE_SIDE2] = event->down;
 			break;
 
 		default:
@@ -1414,77 +1416,77 @@ int getGamepadInput(SDL_GamepadButtonEvent *event)
 	{	
 		case SDL_GAMEPAD_BUTTON_SOUTH:
 			GamePadInput.southButton = event->down;
-			keyboard[GAMEPAD_SOUTH] = event->down;
+			buttons[GAMEPAD_SOUTH] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_NORTH:
 			GamePadInput.northButton = event->down;
-			keyboard[GAMEPAD_NORTH] = event->down;
+			buttons[GAMEPAD_NORTH] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_EAST:
 			GamePadInput.eastButton = event->down;
-			keyboard[GAMEPAD_EAST] = event->down;
+			buttons[GAMEPAD_EAST] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_WEST:
 			GamePadInput.westButton = event->down;
-			keyboard[GAMEPAD_WEST] = event->down;
+			buttons[GAMEPAD_WEST] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_BACK:
 			GamePadInput.back = event->down;
-			keyboard[GAMEPAD_BACK] = event->down;
+			buttons[GAMEPAD_BACK] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_START:
 			GamePadInput.start = event->down;
-			keyboard[GAMEPAD_START] = event->down;
+			buttons[GAMEPAD_START] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_GUIDE:
 			GamePadInput.guide = event->down;
-			keyboard[GAMEPAD_GUIDE] = event->down;
+			buttons[GAMEPAD_GUIDE] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_DPAD_UP:
 			GamePadInput.dPadUp = event->down;
-			keyboard[GAMEPAD_DPAD_UP] = event->down;
+			buttons[GAMEPAD_DPAD_UP] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
 			GamePadInput.dPadDown = event->down;
-			keyboard[GAMEPAD_DPAD_DOWN] = event->down;
+			buttons[GAMEPAD_DPAD_DOWN] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
 			GamePadInput.dPadLeft = event->down;
-			keyboard[GAMEPAD_DPAD_LEFT] = event->down;
+			buttons[GAMEPAD_DPAD_LEFT] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
 			GamePadInput.dPadRight = event->down;
-			keyboard[GAMEPAD_DPAD_RIGHT] = event->down;
+			buttons[GAMEPAD_DPAD_RIGHT] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
 			GamePadInput.leftShoulder = event->down;
-			keyboard[GAMEPAD_LEFT_SHOULDER] = event->down;
+			buttons[GAMEPAD_LEFT_SHOULDER] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
 			GamePadInput.rightShoulder = event->down;
-			keyboard[GAMEPAD_RIGHT_SHOULDER] = event->down;
+			buttons[GAMEPAD_RIGHT_SHOULDER] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_LEFT_STICK:
 			GamePadInput.leftStick = event->down;
-			keyboard[GAMEPAD_LEFT_STICK] = event->down;
+			buttons[GAMEPAD_LEFT_STICK] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
 			GamePadInput.rightStick = event->down;
-			keyboard[GAMEPAD_RIGHT_STICK] = event->down;
+			buttons[GAMEPAD_RIGHT_STICK] = event->down;
 			break;
 
 		default:
@@ -1550,7 +1552,7 @@ bool buttonPressed(int key)
 		return false;
 	}
 
-	return (keyboard[key] == 1);
+	return (buttons[key] == 1);
 }
 
 bool keyPressed(int key)
@@ -1565,7 +1567,7 @@ bool buttonHeld(int key)
 		return false;
 	}
 
-	return (keyboard[key] > 0);
+	return (buttons[key] > 0);
 }
 
 bool keyHeld(int key)
@@ -1733,39 +1735,39 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 		return;
 	}
 
-	if (keyboard[LMN_LSHIFT] == 0)
+	if (buttons[LMN_LSHIFT] == 0)
 	{
 		return;
 	}
 
-	if (keyboard['J'] == 1)
+	if (buttons['J'] == 1)
 	{
 		enableFullscreen(GameWorld);
 	}
 
-	if (keyboard['H'] == 1)
+	if (buttons['H'] == 1)
 	{
 		disableFullscreen(GameWorld);
 	}
 
-	if (keyboard[LMN_BACKSPACE] == 1)
+	if (buttons[LMN_BACKSPACE] == 1)
 	{
 		setVsync(!RenderSettings.vSync);
 	}
 
-	if (keyboard['1'] == 1)
+	if (buttons['1'] == 1)
 	{
 		DebugSettings.DebugTextDisplayMode = (DebugSettings.DebugTextDisplayMode + 1) % DEBUG_TEXT_MODE_COUNT;
 		putConsoleString("\nToggling draw Debug Text: %d", DebugSettings.DebugTextDisplayMode);
 	}
 
-	if (keyboard['2'] == 1)
+	if (buttons['2'] == 1)
 	{
     	DebugSettings.PauseEngine = (DebugSettings.PauseEngine + 1) % 2;
 		putConsoleString("\nToggling Pause: %d", DebugSettings.PauseEngine);
     }
 
-	if (keyboard[LMN_ENTER] == 1 && DebugSettings.PauseEngine == ENGINE_PAUSED)
+	if (buttons[LMN_ENTER] == 1 && DebugSettings.PauseEngine == ENGINE_PAUSED)
 	{
 		GameWorld->MainCamera.CameraMode = FREE_ROAM;
 		DebugSettings.PauseEngine = ENGINE_SINGLE_TICK;
@@ -1776,7 +1778,7 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 	}
 
 
-	if (keyboard['3'] == 1)
+	if (buttons['3'] == 1)
 	{
 		DebugSettings.ConsoleTextEnabled = (DebugSettings.ConsoleTextEnabled + 1) % CONSOLE_TEXT_SETTING_COUNT;
 		putConsoleString("\nToggling Console Text: %d",DebugSettings.ConsoleTextEnabled);
@@ -1785,32 +1787,32 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 
 	if (DebugSettings.DebugTextDisplayMode)
 	{
-		if (keyboard[LMN_COMMA] == 1)
+		if (buttons[LMN_COMMA] == 1)
 		{
 			DebugSettings.DebugTextInfoPreset = modulo(DebugSettings.DebugTextInfoPreset - 1, 15);
 		}
 		
-		if (keyboard[LMN_PERIOD] == 1)
+		if (buttons[LMN_PERIOD] == 1)
 		{
 			DebugSettings.DebugTextInfoPreset = (DebugSettings.DebugTextInfoPreset + 1) % 15;
 		}
 
-		if (keyboard['4'] == 1)
+		if (buttons['4'] == 1)
 		{
 			DebugSettings.CameraInfo = (DebugSettings.CameraInfo + 1) % 4;
 		}
 
-		if (keyboard['5'] == 1)
+		if (buttons['5'] == 1)
 		{
 			DebugSettings.DebugOverlay = (DebugSettings.DebugOverlay + 1) % 2;
 		}
 
-		if (keyboard['6'] == 1)
+		if (buttons['6'] == 1)
 		{
 			DebugSettings.FPSCounter = (DebugSettings.FPSCounter + 1) % 2;
 		}
 
-		if (keyboard['7'] == 1)
+		if (buttons['7'] == 1)
 		{
 			DebugSettings.SoundInfo = (DebugSettings.SoundInfo + 1) % (CHANNEL_COUNT + 1);
 		}
@@ -1818,43 +1820,43 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 
 	if (DebugSettings.PauseEngine == ENGINE_PAUSED || GameWorld->Player.PlayerPtr == NULL)
 	{
-		if (keyboard[LMN_LEFT])
+		if (buttons[LMN_LEFT])
 		{
 			GameWorld->MainCamera.CameraX -= 16.0;
 		}
 
-		if (keyboard[LMN_RIGHT])
+		if (buttons[LMN_RIGHT])
 		{
 			GameWorld->MainCamera.CameraX += 16.0;
 		}
 
-		if (keyboard[LMN_UP])
+		if (buttons[LMN_UP])
 		{
 			GameWorld->MainCamera.CameraY += 12.0;
 		}
 
-		if (keyboard[LMN_DOWN])
+		if (buttons[LMN_DOWN])
 		{
 			GameWorld->MainCamera.CameraY -= 12.0;
 		}
 	}
 
-	if (keyboard[LMN_UPARROW] == 1 && RenderSettings.drawHitboxes == 1)
+	if (buttons[LMN_UPARROW] == 1 && RenderSettings.drawHitboxes == 1)
 	{ 
 		RenderSettings.HitboxOutlineThickness++;
 	}
 
-	if (keyboard[LMN_DOWNARROW] == 1 && RenderSettings.drawHitboxes == 1)
+	if (buttons[LMN_DOWNARROW] == 1 && RenderSettings.drawHitboxes == 1)
 	{
 		RenderSettings.HitboxOutlineThickness--;
 	}
 
-	if (keyboard['R'] == 1)
+	if (buttons['R'] == 1)
 	{
 		setCameraPos(&GameWorld->MainCamera, 0.0, 0.0);
 	}
 
-	if (keyboard['I'] == 1)
+	if (buttons['I'] == 1)
 	{
 		if (GameWorld->PhysicsType == PLATFORMER)
 		{
@@ -1866,7 +1868,7 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 		}
 	}
 
-	if (keyboard['O'] == 1)
+	if (buttons['O'] == 1)
 	{
 		AddObject(GameWorld, UI_ELEMENT, 0, 0, LEVEL_FADE, 0, 0, 0, 0);
 	}
@@ -2307,7 +2309,7 @@ void stringToUpper(char input[])
 {
 	int i = 0;
 
-	while (input[i] > 31 && i < MAX_LEN)
+	while (input[i] > 31 && i < MAX_LEN - 1)
 	{
 		input[i] = toupper(input[i]);
 		
@@ -2321,11 +2323,60 @@ void stringToLower(char input[])
 {
 	int i = 0;
 
-	while (input[i] > 31 && i < MAX_LEN)
+	while (input[i] > 31 && i < MAX_LEN - 1)
 	{
 		input[i] = tolower(input[i]);
 		
 		i++;
+	}
+
+	return;
+}
+
+void LemonStrncpy(char dest[], const char source[], int capacity)	// safer version of strncpy; always guarantees that string is null-terminated
+{
+	if (capacity < 2)
+	{
+		return;
+	}
+
+	int i = 0;
+	while (source[i] != '\0' && i < capacity - 1)
+	{
+		dest[i] = source[i];
+		i++;
+	}
+
+	dest[i] = '\0';
+
+	return;
+}
+
+void removeChar(char string[], char remove, int capacity)
+{
+	if (string == NULL || remove == '\0' || capacity < 2)
+	{
+		return;
+	}
+
+	int i = 0;
+
+	while (i < capacity - 1)
+	{
+		if (string[i] == remove)
+		{
+			int index = i;
+
+			while (index < capacity - 1 && string[index] != '\0')
+			{
+				string[index] = string[index + 1];
+				index++;
+			}
+		}
+		else
+		{
+			i++;
+		}
 	}
 
 	return;
@@ -2477,12 +2528,12 @@ int stackPop(StackArray *List)
 {
 	if (List == NULL)
 	{
-		return MISSING_DATA;
+		return 0;
 	}
 
 	List->storedElements--;
 
-	return LEMON_SUCCESS;
+	return List->list[List->storedElements];
 }
 
 int stackRemove(int input, StackArray *List)

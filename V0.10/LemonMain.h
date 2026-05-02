@@ -170,6 +170,10 @@ void stringToUpper(char input[]);
 
 void stringToLower(char input[]);
 
+void LemonStrncpy(char dest[], const char source[], int capacity);
+
+void removeChar(char string[], char remove, int capacity);
+
 
 int PickRandomIntBetween(int low, int high);
 
