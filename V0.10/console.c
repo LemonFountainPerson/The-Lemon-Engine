@@ -478,7 +478,7 @@ int ConsoleCommand_UsedMemory(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	else if (strcmp(arg, "objects") == 0)
 	{
-		putConsoleString("object data size: %d", sizeof(Object));
+		putConsoleString("Object data size: %d", sizeof(Object));
 		total = (double)sizeof(ObjectList->objectComponents.Objects) / 1000.0;
 	}
 	else if (strcmp(arg, "displays") == 0)
@@ -491,6 +491,7 @@ int ConsoleCommand_UsedMemory(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	else if (strcmp(arg, "sceneactions") == 0)
 	{
+		putConsoleString("SceneAction data size: %d  SceneAction count: %d", sizeof(SceneAction), GameWorld->SceneActionCount);
 		total = (double)(sizeof(SceneAction) * GameWorld->SceneActionCount) / 1000.0;
 	}
 	else if (strcmp(arg, "animations") == 0)

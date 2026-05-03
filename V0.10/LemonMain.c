@@ -49,7 +49,6 @@ int RunLemonEngine(void)
 
 	StartGame(&GameWorld);
 
-
 	// The loop code is run directly here without MainLoop() for performance when executing as a standalone program
 	Uint64 gameTick = 0;
 	Uint64 renderRefresh = 0;
