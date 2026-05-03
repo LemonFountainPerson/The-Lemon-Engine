@@ -6,41 +6,31 @@ PlaceWall: 1000, 64, 2, 10
 
 SetChannelVolume: 1 1.0
 
-
-SayText: "I just changed this file!! And to test its linebreaking feature! mmmmmmm wwwwwwwww mmmmmmm wwwwwwwwww mmmmmm"    NO_PORTRAIT     2
-
-
-Repeat: 20
-{
-	Repeat: 10
-	{
-		RotateActor: "MainPlayer" 15.0 
-		MoveActor: "MainPlayer" 3.0 0.0
-	}
-
-	PlaySound: "Jump" "Player" 1 1.0
-	Repeat: 8
-	{
-		SmoothMoveCameraTo: "MainPlayer" 6
-	}
-}
-
 SetCameraMode: 0
 
 
-EnablePlayer
-Wait: 5
-DisablePlayer
 createActor: "Mysterious block" 1 2000.0 1400.0
 animateActor: "Mysterious block" Hurt 2
 
-SayTextOption: "A Test cutscene from a FILE? HUH!?"	NO_PORTRAIT  2    3
-		"Option 1"	0
-		"Option Two"	3
-		"This is working." 0
+>SayTextOption: "A Test cutscene from a FILE? HUH!?"	NO_PORTRAIT  2    3
+>		"Option 1"	0
+>		"Option Two"	3
+>		"This is working." 0
 
-Wait: 3
-ReleaseActor: "Mysterious block"
-ChangeVariableBy: 0 1
+
+IFVARIABLE: "flag1" = 0 
+THEN	
+{ 
+	PlaySound: "Player/Jump" 1 1.0
+	SayText: "HELLO!!!" NO_PORTRAIT 1 
+}
+ELSE 
+{
+	SayText: "Fuck you Baltimore!!" NO_PORTRAIT 1
+	SayText: "text 2" NO_PORTRAIT 1
+
+}
+ 
+changeGameFlag: "flag1" 1
 
 ENDFILE

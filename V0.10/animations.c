@@ -198,14 +198,7 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 			{
 				// set doesn't exist, so load it
 				set = loadSpriteSetFromFile(getObjectIDName(copyID), setList, copyID);
-				if (set == NULL)
-				{
-					char defaultName[32] = {0};
-					snprintf(defaultName, 32, "Object %d", copyID);
-
-					set = loadSpriteSetFromFile(defaultName, setList, copyID);
-				}
-
+			
 				if (set == NULL)
 				{
 					continue;

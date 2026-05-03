@@ -1,5 +1,4 @@
-V0.10
---SAVE_DATA--
+V0.10--SAVE_DATA--
 Resolution: 1280 720
 Fullscreen: false
 Vsync: true
@@ -9,4 +8,8 @@ DrawHUD: true
 DrawParticles: true
 DrawCamViews: true
 MaxFrameRate: 20000
+DrawHitboxes: false
+HitboxThickness: 4
+DefaultTextSize: 44.000000
+DefaultFont: "PTSansBold"
 ENDFILE

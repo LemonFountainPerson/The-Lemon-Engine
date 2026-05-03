@@ -518,19 +518,8 @@ SpriteSet* loadSpriteSet(ObjectController *ObjectList, int ObjectID)
 		return newSet;
 	}
 
-	// Fill sprite set with sprites/animations
-
-	
+	// Fill sprite set with sprites/animations	
 	newSet = loadSpriteSetFromFile(getObjectIDName(ObjectID), &ObjectList->spriteSets, ObjectID);
-
-	// Searches for a file named "Object [ObjectID]" as default if name does not exist
-	if (newSet == NULL)
-	{
-		char defaultName[32] = {0};
-		snprintf(defaultName, 32, "Object %d", ObjectID);
-
-		newSet = loadSpriteSetFromFile(defaultName, &ObjectList->spriteSets, ObjectID);
-	}
 
 	// No such file exists, initialise with empty spriteset
 	if (newSet == NULL)

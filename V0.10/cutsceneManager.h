@@ -4,11 +4,16 @@ int initialiseCutsceneFromFile(const char sceneName[], World *GameWorld);
 
 int LoadCutsceneFromFile(const char sceneName[], World *GameWorld);
 
-SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_LEN], World *GameWorld, FILE *fPtr);
+SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *fPtr);
+
+int loadBracketedSceneActions(FILE *fPtr, World *GameWorld);
+
 
 int UpdateCutscene(World *GameWorld);
 
-SceneAction* updateSceneActions(SceneAction *queue, World *GameWorld);
+int updateSceneActions(SceneAction *queue, World *GameWorld);
+
+SceneAction* skipSceneActions(int skipCount, SceneAction *startPoint, World *GameWorld);
 
 FuncResult RunSceneAction(SceneAction *inputAction, World *GameWorld);
 
@@ -36,23 +41,19 @@ SceneAction* setVariableTo(int variableIndex, int value, World *GameWorld);
 SceneAction* changeVariableBy(int variableIndex, int value, World *GameWorld);
 
 // branching based on variable
-SceneAction* mapSymbolToIfAction(int variableIndex, int value, CutsceneID ifTrue, CutsceneID ifFalse, const char operator[], World *GameWorld);
+SceneAction* mapSymbolToIfAction(int variableIndex, int value, int instructionsIfTrue, const char operator[], World *GameWorld);
 
-SceneAction* ifEquals(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
+SceneAction* ifEquals(int variableIndex, int value, int instructionsIfTrue, World *GameWorld);
 
-SceneAction* ifNotEquals(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
+SceneAction* ifNotEquals(int variableIndex, int value, int instructionsIfTrue, World *GameWorld);
 
-SceneAction* ifLessThan(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
+SceneAction* ifLessThan(int variableIndex, int value, int instructionsIfTrue, World *GameWorld);
 
-SceneAction* ifLessThanEquals(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
+SceneAction* ifLessThanEquals(int variableIndex, int value, int instructionsIfTrue, World *GameWorld);
 
-SceneAction* ifGreaterThan(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
+SceneAction* ifGreaterThan(int variableIndex, int value, int instructionsIfTrue, World *GameWorld);
 
-SceneAction* ifGreaterThanEquals(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld);
-
-SceneAction* ifFloatEquals(float* variable, float value, CutsceneID cutsceneToTrigger, World *GameWorld);
-
-SceneAction* ifElse(SceneAction *inputIfStatement, CutsceneID cutsceneIfElse);
+SceneAction* ifGreaterThanEquals(int variableIndex, int value, int instructionsIfTrue, World *GameWorld);
 
 
 SceneAction* SceneAction_SayText(TextBox *text, World *GameWorld);

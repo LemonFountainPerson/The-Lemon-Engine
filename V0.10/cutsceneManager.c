@@ -53,7 +53,7 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 	case TEST_SCENE_2:
 		GameFlags[0].value++;
 
-		ifElse(ifGreaterThan(0, 1, TEST_SCENE_2_AGAIN, GameWorld), NO_CUTSCENE);	// equivalent to 'ifGreaterThan(0, 1, TEST_SCENE_2_AGAIN, GameWorld)'
+//	ifElse(ifGreaterThan(0, 1, TEST_SCENE_2_AGAIN, GameWorld), NO_CUTSCENE);	// equivalent to 'ifGreaterThan(0, 1, TEST_SCENE_2_AGAIN, GameWorld)'
 		SayText("A small tomato is really just a cherry.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
 		break;
 
@@ -127,13 +127,12 @@ int LoadCutsceneFromFile(const char sceneName[], World *GameWorld)
 	}
 
 	char readString[MAX_LEN] = {0};
-	char textBoxString[MAX_TEXT_LENGTH] = {0};
 
 	while (!endOfFile(fPtr))
 	{
 		getNextArg(fPtr, readString, MAX_LEN);
 		
-		loadSceneAction(readString, textBoxString, GameWorld, fPtr);
+		loadSceneAction(readString, GameWorld, fPtr);
 	}
 
 	closeFile(fPtr);
@@ -163,7 +162,7 @@ int UpdateCutscene(World *GameWorld)
 	}
 
 	// Play cutscene
-	GameWorld->nextSceneAction = updateSceneActions(GameWorld->nextSceneAction, GameWorld);
+	updateSceneActions(GameWorld->nextSceneAction, GameWorld);
 
 	if (GameWorld->nextSceneAction == NULL || GameWorld->CurrentCutscene == END_CUTSCENE)
 	{
@@ -175,17 +174,17 @@ int UpdateCutscene(World *GameWorld)
 }
 
 
-SceneAction* updateSceneActions(SceneAction *queue, World *GameWorld)
+int updateSceneActions(SceneAction *queue, World *GameWorld)
 {
 	if (queue == NULL)
 	{
-		return NULL;
+		return MISSING_DATA;
 	}
 
 	int i = EngineSettings.MaxSceneActions;
 	FuncResult response = LEMON_SUCCESS;
 
-	while (queue != NULL && i >= 0)
+	while (queue != NULL && i > 0)
 	{
 		if (queue->ActionID == SCENE_LOOP_POINT)
 		{
@@ -201,7 +200,8 @@ SceneAction* updateSceneActions(SceneAction *queue, World *GameWorld)
 					queue = queue->prevSceneAction;
 				}
 
-				return queue;
+				GameWorld->nextSceneAction = queue;
+				return LEMON_SUCCESS;
 			}	
 			else
 			{
@@ -213,23 +213,90 @@ SceneAction* updateSceneActions(SceneAction *queue, World *GameWorld)
 				continue;
 			}
 		}
+		else if (queue->ActionID == SCENE_SKIP_INSTRUCTIONS)
+		{
+			queue = skipSceneActions(queue->ActionData.instructionsToSkip, queue, GameWorld);
+
+			continue;
+		}
+		else if (queue->ActionID == SCENE_IF_STATEMENT)
+		{
+			bool truth = false;
+
+			SceneBranchData *data = &queue->ActionData.branchData;
+			if (data->variableIndex >= 0 && data->variableIndex < GAME_FLAG_COUNT)
+			{
+				if (strcmp(data->expression, "=") == 0 || strcmp(data->expression, "==") == 0)
+				{
+					truth = (GameFlags[data->variableIndex].value == data->comparisonValue);
+				}
+				else if (strcmp(data->expression, ">") == 0)
+				{
+					truth = (GameFlags[data->variableIndex].value > data->comparisonValue);
+				}
+				else if (strcmp(data->expression, ">=") == 0)
+				{
+					truth = (GameFlags[data->variableIndex].value >= data->comparisonValue);
+				}
+				else if (strcmp(data->expression, "<") == 0)
+				{
+					truth = (GameFlags[data->variableIndex].value < data->comparisonValue);
+				}
+				else if (strcmp(data->expression, "<=") == 0)
+				{
+					truth = (GameFlags[data->variableIndex].value <= data->comparisonValue);
+				}
+				else if (strcmp(data->expression, "!=") == 0)
+				{
+					truth = (GameFlags[data->variableIndex].value != data->comparisonValue);
+				}
+			}
+
+			if (!truth)
+			{
+				queue = skipSceneActions(data->branchDistanceIfFalse, queue, GameWorld);
+
+				continue;
+			}
+		}
 
 		response = RunSceneAction(queue, GameWorld);
 
 		if (queue->parallelAction == false && response == LEMON_SUCCESS)
 		{
-			return queue;
+			i = 0;
 		}
 		else
 		{
 			queue = queue->nextSceneAction;
+			i--;
 		}
-
-		i--;
 	}
 
 
-	return NULL;
+	GameWorld->nextSceneAction = queue;
+
+	return LEMON_SUCCESS;
+}
+
+SceneAction* skipSceneActions(int skipCount, SceneAction *startPoint, World *GameWorld)
+{
+	int skip = 0;
+	SceneAction *current = startPoint;
+
+	while (skip < skipCount && current != NULL)
+	{
+		if (current->ActionID == SCENE_SAY_TEXT)
+		{
+			deleteTextBox(current->ActionData.sceneText, GameWorld);
+			current->ActionData.sceneText = NULL;
+		}
+
+		current = current->nextSceneAction;
+		skip++;
+	}
+
+	return current;
 }
 
 
@@ -300,91 +367,6 @@ FuncResult RunSceneAction(SceneAction *inputAction, World *GameWorld)
 		{
 			GameFlags[currentData.variableArgs[0]].value = currentData.variableArgs[1];
 		} break;
-
-	case SCENE_IF_EQUALS:
-		{
-			SceneBranchData branchData = currentData.branchData;
-
-			if (GameFlags[branchData.variableIndex].value == branchData.comparisonValue)
-			{
-				if (branchData.ifTrueString[0] != 0)
-				{
-					playCutsceneFromFile(branchData.ifTrueString, GameWorld);
-				}	
-				else
-				{
-					playCutscene(branchData.ifTrue, GameWorld);
-				}
-			}
-			else if (branchData.elseBranchPresent)
-			{
-				if (branchData.ifFalseString[0] != 0)
-				{
-					playCutsceneFromFile(branchData.ifFalseString, GameWorld);
-				}	
-				else
-				{
-					playCutscene(branchData.ifFalse, GameWorld);
-				}
-			}
-		} break;
-
-	case SCENE_IF_LESS_THAN:
-		{
-			SceneBranchData branchData = currentData.branchData;
-
-			if (GameFlags[branchData.variableIndex].value < branchData.comparisonValue)
-			{
-				if (branchData.ifTrueString[0] != 0)
-				{
-					playCutsceneFromFile(branchData.ifTrueString, GameWorld);
-				}	
-				else
-				{
-					playCutscene(branchData.ifTrue, GameWorld);
-				}
-			}
-			else if (branchData.elseBranchPresent)
-			{
-				if (branchData.ifFalseString[0] != 0)
-				{
-					playCutsceneFromFile(branchData.ifFalseString, GameWorld);
-				}	
-				else
-				{
-					playCutscene(branchData.ifFalse, GameWorld);
-				}
-			}
-		} break;
-
-	case SCENE_IF_GREATER_THAN:
-		{
-			SceneBranchData branchData = currentData.branchData;
-	
-			if (GameFlags[branchData.variableIndex].value > branchData.comparisonValue)
-			{
-				if (branchData.ifTrueString[0] != 0)
-				{
-					playCutsceneFromFile(branchData.ifTrueString, GameWorld);
-				}	
-				else
-				{
-					playCutscene(branchData.ifTrue, GameWorld);
-				}
-			}
-			else if (branchData.elseBranchPresent)
-			{
-				if (branchData.ifFalseString[0] != 0)
-				{
-					playCutsceneFromFile(branchData.ifFalseString, GameWorld);
-				}	
-				else
-				{
-					playCutscene(branchData.ifFalse, GameWorld);
-				}
-			}
-		} break;
-
 
 	case SCENE_ANIMATE_ACTOR:
 		{
@@ -631,19 +613,21 @@ FuncResult RunSceneAction(SceneAction *inputAction, World *GameWorld)
 }
 
 
-SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_LEN], World *GameWorld, FILE *fPtr)
+SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *fPtr)
 {
 	removeChar(inputString, '_', MAX_LEN);
 	stringToUpper(inputString);
 
 	if (strcmp(inputString, "SAYTEXT:") == 0)
 	{
+		char textBoxString[MAX_TEXT_LENGTH] = {0};
 		getNextArg(fPtr, textBoxString, MAX_TEXT_LENGTH);
 		getNextArg(fPtr, inputString, MAX_LEN);
 		SayText(textBoxString, inputString, getNextArgInt(fPtr), GameWorld);
 	}
 	else if (strcmp(inputString, "SAYTEXTOPTION:") == 0)
 	{
+		char textBoxString[MAX_TEXT_LENGTH] = {0};
 		getNextArg(fPtr, textBoxString, MAX_TEXT_LENGTH);
 		getNextArg(fPtr, inputString, MAX_LEN);
 		int Preset = getNextArgInt(fPtr);
@@ -709,15 +693,19 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 	{
 		END_SCENE_HERE;
 	}
-	else if (strcmp(inputString, "CHANGEGAMEFLAG:") == 0 || strcmp(inputString, "INCREMENTGAMEFLAG:") == 0 || strcmp(inputString, "DECREMENTGAMEFLAG:") == 0)
+	else if (strcmp(inputString, "CHANGEGAMEFLAG:") == 0 || strcmp(inputString, "INCREMENTGAMEFLAG:") == 0 || strcmp(inputString, "INCGAMEFLAG:") == 0)
 	{
 		int index = getNextArgGameFlag(fPtr);
 		
 		int value = getNextArgInt(fPtr);
-		if (strcmp(inputString, "DECREMENTGAMEFLAG:") == 0)
-		{
-			value = -value;
-		}
+
+		return changeVariableBy(index, value, GameWorld);
+	}
+	else if (strcmp(inputString, "DECREMENTGAMEFLAG:") == 0 || strcmp(inputString, "DECGAMEFLAG:") == 0)
+	{
+		int index = getNextArgGameFlag(fPtr);
+		
+		int value = -(getNextArgInt(fPtr));
 
 		return changeVariableBy(index, value, GameWorld);
 	}
@@ -732,82 +720,76 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 	{
 		int index = getNextArgGameFlag(fPtr);
 
-		getNextArg(fPtr, textBoxString, 3);
+		char expression[3] = {0};
+		getNextArg(fPtr, expression, 3);
 		int value = getNextArgInt(fPtr);
 
 		getNextArg(fPtr, inputString, MAX_LEN);
 		long filePos = ftell(fPtr);
 
-		int ifTrue = NO_CUTSCENE;
-		int ifFalse = NO_CUTSCENE;
-		char ifTrueString[MAX_LEN] = {0};
-		char ifFalseString[MAX_LEN] = {0};
+		SceneAction *ifStatement = createSceneAction(SCENE_IF_STATEMENT, GameWorld);
 
-		if (strcmp(inputString, "THEN:") == 0)
+		if (ifStatement == NULL)
 		{
-			if (hasNextArgInt(fPtr))
-			{
-				ifTrue = getNextArgInt(fPtr);
-			}
-			else
-			{
-				getNextArg(fPtr, ifTrueString, CUTSCENE_FILE_NAME_MAX);
-			}
+			return NULL;
+		}
+
+		SceneBranchData *data = &ifStatement->ActionData.branchData;
+		data->variableIndex = index;
+		data->comparisonValue = value;
+		memcpy(data->expression, expression, 3);
+		data->elseBranchPresent = false;
+		data->branchDistanceIfFalse = 0;
+
+		if (strcmp(inputString, "THEN") == 0)
+		{
+			data->branchDistanceIfFalse = loadBracketedSceneActions(fPtr, GameWorld);
+
+			filePos = ftell(fPtr);
 
 			getNextArg(fPtr, inputString, MAX_LEN);
 		}
-
-		if (strcmp(inputString, "ELSE:") == 0)
+		else
 		{
-			if (hasNextArgInt(fPtr))
+			putConsoleError("If statement missing 'Then' clause!");
+			return NULL;
+		}
+
+		if (strcmp(inputString, "ELSE") == 0)
+		{
+			SceneAction *elseStatement = createSceneAction(SCENE_SKIP_INSTRUCTIONS, GameWorld);
+
+			if (elseStatement == NULL)
 			{
-				ifFalse = getNextArgInt(fPtr);
+				return ifStatement;
 			}
-			else
-			{
-				getNextArg(fPtr, ifFalseString, CUTSCENE_FILE_NAME_MAX);
-			}
+
+			elseStatement->ActionData.instructionsToSkip = loadBracketedSceneActions(fPtr, GameWorld);
+			data->elseBranchPresent = true;
+			data->branchDistanceIfFalse++;	// to account for 'skip instructions' scene action
 		}
 		else
 		{
 			fseek(fPtr, filePos, SEEK_SET);
 		}
 
-		SceneAction *action = mapSymbolToIfAction(index, value, ifTrue, ifFalse, textBoxString, GameWorld);
-
-		if (action != NULL)
-		{
-			// does not allow the scene currently playing to start itself, or a file with the name of "0" to play, so there is distinction between files and NO_CUTSCENE
- 			if (ifTrueString[0] != 0 && strcmp(ifTrueString, "0"))
-			{
-				strcpy(action->ActionData.branchData.ifTrueString, ifTrueString);
-			}
-		
-			if (ifFalseString[0] != 0 && strcmp(ifFalseString, "0"))
-			{
-				strcpy(action->ActionData.branchData.ifFalseString, ifFalseString);
-			}
-		}
-
-		if (ifTrueString[0] == 0 && ifFalseString[0] == 0 && ifTrue == 0 && ifFalse == 0)
-		{
-			deleteSceneAction(action, GameWorld);
-			return NULL;
-		}
-
-		return action;
+		return ifStatement;
 	}
 	else if (strcmp(inputString, "ANIMATEACTOR:") == 0)
 	{
+		char animName[MAX_LEN] = {0};
 		getNextArg(fPtr, inputString, MAX_LEN);
-		getNextArg(fPtr, textBoxString, MAX_LEN);
-		return AnimateActor(inputString, textBoxString, getNextArgInt(fPtr), GameWorld);
+		getNextArg(fPtr, animName, MAX_LEN);
+
+		return AnimateActor(inputString, animName, getNextArgInt(fPtr), GameWorld);
 	}
 	else if (strcmp(inputString, "SETACTORSPRITE:") == 0)
 	{
+		char spriteName[MAX_LEN] = {0};
 		getNextArg(fPtr, inputString, MAX_LEN);
-		getNextArg(fPtr, textBoxString, MAX_LEN);
-		return SwitchActorSprite(inputString, textBoxString, GameWorld);
+		getNextArg(fPtr, spriteName, MAX_LEN);
+
+		return SwitchActorSprite(inputString, spriteName, GameWorld);
 	}
 	else if (strcmp(inputString, "SETACTORPOS:") == 0)
 	{
@@ -980,13 +962,13 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 	{
 		getNextArg(fPtr, inputString, MAX_LEN);
 
-		WaitUntil(loadSceneAction(inputString, textBoxString, GameWorld, fPtr));
+		WaitUntil(loadSceneAction(inputString, GameWorld, fPtr));
 	}
 	else if (!strcmp(inputString, "DONTWAIT:"))
 	{
 		getNextArg(fPtr, inputString, MAX_LEN);
 
-		SceneAction *action = loadSceneAction(inputString, textBoxString, GameWorld, fPtr);
+		SceneAction *action = loadSceneAction(inputString, GameWorld, fPtr);
 		if (action != NULL)
 		{
 			action->parallelAction = true;
@@ -996,48 +978,56 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 	{
 		int repeatTimes = getNextArgInt(fPtr);
 
-		getNextArg(fPtr, inputString, MAX_LEN);
-
-		if (inputString[0] != '{')
-		{
-			return NULL;
-		}
-
-		SceneAction *firstInstruction = GameWorld->SceneActionQueue;
-		while (firstInstruction != NULL && firstInstruction->nextSceneAction != NULL)
-		{
-			firstInstruction = firstInstruction->nextSceneAction;
-		}
-
-		while (!endOfFile(fPtr))
-		{
-			getNextArg(fPtr, inputString, MAX_LEN);
-
-			if (inputString[0] == '}')
-			{
-				break;
-			}
-
-			loadSceneAction(inputString, textBoxString, GameWorld, fPtr);
-		}
-
-		int count = -1;
-		if (firstInstruction == NULL)
-		{
-			firstInstruction = GameWorld->SceneActionQueue;
-		}
-
-		while (firstInstruction != NULL)
-		{
-			firstInstruction = firstInstruction->nextSceneAction;
-			count++;
-		}
+		int count = loadBracketedSceneActions(fPtr, GameWorld);
 
 		return Repeat(repeatTimes, count, GameWorld);
 	}
 
 
 	return NULL;
+}
+
+int loadBracketedSceneActions(FILE *fPtr, World *GameWorld)
+{
+	char buffer[MAX_LEN] = {0};
+	getNextArg(fPtr, buffer, MAX_LEN);
+
+	if (buffer[0] != '{')
+	{
+		return 0;
+	}
+
+	SceneAction *firstInstruction = GameWorld->SceneActionQueue;
+	while (firstInstruction != NULL && firstInstruction->nextSceneAction != NULL)
+	{
+		firstInstruction = firstInstruction->nextSceneAction;
+	}
+
+	while (!endOfFile(fPtr))
+	{
+		getNextArg(fPtr, buffer, MAX_LEN);
+
+		if (buffer[0] == '}')
+		{
+			break;
+		}
+
+		loadSceneAction(buffer, GameWorld, fPtr);
+	}
+
+	if (firstInstruction == NULL)
+	{
+		firstInstruction = GameWorld->SceneActionQueue;
+	}
+
+	int count = 0;
+	while (firstInstruction != NULL)
+	{
+		firstInstruction = firstInstruction->nextSceneAction;
+		count++;
+	}
+
+	return count;
 }
 
 const char* getSceneActionName(SceneActionID input)
@@ -1049,6 +1039,9 @@ const char* getSceneActionName(SceneActionID input)
 
 	case SCENE_LOOP_POINT:
 		return "Loop point";
+
+	case SCENE_SKIP_INSTRUCTIONS:
+		return "Skip instructions";
 
 	case SCENE_WAIT:
 		return "Wait";
@@ -1068,9 +1061,7 @@ const char* getSceneActionName(SceneActionID input)
 	case SCENE_RELEASE_ACTOR:
 		return "Release Actor";
 
-	case SCENE_IF_EQUALS:
-	case SCENE_IF_LESS_THAN:
-	case SCENE_IF_GREATER_THAN:
+	case SCENE_IF_STATEMENT:
 		return "Conditional Branch (If statement)";
 
 	case SCENE_ROTATE_ACTOR:
@@ -1357,210 +1348,148 @@ SceneAction* changeVariableBy(int variableIndex, int value, World *GameWorld)
 }
 
 
-SceneAction* mapSymbolToIfAction(int variableIndex, int value, CutsceneID ifTrue, CutsceneID ifFalse, const char operator[], World *GameWorld)
-{
-	if (!strcmp(operator, "==") || !strcmp(operator, "="))
-	{
-		return ifElse(ifEquals(variableIndex, value, ifTrue, GameWorld), ifFalse);
-	}
-	else if (!strcmp(operator, "!="))
-	{
-		return ifElse(ifNotEquals(variableIndex, value, ifTrue, GameWorld), ifFalse);
-	}
-	else if (!strcmp(operator, ">"))
-	{
-		return ifElse(ifGreaterThan(variableIndex, value, ifTrue, GameWorld), ifFalse);
-	}
-	else if (!strcmp(operator, ">="))
-	{
-		return ifElse(ifGreaterThanEquals(variableIndex, value, ifTrue, GameWorld), ifFalse);
-	}
-	else if (!strcmp(operator, "<"))
-	{
-		return ifElse(ifLessThan(variableIndex, value, ifTrue, GameWorld), ifFalse);
-	}
-	else if (!strcmp(operator, "<="))
-	{
-		return ifElse(ifLessThanEquals(variableIndex, value, ifTrue, GameWorld), ifFalse);
-	}
+// SceneAction* ifEquals(int variableIndex, int value, int instructionsIfTrue, World *GameWorld)
+// {
+// 	if (!inRange(variableIndex, 0, GAME_FLAG_COUNT - 1) || GameWorld == NULL)
+// 	{
+// 		return NULL;
+// 	}
 
-	return NULL;
-}
+// 	SceneAction *newAction = createSceneAction(SCENE_IF_EQUALS, GameWorld);
 
-SceneAction* ifEquals(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld)
-{
-	if (!inRange(variableIndex, 0, GAME_FLAG_COUNT - 1) || GameWorld == NULL ||  cutsceneToTrigger >= UNDEFINED_CUTSCENE)
-	{
-		return NULL;
-	}
+// 	if (newAction == NULL)
+// 	{
+// 		return NULL;
+// 	}
 
-	SceneAction *newAction = createSceneAction(SCENE_IF_EQUALS, GameWorld);
+// 	newAction->parallelAction = false;	// in case it doesnt immediately delete, it wont execute potentially incorrect actions after itself
+// 	newAction->ActionData.branchData.elseBranchPresent = false;
+// 	newAction->ActionData.branchData.branchDistanceIfFalse = instructionsIfTrue;
+// 	newAction->ActionData.branchData.variableIndex = variableIndex;
+// 	newAction->ActionData.branchData.comparisonValue = value;
 
-	if (newAction == NULL)
-	{
-		return NULL;
-	}
+// 	return newAction;
+// }
 
-	newAction->parallelAction = false;	// in case it doesnt immediately delete, it wont execute potentially incorrect actions after itself
-	newAction->ActionData.branchData.elseBranchPresent = false;
-	newAction->ActionData.branchData.ifTrue = cutsceneToTrigger;
-	newAction->ActionData.branchData.ifFalse = NO_CUTSCENE;
-	newAction->ActionData.branchData.variableIndex = variableIndex;
-	newAction->ActionData.branchData.comparisonValue = value;
+// SceneAction* ifNotEquals(int variableIndex, int value, int instructionsIfTrue, World *GameWorld)
+// {
+// 	if (!inRange(variableIndex, 0, GAME_FLAG_COUNT - 1) || GameWorld == NULL)
+// 	{
+// 		return NULL;
+// 	}
 
-	return newAction;
-}
+// 	SceneAction *newAction = createSceneAction(SCENE_IF_EQUALS, GameWorld);
 
-SceneAction* ifNotEquals(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld)
-{
-	if (!inRange(variableIndex, 0, GAME_FLAG_COUNT - 1) || GameWorld == NULL || cutsceneToTrigger >= UNDEFINED_CUTSCENE)
-	{
-		return NULL;
-	}
+// 	if (newAction == NULL)
+// 	{
+// 		return NULL;
+// 	}
 
-	SceneAction *newAction = createSceneAction(SCENE_IF_EQUALS, GameWorld);
+// 	newAction->parallelAction = false;	
+// 	newAction->ActionData.branchData.elseBranchPresent = false;
+// 	newAction->ActionData.branchData.branchDistanceIfFalse = instructionsIfTrue;
+// 	newAction->ActionData.branchData.variableIndex = variableIndex;
+// 	newAction->ActionData.branchData.comparisonValue = value;
 
-	if (newAction == NULL)
-	{
-		return NULL;
-	}
+// 	return newAction;
+// }
 
-	newAction->parallelAction = false;	
-	newAction->ActionData.branchData.elseBranchPresent = true;
-	newAction->ActionData.branchData.ifTrue = NO_CUTSCENE;
-	newAction->ActionData.branchData.ifFalse = cutsceneToTrigger;
-	newAction->ActionData.branchData.variableIndex = variableIndex;
-	newAction->ActionData.branchData.comparisonValue = value;
+// SceneAction* ifLessThan(int variableIndex, int value, int instructionsIfTrue, World *GameWorld)
+// {
+// 	if (!inRange(variableIndex, 0, GAME_FLAG_COUNT - 1) || GameWorld == NULL || cutsceneToTrigger >= UNDEFINED_CUTSCENE)
+// 	{
+// 		return NULL;
+// 	}
 
-	return newAction;
-}
+// 	SceneAction *newAction = createSceneAction(SCENE_IF_LESS_THAN, GameWorld);
 
-SceneAction* ifLessThan(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld)
-{
-	if (!inRange(variableIndex, 0, GAME_FLAG_COUNT - 1) || GameWorld == NULL || cutsceneToTrigger >= UNDEFINED_CUTSCENE)
-	{
-		return NULL;
-	}
+// 	if (newAction == NULL)
+// 	{
+// 		return NULL;
+// 	}
 
-	SceneAction *newAction = createSceneAction(SCENE_IF_LESS_THAN, GameWorld);
+// 	newAction->parallelAction = false;
+// 	newAction->ActionData.branchData.elseBranchPresent = false;
+// 	newAction->ActionData.branchData.ifTrue = cutsceneToTrigger;
+// 	newAction->ActionData.branchData.ifFalse = NO_CUTSCENE;
+// 	newAction->ActionData.branchData.variableIndex = variableIndex;
+// 	newAction->ActionData.branchData.comparisonValue = value;
 
-	if (newAction == NULL)
-	{
-		return NULL;
-	}
+// 	return newAction;
+// }
 
-	newAction->parallelAction = false;
-	newAction->ActionData.branchData.elseBranchPresent = false;
-	newAction->ActionData.branchData.ifTrue = cutsceneToTrigger;
-	newAction->ActionData.branchData.ifFalse = NO_CUTSCENE;
-	newAction->ActionData.branchData.variableIndex = variableIndex;
-	newAction->ActionData.branchData.comparisonValue = value;
+// SceneAction* ifLessThanEquals(int variableIndex, int value, int instructionsIfTrue, World *GameWorld)
+// {
+// 	if (!inRange(variableIndex, 0, GAME_FLAG_COUNT - 1) || GameWorld == NULL ||  cutsceneToTrigger >= UNDEFINED_CUTSCENE)
+// 	{
+// 		return NULL;
+// 	}
 
-	return newAction;
-}
+// 	SceneAction *newAction = createSceneAction(SCENE_IF_GREATER_THAN, GameWorld);
 
-SceneAction* ifLessThanEquals(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld)
-{
-	if (!inRange(variableIndex, 0, GAME_FLAG_COUNT - 1) || GameWorld == NULL ||  cutsceneToTrigger >= UNDEFINED_CUTSCENE)
-	{
-		return NULL;
-	}
+// 	if (newAction == NULL)
+// 	{
+// 		return NULL;
+// 	}
 
-	SceneAction *newAction = createSceneAction(SCENE_IF_GREATER_THAN, GameWorld);
+// 	newAction->parallelAction = false;
+// 	newAction->ActionData.branchData.elseBranchPresent = true;
+// 	newAction->ActionData.branchData.ifTrue = NO_CUTSCENE;
+// 	newAction->ActionData.branchData.ifFalse = cutsceneToTrigger;
+// 	newAction->ActionData.branchData.variableIndex = variableIndex;
+// 	newAction->ActionData.branchData.comparisonValue = value;
 
-	if (newAction == NULL)
-	{
-		return NULL;
-	}
+// 	return newAction;
+// }
 
-	newAction->parallelAction = false;
-	newAction->ActionData.branchData.elseBranchPresent = true;
-	newAction->ActionData.branchData.ifTrue = NO_CUTSCENE;
-	newAction->ActionData.branchData.ifFalse = cutsceneToTrigger;
-	newAction->ActionData.branchData.variableIndex = variableIndex;
-	newAction->ActionData.branchData.comparisonValue = value;
+// SceneAction* ifGreaterThan(int variableIndex, int value, int instructionsIfTrue, World *GameWorld)
+// {
+// 	if (!inRange(variableIndex, 0, GAME_FLAG_COUNT - 1) || GameWorld == NULL || cutsceneToTrigger >= UNDEFINED_CUTSCENE)
+// 	{
+// 		return NULL;
+// 	}
 
-	return newAction;
-}
+// 	SceneAction *newAction = createSceneAction(SCENE_IF_GREATER_THAN, GameWorld);
 
-SceneAction* ifGreaterThan(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld)
-{
-	if (!inRange(variableIndex, 0, GAME_FLAG_COUNT - 1) || GameWorld == NULL || cutsceneToTrigger >= UNDEFINED_CUTSCENE)
-	{
-		return NULL;
-	}
+// 	if (newAction == NULL)
+// 	{
+// 		return NULL;
+// 	}
 
-	SceneAction *newAction = createSceneAction(SCENE_IF_GREATER_THAN, GameWorld);
-
-	if (newAction == NULL)
-	{
-		return NULL;
-	}
-
-	newAction->parallelAction = false;	
-	newAction->ActionData.branchData.elseBranchPresent = false;
-	newAction->ActionData.branchData.ifTrue = cutsceneToTrigger;
-	newAction->ActionData.branchData.ifFalse = NO_CUTSCENE;
-	newAction->ActionData.branchData.variableIndex = variableIndex;
-	newAction->ActionData.branchData.comparisonValue = value;
+// 	newAction->parallelAction = false;	
+// 	newAction->ActionData.branchData.elseBranchPresent = false;
+// 	newAction->ActionData.branchData.ifTrue = cutsceneToTrigger;
+// 	newAction->ActionData.branchData.ifFalse = NO_CUTSCENE;
+// 	newAction->ActionData.branchData.variableIndex = variableIndex;
+// 	newAction->ActionData.branchData.comparisonValue = value;
  
-	return newAction;
-}
+// 	return newAction;
+// }
 
-SceneAction* ifGreaterThanEquals(int variableIndex, int value, CutsceneID cutsceneToTrigger, World *GameWorld)
-{
-	if (!inRange(variableIndex, 0, GAME_FLAG_COUNT - 1) || GameWorld == NULL || cutsceneToTrigger >= UNDEFINED_CUTSCENE)
-	{
-		return NULL;
-	}
+// SceneAction* ifGreaterThanEquals(int variableIndex, int value, int instructionsIfTrue, World *GameWorld)
+// {
+// 	if (!inRange(variableIndex, 0, GAME_FLAG_COUNT - 1) || GameWorld == NULL)
+// 	{
+// 		return NULL;
+// 	}
 
-	SceneAction *newAction = createSceneAction(SCENE_IF_LESS_THAN, GameWorld);
+// 	SceneAction *newAction = createSceneAction(SCENE_IF_LESS_THAN, GameWorld);
 
-	if (newAction == NULL)
-	{
-		return NULL;
-	}
+// 	if (newAction == NULL)
+// 	{
+// 		return NULL;
+// 	}
 
-	newAction->parallelAction = false;	
-	newAction->ActionData.branchData.elseBranchPresent = true;
-	newAction->ActionData.branchData.ifTrue = NO_CUTSCENE;
-	newAction->ActionData.branchData.ifFalse = cutsceneToTrigger;
-	newAction->ActionData.branchData.variableIndex = variableIndex;
-	newAction->ActionData.branchData.comparisonValue = value;
+// 	newAction->parallelAction = false;	
+// 	newAction->ActionData.branchData.elseBranchPresent = true;
+// 	newAction->ActionData.branchData.ifTrue = NO_CUTSCENE;
+// 	newAction->ActionData.branchData.ifFalse = cutsceneToTrigger;
+// 	newAction->ActionData.branchData.variableIndex = variableIndex;
+// 	newAction->ActionData.branchData.comparisonValue = value;
  
-	return newAction;
-}
+// 	return newAction;
+// }
 
-SceneAction* ifElse(SceneAction *inputIfStatement, CutsceneID cutsceneIfElse)
-{
-	if (inputIfStatement == NULL || cutsceneIfElse >= UNDEFINED_CUTSCENE)
-	{
-		return inputIfStatement;
-	}
-
-	switch(inputIfStatement->ActionID)
-	{
-	case SCENE_IF_EQUALS:
-	case SCENE_IF_LESS_THAN:
-	case SCENE_IF_GREATER_THAN:
-		// If it already has the else branch enabled, it has come from the if__Equals/ifNotEquals variation because it gets flipped
-		if (inputIfStatement->ActionData.branchData.elseBranchPresent)
-		{
-			inputIfStatement->ActionData.branchData.ifTrue = cutsceneIfElse;
-		}
-		else
-		{
-			inputIfStatement->ActionData.branchData.ifFalse = cutsceneIfElse;
-		}
-		inputIfStatement->ActionData.branchData.elseBranchPresent = true;
-		break;
-
-	default:
-		break;
-	}
-
-	return inputIfStatement;
-}
 
 
 SceneAction* SceneAction_SayText(TextBox *text, World *GameWorld)
@@ -2355,6 +2284,8 @@ int deleteAllSceneActions(World *GameWorld)
 	{
 		deleteSceneAction(GameWorld->SceneActionQueue, GameWorld);
 	}
+
+	GameWorld->nextSceneAction = NULL;
 
 	return LEMON_SUCCESS;
 }

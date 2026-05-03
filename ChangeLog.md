@@ -108,6 +108,10 @@ e.g:
 old method - PlaySound("CoinCollect", "Objects", OBJECT_SFX, 1.0)    
 new method - PlaySound("Objects/CoinCollect", OBJECT_SFX, 1.0)
 
+-> The 'IfVariable:' scene command now works on regular commands and as many as you want instead of only accepting integer values that represent a new cutscene to trigger.
+old method: IfVariable: 0 = 1 THEN 0 ELSE 1
+new method: IfVariable: 0 = 1 THEN { PlaySound: "Sound.wav", 1, 1.0  HideActor: "ExampleActor" [...] } ELSE { PlayCutscene: 1 [...] }
+
 
 ## Bug fixes/Improvements:
 

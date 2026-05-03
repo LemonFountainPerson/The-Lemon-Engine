@@ -185,6 +185,17 @@ int saveSettings(int saveFile, World *GameWorld)
 	snprintf(buffer, MAX_LEN, "MaxFrameRate: %d\n", RenderSettings.RendersPerSecond);
 	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
 
+	writeBooleanPhrase(fPtr, "DrawHitboxes", RenderSettings.drawHitboxes);
+
+	snprintf(buffer, MAX_LEN, "HitboxThickness: %d\n", RenderSettings.HitboxOutlineThickness);
+	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+
+	snprintf(buffer, MAX_LEN, "DefaultTextSize: %f\n", TextSettings.defaultTextPointSize);
+	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+
+	snprintf(buffer, MAX_LEN, "DefaultFont: \"%s\"\n", TextSettings.defaultFont);
+	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+
 	fwrite("ENDFILE", sizeof(char), 7, fPtr);
 
 	//encodeLEMFile(fPtr, path);
@@ -309,6 +320,22 @@ int loadSaveData(const char *fileName, World *GameWorld)
 		{
 			switchLevel(getNextArgInt(fPtr), GameWorld);
 		}	
+		else if (!strcmp(readPhrase, "HITBOXTHICKNESS:"))
+		{
+			RenderSettings.HitboxOutlineThickness = getNextArgInt(fPtr);
+		}
+		else if (!strcmp(readPhrase, "DEFAULTTEXTSIZE:"))
+		{
+			TextSettings.defaultTextPointSize = getNextArgFloat(fPtr);
+			if (TextSettings.defaultTextPointSize < 1.0)
+			{
+				TextSettings.defaultTextPointSize = 44.0;
+			}
+		}
+		else if (!strcmp(readPhrase, "DEFAULTFONT:"))
+		{
+			getNextArg(fPtr, TextSettings.defaultFont, FONT_FILE_NAME_MAX);
+		}
 		else
 		{
 			bool value = getNextArgBool(fPtr);
@@ -333,6 +360,10 @@ int loadSaveData(const char *fileName, World *GameWorld)
 			{
 				RenderSettings.drawCamViews = value;
 			}		
+			else if (!strcmp(readPhrase, "DRAWHITBOXES:"))
+			{
+				RenderSettings.drawHitboxes = value;
+			}
 			else if (!strcmp(readPhrase, "VSYNC:"))
 			{
 				setVsync(value);

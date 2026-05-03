@@ -1116,13 +1116,10 @@ typedef struct sceneBranchData
 {
 	int variableIndex;
 	int comparisonValue;
+	char expression[3];
 
 	bool elseBranchPresent;
-	CutsceneID ifTrue;
-	CutsceneID ifFalse;
-
-	char ifTrueString[CUTSCENE_FILE_NAME_MAX];
-	char ifFalseString[CUTSCENE_FILE_NAME_MAX];
+	int branchDistanceIfFalse;	// amount of instructions to skip if false
 } SceneBranchData;
 
 typedef struct SceneLoop
@@ -1135,6 +1132,7 @@ typedef struct SceneLoop
 union SceneActionArguments
 {
 	int SceneID;
+	int instructionsToSkip;
 	int WaitTicks[2];
 	float zoomScales[2];
 	struct TextBox *sceneText;
@@ -1156,8 +1154,8 @@ union SceneActionArguments
 typedef enum SceneActionID
 {
 	SCENE_END,
-	SCENE_LOOP_START,
 	SCENE_LOOP_POINT,
+	SCENE_SKIP_INSTRUCTIONS,
 	SCENE_SWITCH_CUTSCENE,
 	SCENE_TRIGGER_GAME_EVENT,
 	SCENE_DISABLE_PLAYER,
@@ -1165,9 +1163,7 @@ typedef enum SceneActionID
 	SCENE_WAIT,
 	SCENE_CHANGE_VARIABLE_BY,
 	SCENE_SET_VARIABLE_TO,
-	SCENE_IF_EQUALS,
-	SCENE_IF_LESS_THAN,
-	SCENE_IF_GREATER_THAN,
+	SCENE_IF_STATEMENT,
 	SCENE_SAY_TEXT,
 	SCENE_ANIMATE_ACTOR,
 	SCENE_SET_ACTOR_SPRITE,

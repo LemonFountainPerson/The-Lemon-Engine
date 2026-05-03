@@ -1,4 +1,3 @@
 FRV<1>--ANIMATION--
 AddSprite: 	BG_Water	Backgrounds	TILE_BACKGROUND
-AddSprite:	BG_GreenHill	Backgrounds	TILE_BACKGROUND
 AddSprite: 	TileMapTEST	Backgrounds	TILEPLANE_BACKGROUND

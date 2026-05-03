@@ -96,20 +96,18 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 			if (EventData->newLevelID > -1)
 			{
 				loadLevel(GameWorld, EventData->newLevelID);
-			}
-			break;
+			} break;
 
 		case EVENT_PLAY_CUTSCENE:
 			{
 				initialiseCutscene(EventData->sceneID, GameWorld);
-			}
-			break;
+			} break;
 
 		case EVENT_PLAY_CUTSCENE_FROM_FILE:
 			{
+				putConsoleStringTS("Bruh");
 				initialiseCutsceneFromFile(EventData->sceneName, GameWorld);
-			}
-			break;
+			} break;
 
 		case EVENT_MOVE_PLAYER:
 				GoTo(GameWorld->Player.PlayerPtr, EventData->ObjectGoTo[0], EventData->ObjectGoTo[1]);
@@ -382,6 +380,8 @@ GameEvent* playCutsceneFromFile(const char name[], World *GameWorld)
 
 	newEvent->EventID = EVENT_PLAY_CUTSCENE_FROM_FILE;
 	strcpy(newEvent->EventData.sceneName, name);
+
+	putConsoleStringTS("Putting new event");
 
 	return newEvent;
 }

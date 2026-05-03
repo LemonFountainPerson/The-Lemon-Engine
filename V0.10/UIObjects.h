@@ -132,7 +132,7 @@ int getCharacterSpacing(char input);
 
 int endTextBox(World *GameWorld);
 
-int deleteTextBox(World *GameWorld);
+int deleteTextBox(TextBox *input, World *GameWorld);
 
 int clearTextQueue(World *GameWorld);
 

@@ -2215,30 +2215,46 @@ int endTextBox(World *GameWorld)
 	}
 
 
-	deleteTextBox(GameWorld);
+	deleteTextBox(text, GameWorld);
 
 
 	return LEMON_SUCCESS;
 }
 
 
-int deleteTextBox(World *GameWorld)
+int deleteTextBox(TextBox *input, World *GameWorld)
 {
-	if (GameWorld == NULL || GameWorld->TextQueue == NULL)
+	if (GameWorld == NULL || GameWorld->TextQueue == NULL || input == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	TextBox *textToDelete = GameWorld->TextQueue;
-	GameWorld->TextQueue = textToDelete->nextText;
+	if (input == GameWorld->TextQueue)
+	{
+		GameWorld->TextQueue = input->nextText;
+	}
+	else
+	{
+		TextBox *prev = GameWorld->TextQueue;
 
-	MarkObjectForDeletion(textToDelete->boxPtr);
+		while (prev->nextText != input && prev->nextText != NULL)
+		{
+			prev = prev->nextText;
+		}
 
-	DeleteTextSceneAction(textToDelete, GameWorld);
-
-	removeAssociatedTexts(textToDelete);
+		if (prev->nextText == input)
+		{
+			prev->nextText = input->nextText;
+		}
+	}
 	
-	free(textToDelete);
+	MarkObjectForDeletion(input->boxPtr);
+
+	DeleteTextSceneAction(input, GameWorld);
+
+	removeAssociatedTexts(input);
+	
+	free(input);
 
 	return LEMON_SUCCESS;
 }
@@ -2252,7 +2268,7 @@ int clearTextQueue(World *GameWorld)
 
 	while (i < EngineSettings.MaxTextQueueLength && GameWorld->TextQueue != NULL)
 	{
-		deleteTextBox(GameWorld);
+		deleteTextBox(GameWorld->TextQueue, GameWorld);
 		i++;
 	}
 
@@ -2309,6 +2325,11 @@ void DeleteTextSceneAction(TextBox *inputText, World *GameWorld)
 		if (currentAction->ActionID == SCENE_SAY_TEXT && currentAction->ActionData.sceneText == inputText)
 		{
 			GameWorld->nextSceneAction = currentAction->nextSceneAction;
+
+			if (GameWorld->nextSceneAction == NULL)
+			{
+				deleteAllSceneActions(GameWorld);
+			}
 			return;
 		}
 		else
