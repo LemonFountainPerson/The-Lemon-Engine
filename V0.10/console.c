@@ -489,6 +489,10 @@ int ConsoleCommand_UsedMemory(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	{
 		total = (double)sizeof(ObjectList->objectComponents.PhysicsBoxes) / 1000.0;
 	}
+	else if (strcmp(arg, "sceneactions") == 0)
+	{
+		total = (double)(sizeof(SceneAction) * GameWorld->SceneActionCount) / 1000.0;
+	}
 	else if (strcmp(arg, "animations") == 0)
 	{
 		SpriteSet *set = ObjectList->spriteSets.start;

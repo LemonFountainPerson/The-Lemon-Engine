@@ -25,7 +25,7 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 		return NULL;
 	}
 
-	char argBuffer[MAX_LEN + 1] = {0};
+	char argBuffer[MAX_LEN] = {0};
 	Animation *newAnimation = NULL;
 
 	while (!endOfFile(fPtr))
