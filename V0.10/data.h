@@ -1432,24 +1432,24 @@ typedef struct String
 
 
 //Global variables/data
-extern RenderFrame ScreenData;
+EXPORT extern RenderFrame ScreenData;
 
-extern float deltaTime;
+EXPORT extern float deltaTime;
 
-extern MouseData MouseInput;
+EXPORT extern MouseData MouseInput;
 
-extern GamePadData GamePadInput;
+EXPORT extern GamePadData GamePadInput;
 
-extern ButtonState buttons[INPUT_COUNT];
+EXPORT extern ButtonState buttons[INPUT_COUNT];
 
-extern GameFlag GameFlags[GAME_FLAG_COUNT];
+EXPORT extern GameFlag GameFlags[GAME_FLAG_COUNT];
 
-extern EngineConfig EngineSettings;
+EXPORT extern EngineConfig EngineSettings;
 
-extern RenderConfig RenderSettings;
+EXPORT extern RenderConfig RenderSettings;
 
-extern TextConfig TextSettings;
+EXPORT extern TextConfig TextSettings;
 
-extern DebugConfig DebugSettings;
+EXPORT extern DebugConfig DebugSettings;
 
 

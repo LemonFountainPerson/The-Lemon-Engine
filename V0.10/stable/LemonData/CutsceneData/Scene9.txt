@@ -26,7 +26,6 @@ THEN
 }
 ELSE 
 {
-	SayText: "Fuck you Baltimore!!" NO_PORTRAIT 1
 	SayText: "text 2" NO_PORTRAIT 1
 
 }

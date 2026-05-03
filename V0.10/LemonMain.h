@@ -2,18 +2,18 @@ EXPORT int RunLemonEngine(void);
 
 EXPORT int StartUpLemonEngine(void);
 
-int MainLoop(World *GameWorld);
+EXPORT int MainLoop(World *GameWorld);
 
 EXPORT int CloseGame(World *GameWorld, RenderFrame *ScreenData);
 
 
-FuncResult CheckResourceData(void);
+EXPORT FuncResult CheckResourceData(void);
 
 EXPORT int initialiseWorld(World *GameWorld);
 
-int initialiseBackGround(BackgroundData *input);
+EXPORT int initialiseBackGround(BackgroundData *input);
 
-ObjectController* createObjectController(void);
+EXPORT ObjectController* createObjectController(void);
 
 EXPORT void destroyWorld(World *GameWorld);
 
@@ -31,168 +31,168 @@ EXPORT void RenderEngine(Camera *renderCamera, World *GameWorld, SDL_Renderer *S
 
 EXPORT Uint64 TickNumber(void);
 
-int FPSCounter(void);
+EXPORT int FPSCounter(void);
 
 
-void initialiseCameraViews(CameraView list[VIEW_COUNT]);
+EXPORT void initialiseCameraViews(CameraView list[VIEW_COUNT]);
 
-CameraView* addCameraViewToList(float camX, float camY, int camWidth, int camHeight, float viewPosX, float viewPosY, float width, float height, Layer drawLayer, bool useMain, CameraView list[VIEW_COUNT]);
+EXPORT CameraView* addCameraViewToList(float camX, float camY, int camWidth, int camHeight, float viewPosX, float viewPosY, float width, float height, Layer drawLayer, bool useMain, CameraView list[VIEW_COUNT]);
 
-CameraView* addCameraView(float camX, float camY, int camWidth, int camHeight, float viewX, float viewY, float viewWidth, float viewHeight, Layer drawLayer, World *GameWorld);
+EXPORT CameraView* addCameraView(float camX, float camY, int camWidth, int camHeight, float viewX, float viewY, float viewWidth, float viewHeight, Layer drawLayer, World *GameWorld);
 
-CameraView* addMainCameraView(float viewX, float viewY, float width, float height, Layer drawLayer, World *GameWorld);
+EXPORT CameraView* addMainCameraView(float viewX, float viewY, float width, float height, Layer drawLayer, World *GameWorld);
 
-void attachCameraViewToObject(CameraView *input, Object *attach);
+EXPORT void attachCameraViewToObject(CameraView *input, Object *attach);
 
-CameraView* getCameraView(World *GameWorld, int id);
+EXPORT CameraView* getCameraView(World *GameWorld, int id);
 
-void printCameraViewInfo(CameraView list[VIEW_COUNT]);
+EXPORT void printCameraViewInfo(CameraView list[VIEW_COUNT]);
 
-void removeAllCameraViewsFromList(CameraView list[VIEW_COUNT]);
+EXPORT void removeAllCameraViewsFromList(CameraView list[VIEW_COUNT]);
 
-void removeAllCameraViews(World *GameWorld);
+EXPORT void removeAllCameraViews(World *GameWorld);
 
-void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Renderer *Screen, Layer drawLayer);
+EXPORT void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Renderer *Screen, Layer drawLayer);
 
 
-void addGameFlag(const char name[], int startValue);
+EXPORT void addGameFlag(const char name[], int startValue);
 
-int checkGameFlag(const char name[]);
+EXPORT int checkGameFlag(const char name[]);
 
-int getGameFlag(const char name[]);
+EXPORT int getGameFlag(const char name[]);
 
-void setGameFlag(const char name[], int newValue);
+EXPORT void setGameFlag(const char name[], int newValue);
 
 
-void putConsoleString(const char input[], ...);
+EXPORT void putConsoleString(const char input[], ...);
 
-void putConsoleStringTS(const char input[], ...);
+EXPORT void putConsoleStringTS(const char input[], ...);
 
-void putConsoleError(const char input[], ...);
+EXPORT void putConsoleError(const char input[], ...);
 
-void addInputHistory(const char input[], InputHistory *history);
+EXPORT void addInputHistory(const char input[], InputHistory *history);
 
-char* getPreviousInputHistory(InputHistory *history);
+EXPORT char* getPreviousInputHistory(InputHistory *history);
 
-char* getNextInputHistory(InputHistory *history);
+EXPORT char* getNextInputHistory(InputHistory *history);
 
 
-int ResetCamera(Camera *inputCam);
+EXPORT int ResetCamera(Camera *inputCam);
 
-int setCameraPos(Camera *input, float xPos, float yPos);
+EXPORT int setCameraPos(Camera *input, float xPos, float yPos);
 
-void SetEngineSettingsToDefault(void);
+EXPORT void SetEngineSettingsToDefault(void);
 
-void SetRenderSettingsToDefault(void);
+EXPORT void SetRenderSettingsToDefault(void);
 
-void SetTextSettingsToDefault(void);
+EXPORT void SetTextSettingsToDefault(void);
 
-void SetDebugSettingsToDefault(void);
+EXPORT void SetDebugSettingsToDefault(void);
 
 
-int getKeyboardInput(SDL_KeyboardEvent *key);
+EXPORT int getKeyboardInput(SDL_KeyboardEvent *key);
 
-void updateCustomKeys(void);
+EXPORT void updateCustomKeys(void);
 
-bool buttonPressed(int key);
+EXPORT bool buttonPressed(int key);
 
-bool keyPressed(int key);
+EXPORT bool keyPressed(int key);
 
-bool buttonHeld(int key);
+EXPORT bool buttonHeld(int key);
 
-bool keyHeld(int key);
+EXPORT bool keyHeld(int key);
 
-void ClearInput(void);
+EXPORT void ClearInput(void);
 
-void updateMousePos();
+EXPORT void updateMousePos();
 
-float getMouseXCam(Camera inputCamera);
+EXPORT float getMouseXCam(Camera inputCamera);
 
-float getMouseYCam(Camera inputCamera);
+EXPORT float getMouseYCam(Camera inputCamera);
 
-int getMouseInput(SDL_MouseButtonEvent *event);
+EXPORT int getMouseInput(SDL_MouseButtonEvent *event);
 
-int getGamepadInput(SDL_GamepadButtonEvent *event);
+EXPORT int getGamepadInput(SDL_GamepadButtonEvent *event);
 
-void updateGamepadAxis(SDL_GamepadAxisEvent *event);
+EXPORT void updateGamepadAxis(SDL_GamepadAxisEvent *event);
 
 
-void AcknowledgeHeldButtons(void);
+EXPORT void AcknowledgeHeldButtons(void);
 
-void AcknowledgeMouse(void);
+EXPORT void AcknowledgeMouse(void);
 
-void AcknowledgeButton(LemonKeys Key);
+EXPORT void AcknowledgeButton(LemonKeys Key);
 
 
-int setTickRate(int desiredTickRate);
+EXPORT int setTickRate(int desiredTickRate);
 
 
-int setRenderRefreshRate(int desiredRenderRate);
+EXPORT int setRenderRefreshRate(int desiredRenderRate);
 
 
-int SetGravity(World *GameWorld, float force, float directionDegrees);
+EXPORT int SetGravity(World *GameWorld, float force, float directionDegrees);
 
 
-void MasterControls(World *GameWorld, SDL_Window *window);
+EXPORT void MasterControls(World *GameWorld, SDL_Window *window);
 
 
-int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullscreen);
+EXPORT int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullscreen);
 
-bool SetWindowIcon(const char fileName[]);
+EXPORT bool SetWindowIcon(const char fileName[]);
 
-bool SetWindowTitle(const char newTitle[]);
+EXPORT bool SetWindowTitle(const char newTitle[]);
 
-int setVsync(bool enabled);
+EXPORT int setVsync(bool enabled);
 
-int cleanUpSDLRenderer(RenderFrame *ScreenData);
+EXPORT int cleanUpSDLRenderer(RenderFrame *ScreenData);
 
 
-int clamp(int input, int lowerBound, int upperBound);
+EXPORT int clamp(int input, int lowerBound, int upperBound);
 
-double dClamp(double input, double lowerBound, double upperBound);
+EXPORT double dClamp(double input, double lowerBound, double upperBound);
 
-float fClamp(float input, float lowerBound, float upperBound);
+EXPORT float fClamp(float input, float lowerBound, float upperBound);
 
-bool inRange(int input, int low, int high);
+EXPORT bool inRange(int input, int low, int high);
 
-bool inRangeExclusive(int input, int low, int high);
+EXPORT bool inRangeExclusive(int input, int low, int high);
 
-int max(int left, int right);
+EXPORT int max(int left, int right);
 
-int min(int left, int right);
+EXPORT int min(int left, int right);
 
-int modulo(int x, int N);
+EXPORT int modulo(int x, int N);
 
-float fModulo(float x, float N);
+EXPORT float fModulo(float x, float N);
 
 
-void stringToUpper(char input[]);
+EXPORT void stringToUpper(char input[]);
 
-void stringToLower(char input[]);
+EXPORT void stringToLower(char input[]);
 
-void LemonStrncpy(char dest[], const char source[], int capacity);
+EXPORT void LemonStrncpy(char dest[], const char source[], int capacity);
 
-void removeChar(char string[], char remove, int capacity);
+EXPORT void removeChar(char string[], char remove, int capacity);
 
 
-int PickRandomIntBetween(int low, int high);
+EXPORT int PickRandomIntBetween(int low, int high);
 
-float PickRandomFloatBetween(float low, float high);
+EXPORT float PickRandomFloatBetween(float low, float high);
 
 
-int sparseInitialise(IntSparseList *input);
+EXPORT int sparseInitialise(IntSparseList *input);
 
-int sparseAdd(int input, IntSparseList *List);
+EXPORT int sparseAdd(int input, IntSparseList *List);
 
-int sparseRemove(int input, IntSparseList *List);
+EXPORT int sparseRemove(int input, IntSparseList *List);
 
-int sparseGet(int input, IntSparseList *List);
+EXPORT int sparseGet(int input, IntSparseList *List);
 
-int stackAdd(int input, StackArray *List);
+EXPORT int stackAdd(int input, StackArray *List);
 
-int stackPop(StackArray *List);
+EXPORT int stackPop(StackArray *List);
 
-int stackRemove(int input, StackArray *List);
+EXPORT int stackRemove(int input, StackArray *List);
 
 
 void clearString(String *input);

@@ -112,22 +112,22 @@ void renderEditor(World *GameWorld, SDL_Texture *engineView)
 
 void moveEngineCamera(World *GameWorld)
 {
-	if (keyboard[LMN_LEFT])
+	if (buttonHeld(LMN_LEFT))
 	{
 		GameWorld->MainCamera.CameraX -= 5.0;
 	}
 
-	if (keyboard[LMN_RIGHT])
+	if (buttonHeld(LMN_RIGHT))
 	{
 		GameWorld->MainCamera.CameraX += 5.0;
 	}
 
-	if (keyboard[LMN_UP])
+	if (buttonHeld(LMN_UP))
 	{
 		GameWorld->MainCamera.CameraY += 5.0;
 	}
 
-	if (keyboard[LMN_DOWN])
+	if (buttonHeld(LMN_DOWN))
 	{
 		GameWorld->MainCamera.CameraY -= 5.0;
 	}

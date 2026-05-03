@@ -1,5 +1,3 @@
-#ifndef IS_DEFINED
-
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -32,5 +30,3 @@
 #include "levelLoader.h"
 #include "cutsceneManager.h"
 #include "console.h"
-
-#endif
