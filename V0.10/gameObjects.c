@@ -3215,7 +3215,7 @@ int UpdateCoin(Object *coin, World *GameWorld)
 		Player->coinCount++;
 		AddParticle(GameWorld, SPARKLE, coinBox->xPos + 20 - (rand() % 40), coinBox->yPos + 20 - (rand() % 40), 1, 0);
 		MarkObjectForDeletion(coin);
-		PlaySound("Coin_Collect", "Objects", OBJECT_SFX, 0.75);
+		PlaySound("Objects/Coin_Collect", OBJECT_SFX, 0.75);
 	}
 
 /*
@@ -3264,7 +3264,7 @@ int UpdateSpring(Object *spring, World *GameWorld)
 			PlayerBox->xVelocity = xForce;
 		}
 		
-		PlaySound("Spring", "Objects", OBJECT_SFX, 1.0);
+		PlaySound("Objects/Spring", OBJECT_SFX, 1.0);
 		PlayAnimation("Bounce", 1, getDisplay(spring));
 	}
 
@@ -3414,7 +3414,7 @@ int toggleGateSwitch(Object *gateSwitch, ObjectController *ObjectList)
 		PlayAnimation("FlipSwitchOn", 1, getDisplay(gateSwitch));
 	}
 
-	PlaySound("GateSwitchToggle", "Objects", OBJECT_SFX, 1.0);
+	PlaySound("Objects/GateSwitchToggle", OBJECT_SFX, 1.0);
 
 	return LEMON_SUCCESS;
 }
@@ -3473,7 +3473,7 @@ int UpdateVerticalGate(Object *gate, World *GameWorld)
 			{
 				gate->arg4 = 3;
 				PlayObjectAnimation("Closing", 1, gate);
-				PlaySound("GateClose", "Objects", 4, 1.0);
+				PlaySound("Objects/GateClose", 4, 1.0);
 			}
 
 		} break;
@@ -3509,7 +3509,7 @@ int UpdateVerticalGate(Object *gate, World *GameWorld)
 			{
 				gate->arg4 = 1;
 				PlayObjectAnimation("Opening", 1, gate);
-				PlaySound("GateOpen", "Objects", 4, 1.0);
+				PlaySound("Objects/GateOpen", 4, 1.0);
 			}
 		
 		} break;
@@ -3571,7 +3571,7 @@ int UpdateHorizontalGate(Object *gate, World *GameWorld)
 			{
 				gate->arg4 = 3;
 				PlayObjectAnimation("Closing", 1, gate);
-				PlaySound("GateClose", "Objects", 4, 1.0);
+				PlaySound("Objects/GateClose", 4, 1.0);
 			}
 
 		} break;
@@ -3607,7 +3607,7 @@ int UpdateHorizontalGate(Object *gate, World *GameWorld)
 			{
 				gate->arg4 = 1;
 				PlayObjectAnimation("Opening", 1, gate);
-				PlaySound("GateOpen", "Objects", 4, 1.0);
+				PlaySound("Objects/GateOpen", 4, 1.0);
 			}
 		
 		} break;
@@ -3840,7 +3840,7 @@ int TeleportPlayerToExitDoor(Object *Door, World *GameWorld)
 	//GoTo(Player->PlayerPtr, Door->ObjectBox->xPos, Door->ObjectBox->yPos);
 	centerOnObject(Player->PlayerPtr, Door);
 
-	PlaySound("DoorOpen", "Objects", OBJECT_SFX, 1.0);
+	PlaySound("Objects/DoorOpen", OBJECT_SFX, 1.0);
 			
 	ResetPlayer(Player);
 

@@ -52,7 +52,9 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 				int yOffset = getNextArgFloat(fPtr);
 				float rotation = getNextArgFloat(fPtr);
 
-				addSpriteToAnimationWithAttributes(argBuffer, newAnimation, newSet, xOffset, yOffset, rotation);
+				AnimationFrame *newFrame = addSpriteToAnimationWithAttributes(argBuffer, newAnimation, newSet, xOffset, yOffset, rotation);
+
+				loadFrameSound(fPtr, newFrame, newAnimation);
 
 				continue;
 			}
@@ -68,7 +70,7 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 			long filePos = ftell(fPtr);
 
 			// get number of frames
-			while (!strcmp(argBuffer, "addframe:"))
+			while (strcmp(argBuffer, "addframe:") == 0)
 			{
 				count++;
 				getNextArg(fPtr, argBuffer, MAX_LEN);
@@ -77,6 +79,16 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 				getNextArgFloat(fPtr);
 				getNextArg(fPtr, argBuffer, MAX_LEN);
 				stringToLower(argBuffer);
+
+				// in case there is a sound instruction to skip
+				if (strcmp(argBuffer, "playsound:") == 0)
+				{
+					getNextArg(fPtr, argBuffer, MAX_LEN);
+					getNextArgInt(fPtr);
+					getNextArgFloat(fPtr);
+					getNextArg(fPtr, argBuffer, MAX_LEN);
+					stringToLower(argBuffer);
+				}
 			} 
 
 			fseek(fPtr, filePos, SEEK_SET);
@@ -110,7 +122,9 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 				float rotation = getNextArgFloat(fPtr);
 
 				globalFrame = &frameList[i];
-				addSpriteToAnimationWithAttributes(argBuffer, newAnimation, newSet, xOffset, yOffset, rotation);
+				AnimationFrame *newFrame = addSpriteToAnimationWithAttributes(argBuffer, newAnimation, newSet, xOffset, yOffset, rotation);
+
+				loadFrameSound(fPtr, newFrame, newAnimation);
 			}
 
 			globalFrame = NULL;
@@ -205,6 +219,7 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 				continue;
 			}
 
+			// delete set previously allocated for this object to switch to copied set
 			deleteSpriteSet(newSet, setList);
 			newSet = set;
 
@@ -229,6 +244,41 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 	}
 
 	return newSet;
+}
+
+void loadFrameSound(FILE *fPtr, AnimationFrame *newFrame, Animation *anim)
+{
+	if (newFrame == NULL)
+	{
+		return;
+	}
+
+	char buffer[MAX_LEN] = {0};
+
+	long filePos = ftell(fPtr);
+	getNextArg(fPtr, buffer, MAX_LEN);
+	stringToLower(buffer);
+
+	if (strcmp(buffer, "playsound:") == 0)
+	{
+		// load sound
+		getNextArg(fPtr, buffer, MAX_LEN);
+
+		int channel = getNextArgInt(fPtr);
+		float volume = getNextArgFloat(fPtr);
+		if (volume < 0.01)
+		{
+			volume = 1.0;
+		}
+
+		newFrame->soundIndex = addSoundToAnimation(buffer, channel, volume, anim);
+	}
+	else
+	{
+		fseek(fPtr, filePos, SEEK_SET);
+	}
+
+	return;
 }
 
 
@@ -263,6 +313,13 @@ int useThisAnimation(Animation *anim, int loopCount, DisplayData *inputData)
 	if (inputData->spriteBuffer != NULL)
 	{
 		inputData->currentSprite = inputData->spriteBuffer->spriteID;
+	}
+
+	int soundIndex = inputData->frameBuffer->soundIndex;
+	if (soundIndex > -1 && soundIndex < anim->soundCount)
+	{
+		SoundMeta *meta = &anim->animationSounds[soundIndex];
+		PlaySound(meta->soundName, meta->channel, meta->volume);
 	}
 
 	return LEMON_SUCCESS;
@@ -444,7 +501,7 @@ int iterateAnimation(DisplayData *inputData, float deltaTime)
 		return MISSING_DATA;
 	}
 
-	if (inputData->currentAnimation < 1 || inputData->animationLoopCount == ONE_FRAME_INDEFINITE_ANIMATION)
+	if (inputData->currentAnimation < 1)
 	{
 		return ACTION_DISABLED;
 	}
@@ -455,7 +512,8 @@ int iterateAnimation(DisplayData *inputData, float deltaTime)
 		return MISSING_DATA;
 	}
 
-	float frameRate = inputData->animationBuffer->frameRate;
+	Animation *anim = inputData->animationBuffer;
+	float frameRate = anim->frameRate;
 
 	inputData->animationTick += inputData->animationSpeed * deltaTime;
 
@@ -464,48 +522,44 @@ int iterateAnimation(DisplayData *inputData, float deltaTime)
 		return EXECUTION_UNNECESSARY;
 	}
 
-	inputData->animationTick -= frameRate;
-
-	// if (inputData->animationTick >= frameRate)	enable to allow for animations to progress multiple frames at once if enough time passes
-	// {
-	// 		iterateAnimation(inputData, 0.0);
-	// }
-
-	if (inputData->frameBuffer->nextFrame == NULL)
+	while (inputData->animationTick >= frameRate)
 	{
-		// end of animation, loop or end
-		if (inputData->animationLoopCount > -1)	// Change this -1 to a 0 to disable the value of 0 representing loop indefinitely alongside the LOOP_INDEFINITELY enum
-		{	
-			inputData->animationLoopCount--;
+		inputData->animationTick -= frameRate;
+
+		if (inputData->frameBuffer->nextFrame == NULL)
+		{
+			// end of animation, decide to loop or end
+			if (inputData->animationLoopCount > -1)	// Change this -1 to a 0 to disable the value of 0 representing loop indefinitely alongside the LOOP_INDEFINITELY enum
+			{	
+				inputData->animationLoopCount--;
+			}
+
+			// At the moment a value of 0 in the play animation function's loopcount will also be the same behaviour as LOOP_INDEFINITELY, 
+			// but this may change for consistency in the future
+			if (inputData->animationLoopCount == 0 || anim->animationData == NULL)
+			{
+				inputData->frameBuffer = NULL;
+				inputData->currentAnimation = 0;
+				return EXECUTION_UNNECESSARY;
+			}
+
+			inputData->frameBuffer = anim->animationData;
+		}
+		else
+		{
+			inputData->frameBuffer = inputData->frameBuffer->nextFrame;
 		}
 
-		// At the moment a value of 0 in the play animation function's loopcount will also be the same behaviour as LOOP_INDEFINITELY, 
-		// but this may change for consistency in the future
-		if (inputData->animationLoopCount == 0)
-		{
-			inputData->currentAnimation = 0;
-			return EXECUTION_UNNECESSARY;
-		}
+		inputData->spriteBuffer = inputData->frameBuffer->frameSprite;
+		inputData->currentSprite = inputData->spriteBuffer->spriteID;
 
-		inputData->frameBuffer = inputData->animationBuffer->animationData;
-
-		if (inputData->frameBuffer == NULL)
+		int soundIndex = inputData->frameBuffer->soundIndex;
+		if (soundIndex > -1 && soundIndex < anim->soundCount)
 		{
-			return MISSING_DATA;
-		}	
-
-		if (inputData->frameBuffer->nextFrame == NULL && inputData->animationLoopCount == LOOP_INDEFINITELY)
-		{
-			inputData->animationLoopCount = ONE_FRAME_INDEFINITE_ANIMATION;
+			SoundMeta *meta = &anim->animationSounds[soundIndex];
+			PlaySound(meta->soundName, meta->channel, meta->volume);
 		}
 	}
-	else
-	{
-		inputData->frameBuffer = inputData->frameBuffer->nextFrame;
-	}
-
-	inputData->spriteBuffer = inputData->frameBuffer->frameSprite;
-	inputData->currentSprite = inputData->spriteBuffer->spriteID;
 	
 	return LEMON_SUCCESS;
 }
@@ -555,20 +609,61 @@ Animation* initialiseNewAnimation(const char animationName[], float frameRate, S
 
 	newAnimation->nextAnimation = NULL;
 	newAnimation->animationData = NULL;
+	newAnimation->frameCount = 0;
+
+	newAnimation->animationSounds = NULL;
+	newAnimation->soundCount = 0;
 
 	frameRate = fClamp(frameRate, 0.1, 1000.0);	
 	newAnimation->frameRate = 1.0 / frameRate;
-	//newAnimation->frameRate = ((float)EngineSettings.GameTicksPerSecond / frameRate);
-	//newAnimation->frameRate = ceil(newAnimation->frameRate * 1000) / 1000;
 
 	newAnimation->animationID = i;
 	memset(newAnimation->name, 0, MAX_LEN);
 	strcpy(newAnimation->name, animationName);
 	newAnimation->contiguousFrames = false;
-	newAnimation->frameCount = 0;
 
 
 	return newAnimation;
+}
+
+
+int addSoundToAnimation(const char name[], float volume, int channel, Animation *anim)
+{
+	if (anim == NULL)
+	{
+		return -1;
+	}
+
+	if (anim->animationSounds != NULL)
+	{
+		for (int i = 0; i < anim->soundCount; i++)
+		{
+			if (strcmp(anim->animationSounds[i].soundName, name) == 0 && anim->animationSounds[i].channel == channel)
+			{
+				return i;
+			}
+		}
+	}
+	
+	SoundMeta *newList = malloc((anim->soundCount + 1) * sizeof(SoundMeta));
+	if (newList == NULL)
+	{
+		return -1;
+	}
+
+	memcpy(newList, anim->animationSounds, anim->soundCount * sizeof(SoundMeta));
+	free(anim->animationSounds);
+	anim->animationSounds = newList;
+
+	int index = anim->soundCount;
+	anim->soundCount++;
+
+	memset(&newList[index], 0, sizeof(SoundMeta));
+	newList[index].volume = volume;
+	newList[index].channel = channel;
+	strcpy(newList[index].soundName, name);
+
+	return index;
 }
 
 
@@ -614,6 +709,8 @@ AnimationFrame* addSpriteToAnimation(const char spriteName[], Animation *inputAn
 	newFrame->SpriteYOffset = 0;
 	newFrame->rotation = 0.0;
 	newFrame->nextFrame = NULL;
+	newFrame->soundIndex = -1;
+
 	inputAnimation->frameCount++;
 
 	AnimationFrame *lastFrame = inputAnimation->animationData;
@@ -678,6 +775,11 @@ int deleteAnimation(SpriteSet *inputSet, Animation *deleteAnimation)
 			currentFrame = currentFrame->nextFrame;
 			free(tempFrame);
 		}
+	}
+
+	if (deleteAnimation->animationSounds != NULL)
+	{
+		free(deleteAnimation->animationSounds);
 	}
 
 	free(deleteAnimation);

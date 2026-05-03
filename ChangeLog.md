@@ -71,6 +71,9 @@ to those save files.
 
 -> The 'CIRCLE' solidtype is now correctly visuallised and detected by other hitboxes.
 
+-> Added the ability to have sounds play during animations on specific frames. This can be done via the animation-data files by adding 
+'PlaySound: [SoundName] [optional; channel ID] [optional; volume]' next to the desired frame.
+
 
 ## Structure Changes:
 
@@ -98,6 +101,12 @@ object behaviour. By default, it is not defined and you must add to the pre-exis
 
 -> Removed 'screenWidth' and 'screenHeight' global variables, and now the width/height of the camera's perspective is defined by the 'width' and 'height' variables
 located in each camera. This means each camera can use their own screen dimensions, and by default will be stretched to fit the window.
+
+-> The PlaySound function and its variations no longer require a seperate argument for the folder name, and it can now be specified alongside the sound name. This 
+also means that the foldername is no longer stored with a sound's meta data separately, which saves memory.
+e.g: 
+old method - PlaySound("CoinCollect", "Objects", OBJECT_SFX, 1.0)    
+new method - PlaySound("Objects/CoinCollect", OBJECT_SFX, 1.0)
 
 
 ## Bug fixes/Improvements:

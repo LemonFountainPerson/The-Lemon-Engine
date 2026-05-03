@@ -1057,13 +1057,13 @@ int ApplyTextPresets(TextBox *inputText, const char Portrait[], TextPreset input
 		break;
 
 		case PLAINTEXT_BOTTOM:
-		strcpy(inputText->voice, "Text_snd");
+		strcpy(inputText->voice, "Voices/Text_snd");
 		memset(inputText->textBoxSprite, 0, MAX_LEN);
 		break;
 
 		case PLAINTEXT_TOP:
 		inputText->currentYPos = topTextLocation;
-		strcpy(inputText->voice, "Text_snd");
+		strcpy(inputText->voice, "Voices/Text_snd");
 		memset(inputText->textBoxSprite, 0, MAX_LEN);
 		break;
 
@@ -1071,47 +1071,47 @@ int ApplyTextPresets(TextBox *inputText, const char Portrait[], TextPreset input
 		strcpy(inputText->textBoxSprite, "TextBox_White");
 		strcpy(inputText->font, "Pixel_Black");
 		inputText->currentYPos = topTextLocation;
-		strcpy(inputText->voice, "Text_snd");
+		strcpy(inputText->voice, "Voices/Text_snd");
 		break;
 
 		case BLACK_TEXT:
 		strcpy(inputText->textBoxSprite, "TextBox_White");
 		strcpy(inputText->font, "Pixel_Black");
-		strcpy(inputText->voice, "Text_snd");
+		strcpy(inputText->voice, "Voices/Text_snd");
 		break;
 
 		case BASIC_TEXT:
-		strcpy(inputText->voice, "Text_snd");
+		strcpy(inputText->voice, "Voices/Text_snd");
 		break;
 
 		case BASIC_TOP:
 		inputText->currentYPos = topTextLocation;
-		strcpy(inputText->voice, "Text_snd");
+		strcpy(inputText->voice, "Voices/Text_snd");
 		break;
 
 		case BASIC_FAST:
-		strcpy(inputText->voice, "Text_snd");
+		strcpy(inputText->voice, "Voices/Text_snd");
 		inputText->textDelayFrames = 1;
 		break;
 
 		case BASIC_FLIP:
-		strcpy(inputText->voice, "Text_snd");
+		strcpy(inputText->voice, "Voices/Text_snd");
 		inputText->PortraitPosition = PORTRAIT_INSIDE_BOX_RIGHT;
 		break;
 
 		case BASIC_TOP_FLIP:
 		inputText->currentYPos = topTextLocation;
-		strcpy(inputText->voice, "Text_snd");
+		strcpy(inputText->voice, "Voices/Text_snd");
 		inputText->PortraitPosition = PORTRAIT_INSIDE_BOX_RIGHT;
 		break;
 
 		case BASIC_FADE:
-		strcpy(inputText->voice, "Text_snd");
+		strcpy(inputText->voice, "Voices/Text_snd");
 		strcpy(inputText->textBoxSprite, "TextBox_BasicFade");
 		break;
 
 		case BASIC_TOP_FADE:
-		strcpy(inputText->voice, "Text_snd");
+		strcpy(inputText->voice, "Voices/Text_snd");
 		strcpy(inputText->textBoxSprite, "TextBox_BasicFade");
 		inputText->currentYPos = topTextLocation;
 		break;
@@ -1450,7 +1450,7 @@ int playTextVoice(TextBox *currentText)
 
 	if (currentText->voice[0] > 32)
 	{
-		PlaySound(currentText->voice, "Voices", SPEECH, 1.0);
+		PlaySound(currentText->voice, SPEECH, 1.0);
 
 		if (currentText->voiceMode == VOICE_ONCE)
 		{
@@ -2282,7 +2282,7 @@ bool textSceneActionPresent(TextBox *inputText, World *GameWorld)
 			return true;
 		}
 
-		if (currentAction->parallelAction == false)
+		if (currentAction->parallelAction == false || currentAction->ActionID == SCENE_SAY_TEXT)
 		{
 			return false;
 		}

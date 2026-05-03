@@ -956,13 +956,11 @@ int ConsoleCommand_Sound(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	if (strcmp(arg, "play") == 0)
 	{
 		char name[USER_INPUT_MAX_LEN] = {0};
-		char folder[USER_INPUT_MAX_LEN] = {0};
 		parseArgument(input, name);
-		parseArgument(input, folder);
 		float volume = parseArgumentAsFloat(input);
 		ChannelName channel = parseArgumentAsInt(input);
 
-		PlaySound(name, strcmp(folder, "NULL") ? folder : NULL, channel, volume);
+		PlaySound(name, channel, volume);
 	}
 	else
 	{
@@ -995,6 +993,7 @@ int ConsoleCommand_Cutscene(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 		if (GameWorld->CurrentCutscene != NO_CUTSCENE)
 		{
 			GameWorld->CurrentCutscene = END_CUTSCENE;
+			GameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;
 			if (GameWorld->TextQueue != NULL)
 			{
 				clearTextQueue(GameWorld);
@@ -1023,11 +1022,8 @@ int ConsoleCommand_Load(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	else if (strcmp(arg, "audio") == 0)
 	{
 		parseArgument(input, arg);
-		char folder[USER_INPUT_MAX_LEN] = {0};
 
-		parseArgument(input, folder);
-
-		loadAudio(arg, folder);
+		loadAudio(arg);
 	}
 	else
 	{

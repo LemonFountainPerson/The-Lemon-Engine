@@ -1585,7 +1585,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		GameWorld->MainCamera.CameraX = playerBox->xPos;
 		GameWorld->MainCamera.CameraY = playerBox->yPos;
 	}
-	else if (strcmp(buffer, "startmusic") == 0)
+	else if (strcmp(buffer, "playsound") == 0)
 	{
 		char nameBuffer[MAX_LEN] = {0};
 
@@ -1595,7 +1595,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		if (getSoundInstance(nameBuffer, MUSIC_CHANNEL) == NULL)
 		{
-			PlaySoundRepeat(nameBuffer, "Music", MUSIC_CHANNEL, volume, -1);
+			PlaySoundRepeat(nameBuffer, MUSIC_CHANNEL, volume, -1);
 		}
 	}
 	else if (strcmp(buffer, "playsoundtrigger") == 0)

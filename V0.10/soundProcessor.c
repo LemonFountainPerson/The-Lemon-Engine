@@ -21,7 +21,7 @@ static int scheduledSounds = ASYNC_AUDIO_CLOSED;
 static bool closeAllThreads = false;
 
 
-SoundInstance* PlaySound(const char fileName[], const char folderName[], ChannelName channel, float volume)
+SoundInstance* PlaySound(const char fileName[], ChannelName channel, float volume)
 {
 	if (channel < 0 || channel >= CHANNEL_COUNT || fileName == NULL)
 	{
@@ -43,7 +43,6 @@ SoundInstance* PlaySound(const char fileName[], const char folderName[], Channel
 	}
 
 	strcpy(newSound->name, fileName);
-	strcpy(newSound->folder, folderName);
 	newSound->volume = volume;
 	newSound->channel = channel;
 
@@ -64,8 +63,8 @@ SoundInstance* PlaySound(const char fileName[], const char folderName[], Channel
 	}
 
 	// check file
-	char path[MAX_LEN * 3] = {0};
-	findSoundFile(fileName, folderName, path);
+	char path[MAX_LEN * 2] = {0};
+	findSoundFile(fileName, path);
 
 	if (path[0] == '\0')
 	{
@@ -95,7 +94,7 @@ SoundInstance* PlaySound(const char fileName[], const char folderName[], Channel
 	else
 	{
 		// load sound
-		MIX_Audio *loadedAudio = loadAudio(newSound->name, newSound->folder);
+		MIX_Audio *loadedAudio = loadAudio(newSound->name);
 		if (loadedAudio == NULL)
 		{
 			putConsoleError("Couldn't find audio file '%s'", fileName);
@@ -134,7 +133,6 @@ SoundInstance* getNewSound(ChannelName channel)
 	current->volume = 1.0;
 	current->repeats = 1;
 	current->name[0] = '\0';
-	current->folder[0] = '\0';
 	current->panLevels.left = 1.0;
 	current->panLevels.right = 1.0;
 	current->positional = false;
@@ -159,21 +157,15 @@ long getFileSize(const char path[])
 }
 
 
-void findSoundFile(const char fileName[], const char folderName[], char path[MAX_LEN * 3])
+void findSoundFile(const char fileName[], char path[MAX_LEN * 2])
 {
-	if (fileName == NULL || strlen(fileName) > MAX_LEN || (folderName != NULL && strlen(folderName) > MAX_LEN) )
+	if (fileName == NULL || strlen(fileName) > MAX_LEN)
 	{
 		return;
 	}	
 
 	// Must load audio - Construct audio file path
 	strcpy(path, SOUND_ROOT);
-
-	if (folderName != NULL)
-	{
-		strcat(path, folderName);
-		strcat(path, "/");
-	}
 
 	strcat(path, fileName);
 
@@ -197,11 +189,11 @@ void findSoundFile(const char fileName[], const char folderName[], char path[MAX
 	return;
 }
 
-MIX_Audio* loadAudio(const char fileName[], const char folderName[])
+MIX_Audio* loadAudio(const char fileName[])
 {	
 	// Must load audio - Construct audio file path
-	char path[MAX_LEN * 3] = {0};
-	findSoundFile(fileName, folderName, path);
+	char path[MAX_LEN * 2] = {0};
+	findSoundFile(fileName, path);
 
 	if (path[0] == '\0')
 	{
@@ -224,7 +216,7 @@ MIX_Audio* loadAudio(const char fileName[], const char folderName[])
 		MIX_DestroyAudio(list[index].data);
 	}
 
-	strncpy(list[index].name, fileName, MAX_LEN - 1);
+	LemonStrncpy(list[index].name, fileName, MAX_LEN);
 	list[index].data = loadedAudio;
 
 	return loadedAudio;
@@ -257,26 +249,26 @@ void startSound(SoundInstance *sound, MIX_Audio *audio)
 }
 
 
-SoundInstance* PlaySoundFadeIn(const char fileName[], const char folderName[], ChannelName channel, float secondsToFade)
+SoundInstance* PlaySoundFadeIn(const char fileName[], ChannelName channel, float secondsToFade)
 {
 	Sint64 milis = (Sint64)(1000.0 * secondsToFade);
 	SDL_SetNumberProperty(propertiesContainer, MIX_PROP_PLAY_FADE_IN_MILLISECONDS_NUMBER, milis);
-	SoundInstance *sound = PlaySound(fileName, folderName, channel, 1.0);
+	SoundInstance *sound = PlaySound(fileName, channel, 1.0);
 	SDL_SetNumberProperty(propertiesContainer, MIX_PROP_PLAY_FADE_IN_MILLISECONDS_NUMBER, 0);
 
 	return sound;
 }
 
 
-SoundInstance* PlaySoundSpeed(const char fileName[], const char folderName[], ChannelName channel, float volume, float speed)
+SoundInstance* PlaySoundSpeed(const char fileName[], ChannelName channel, float volume, float speed)
 {
-	return SetSoundSpeed(PlaySound(fileName, folderName, channel, volume), speed);
+	return SetSoundSpeed(PlaySound(fileName, channel, volume), speed);
 }
 
 
-SoundInstance* PlaySoundRepeat(const char fileName[], const char folderName[], ChannelName channel, float volume, int repeatTimes)
+SoundInstance* PlaySoundRepeat(const char fileName[], ChannelName channel, float volume, int repeatTimes)
 {
-	return RepeatSound(PlaySound(fileName, folderName, channel, volume), repeatTimes);
+	return RepeatSound(PlaySound(fileName, channel, volume), repeatTimes);
 }
 
 
@@ -313,14 +305,9 @@ SoundInstance* RepeatSound(SoundInstance *input, int repeatTimes)
 }
 
 
-SoundInstance* PlaySoundPositional(const char fileName[], const char folderName[], float xPos, float yPos, Camera positionCam)
+SoundInstance* PlaySoundPositional(const char fileName[], float xPos, float yPos, Camera positionCam)
 {
-	return PositionSound(PlaySound(fileName, folderName, OBJECT_SFX, 1.0), xPos, yPos, positionCam);
-}
-
-SoundInstance* PlayPositionalObjectSound(const char fileName[], float xPos, float yPos, Camera positionCam)
-{
-	return PositionSound(PlaySound(fileName, "Objects", OBJECT_SFX, 1.0), xPos, yPos, positionCam);
+	return PositionSound(PlaySound(fileName, OBJECT_SFX, 1.0), xPos, yPos, positionCam);
 }
 
 SoundInstance* updateSoundPosition(SoundInstance *input, Camera positionCam)
@@ -393,6 +380,20 @@ SoundInstance* ChangeLRPan(SoundInstance *input, float pan)
 	return input;
 }
 
+SoundInstance* fadeOutSound(SoundInstance *input, float secondsToFade)
+{
+	if (input == NULL || secondsToFade < 0.0)
+	{
+		return input;
+	}
+
+	Sint64 milis = (Sint64)(secondsToFade * 1000.0);
+	MIX_StopTrack(input->audio, MIX_TrackMSToFrames(input->audio, milis));
+
+	return input;
+}
+
+
 int setPanLevels(SoundInstance *input, float left, float right)
 {
 	if (input == NULL)
@@ -404,19 +405,6 @@ int setPanLevels(SoundInstance *input, float left, float right)
 	input->panLevels.right = right;
 
 	MIX_SetTrackStereo(input->audio, &input->panLevels);
-
-	return LEMON_SUCCESS;
-}
-
-int fadeOutSound(SoundInstance *input, float secondsToFade)
-{
-	if (input == NULL || secondsToFade < 0.0)
-	{
-		return MISSING_DATA;
-	}
-
-	Sint64 milis = (Sint64)(secondsToFade * 1000.0);
-	MIX_StopTrack(input->audio, MIX_TrackMSToFrames(input->audio, milis));
 
 	return LEMON_SUCCESS;
 }
@@ -537,7 +525,7 @@ int asyncAudioLoad(void *data)
 					count = scheduledSounds;
 					SDL_UnlockMutex(scheduleLock);
 
-					MIX_Audio *loadedAudio = loadAudio(sound->name, sound->folder);
+					MIX_Audio *loadedAudio = loadAudio(sound->name);
 					if (loadedAudio != NULL)
 					{
 						startSound(sound, loadedAudio);
@@ -885,7 +873,6 @@ SoundInstance* createEmptySoundInstance(ChannelName Channel)
 	newSound->volume = 1.0;
 	newSound->audio = MIX_CreateTrack(audioMixer);
 	memset(newSound->name, 0, MAX_LEN * sizeof(char));
-	memset(newSound->folder, 0, MAX_LEN * sizeof(char));
 
 	newSound->channel = Channel;
 	newSound->positional = false;

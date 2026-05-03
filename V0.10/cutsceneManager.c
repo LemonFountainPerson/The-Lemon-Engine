@@ -525,8 +525,7 @@ FuncResult RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 	case SCENE_PLAY_SOUND:
 		{
-			PlaySound(currentData.soundData.soundName, currentData.soundData.folderName, 
-					currentData.soundData.channel, currentData.soundData.volume);
+			PlaySound(currentData.soundData.soundName, currentData.soundData.channel, currentData.soundData.volume);
 		} break;
 
 	case SCENE_SET_CAMERA_POS:
@@ -877,11 +876,10 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 	else if (strcmp(inputString, "PLAYSOUND:") == 0)
 	{
 		getNextArg(fPtr, inputString, MAX_LEN);
-		getNextArg(fPtr, textBoxString, MAX_LEN);
 		int channel = getNextArgInt(fPtr);
 		float volume = getNextArgFloat(fPtr);
 
-		return SceneAction_PlaySound(inputString, textBoxString, channel, volume, GameWorld);
+		return SceneAction_PlaySound(inputString, channel, volume, GameWorld);
 	}
 	else if (strcmp(inputString, "SETCHANNELVOLUME:") == 0 || strcmp(inputString, "SETCHANNELVOL:") == 0)
 	{
@@ -978,12 +976,21 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], char textBoxString[MAX_L
 			GameWorld->GameState = GAMEPLAY;
 		}
 	}
-	else if (!strcmp(inputString, "WAITUNTIL:") && strcmp(textBoxString, "Wait_Until:"))
+	else if (!strcmp(inputString, "WAITUNTIL:"))
 	{
 		getNextArg(fPtr, inputString, MAX_LEN);
-		strcpy(textBoxString, "Wait_Until:");	// prevents 2 or more wait untils from happening in a row
 
 		WaitUntil(loadSceneAction(inputString, textBoxString, GameWorld, fPtr));
+	}
+	else if (!strcmp(inputString, "DONTWAIT:"))
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+
+		SceneAction *action = loadSceneAction(inputString, textBoxString, GameWorld, fPtr);
+		if (action != NULL)
+		{
+			action->parallelAction = true;
+		}
 	}
 	else if (!strcmp(inputString, "REPEAT:"))
 	{
@@ -2027,14 +2034,14 @@ SceneAction* placeInvisibleWall(int xPos, int yPos, int xSize, int ySize, World 
 }
 
 
-SceneAction* SceneAction_PlaySound(char soundName[], char folderName[], ChannelName soundChannel, float volume, World *GameWorld)
+SceneAction* SceneAction_PlaySound(char soundName[], ChannelName soundChannel, float volume, World *GameWorld)
 {
-	if (GameWorld == NULL || soundName == NULL || folderName == NULL)
+	if (GameWorld == NULL || soundName == NULL)
 	{
 		return NULL;
 	}
 
-	if (strlen(soundName) >= MAX_LEN || strlen(folderName) >= MAX_LEN)
+	if (strlen(soundName) >= MAX_LEN)
 	{
 		return NULL;
 	}
@@ -2046,7 +2053,6 @@ SceneAction* SceneAction_PlaySound(char soundName[], char folderName[], ChannelN
 	}
 
 	strcpy(newAction->ActionData.soundData.soundName, soundName);
-	strcpy(newAction->ActionData.soundData.folderName, folderName);
 	newAction->ActionData.soundData.channel = soundChannel;
 	newAction->ActionData.soundData.volume = volume;
 	newAction->parallelAction = true;
@@ -2070,7 +2076,6 @@ SceneAction* SceneAction_SetSoundChannelVolume(ChannelName soundChannel, float n
 	}
 
 	strcpy(newAction->ActionData.soundData.soundName, "noSound");
-	strcpy(newAction->ActionData.soundData.folderName, "noFolder");
 	newAction->ActionData.soundData.channel = soundChannel;
 	newAction->ActionData.soundData.volume = newVolume;
 	newAction->parallelAction = true;
@@ -2092,7 +2097,6 @@ SceneAction* SceneAction_ChangeSoundChannelVolume(ChannelName soundChannel, floa
 	}
 
 	strcpy(newAction->ActionData.soundData.soundName, "noSound");
-	strcpy(newAction->ActionData.soundData.folderName, "noFolder");
 	newAction->ActionData.soundData.channel = soundChannel;
 	newAction->ActionData.soundData.volume = change;
 	newAction->parallelAction = true;

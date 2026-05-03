@@ -1220,14 +1220,6 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 			1.0 / inputDisplay->animationBuffer->frameRate,
 			inputDisplay->animationTick);
 		}
-		else if (inputDisplay->animationLoopCount == ONE_FRAME_INDEFINITE_ANIMATION)
-		{
-			snprintf(text, DEBUG_TEXT_MAX_LENGTH, 
-			"Animation Name: %s \nCurrent Animation ID: %d \nFrameRate: %.2f \nAnimation Tick: %f \nPlayback halted; Single frame & indefinite", 
-			inputDisplay->animationBuffer->name, inputDisplay->currentAnimation, 
-			(float)EngineSettings.GameTicksPerSecond / inputDisplay->animationBuffer->frameRate,
-			inputDisplay->animationTick);
-		}
 		else
 		{
 			snprintf(text, DEBUG_TEXT_MAX_LENGTH, 

@@ -1,8 +1,9 @@
 SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, int desiredID);
 
+void loadFrameSound(FILE *fPtr, AnimationFrame *newFrame, Animation *anim);
+
 
 int stopAnimation(DisplayData *inputData);
-
 
 int useThisAnimation(Animation *anim, int loopCount, DisplayData *inputData);
 
@@ -42,6 +43,7 @@ int iterateAnimation(DisplayData *inputData, float deltaTime);
 
 Animation* initialiseNewAnimation(const char animationName[], float frameRate, SpriteSet *inputSet);
 
+int addSoundToAnimation(const char name[], float volume, int channel, Animation *anim);
 
 AnimationFrame* addSpriteToAnimation(const char spriteName[], Animation *inputAnimation, SpriteSet *sourceSet);
 

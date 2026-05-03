@@ -138,7 +138,7 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 
 				centerOnObject(GameWorld->Player.PlayerPtr, EventData->object);
 				ResetPlayer(&GameWorld->Player);
-				PlaySound("DoorOpen", "Objects", OBJECT_SFX, 1.0);
+				PlaySound("Objects/DoorOpen", OBJECT_SFX, 1.0);
 			} break;
 
 		case EVENT_SET_BRIGHTNESS:

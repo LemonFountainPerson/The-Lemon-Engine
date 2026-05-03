@@ -440,8 +440,7 @@ typedef enum RotationMode
 
 typedef enum AnimationLoopState
 {
-	LOOP_INDEFINITELY = -1,
-	ONE_FRAME_INDEFINITE_ANIMATION = -2
+	LOOP_INDEFINITELY = -1
 } AnimationLoopState;
 
 
@@ -485,7 +484,6 @@ typedef struct soundInstance
 
 	ChannelName channel;
 	char name[MAX_LEN];
-	char folder[MAX_LEN];
 	float volume;
 	int repeats;
 	MIX_StereoGains panLevels;
@@ -518,6 +516,13 @@ typedef struct soundChannel
 	struct soundInstance *firstSound;
 } SoundChannel;
 
+typedef struct SoundMeta
+{
+	char soundName[MAX_LEN];
+	float volume;
+	ChannelName channel;
+} SoundMeta;
+
 
 // Regular Sprites (Objects, player, particles, etc.)
 typedef struct sprite
@@ -535,24 +540,28 @@ typedef struct sprite
 } Sprite;
 
 
-typedef struct animationFrame 
+typedef struct AnimationFrame 
 {
-	struct animationFrame *nextFrame;
+	struct AnimationFrame *nextFrame;
 
-	struct sprite *frameSprite;
+	Sprite *frameSprite;
 	float SpriteXOffset;
 	float SpriteYOffset;
 	float rotation;
+
+	int soundIndex; // Which sound from animation's soundlist to play - '-1' means no sound
 } AnimationFrame;
 
-
 // Starts counting animation IDs from 1
-typedef struct animation 
+typedef struct Animation 
 {
-	struct animation *nextAnimation;
+	struct Animation *nextAnimation;
 
-	struct animationFrame *animationData;
+	AnimationFrame *animationData;
 	int frameCount;
+
+	SoundMeta *animationSounds;
+	int soundCount;
 
 	char name[ANIMATION_NAME_LENGTH]; 
 	int animationID;
@@ -566,13 +575,13 @@ typedef struct animation
 // Starts counting sprite IDs from 1
 typedef struct spriteSet
 {
-	struct sprite *firstSprite;
-	struct sprite *lastSprite;
+	Sprite *firstSprite;
+	Sprite *lastSprite;
 
 	struct spriteSet *nextSet;
 	struct spriteSet *prevSet;
 
-	struct animation *Animations;
+	Animation *Animations;
 
 	int setID;
 	int spriteCount;
@@ -1093,14 +1102,6 @@ typedef struct BackgroundData
 	TilePlane tileBG;
 } BackgroundData;
 
-
-struct SoundMeta
-{
-	char soundName[MAX_LEN];
-	char folderName[MAX_LEN];
-	float volume;
-	ChannelName channel;
-};
 
 struct ObjectMeta
 {

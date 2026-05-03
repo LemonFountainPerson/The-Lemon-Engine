@@ -87,9 +87,9 @@ SceneAction* ReleaseActor(char objName[], World *GameWorld);
 SceneAction* placeInvisibleWall(int xPos, int yPos, int xSize, int ySize, World *GameWorld);
 
 
-SceneAction* SceneAction_PlaySound(char soundName[], char folderName[], ChannelName soundChannel, float volume, World *GameWorld);
+SceneAction* SceneAction_PlaySound(char soundName[], ChannelName soundChannel, float volume, World *GameWorld);
 
-SceneAction* SceneAction_PlaySoundRepeat(char soundName[], char folderName[], ChannelName soundChannel, float volume, int repeatTimes, World *GameWorld);
+SceneAction* SceneAction_PlaySoundRepeat(char soundName[], ChannelName soundChannel, float volume, int repeatTimes, World *GameWorld);
 
 SceneAction* SceneAction_SetSoundChannelVolume(ChannelName soundChannel, float newVolume, World *GameWorld);
 

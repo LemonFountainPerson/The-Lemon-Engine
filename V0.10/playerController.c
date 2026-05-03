@@ -355,7 +355,7 @@ int PlayerJump(PlayerData *Player, bool jump)
 	{
 		if (Player->jumpProgress < 1)
 		{
-			PlaySound("Jump", "Player", PLAYER_SFX, 1.0);
+			PlaySound("Player/Jump", PLAYER_SFX, 1.0);
 			PlayNewAnimation("Jump", 9, Player->PlayerDisplay);
 			Player->PlayerBox->yVelocity = Player->jumpForce;
 			Player->jumpHeld = true;

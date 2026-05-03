@@ -1,18 +1,19 @@
-SoundInstance* PlaySound(const char fileName[], const char folderName[], ChannelName channel, float volume);
+SoundInstance* PlaySound(const char fileName[], ChannelName channel, float volume);
 
-SoundInstance* PlaySoundFadeIn(const char fileName[], const char folderName[], ChannelName channel, float secondsToFade);
+SoundInstance* PlaySoundFadeIn(const char fileName[], ChannelName channel, float secondsToFade);
 
-SoundInstance* PlaySoundRepeat(const char fileName[], const char folderName[], ChannelName channel, float volume, int repeatTimes);
+SoundInstance* PlaySoundRepeat(const char fileName[], ChannelName channel, float volume, int repeatTimes);
 
-SoundInstance* PlaySoundPositional(const char fileName[], const char folderName[], float xPos, float yPos, Camera positionCam);
+SoundInstance* PlaySoundPositional(const char fileName[], float xPos, float yPos, Camera positionCam);
 
-SoundInstance* PlayPositionalObjectSound(const char fileName[], float xPos, float yPos, Camera positionCam);
-
-SoundInstance* SetSoundSpeed(SoundInstance *inputSound, float newSpeed);
 
 SoundInstance* RepeatSound(SoundInstance *input, int repeatTimes);
 
 SoundInstance* PositionSound(SoundInstance *input, float xPos, float yPos, Camera positionCam);
+
+SoundInstance* SetSoundSpeed(SoundInstance *inputSound, float newSpeed);
+
+SoundInstance* fadeOutSound(SoundInstance *input, float secondsToFade);
 
 SoundInstance* SetLRPan(SoundInstance *input, float pan);
 
@@ -20,16 +21,15 @@ SoundInstance* ChangeLRPan(SoundInstance *input, float pan);
 
 int setPanLevels(SoundInstance *input, float left, float right);
 
-int fadeOutSound(SoundInstance *input, float secondsToFade);
 
 
 SoundInstance* getNewSound(ChannelName channel);
 
 long getFileSize(const char path[]);
 
-void findSoundFile(const char fileName[], const char folderName[], char path[MAX_LEN * 3]);
+void findSoundFile(const char fileName[], char path[MAX_LEN * 2]);
 
-MIX_Audio* loadAudio(const char fileName[], const char folderName[]);
+MIX_Audio* loadAudio(const char fileName[]);
 
 void startSound(SoundInstance *sound, MIX_Audio *audio);
 
