@@ -298,7 +298,7 @@ int loadSaveData(const char *fileName, World *GameWorld)
 				index = getGameFlag(readPhrase);
 				consumeStatement(fPtr, ':');
 
-				if (!hasNextArgInt(fPtr))
+				if (!hasNextArgNumber(fPtr))
 				{
 					break;
 				}
@@ -1275,7 +1275,7 @@ int loadConditionalStatement(World *GameWorld, FILE *fPtr)
 {
 	int flagIndex;
 	
-	if (hasNextArgInt(fPtr))
+	if (hasNextArgNumber(fPtr))
 	{
 		flagIndex = getNextArgInt(fPtr);
 
@@ -1839,7 +1839,7 @@ int loadObjectRepeated(World *GameWorld, FILE *fPtr)
 
 			fseek(fPtr, filePos, SEEK_SET);
 
-			if (!hasNextArgInt(fPtr))
+			if (!hasNextArgNumber(fPtr))
 			{
 				getNextArg(fPtr, string, 16);
 			}
@@ -2284,7 +2284,7 @@ int getNextArgInt(FILE *fPtr)
 	return 0;
 }
 
-bool hasNextArgInt(FILE *fPtr)
+bool hasNextArgNumber(FILE *fPtr)
 {
 	if (fPtr == NULL)
 	{
@@ -2366,7 +2366,7 @@ int getNextArgGameFlag(FILE *fPtr)
 
 	char name[MAX_LEN] = {0};
 
-	if (hasNextArgInt(fPtr))
+	if (hasNextArgNumber(fPtr))
 	{
 		return getNextArgInt(fPtr);
 	}

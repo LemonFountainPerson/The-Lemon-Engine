@@ -1,4 +1,4 @@
-void executeCommand(char inputSource[], World *GameWorld);
+void executeCommand(char inputSource[USER_INPUT_MAX_LEN], World *GameWorld);
 
 void parseArgument(const char input[USER_INPUT_MAX_LEN], char argDest[USER_INPUT_MAX_LEN]);
 

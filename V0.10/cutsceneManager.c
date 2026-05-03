@@ -894,7 +894,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 	}
 	else if (!strcmp(inputString, "SMOOTHMOVECAMERATO:") || !strcmp(inputString, "MOVECAMERATO:"))
 	{
-		if (hasNextArgInt(fPtr))
+		if (hasNextArgNumber(fPtr))
 		{
 			float xPos = getNextArgFloat(fPtr);
 			float yPos = getNextArgFloat(fPtr);

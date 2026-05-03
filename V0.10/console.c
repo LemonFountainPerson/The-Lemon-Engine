@@ -1,7 +1,7 @@
 #include "LemonEngine.h"
 
 // command console
-void executeCommand(char inputSource[], World *GameWorld)
+void executeCommand(char inputSource[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char input[USER_INPUT_MAX_LEN] = {0};
 	strcpy(input, inputSource);

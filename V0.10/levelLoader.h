@@ -84,7 +84,7 @@ int getNextArg(FILE *fPtr, char buffer[], int capacity);
 
 int getNextArgInt(FILE *fPtr);
 
-bool hasNextArgInt(FILE *fPtr);
+bool hasNextArgNumber(FILE *fPtr);
 
 bool getNextArgBool(FILE *fPtr);
 

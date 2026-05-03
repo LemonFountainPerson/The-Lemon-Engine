@@ -175,7 +175,7 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 			// get ID of set to copy
 			int copyID;
 
-			if (hasNextArgInt(fPtr))
+			if (hasNextArgNumber(fPtr))
 			{
 				copyID = getNextArgInt(fPtr);
 			}
@@ -857,7 +857,7 @@ int loadTileSetBackground(const char *name, BackgroundData *bg)
 
 	while (!endOfFile(file) && i < size)
 	{
-		if (hasNextArgInt(file))
+		if (hasNextArgNumber(file))
 		{
 			tPlane->tiles[i] = getNextArgInt(file);
 			i++;
@@ -873,7 +873,7 @@ int loadTileSetBackground(const char *name, BackgroundData *bg)
 			int rowIndex = width * (getNextArgInt(file) - 1);
 			int repeat = 1;
 
-			if (hasNextArgInt(file))
+			if (hasNextArgNumber(file))
 			{
 			 	repeat = getNextArgInt(file) * width;
 			}
