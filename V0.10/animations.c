@@ -515,6 +515,11 @@ int iterateAnimation(DisplayData *inputData, float deltaTime)
 		return EXECUTION_UNNECESSARY;
 	}
 
+	if (strcmp(inputData->animationBuffer->name, "FlipSwitchOn") == 0 || strcmp(inputData->animationBuffer->name, "FlipSwitchOff") == 0)
+	{
+		putConsoleString("tick: %f  frameRate: %f   pos: %f", inputData->animationTick, frameRate, inputData->frameBuffer->SpriteYOffset);
+	}
+
 	while (inputData->animationTick >= frameRate)
 	{
 		inputData->animationTick -= frameRate;
@@ -531,7 +536,6 @@ int iterateAnimation(DisplayData *inputData, float deltaTime)
 			// but this may change for consistency in the future
 			if (inputData->animationLoopCount == 0 || anim->animationData == NULL)
 			{
-				inputData->frameBuffer = NULL;
 				inputData->currentAnimation = 0;
 				return EXECUTION_UNNECESSARY;
 			}

@@ -1446,7 +1446,7 @@ static const char ObjectNames[OBJECT_TYPE_COUNT][64] = {
 	[SPRING] = "Spring",
 	[MOVING_PLATFORM_HOR] = "MovingPlatform_Horizontal",
 	[MOVING_PLATFORM_VER] = "MovingPlatform_Vertical",
-	[GATE_SWITCH] = "Gate Switch",
+	[GATE_SWITCH] = "GateSwitch",
 	[GATE_SWITCH_TIMED] = "GateSwitchTimed",
 	[VERTICAL_GATE] = "VerticalGate",
 	[HORIZONTAL_GATE] = "HorizontalGate",
@@ -3402,7 +3402,7 @@ int toggleGateSwitch(Object *gateSwitch, ObjectController *ObjectList)
 	{
 		PlayAnimation("FlipSwitchOn", 1, getDisplay(gateSwitch));
 	}
-
+	
 	PlaySound("Objects/GateSwitchToggle", OBJECT_SFX, 1.0);
 
 	return LEMON_SUCCESS;

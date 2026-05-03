@@ -155,8 +155,11 @@
 //-------------------------------------------------------------------------------------------------
 
 
+#ifdef _WIN32
 #define EXPORT __declspec( dllexport )
-
+#else
+#define EXPORT
+#endif
 
 #define LEMON_ENGINE_INFO "Lemon Engine - by Liam Fuentes Pessoa"
 

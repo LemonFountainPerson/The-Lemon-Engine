@@ -1068,7 +1068,7 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 		} break;
 	}
 
-	snprintf(text, DEBUG_TEXT_MAX_LENGTH, "%s \nTick: %llu", LEMON_VERSION, TickNumber());
+	snprintf(text, DEBUG_TEXT_MAX_LENGTH, "%s \nTick: %llu", LEMON_VERSION, (long long unsigned int)TickNumber());
 	AddDebugText(text, 16 - (renderCamera.width >> 1), 48 - (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
 
 	return;

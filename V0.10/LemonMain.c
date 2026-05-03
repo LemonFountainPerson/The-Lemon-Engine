@@ -34,7 +34,7 @@ Uint64 TickNum = 0;
 // Lemon Engine main
 int RunLemonEngine(void)
 {
-	if (StartUpLemonEngine() == LEMON_ERROR)
+	if (StartUpLemonEngine() != LEMON_SUCCESS)
 	{
 		return LEMON_ERROR;
 	}
@@ -1908,7 +1908,7 @@ void putConsoleStringTS(const char input[], ...)
 	}
 
 	char buffer[CONSOLE_STRING_LENGTH] = {0};
-	snprintf(buffer, CONSOLE_STRING_LENGTH, "[Tick: %llu] %s", TickNum, input);
+	snprintf(buffer, CONSOLE_STRING_LENGTH, "[Tick: %llu] %s", (long long unsigned int)TickNum, input);
 
 	va_list argptr;
     va_start(argptr, input);
