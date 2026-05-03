@@ -163,8 +163,6 @@
 #define FILE_READER_VERSION "FRV<1>"
 #define LEMON_VERSION "V0.10"
 
-#endif
-
 
 /*
 
@@ -182,5 +180,10 @@ void Tick(World *GameWorld);	// On new GameTick
 
 void Update(World *GameWorld);	// On new frame
 
+void ExecuteCustomGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *ScreenData);  // called when executing a GameEvent that isn't built-in 
+
+void UpdateCustomLevelFlag(Object *inputFlag, World *GameWorld);	// called when updating a LevelFlag that isn't built-in 
 
 */
+
+#endif

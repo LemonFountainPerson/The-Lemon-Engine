@@ -201,6 +201,9 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 			} break;
 
 		default:
+			#ifdef LEMON_USE_CUSTOM_CALLBACKS
+			ExecuteCustomGameEvent(inputEvent, GameWorld, ScreenData);
+			#endif
 			break;
 	}
 
@@ -962,14 +965,16 @@ int InitialiseLevelFlag(Object *inputObject, ObjectController *ObjectList)
 	return LEMON_SUCCESS;
 }
 
-int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld)
+int UpdateFlagObject(Object* inputObject, World *GameWorld)
 {
-	if (GameWorld == NULL || GameWorld->ObjectList == NULL || Player == NULL || Player->PlayerPtr == NULL || inputObject == NULL)
+	if (GameWorld == NULL || GameWorld->ObjectList == NULL || inputObject == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (GameWorld->GameState != GAMEPLAY)
+	PlayerData *Player = &GameWorld->Player;
+
+	if (GameWorld->GameState != GAMEPLAY || GameWorld->Player.PlayerPtr == NULL)
 	{
 		return ACTION_DISABLED;
 	}
@@ -1094,7 +1099,13 @@ int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld)
 		} break;
 
 		default:
+		#ifndef LEMON_USE_CUSTOM_CALLBACKS
 		MarkObjectForDeletion(inputObject);
+		#endif
+
+		#ifdef LEMON_USE_CUSTOM_CALLBACKS
+		UpdateCustomLevelFlag(inputObject, GameWorld);
+		#endif
 		break;
 	}
 

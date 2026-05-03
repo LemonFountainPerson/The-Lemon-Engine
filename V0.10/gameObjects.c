@@ -1865,7 +1865,7 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject)
 
 
 		case LEVEL_FLAG_OBJ:
-			UpdateFlagObject(inputObject, &GameWorld->Player, GameWorld);
+			UpdateFlagObject(inputObject, GameWorld);
 			break;
 
 
@@ -3419,9 +3419,6 @@ int UpdateVerticalGate(Object *gate, World *GameWorld)
 	{
 		return MISSING_DATA;
 	}
-
-	switchSpriteByName("Missing", USE_CURRENT_SPRITESET, gate->ObjectDisplay);
-	switchObjectSpriteByName("Missing", gate);
 
 	int closedPosition = gate->arg3;
 	int speed = gate->arg2;

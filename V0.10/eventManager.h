@@ -77,4 +77,4 @@ bool detectPlayer(Object* inputObject, PlayerData *Player);
 bool detectCamera(Object* inputObject, Camera inputCamera);
 
 
-int UpdateFlagObject(Object* inputObject, PlayerData *Player, World *GameWorld);
+int UpdateFlagObject(Object* inputObject, World *GameWorld);

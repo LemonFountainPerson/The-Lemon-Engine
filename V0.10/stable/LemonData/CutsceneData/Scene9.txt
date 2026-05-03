@@ -27,7 +27,6 @@ THEN
 ELSE 
 {
 	SayText: "text 2" NO_PORTRAIT 1
-
 }
  
 changeGameFlag: "flag1" 1
