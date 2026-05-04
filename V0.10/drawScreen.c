@@ -1019,7 +1019,7 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 			
 			DisplayObjectDebugInfo(currentObject, objCount, true, renderCamera);
 
-			if (MouseInput.LeftButton == 1)
+			if (buttonPressed(MOUSE_LEFT))
 			{
 				AcknowledgeButton(MOUSE_LEFT);
 				toggleHidden(currentObject);
@@ -1027,7 +1027,7 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 
 			if (MouseInput.RightButton == 1)
 			{
-				AcknowledgeButton(MOUSE_RIGHT);
+				MouseInput.RightButton = 2;
 				if (currentObject->State == TO_BE_DELETED)
 				{
 					UnmarkObjectForDeletion(currentObject);

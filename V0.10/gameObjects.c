@@ -2766,6 +2766,8 @@ bool isHurt(Object *input)
 
 BulletComponent* addBulletComponent(Object *input, Object *owner, int damage, ParticleSubType particleType)
 {
+	centerOnObject(input, owner);
+
 	BulletComponent *newBullet = addComponentType(input, BulletComponent);
 
 	if (newBullet == NULL)
@@ -2783,8 +2785,7 @@ BulletComponent* addBulletComponent(Object *input, Object *owner, int damage, Pa
 
 	input->ObjectBox->solid = CIRCLE;
 	input->ObjectBox->flag = GET_IGNORED;
-	centerOnObject(input, owner);
-
+	
 	return newBullet;
 }
 

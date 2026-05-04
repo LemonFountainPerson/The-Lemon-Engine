@@ -415,7 +415,7 @@ int UpdateCursor(Object *Cursor, World *GameWorld)
 			RotateObject(Bullet, -17.5);
 
 			Cursor->Action = MOUSECLICK_INTERRUPT;
-			Cursor->arg2 = 3;
+			Cursor->arg2 = 1;
 		}
 	}
 

@@ -1294,50 +1294,48 @@ void AcknowledgeButton(LemonKeys Key)
 {
 	if (Key >= INPUT_COUNT || Key < 0)
 	{
-		switch (Key)
-		{
-			case MOUSE_LEFT:
-				if (MouseInput.LeftButton == 1)
-				{
-					MouseInput.LeftButton = 2;
-				}
-				break;
-
-			case MOUSE_RIGHT:
-				if (MouseInput.RightButton == 1)
-				{
-					MouseInput.RightButton = 2;
-				}
-				break;
-
-			case MOUSE_MIDDLE:
-				if (MouseInput.MiddleButton == 1)
-				{
-					MouseInput.MiddleButton = 2;
-				}
-				break; 
-
-			case MOUSE_SIDE1:
-				if (MouseInput.SideButton1 == 1)
-				{
-					MouseInput.SideButton1 = 2;
-				}
-				break;
-
-			case MOUSE_SIDE2:
-				if (MouseInput.SideButton2 == 1)
-				{
-					MouseInput.SideButton2 = 2;
-				}
-				break;
-
-
-
-			default:
-				return;
-		}
-
 		return;
+	}
+
+	switch (Key)
+	{
+		case MOUSE_LEFT:
+			if (MouseInput.LeftButton == 1)
+			{
+				MouseInput.LeftButton = 2;
+			}
+			break;
+
+		case MOUSE_RIGHT:
+			if (MouseInput.RightButton == 1)
+			{
+				MouseInput.RightButton = 2;
+			}
+			break;
+
+		case MOUSE_MIDDLE:
+			if (MouseInput.MiddleButton == 1)
+			{
+				MouseInput.MiddleButton = 2;
+			}
+			break; 
+
+		case MOUSE_SIDE1:
+			if (MouseInput.SideButton1 == 1)
+			{
+				MouseInput.SideButton1 = 2;
+			}
+			break;
+
+		case MOUSE_SIDE2:
+			if (MouseInput.SideButton2 == 1)
+			{
+				MouseInput.SideButton2 = 2;
+			}
+			break;
+
+		default:
+			break;
 	}
 
 	if (buttons[Key] == 1)
