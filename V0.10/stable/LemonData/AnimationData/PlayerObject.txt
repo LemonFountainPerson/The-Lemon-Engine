@@ -15,7 +15,7 @@ AddFrame:	StickManJump	0	0	15
 AddFrame:	StickManJump	0	0	30
 AddFrame:	StickManJump	0	0	45
 AddFrame:	StickManJump	0	0	60
-AddFrame:	StickManJump	0	0	75
+AddFrame:	StickManJump	0	0	75 
 AddFrame:	StickManJump	0	0	90
 AddFrame:	StickManJump	0	0	105
 AddFrame:	StickManJump	0	0	120	

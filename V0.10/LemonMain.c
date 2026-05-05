@@ -801,7 +801,7 @@ int FPSCounter(void)
 
     if (DebugSettings.FPSCounter == 0 && TextIndex > -1)
     {
- 		RemoveText(&TextSettings.TextList, TextIndex);
+ 		RemoveTextFromList(&TextSettings.TextList, TextIndex);
  		TextIndex = -1;
     }
 
@@ -1732,6 +1732,16 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 		return;
 	}
 
+	if (buttons[LMN_ENTER] == 1 && DebugSettings.PauseEngine == ENGINE_PAUSED)
+	{
+		GameWorld->MainCamera.CameraMode = FREE_ROAM;
+		DebugSettings.PauseEngine = ENGINE_SINGLE_TICK;
+		GameFrame(GameWorld);
+		GameTick(GameWorld);
+		DebugSettings.PauseEngine = ENGINE_PAUSED;	
+		GameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;	
+	}
+	
 	if (buttons[LMN_LSHIFT] == 0)
 	{
 		return;
@@ -1763,16 +1773,6 @@ void MasterControls(World *GameWorld, SDL_Window *window)
     	DebugSettings.PauseEngine = (DebugSettings.PauseEngine + 1) % 2;
 		putConsoleString("\nToggling Pause: %d", DebugSettings.PauseEngine);
     }
-
-	if (buttons[LMN_ENTER] == 1 && DebugSettings.PauseEngine == ENGINE_PAUSED)
-	{
-		GameWorld->MainCamera.CameraMode = FREE_ROAM;
-		DebugSettings.PauseEngine = ENGINE_SINGLE_TICK;
-		GameFrame(GameWorld);
-		GameTick(GameWorld);
-		DebugSettings.PauseEngine = ENGINE_PAUSED;	
-		GameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;	
-	}
 
 
 	if (buttons['3'] == 1)

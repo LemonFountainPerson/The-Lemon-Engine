@@ -2767,6 +2767,8 @@ bool isHurt(Object *input)
 BulletComponent* addBulletComponent(Object *input, Object *owner, int damage, ParticleSubType particleType)
 {
 	centerOnObject(input, owner);
+	input->ObjectBox->solid = CIRCLE;
+	input->ObjectBox->flag = GET_IGNORED;
 
 	BulletComponent *newBullet = addComponentType(input, BulletComponent);
 
@@ -2782,9 +2784,6 @@ BulletComponent* addBulletComponent(Object *input, Object *owner, int damage, Pa
 	newBullet->particleLifeTime = 0;
 	newBullet->bulletCollide = false;
 	newBullet->bulletLifeTime = 200;
-
-	input->ObjectBox->solid = CIRCLE;
-	input->ObjectBox->flag = GET_IGNORED;
 	
 	return newBullet;
 }
@@ -3203,6 +3202,11 @@ int UpdateCoin(Object *coin, World *GameWorld)
 	if (checkBoxOverlapsBoxBroad(Player->PlayerBox, coin->ObjectBox))
 	{
 		Player->coinCount++;
+
+		char text[30];
+		snprintf(text, 30, "Coin Count: %d", Player->coinCount);
+		updateTextWithName("CoinCounter", text);
+
 		AddParticle(GameWorld, SPARKLE, coinBox->xPos + 20 - (rand() % 40), coinBox->yPos + 20 - (rand() % 40), 1, 0);
 		MarkObjectForDeletion(coin);
 		PlaySound("Objects/Coin_Collect", OBJECT_SFX, 0.75);

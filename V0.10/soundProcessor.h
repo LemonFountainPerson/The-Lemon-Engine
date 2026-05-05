@@ -48,8 +48,6 @@ SoundInstance* createEmptySoundInstance(ChannelName Channel);
 
 int deleteSoundInstance(SoundInstance *inputSound, ChannelName channel);
 
-int StopAudioInChannel(ChannelName channel);
-
 int cleanUpAudioData(void);
 
 
@@ -59,9 +57,9 @@ int SetChannelVolume(ChannelName channel, float newVolume);
 
 int ChangeChannelVolume(ChannelName channel, float changeVolume);
 
-int SetAllVolume(float newVolume);
+void SetAllVolume(float newVolume);
 
-int ChangeAllVolume(float changeVolume);
+void ChangeAllVolume(float changeVolume);
 
 int SetChannelSpeed(ChannelName channel, float newSpeed);
 
@@ -69,15 +67,19 @@ int MuteChannel(ChannelName channel);
 
 int UnmuteChannel(ChannelName channel);
 
-int MuteAllAudio(void);
+void MuteAllAudio(void);
 
-int UnmuteAllAudio(void);
+void UnmuteAllAudio(void);
 
-int ToggleAllAudio(void);
+void StopAllAudio(void);
 
-int PauseAllAudio(void);
+void ToggleAllAudio(void);
 
-int ResumeAllAudio(void);
+void PauseAllAudio(void);
+
+void ResumeAllAudio(void);
+
+int StopAudioInChannel(ChannelName channel);
 
 int ToggleChannel(ChannelName channel);
 
@@ -87,3 +89,5 @@ int ResumeChannel(ChannelName channel);
 
 
 int DisplaySoundChannelDebugInfo(ChannelName channel);
+
+void putConsoleCachedSounds(void);

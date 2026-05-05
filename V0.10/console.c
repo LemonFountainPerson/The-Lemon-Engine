@@ -957,15 +957,39 @@ int ConsoleCommand_Sound(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	parseArgument(input, arg);
+	stringToLower(input);
 
 	if (strcmp(arg, "play") == 0)
 	{
 		char name[USER_INPUT_MAX_LEN] = {0};
 		parseArgument(input, name);
 		float volume = parseArgumentAsFloat(input);
+		if (volume < 0.01)
+		{
+			volume = 1.0;
+		}
+
 		ChannelName channel = parseArgumentAsInt(input);
 
-		PlaySound(name, channel, volume);
+		if (PlaySound(name, channel, volume) == NULL)
+		{
+			putConsoleString("Couldn't play or find  '%s'", name);
+		}
+
+	}
+	else if (strcmp(arg, "cache") == 0)
+	{
+		putConsoleCachedSounds();
+	}
+	else if (strcmp(arg, "stopchannel") == 0)
+	{
+		int channel = parseArgumentAsInt(input);
+
+		StopAudioInChannel(channel);
+	}
+	else if (strcmp(arg, "stopall") == 0 || strcmp(arg, "stop") == 0)
+	{
+		StopAllAudio();
 	}
 	else
 	{

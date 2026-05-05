@@ -18,7 +18,7 @@ static CachedSoundList storedSounds = {0};
 SDL_Mutex *scheduleLock = NULL;
 SDL_Mutex *threadLock = NULL;
 static int scheduledSounds = ASYNC_AUDIO_CLOSED;
-static bool closeAllThreads = false;
+static volatile bool closeAllThreads = false;
 
 
 SoundInstance* PlaySound(const char fileName[], ChannelName channel, float volume)
@@ -454,7 +454,7 @@ SoundInstance* getSoundInstance(const char soundName[], ChannelName channel)
 		return NULL;
 	}
 
-	if (strlen(soundName) > MAX_LEN)
+	if (strlen(soundName) >= MAX_LEN)
 	{
 		return NULL;
 	}
@@ -466,14 +466,7 @@ SoundInstance* getSoundInstance(const char soundName[], ChannelName channel)
 		return NULL;
 	}
 
-	int i = 0;
-	while (currentSound->nextSound != NULL && i < EngineSettings.MaxSoundsPerChannel)
-	{
-		currentSound = currentSound->nextSound;
-		i++;
-	}
-
-	i = SoundChannels[channel].soundCount;
+	int i = SoundChannels[channel].soundCount;
 
 	while (currentSound != NULL && i > 0)
 	{
@@ -482,7 +475,7 @@ SoundInstance* getSoundInstance(const char soundName[], ChannelName channel)
 			return currentSound;
 		}
 
-		currentSound = currentSound->prevSound;
+		currentSound = currentSound->nextSound;
 		i--;
 	}
 
@@ -690,7 +683,7 @@ int ChangeChannelVolume(ChannelName channel, float changeVolume)
 }
 
 
-int SetAllVolume(float newVolume)
+void SetAllVolume(float newVolume)
 {
 	for (int i = 0; i < CHANNEL_COUNT; i++)
 	{
@@ -698,11 +691,11 @@ int SetAllVolume(float newVolume)
 	}
 
 	
-	return LEMON_SUCCESS;
+	return;
 }
 
 
-int ChangeAllVolume(float changeVolume)
+void ChangeAllVolume(float changeVolume)
 {
 	for (int i = 0; i < CHANNEL_COUNT; i++)
 	{
@@ -710,29 +703,61 @@ int ChangeAllVolume(float changeVolume)
 	}
 
 	
-	return LEMON_SUCCESS;
+	return;
 }
 
 
-int MuteAllAudio(void)
+void MuteAllAudio(void)
 {
 	for (int i = 0; i < CHANNEL_COUNT; i++)
 	{
 		MuteChannel(i);
 	}
 
-	return LEMON_SUCCESS;
+	return;
 }
 
 
-int UnmuteAllAudio(void)
+void UnmuteAllAudio(void)
 {
 	for (int i = 0; i < CHANNEL_COUNT; i++)
 	{
 		UnmuteChannel(i);
 	}
 
-	return LEMON_SUCCESS;
+	return;
+}
+
+void StopAllAudio(void)
+{
+	for (int i = 0; i < CHANNEL_COUNT; i++)
+	{
+		StopAudioInChannel(i);
+	}
+
+	return;
+}
+
+
+void PauseAllAudio(void)
+{
+	for (int i = 0; i < CHANNEL_COUNT; i++)
+	{
+		PauseChannel(i);
+	}
+
+	return;
+}
+
+
+void ResumeAllAudio(void)
+{
+	for (int i = 0; i < CHANNEL_COUNT; i++)
+	{
+		ResumeChannel(i);
+	}
+
+	return;
 }
 
 
@@ -744,46 +769,6 @@ int StopAudioInChannel(ChannelName channel)
 	}
 
 	MIX_StopTag(audioMixer, channelNames[channel], 0);
-
-	return LEMON_SUCCESS;
-}
-
-
-int ToggleAllAudio(void)
-{
-	for (int i = 0; i < CHANNEL_COUNT; i++)
-	{
-		if (SoundChannels[i].Pause == 0)
-		{
-			PauseChannel(i);
-		}
-		else
-		{
-			ResumeChannel(i);
-		}
-	}
-
-	return LEMON_SUCCESS;
-}
-
-
-int PauseAllAudio(void)
-{
-	for (int i = 0; i < CHANNEL_COUNT; i++)
-	{
-		PauseChannel(i);
-	}
-
-	return LEMON_SUCCESS;
-}
-
-
-int ResumeAllAudio(void)
-{
-	for (int i = 0; i < CHANNEL_COUNT; i++)
-	{
-		ResumeChannel(i);
-	}
 
 	return LEMON_SUCCESS;
 }
@@ -1087,4 +1072,19 @@ int DisplaySoundChannelDebugInfo(ChannelName channel)
 	}
 
 	return LEMON_SUCCESS;
+}
+
+
+void putConsoleCachedSounds(void)
+{
+	for (int i = 0; i < MAX_CACHED_SOUNDS; i++)
+	{
+		if (storedSounds.list[i].name[0] != '\0')
+		{
+			putConsoleString("%d: '%s'", i, storedSounds.list[i].name);
+		}
+	}
+	
+
+	return;
 }

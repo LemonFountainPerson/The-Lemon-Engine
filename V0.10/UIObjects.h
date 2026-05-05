@@ -78,21 +78,40 @@ int playTextVoice(TextBox *currentText);
 
 int addText(const char *textPhrase, float xPos, float yPos);
 
-int addTextWithFont(const char *textPhrase, float xPos, float yPos, const char *font);
+int addTextWithFont(const char textPhrase[], float xPos, float yPos, const char *font);
 
-int addTextToList(TextList *list, const char *textPhrase, float xPos, float yPos, int wrapWidth, const char *desiredFont);
+int addTextWithName(const char textPhrase[], const char name[], float xPos, float yPos);
 
-void updateText(int index, const char *newPhrase);
+int addTextToList(TextList *list, const char textPhrase[], float xPos, float yPos, int wrapWidth, const char *desiredFont);
+
+int getTextWithName(const char name[]);
+
+
+void updateText(int index, const char newPhrase[]);
+
+void updateTextWithName(const char name[], const char newPhrase[]);
 
 void moveText(int index, float xPos, float yPos);
 
+void moveTextWithName(const char name[], float xPos, float yPos);
+
 void setTextColour(int index, SDL_Color *colour);
+
+void setTextColourWithName(const char name[], SDL_Color *colour);
+
+void setTextName(int index, const char name[]);
+
+int RemoveText(int index);
+
+int RemoveTextWithName(const char name[]);
+
+
 
 void initialiseTextList(TextList *input);
 
 void printTextsinfo(TextList *list, const char name[]);
 
-int RemoveText(TextList *list, int index);
+int RemoveTextFromList(TextList *list, int index);
 
 int RemoveAllTexts(TextList *list);
 

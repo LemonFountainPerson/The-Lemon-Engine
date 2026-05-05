@@ -937,12 +937,6 @@ typedef struct GameEventManager
 } GameEventManager;
 
 
-struct TextEventTrigger
-{
-	GameEvent event;
-};
-
-
 struct TextOptionPrompt
 {
 	int SelectedOption;
@@ -1013,6 +1007,7 @@ typedef struct Text
 	bool CameraRelative;
 	bool beingUsed;
 
+	char name[TEXT_NAME_MAX_LEN];
 } Text;
 
 

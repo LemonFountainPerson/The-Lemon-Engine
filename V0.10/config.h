@@ -77,6 +77,7 @@
 
 #define MAX_TEXT_TEXTURES 16 		
 #define MAX_LOADED_FONTS 16
+#define TEXT_NAME_MAX_LEN 40
 
 #define DEBUG_TEXT_MAX_LENGTH 400
 #define EXPERIMENTAL_TEXT true		// disable to revert text rendering to old method

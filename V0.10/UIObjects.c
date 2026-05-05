@@ -401,21 +401,21 @@ int UpdateCursor(Object *Cursor, World *GameWorld)
 		if (PlayerBox != NULL && Cursor->Action == IDLE)
 		{
 			Object *Bullet = AddNamedObject(GameWorld, "PlayerBullet", PROJECTILE, 0, 0);
-			addBulletComponentWithCollision(Bullet, PlayerBox, 40, SPARKLE);
+			addBulletComponentWithCollision(Bullet, PlayerBox, 35, SPARKLE);
 			PointObjectToMouse(Bullet, GameWorld);
 			
 			Bullet = AddNamedObject(GameWorld, "PlayerBullet", PROJECTILE, 0, 0);
-			addBulletComponentWithCollision(Bullet, PlayerBox, 40, SPARKLE);
+			addBulletComponentWithCollision(Bullet, PlayerBox, 45, SPARKLE);
 			PointObjectToMouse(Bullet, GameWorld);
 			RotateObject(Bullet, 17.5);
 
 			Bullet = AddNamedObject(GameWorld, "PlayerBullet", PROJECTILE, 0, 0);
-			addBulletComponentWithCollision(Bullet, PlayerBox, 40, SPARKLE);
+			addBulletComponentWithCollision(Bullet, PlayerBox, 35, SPARKLE);
 			PointObjectToMouse(Bullet, GameWorld);
 			RotateObject(Bullet, -17.5);
 
 			Cursor->Action = MOUSECLICK_INTERRUPT;
-			Cursor->arg2 = 1;
+			Cursor->arg2 = 2;
 		}
 	}
 
@@ -1568,17 +1568,26 @@ int handleOptionPrompt(TextBox *inputText, World *GameWorld)
 }
 
 
-int addText(const char *textPhrase, float xPos, float yPos)
+int addText(const char textPhrase[], float xPos, float yPos)
 {
 	return addTextToList(&TextSettings.TextList, textPhrase, xPos, yPos, 0, NULL);
 }
 
-int addTextWithFont(const char *textPhrase, float xPos, float yPos, const char *font)
+int addTextWithFont(const char textPhrase[], float xPos, float yPos, const char *font)
 {
 	return addTextToList(&TextSettings.TextList, textPhrase, xPos, yPos, 0, font);
 }
 
-int addTextToList(TextList *list, const char *textPhrase, float xPos, float yPos, int wrapWidth, const char *desiredFont)
+int addTextWithName(const char textPhrase[], const char name[], float xPos, float yPos)
+{
+	int text = addTextToList(&TextSettings.TextList, textPhrase, xPos, yPos, 0, NULL);
+
+	setTextName(text, name);
+
+	return text;
+}
+
+int addTextToList(TextList *list, const char textPhrase[], float xPos, float yPos, int wrapWidth, const char *desiredFont)
 {
 	if (list == NULL)
 	{
@@ -1631,6 +1640,7 @@ int addTextToList(TextList *list, const char *textPhrase, float xPos, float yPos
     newText->CameraRelative = false;
     newText->beingUsed = true;
     newText->textBox = NULL;
+    memset(newText->name, 0, MAX_LEN);
 
     if (newText->text == NULL)
     {
@@ -1649,7 +1659,22 @@ int addTextToList(TextList *list, const char *textPhrase, float xPos, float yPos
     return index;
 }	
 
-void updateText(int index, const char *newPhrase)
+int getTextWithName(const char name[])
+{
+	Text *list = TextSettings.TextList.texts;
+
+	for (int i = 0; i < MAX_TEXT_TEXTURES; i++)
+	{
+		if (strcmp(name, list[i].name) == 0)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+void updateText(int index, const char newPhrase[])
 {
 	if (newPhrase == NULL || index < 0 || index >= MAX_TEXT_TEXTURES)
 	{
@@ -1661,6 +1686,27 @@ void updateText(int index, const char *newPhrase)
 	if (list[index].text != NULL && list[index].beingUsed)
 	{
 		TTF_SetTextString(list[index].text, newPhrase, 0);
+	}
+
+	return;
+}
+
+void updateTextWithName(const char name[], const char newPhrase[])
+{
+	if (newPhrase == NULL || name == NULL)
+	{
+		return;
+	}
+
+	Text *list = TextSettings.TextList.texts;
+
+	for (int i = 0; i < MAX_TEXT_TEXTURES; i++)
+	{
+		if (strcmp(name, list[i].name) == 0)
+		{
+			TTF_SetTextString(list[i].text, newPhrase, 0);
+			return;
+		}
 	}
 
 	return;
@@ -1684,6 +1730,29 @@ void moveText(int index, float xPos, float yPos)
 	return;
 }
 
+void moveTextWithName(const char name[], float xPos, float yPos)
+{
+	if (name == NULL)
+	{
+		return;
+	}
+
+	Text *list = TextSettings.TextList.texts;
+
+	for (int i = 0; i < MAX_TEXT_TEXTURES; i++)
+	{
+		if (list[i].text != NULL && strcmp(name, list[i].name) == 0)
+		{
+			list[i].xPos = xPos;
+			list[i].yPos = yPos;
+			return;
+		}
+	}
+
+	return;
+}
+
+
 void setTextColour(int index, SDL_Color *colour)
 {
 	if (index < 0 || index >= MAX_TEXT_TEXTURES)
@@ -1700,6 +1769,45 @@ void setTextColour(int index, SDL_Color *colour)
 	
 	return;
 }
+
+void setTextColourWithName(const char name[], SDL_Color *colour)
+{
+	if (name == NULL)
+	{
+		return;
+	}
+
+	Text *list = TextSettings.TextList.texts;
+
+	for (int i = 0; i < MAX_TEXT_TEXTURES; i++)
+	{
+		if (list[i].text != NULL && strcmp(name, list[i].name) == 0)
+		{
+			TTF_SetTextColor(list[i].text, colour->r, colour->g, colour->b, colour->a);
+			return;
+		}
+	}
+
+	return;
+}
+
+void setTextName(int index, const char name[])
+{
+	if (index < 0 || index >= MAX_TEXT_TEXTURES)
+	{
+		return;
+	}
+
+	Text *list = TextSettings.TextList.texts;
+
+	if (list[index].text != NULL)
+	{
+		LemonStrncpy(list[index].name, name, TEXT_NAME_MAX_LEN);
+	}
+	
+	return;
+}
+
 
 void initialiseTextList(TextList *input)
 {
@@ -1767,7 +1875,19 @@ void printTextsinfo(TextList *list, const char name[])
 	return;
 }
 
-int RemoveText(TextList *list, int index)
+int RemoveText(int index)
+{
+	return RemoveTextFromList(&TextSettings.TextList, index);
+}
+
+int RemoveTextWithName(const char name[])
+{
+	return RemoveTextFromList(&TextSettings.TextList, getTextWithName(name));
+}
+
+
+
+int RemoveTextFromList(TextList *list, int index)
 {
 	Text *texts = list->texts; 
 
@@ -1788,7 +1908,7 @@ int RemoveAllTexts(TextList *list)
 	int i = 0;
 	while (i < MAX_TEXT_TEXTURES)
 	{
-		RemoveText(list, i);
+		RemoveTextFromList(list, i);
 		i++;
 	}
 
