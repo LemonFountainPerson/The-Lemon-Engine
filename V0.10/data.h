@@ -959,6 +959,20 @@ union TextTypeData
 };
 
 
+typedef struct Text
+{
+	float xPos;
+	float yPos;
+
+	TTF_Text *text;
+	Object *attachedObj;
+
+	bool CameraRelative;
+	bool beingUsed;
+
+	char name[TEXT_NAME_MAX_LEN];
+} Text;
+
 typedef struct TextBox 
 {
 	struct TextBox *nextText;
@@ -993,23 +1007,9 @@ typedef struct TextBox
 	int LineSpacing;	// space between lines 
 	float TextSize;    	// width and height of text characters
 
-	int textIndex;
+	Text *textReference;
 	SDL_Color color;
 } TextBox;
-
-typedef struct Text
-{
-	float xPos;
-	float yPos;
-
-	TTF_Text *text;
-	TextBox *textBox;
-
-	bool CameraRelative;
-	bool beingUsed;
-
-	char name[TEXT_NAME_MAX_LEN];
-} Text;
 
 
 typedef struct Camera 

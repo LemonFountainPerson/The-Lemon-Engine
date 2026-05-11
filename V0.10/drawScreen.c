@@ -1357,7 +1357,7 @@ int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, Debu
 
     TextsArray[index].CameraRelative = (format == DTFORMAT_CAMERA_RELATIVE);
     TextsArray[index].beingUsed = true;
-    TextsArray[index].textBox = NULL;
+    TextsArray[index].attachedObj = NULL;
     
     if (TextsArray[index].text == NULL)
     {
@@ -1454,18 +1454,26 @@ void RenderTextList(TextList *list, Camera inputCamera)
 		correctedX = (ScreenData.screenWidth >> 1) + array[i].xPos;
 		correctedY = (ScreenData.screenHeight >> 1) - array[i].yPos;
 
+		if (array[i].attachedObj != NULL)
+		{
+			PhysicsBox *box = array[i].attachedObj->ObjectBox;
+			correctedX += box->xPos;
+			correctedY -= box->yPos;
+
+			if (getDisplayLayer(array[i].attachedObj) == HUD)
+			{
+				array[i].CameraRelative = false;
+			}
+			else
+			{
+				array[i].CameraRelative = true;
+			}
+		}
+
 		if (array[i].CameraRelative == true)
 		{
 			correctedX -= inputCamera.CameraX;
 			correctedY += inputCamera.CameraY;
-		}
-
-		if (array[i].textBox != NULL)
-		{
-			TextBox *instance = array[i].textBox;
-			PhysicsBox *box = instance->boxPtr->ObjectBox;
-			correctedX += box->xPos;
-			correctedY -= box->yPos + instance->TextSize + 10.0;
 		}
 
 		TTF_DrawRendererText(array[i].text, correctedX, correctedY);

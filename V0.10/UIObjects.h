@@ -76,32 +76,34 @@ int displayNextCharacter(TextBox *inputText, World *GameWorld);
 int playTextVoice(TextBox *currentText);
 
 
-int addText(const char *textPhrase, float xPos, float yPos);
+Text* addText(const char *textPhrase, float xPos, float yPos);
 
-int addTextWithFont(const char textPhrase[], float xPos, float yPos, const char *font);
+Text* addTextWithFont(const char textPhrase[], float xPos, float yPos, const char *font);
 
-int addTextWithName(const char textPhrase[], const char name[], float xPos, float yPos);
+Text* addTextWithName(const char textPhrase[], const char name[], float xPos, float yPos);
 
-int addTextToList(TextList *list, const char textPhrase[], float xPos, float yPos, int wrapWidth, const char *desiredFont);
+Text* getTextWithName(const char name[]);
 
-int getTextWithName(const char name[]);
+Text* addTextToList(TextList *list, const char textPhrase[], float xPos, float yPos, int wrapWidth, const char *desiredFont);
 
 
-void updateText(int index, const char newPhrase[]);
+void updateText(Text *input, const char newPhrase[]);
 
 void updateTextWithName(const char name[], const char newPhrase[]);
 
-void moveText(int index, float xPos, float yPos);
+void attachTextToObject(const char name[], Object *input);
+
+void moveText(Text *input, float xPos, float yPos);
 
 void moveTextWithName(const char name[], float xPos, float yPos);
 
-void setTextColour(int index, SDL_Color *colour);
+void setTextColour(Text *input, SDL_Color *colour);
 
 void setTextColourWithName(const char name[], SDL_Color *colour);
 
-void setTextName(int index, const char name[]);
+void setTextName(Text *input, const char name[]);
 
-int RemoveText(int index);
+int RemoveText(Text *input);
 
 int RemoveTextWithName(const char name[]);
 
@@ -111,13 +113,11 @@ void initialiseTextList(TextList *input);
 
 void printTextsinfo(TextList *list, const char name[]);
 
-int RemoveTextFromList(TextList *list, int index);
-
 int RemoveAllTexts(TextList *list);
 
 void removeAssociatedTexts(TextBox *input);
 
-int experimentalText(TextBox *input);
+Text* experimentalText(TextBox *input);
 
 
 void initialiseFontList(FontList *input);

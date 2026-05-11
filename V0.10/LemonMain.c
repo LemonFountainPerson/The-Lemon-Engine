@@ -775,7 +775,7 @@ void setTickNumber(Uint64 input)
 
 int FPSCounter(void)
 {
-	static int TextIndex = -1;
+	static Text *textRef = NULL;
 
     ScreenData.FramesElapsed++;
 
@@ -786,14 +786,14 @@ int FPSCounter(void)
 			char buffer[40] = {0};
 	        snprintf(buffer, 40, "%d FPS", INTERP_FRAMERATE(ScreenData.FramesElapsed));
 
-	        if (TextIndex < 0)
+	        if (textRef == NULL)
 	        {
-	        	TextIndex = addText(buffer, 20 - (ScreenData.screenWidth >> 1), (ScreenData.screenHeight >> 1) - 40);
+	        	textRef = addText(buffer, 20 - (ScreenData.screenWidth >> 1), (ScreenData.screenHeight >> 1) - 40);
 	        	setFontSize("DefaultFont", 20.0);
 	        }
 	        else
 	        {
-	        	updateText(TextIndex, buffer);
+	        	updateText(textRef, buffer);
 	        }
 		} 
        
@@ -801,10 +801,10 @@ int FPSCounter(void)
 	    ScreenData.FrameTimer = ScreenData.FramesElapsed % FRAMERATE_UPDATE_TICK;
     }
 
-    if (DebugSettings.FPSCounter == 0 && TextIndex > -1)
+    if (DebugSettings.FPSCounter == 0 && textRef != NULL)
     {
- 		RemoveTextFromList(&TextSettings.TextList, TextIndex);
- 		TextIndex = -1;
+ 		RemoveText(textRef);
+ 		textRef = NULL;
     }
 
 	return LEMON_SUCCESS;
