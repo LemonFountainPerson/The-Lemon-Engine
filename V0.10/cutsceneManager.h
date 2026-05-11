@@ -9,7 +9,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 int loadBracketedSceneActions(FILE *fPtr, World *GameWorld);
 
 
-int UpdateCutscene(World *GameWorld);
+int updateCutscene(World *GameWorld);
 
 int updateSceneActions(SceneAction *queue, World *GameWorld);
 

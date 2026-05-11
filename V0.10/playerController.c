@@ -32,6 +32,10 @@ int InitialisePlayerObject(Object *Player, World *GameWorld)
 
 	ResetPlayer(&GameWorld->Player);
 
+	char counter[30];
+	snprintf(counter, 30, "CoinCount: %d", GameWorld->Player.coinCount);
+	addTextWithName(counter, "CoinCounter", -600.0, 300.0);
+
 	return LEMON_SUCCESS;
 }
 
@@ -92,6 +96,8 @@ int PlayerObjectAboutToBeDeleted(PlayerData *Player)
 	Player->PlayerBox = NULL;
 	Player->PlayerPtr = NULL;
 	Player->PlayerDisplay = NULL;
+
+	RemoveTextWithName("CoinCounter");
 
 	return LEMON_SUCCESS;
 }
@@ -159,7 +165,7 @@ void playerNoclip(PlayerData *Player)
 	playerBox->yVelocity *= 0.88;
 	playerBox->forwardVelocity = 0.0;
 
-	HandlePlayerInteract(Player);
+	HandlePlayerInteract(Player, NULL);
 	
 	return;
 }
@@ -215,7 +221,7 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 			Player->jumpHeld = false;
 		}
 
-		HandlePlayerInteract(Player);
+		HandlePlayerInteract(Player, GameWorld);
 	}
 
 	if (hAxis != 0)
@@ -307,7 +313,7 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld)
 
 		vAxis = (buttons[LMN_UP] != 0) - (buttons[LMN_DOWN] != 0);
 
-		HandlePlayerInteract(Player);
+		HandlePlayerInteract(Player, GameWorld);
 	}
 
 
@@ -382,7 +388,7 @@ int PlayerJump(PlayerData *Player, bool jump)
 }
 
 
-int HandlePlayerInteract(PlayerData *Player)
+int HandlePlayerInteract(PlayerData *Player, World *GameWorld)
 {
 	if (Player == NULL)
 	{
@@ -391,7 +397,7 @@ int HandlePlayerInteract(PlayerData *Player)
 
 	PhysicsBox *InteractBox = &Player->InteractBox;
 
-	if (Player->PlayerPtr->State == ACTOR_STATE)
+	if (Player->PlayerPtr->State == ACTOR_STATE || (GameWorld != NULL && GameWorld->CurrentCutscene != NO_CUTSCENE))
 	{
 		InteractBox->xSize = 0;
 		InteractBox->ySize = 0;

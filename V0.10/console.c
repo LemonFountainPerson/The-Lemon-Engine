@@ -973,7 +973,7 @@ int ConsoleCommand_Sound(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 		if (PlaySound(name, channel, volume) == NULL)
 		{
-			putConsoleString("Couldn't play or find  '%s'", name);
+			putConsoleString("Couldn't play or find '%s'", name);
 		}
 
 	}

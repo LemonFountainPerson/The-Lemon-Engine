@@ -32,9 +32,7 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 	putConsoleStringTS("Starting Cutscene... ID: %d", inputID);
 
 	prepareCutsceneEnvironment(GameWorld);
-	GameWorld->CurrentCutscene = inputID;
-
-
+	
 	// Set-up cutscene
 	switch (inputID)
 	{
@@ -83,8 +81,6 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 		{
 			return LEMON_ERROR;
 		}
-
-		GameWorld->CurrentCutscene = inputID;
 		break;
 	}
 
@@ -96,6 +92,9 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 		}
 	}
 
+	GameWorld->CurrentCutscene = inputID;
+
+
 	return LEMON_SUCCESS;
 }
 
@@ -104,8 +103,6 @@ int initialiseCutsceneFromFile(const char sceneName[], World *GameWorld)
 	putConsoleString("Starting Cutscene... Name: %s", sceneName);
 
 	prepareCutsceneEnvironment(GameWorld);
-
-	GameWorld->CurrentCutscene = CUTSCENE_FROM_FILE;
 
 	return LoadCutsceneFromFile(sceneName, GameWorld);
 }
@@ -137,7 +134,7 @@ int LoadCutsceneFromFile(const char sceneName[], World *GameWorld)
 
 	closeFile(fPtr);
 
-	if (GameWorld->GameState != CUTSCENE)
+	if (GameWorld->GameState == CUTSCENE)
 	{
 		if (GameWorld->Player.PlayerPtr != NULL)
 		{
@@ -145,11 +142,13 @@ int LoadCutsceneFromFile(const char sceneName[], World *GameWorld)
 		}
 	}
 
+	GameWorld->CurrentCutscene = CUTSCENE_FROM_FILE;
+
 	return LEMON_SUCCESS;
 }
 
 
-int UpdateCutscene(World *GameWorld)
+int updateCutscene(World *GameWorld)
 {
 	if (GameWorld == NULL)
 	{
@@ -421,7 +420,6 @@ FuncResult RunSceneAction(SceneAction *inputAction, World *GameWorld)
 			PhysicsBox *actorBox = inputAction->ActorObject->ObjectBox;
 			float xMove = currentData.positions[0];
 			float yMove = currentData.positions[1];
-
 			if (fabs(xMove) > 0.01)
 			{
 				actorBox->xPos += xMove;
@@ -845,6 +843,21 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 		float yPos = getNextArgFloat(fPtr);
 		return CreateActor(inputString, ID, xPos, yPos, GameWorld);
 	}
+	else if (strcmp(inputString, "SETACTORSIZE:") == 0)
+	{
+		getNextArg(fPtr, inputString, MAX_LEN);
+		int xSize = getNextArgInt(fPtr);
+		int ySize = getNextArgInt(fPtr);
+		Object *obj = FindObject(inputString, GameWorld->ObjectList);
+
+		if (obj != NULL)
+		{
+			obj->ObjectBox->xSize = xSize;
+			obj->ObjectBox->ySize = ySize;
+		}
+
+		return NULL;
+	}
 	else if (strcmp(inputString, "RELEASEACTOR:") == 0)
 	{
 		getNextArg(fPtr, inputString, MAX_LEN);
@@ -1021,7 +1034,7 @@ int loadBracketedSceneActions(FILE *fPtr, World *GameWorld)
 	}
 
 	int count = 0;
-	while (firstInstruction != NULL)
+	while (firstInstruction != NULL && firstInstruction->nextSceneAction != NULL)
 	{
 		firstInstruction = firstInstruction->nextSceneAction;
 		count++;
@@ -1565,8 +1578,8 @@ SceneAction* MoveActorY(char objName[], float yMovement, World *GameWorld)
 	}
 
 	newAction->ActorObject = actorObj;
-	newAction->ActionData.positions[0] = yMovement;
-	newAction->ActionData.positions[1] = 0.0;
+	newAction->ActionData.positions[0] = 0.0;
+	newAction->ActionData.positions[1] = yMovement;
 
 	return newAction;
 }

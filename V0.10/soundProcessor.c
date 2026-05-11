@@ -487,12 +487,12 @@ int asyncAudioLoad(void *data)
 {
 	SoundInstance *sound = NULL;
 
-	putConsoleString("\nOpening async loader...");
-
 	if (!SDL_TryLockMutex(threadLock))	// another thread already exists!
 	{
 		return LEMON_SUCCESS;
 	}
+
+	putConsoleString("\nOpening async loader...");
 
 	int count = 1;
 	while(closeAllThreads == false && count > 0)
@@ -768,7 +768,13 @@ int StopAudioInChannel(ChannelName channel)
 		return INVALID_DATA;
 	}
 
-	MIX_StopTag(audioMixer, channelNames[channel], 0);
+	SoundInstance *current = SoundChannels[channel].firstSound;
+	while(current != NULL)
+	{
+		MIX_StopTrack(current->audio, 0);
+		current->state = SOUND_INACTIVE;
+		current = current->nextSound;
+	}
 
 	return LEMON_SUCCESS;
 }

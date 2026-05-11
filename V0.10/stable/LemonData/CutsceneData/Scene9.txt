@@ -9,7 +9,8 @@ SetChannelVolume: 1 1.0
 SetCameraMode: 0
 
 
-createActor: "Mysterious block" 1 2000.0 1400.0
+createActor: "Mysterious block" 1 1700.0 1060.0 
+setActorSize: "Mysterious block" 96 32
 animateActor: "Mysterious block" Hurt 2
 
 >SayTextOption: "A Test cutscene from a FILE? HUH!?"	NO_PORTRAIT  2    3
@@ -17,17 +18,27 @@ animateActor: "Mysterious block" Hurt 2
 >		"Option Two"	3
 >		"This is working." 0
 
+Repeat: 20
+{
+	Repeat: 200
+	{
+		moveActorX: "Mysterious block" 3
+		moveActorY: "Mysterious block" 3
+	}
+
+	Repeat: 200
+	{
+		moveActorX: "Mysterious block" -3
+		moveActorY: "Mysterious block" -3
+	}
+}
 
 IFVARIABLE: "flag1" = 0 
 THEN	
 { 
-	PlaySound: "Player/Jump" 1 1.0
-	SayText: "HELLO!!!" NO_PORTRAIT 1 
+	
 }
-ELSE 
-{
-	SayText: "text 2" NO_PORTRAIT 1
-}
+
  
 changeGameFlag: "flag1" 1
 

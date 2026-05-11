@@ -1130,7 +1130,7 @@ int ApplyTextPresets(TextBox *inputText, const char Portrait[], TextPreset input
 
 TextBox* CreateText(const char inputPhrase[], World *GameWorld)
 {
-	if (GameWorld == NULL || inputPhrase == NULL)
+	if (GameWorld == NULL || inputPhrase == NULL)// || GameWorld->currentCutscene != NO_CUTSCENE)
 	{
 		return NULL;
 	}
@@ -1580,7 +1580,13 @@ int addTextWithFont(const char textPhrase[], float xPos, float yPos, const char 
 
 int addTextWithName(const char textPhrase[], const char name[], float xPos, float yPos)
 {
-	int text = addTextToList(&TextSettings.TextList, textPhrase, xPos, yPos, 0, NULL);
+	int text = getTextWithName(name);
+	if (text >= 0)
+	{
+		return text;
+	}
+
+	text = addTextToList(&TextSettings.TextList, textPhrase, xPos, yPos, 0, NULL);
 
 	setTextName(text, name);
 
@@ -1665,7 +1671,7 @@ int getTextWithName(const char name[])
 
 	for (int i = 0; i < MAX_TEXT_TEXTURES; i++)
 	{
-		if (strcmp(name, list[i].name) == 0)
+		if (list[i].beingUsed && strcmp(name, list[i].name) == 0)
 		{
 			return i;
 		}

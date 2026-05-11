@@ -12,8 +12,6 @@ int StartGame(World *GameWorld)
 	// Logic for handle flow of menus and levels, etc can go here for game start
 	loadLevel(GameWorld, 1);
 
-	addTextWithName("CoinCount: 0", "CoinCounter", -600.0, 300.0);
-
 	return LEMON_SUCCESS;
 }
 #endif

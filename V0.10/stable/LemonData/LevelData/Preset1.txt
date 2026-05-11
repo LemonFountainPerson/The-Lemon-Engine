@@ -1,6 +1,7 @@
 FRV<1>--LEVEL_DATA--
 > Player 
 OBJECT:	UIElement, 	0, 	0, 	Cursor	 setname {Cursor}
+
 OBJECT: PlayerObject
 
 LVFLAG:	SET_BG,		1, 1	

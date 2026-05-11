@@ -143,7 +143,7 @@ int updateObjectDisplays(World *GameWorld);
 int UpdateObjectDisplay(Object *inputObject, float deltaTime);
 
 
-int updatePreviousPositions(ObjectController *ObjectList);
+void updatePreviousPositions(ObjectController *ObjectList);
 
 int updateObjectsState(ObjectController *ObjectList, World *GameWorld);
 
@@ -432,7 +432,7 @@ int resolveForwardCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 int ApplyForwardPhysics(PhysicsBox *inputBox, PhysicsBox *physicsBox);
 
 
-Object* CheckForGround(PhysicsBox *movingBox, World *GameWorld);
+Object* CheckForGround(Object *input, World *GameWorld);
 
 
 void redoGroundCheck(Object *input, World *GameWorld);

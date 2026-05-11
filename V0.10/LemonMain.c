@@ -234,9 +234,11 @@ int GameTick(World *GameWorld)
 
 	TickNum++;
 
+	updatePreviousPositions(GameWorld->ObjectList);
+
 	CameraControl(GameWorld, &GameWorld->MainCamera);
 
-	UpdateCutscene(GameWorld);
+	updateCutscene(GameWorld);
 
 	updateObjects(GameWorld);
 

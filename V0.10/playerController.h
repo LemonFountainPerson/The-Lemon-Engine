@@ -30,7 +30,7 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld);
 int PlayerJump(PlayerData *Player, bool jump);
 
 
-int HandlePlayerInteract(PlayerData *Player);
+int HandlePlayerInteract(PlayerData *Player, World *GameWorld);
 
 
 bool PlayerInteractingWithBox(PhysicsBox *inputBox, World *GameWorld);

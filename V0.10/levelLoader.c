@@ -1972,6 +1972,10 @@ int ApplyObjectLoadCommands(FILE *fPtr, Object *inputObject, char command[MAX_LE
 	{
 		hideObject(inputObject);
 	}
+	else if (!strcmp(command, "SETSTATIC"))
+	{
+		inputObject->State = STATIC;
+	}
 	else if (!strcmp(command, "ALIGNTOGRID"))
 	{
 		snapPositionToTileGrid(inputObject, inputObject->ObjectBox->xPos, inputObject->ObjectBox->yPos);

@@ -28,7 +28,7 @@ OBJECT:		1	5920 320 20 2 4
 ////OBJECT:	2	3428	0	256	64	-1
 ////OBJECT:	16	1472	1120	3264	64	
 ////OBJECT:	17	1472	0	0 	900
-OBJECT:	18, 	3200, 64, 64, 64	setname {pushbox}
+
 
 			
 ////OBJECT:	MovingPlatform_Horizontal	3000	96	2500	4000	6	105
@@ -45,7 +45,8 @@ OBJECT:		2	8800	0	2048	1024	-1
 OBJECT:		2	9800	0	2048	1024	1
 OBJECT:		2	8800	0	2048	1024	1
 OBJECT:	1,	10000,	0,	192,	48, 	UNSOLID, TOBACKGROUND, SETNAME {"Backdrop Object"}
-OBJECT:	MovingPlatform_Vertical	7664	192	196	500	6	100	 SETNAME {"platform"}
+OBJECT:	MovingPlatform_Vertical	2664	192	192	500	6	100	 SETNAME {"platform"}
+OBJECT:	MovingPlatform_Vertical	7664	192	192	600	6	100	 SETNAME {"platform"}
 
 LVFLAG:	PLAYER_POSITION, 1000, 1000	
 >LVFLAG: PLAY_SOUND, 	"Music\StartUp", 0.4	

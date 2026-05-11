@@ -1800,8 +1800,6 @@ FuncResult updateObjects(World *GameWorld)
 		return MISSING_DATA;
 	}
 
-	updatePreviousPositions(ObjectList);
-
 	updateComponents(currentComponents, GameWorld);
 
 	Object *currentObject = ObjectList->firstObject;
@@ -2003,8 +2001,13 @@ int UpdateObjectDisplay(Object *inputObject, float deltaTime)
 }
 
 
-int updatePreviousPositions(ObjectController *ObjectList)
+void updatePreviousPositions(ObjectController *ObjectList)
 {
+	if (ObjectList == NULL)
+	{
+		return;
+	}
+
 	PhysicsBox *boxList = ObjectList->objectComponents.PhysicsBoxes;
 	Object *objList = ObjectList->objectComponents.Objects;
 
@@ -2021,7 +2024,7 @@ int updatePreviousPositions(ObjectController *ObjectList)
 			boxList[i].prevXPos = boxList[i].xPos;
 			boxList[i].prevYPos = boxList[i].yPos;
 
-			boxList[i].GroundBox = NULL;
+			objList[i].reserved &= ~RFLAG_GROUND_SET;
 			objList[i].ParentLink &= PARENTLINK_MASK;
 
 			if (boxList[i].solid != UNSOLID)
@@ -2033,7 +2036,7 @@ int updatePreviousPositions(ObjectController *ObjectList)
 		i++;
 	}
 
-	return LEMON_SUCCESS;
+	return;
 }
 
 int updatePreviousPosition(Object *input)
@@ -2041,8 +2044,7 @@ int updatePreviousPosition(Object *input)
 	input->ObjectBox->prevXPos = input->ObjectBox->xPos;
 	input->ObjectBox->prevYPos = input->ObjectBox->yPos;
 
-	input->ObjectBox->GroundBox = NULL;
-
+	input->reserved &= ~RFLAG_GROUND_SET;
 	input->ParentLink &= PARENTLINK_CONFIRM;
 
 	return LEMON_SUCCESS;
@@ -2055,7 +2057,7 @@ int updateObjectsState(ObjectController *ObjectList, World *GameWorld)
 
 	while (current != NULL)
 	{	
-		UpdateParentChildLink(current);
+		UpdateParentChildLink(current);	
 
 		if (current->State == TO_BE_DELETED)
 		{
@@ -2101,7 +2103,7 @@ int UpdatePhysicsState(Object *inputObject, World *GameWorld)
 
 	inputBox->xPos += inputBox->PhysicsXVelocity;
 	inputBox->yPos += inputBox->PhysicsYVelocity;
-	
+
 
 	return LEMON_SUCCESS;
 }
@@ -2114,12 +2116,12 @@ int applyMagnetisation(PhysicsBox *inputBox, PhysicsBox *GroundBox, World *GameW
 		return ACTION_DISABLED;
 	}
 
-	if (GroundBox == inputBox)
-	{
-		inputBox->GroundBox = NULL;
-		
-		return EXECUTION_UNNECESSARY;
-	}
+	// basic operation for magnetisation is
+	// update previous positions
+	// all objects apply gravity/check for ground
+	// all objects update and move with velocity
+	// all objects with detected ground move along with ground
+
 	
 	// Ensure that velocity applied is not necessary in the case of it moving against gravity
 	float prevX = inputBox->xPos;
@@ -2129,13 +2131,22 @@ int applyMagnetisation(PhysicsBox *inputBox, PhysicsBox *GroundBox, World *GameW
 	float yChange = (GroundBox->yPos) - (GroundBox->prevYPos);
 
 	inputBox->xPos -= xChange;
-	inputBox->yPos -= yChange;
 
 	if (!CheckBoxCollidesBox(inputBox, GroundBox))
 	{	
 		inputBox->PhysicsXVelocity = xChange;
+	}
+
+	inputBox->xPos = prevX;
+	inputBox->yPos -= yChange;
+
+	if (!CheckBoxCollidesBox(inputBox, GroundBox))
+	{	
 		inputBox->PhysicsYVelocity = yChange;
 	}
+
+	inputBox->yPos = prevY;
+
 	
 	if (fabs(inputBox->PhysicsXVelocity) < 0.0001)
 	{
@@ -2146,10 +2157,6 @@ int applyMagnetisation(PhysicsBox *inputBox, PhysicsBox *GroundBox, World *GameW
 	{
 		inputBox->PhysicsYVelocity = 0.0;
 	}
-	
-
-	inputBox->xPos = prevX;
-	inputBox->yPos = prevY;
 
 	return LEMON_SUCCESS;
 }
@@ -2557,6 +2564,8 @@ void updatePhysicsComponents(ComponentData *data, World *GameWorld)
 			ApplyGravity(phys->object, GameWorld);
 		}
 	}
+
+	return;
 }
 
 
@@ -3873,33 +3882,6 @@ int UpdateLevelDoor(Object *Door, World *GameWorld)
 } 
 
 
-int ApplyGravity(Object *inputObject, World *GameWorld)
-{
-	if (inputObject == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	PhysicsBox *inputBox = inputObject->ObjectBox;
-
-	if (GameWorld->PhysicsType == PLATFORMER)
-	{
-		inputBox->yVelocity += GameWorld->GlobalGravityY;
-		inputBox->xVelocity += GameWorld->GlobalGravityX;
-
-		AdjustDirection(inputBox, GameWorld);
-
-		CheckForGround(inputBox, GameWorld);
-	}
-	else
-	{
-		inputBox->inAir = 0;
-	}
-
-	return LEMON_SUCCESS;
-}
-
-
 int ApplyFriction(PhysicsBox *inputBox, float forwardFriction, float xFriction, float yFriction)
 {
 	if (inputBox == NULL)
@@ -3954,70 +3936,104 @@ int ApplyFriction(PhysicsBox *inputBox, float forwardFriction, float xFriction, 
 }
 
 
-Object* CheckForGround(PhysicsBox *movingBox, World *GameWorld)
+int ApplyGravity(Object *inputObject, World *GameWorld)
 {
-	if (movingBox == NULL || movingBox->solid == UNSOLID)
+	if (inputObject == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	PhysicsBox *inputBox = inputObject->ObjectBox;
+
+	if (GameWorld->PhysicsType == PLATFORMER)
+	{
+		inputBox->yVelocity += GameWorld->GlobalGravityY;
+		inputBox->xVelocity += GameWorld->GlobalGravityX;
+
+		AdjustDirection(inputBox, GameWorld);
+
+		CheckForGround(inputObject, GameWorld);
+	}
+	else
+	{
+		inputBox->inAir = 0;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+Object* CheckForGround(Object *input, World *GameWorld)
+{
+	if (input == NULL || input->ObjectBox->solid == UNSOLID)
 	{
 		return NULL;
 	}
 
-	float savedX = movingBox->xPos;
-	float savedY = movingBox->yPos;
+	PhysicsBox movingBox = *(input->ObjectBox);  // create copy for testing
 
-	movingBox->yPos += fClamp(GameWorld->GlobalGravityY * 5.0, -32.0, 32.0);
-	movingBox->xPos += fClamp(GameWorld->GlobalGravityX * 5.0, -32.0, 32.0);
+	movingBox.xPos += fClamp(GameWorld->GlobalGravityX, -32.0, 32.0);
+	movingBox.yPos += fClamp(GameWorld->GlobalGravityY, -32.0, 32.0);
 
-	Object *GroundObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
+	if (movingBox.GroundBox != NULL)
+	{
+		// if there was a ground referenced previously, move the distance it has moved to see if reconnection is possible; with a limit on distance
+		PhysicsBox *prevGround = movingBox.GroundBox;
 
-	movingBox->xPos = savedX;
-	movingBox->yPos = savedY;
+		// dont move if it goes against gravity
+		if (((prevGround->xPos - prevGround->prevXPos) < 0.0) == (GameWorld->GlobalGravityX < 0.0))
+		{
+			movingBox.xPos += fClamp((prevGround->xPos - prevGround->prevXPos), -32.0, 32.0);
+		}
 
+		if (((prevGround->yPos - prevGround->prevYPos) < 0.0) == (GameWorld->GlobalGravityY < 0.0))
+		{
+			movingBox.yPos += fClamp((prevGround->yPos - prevGround->prevYPos), -32.0, 32.0);
+		}
+	}
+
+	Object *GroundObject = GetCollidingObject(&movingBox, GameWorld->ObjectList);
+
+
+	PhysicsBox *actualBox = input->ObjectBox;
 
 	if (GroundObject != NULL)
-	{
-		if (movingBox->inAir > 0)
+	{ 
+		if (actualBox->inAir > 0)
 		{
-			if (fabs(movingBox->PhysicsXVelocity) > 0.1)
+			if (fabs(actualBox->PhysicsXVelocity) > 0.1)
 			{
-				movingBox->xVelocity = 0.0;
+				actualBox->xVelocity = 0.0;
 			}
 
-			if (fabs(movingBox->PhysicsYVelocity) > 0.1)
+			if (fabs(actualBox->PhysicsYVelocity) > 0.1)
 			{
-				movingBox->yVelocity = 0.0;
+				actualBox->yVelocity = 0.0;
 			}
 		}
 
 		// GroundBox should only be set once, ideally by the AppyGravity function, so if it has been set, do not override
-		if (movingBox->GroundBox == NULL)
+		if ((input->reserved & RFLAG_GROUND_SET) == 0)
 		{
-			movingBox->GroundBox = GroundObject->ObjectBox;
+			//putConsoleStringTS("Updating");
+			input->reserved |= RFLAG_GROUND_SET;
 
-			movingBox->inAir = 0;
+			actualBox->GroundBox = GroundObject->ObjectBox;
+
+			actualBox->inAir = 0;
 		}
 	}
 	else
 	{
 		// If inAir is 0, that means at last check you were on ground
-		if (movingBox->inAir == 0)
-		{
-			// movingBox->xVelocity += movingBox->PhysicsXVelocity;
-			// movingBox->yVelocity += movingBox->PhysicsYVelocity;
-			// movingBox->PhysicsXVelocity = 0.0;
-			// movingBox->PhysicsYVelocity = 0.0;
-		}
 
-		// To indicate no ground, the pointer is set to the box itself
-		if (movingBox->GroundBox == NULL)
-		{
-			movingBox->GroundBox = movingBox;
+		actualBox->GroundBox = NULL;
 
-			movingBox->inAir++;
-		}
+		actualBox->inAir++;
 
-		if (movingBox->inAir > 99)
+		if (actualBox->inAir > 99)
 		{
-			movingBox->inAir = 100;
+			actualBox->inAir = 100;
 
 			// Falling for a long time!
 		}
@@ -4036,17 +4052,14 @@ void redoGroundCheck(Object *input, World *GameWorld)
 	}
 
 	PhysicsBox *inputBox = input->ObjectBox;
-	if (inputBox->GroundBox != NULL)
+	input->reserved &= ~RFLAG_GROUND_SET;
+	CheckForGround(input, GameWorld);
+
+	if (inputBox->inAir > 1)
 	{
-		inputBox->GroundBox = NULL;
-		CheckForGround(inputBox, GameWorld);
-
-		if (inputBox->inAir > 1)
-		{
-			inputBox->inAir--;
-		}
+		inputBox->inAir--;
 	}
-
+	
 	return;
 }
 
@@ -5390,6 +5403,8 @@ int MoveObject(Object *inputObject, World *GameWorld)
 	inputBox->xPos = fClamp(inputBox->xPos, -EngineSettings.WorldBoundX, EngineSettings.WorldBoundX - inputBox->xSize);
 	inputBox->yPos = fClamp(inputBox->yPos, -EngineSettings.WorldBoundY, EngineSettings.WorldBoundY - inputBox->ySize);
 
+	// this is a hack, but it fixes the case where a platform is moving with gravity (eg. down) and the subject lands on the platform before it has moved for this tick
+	// a better method should be used in the future (maybe a physics overhaul?)
 	redoGroundCheck(inputObject, GameWorld);
 
 	return LEMON_SUCCESS;
@@ -5468,7 +5483,7 @@ int AdjustDirection(PhysicsBox *movingBox, World *GameWorld)
 		return EXECUTION_UNNECESSARY;
 	}
 
-	if (GameWorld->PhysicsType == PLATFORMER && movingBox->GroundBox != NULL && movingBox->GroundBox != movingBox)
+	if (GameWorld->PhysicsType == PLATFORMER && movingBox->GroundBox != NULL)
 	{
 		AssignDirection(movingBox, movingBox->GroundBox);
 
