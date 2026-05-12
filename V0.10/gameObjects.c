@@ -3813,7 +3813,7 @@ int UpdateDoor(Object *Door, World *GameWorld)
 		{
 			// Test dialogue, replace with prompt "Go through door?" or something
 			SayText("I", NO_PORTRAIT, BASIC_FADE, GameWorld);
-			SayText("....Or is it?\r\nIt just looks like a big pink and black rectangle...", "Test_Face", BASIC_FADE, GameWorld);
+			SayText(".\f20.\f30.^40.^50Or is it?^60\nIt just looks like a big pink and black rectangle...", "Test_Face", BASIC_FADE, GameWorld);
 
 			SayTextOption("Enter the Door?", "Test_Face", BASIC_FADE, GameWorld, 3, 
 				"Yes", Event_TeleportPlayerToExitDoor(Door->Parent, GameWorld), 

@@ -1180,6 +1180,7 @@ TextBox* CreateText(const char inputPhrase[], World *GameWorld)
 
 	newText->nextText = NULL;
 	newText->boxPtr = NULL;
+	newText->portraitObj = NULL;
 	memset(&newText->textTypeData, 0, sizeof(union TextTypeData));
 	newText->textTypeSetting = TEXTBOX_REGULAR_TEXT;
 
@@ -1259,20 +1260,31 @@ int insertLineBreaks(char *input, int maxLength)
 
 void removeControlCharacters(char input[MAX_TEXT_LENGTH], int characterCount)
 {
-	int i = characterCount - 8;
-	if (i < 0)
+	int index = 0;
+	if (characterCount >= MAX_TEXT_LENGTH)
 	{
-		i = 0;
+		characterCount = MAX_TEXT_LENGTH;
 	}
 
-	while (i < characterCount)
+	while (index < characterCount)
 	{
-		if (input[i] < 33 && input[i] != '\n')
+		if (input[index] < 32 && input[index] != '\n')
 		{
-			input[i] = ' ';
+			for (int i = index; i < MAX_TEXT_LENGTH - 1; i++)
+			{
+				input[i] = input[i + 1];
+			}
+
+			input[MAX_TEXT_LENGTH - 1] = '\0';
+			characterCount--;
 		}
-		i++;
+		else
+		{
+			index++;
+		}
 	}
+
+	return;
 }
 
 
@@ -1311,6 +1323,7 @@ int displayText(TextBox *currentText, World *GameWorld)
 		return MISSING_DATA;
 	}
 
+
 	// Skip text animation if skip button is held
 	if (buttons[LMN_TEXT_SKIP] && currentText->Skippable == true)
 	{
@@ -1341,7 +1354,12 @@ int displayText(TextBox *currentText, World *GameWorld)
 
 		currentText->Counter = 0;
 
-		displayNextCharacter(currentText, GameWorld);
+		int response = displayNextCharacter(currentText, GameWorld);
+
+		if (response != LEMON_SUCCESS)
+		{
+			return response;
+		}
 	}
 	
 	playTextVoice(currentText);
@@ -1381,6 +1399,7 @@ int displayNextCharacter(TextBox *inputText, World *GameWorld)
 		inputText->currentYPos = inputText->boxOffsetY;
 	}
 
+	int decodedIndex = inputText->currentIndex;
 	int decodedChar = utf8_decode_next(inputText->textPhrase, inputText->currentIndex, MAX_TEXT_LENGTH);
 	inputText->currentIndex = utf8_setIndex();
 
@@ -1394,25 +1413,35 @@ int displayNextCharacter(TextBox *inputText, World *GameWorld)
 
 	switch(decodedChar)
 	{
-		case 13:		// (/r) is repurposed to insert a delay of 30 ticks
-		inputText->Counter = -30;
+		case '\f':		// '\fN' or '^N' indicates a waiting period of N ticks
+		case '^':
+		{
+			char count[12] = {0};
+			int index = inputText->currentIndex;
+			char *string = inputText->textPhrase;
 
-		return LEMON_SUCCESS;
-
-		case 12:		// (/f) is repurposed to insert a delay of 12 ticks  
-		inputText->Counter = -12;
-		return LEMON_SUCCESS;
-
-		case 11:		// (/v) is repurposed to insert a delay of 8 ticks 
-		inputText->Counter = -8;
-		return LEMON_SUCCESS;
+			string[decodedIndex] = '\f';
+			for (int i = 0; i < 11 && inRange(string[index], '0', '9'); i++)
+			{
+				count[i] = string[index];
+				string[index] = '\f';
+				index++;
+			}
+			
+			inputText->Counter = -atoi(count);
+			if (inputText->currentIndex >= 0)
+			{
+				inputText->currentIndex--;
+			}
+			
+			removeControlCharacters(inputText->textPhrase, index);
+			
+			return EXECUTION_UNNECESSARY;
+		} break;
 
 		default:
 		break;
 	}
-
-	removeControlCharacters(inputText->textPhrase, inputText->currentIndex);
-
 
 	if (EXPERIMENTAL_TEXT)
 	{
@@ -2260,6 +2289,8 @@ Object* createTextBoxPortrait(TextBox *inputText, World *GameWorld)
 
 		inputText->textLengthSize -= TextSettings.portraitSize + 30;
 	}
+
+	inputText->portraitObj = portrait;
 
 	return portrait;
 }

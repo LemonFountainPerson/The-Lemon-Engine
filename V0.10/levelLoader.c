@@ -1300,16 +1300,9 @@ int loadConditionalStatement(World *GameWorld, FILE *fPtr)
 		}
 	}
 
-	long filePosition = ftell(fPtr);
+	char buffer[3] = {0};
 
-	char buffer[12] = {0};
-
-	int returnMsg = getNextArg(fPtr, buffer, 12);
-	if (returnMsg != LEMON_SUCCESS)
-	{
-		fseek(fPtr, filePosition, SEEK_SET);
-		return returnMsg;
-	}
+	getNextArgIfExpression(buffer, fPtr);
 
 	int compareValue = getNextArgInt(fPtr);
 	bool conditionMet = false;
@@ -1348,6 +1341,24 @@ int loadConditionalStatement(World *GameWorld, FILE *fPtr)
 	
 
 	return LEMON_SUCCESS;
+}
+
+void getNextArgIfExpression(char dest[3], FILE *fPtr)
+{
+	memset(dest, 0, 3 * sizeof(char));
+	while (dest[0] < 33 && !feof(fPtr))
+	{
+		fread(dest, sizeof(char), 1, fPtr);
+	}
+
+	fread(dest + 1, sizeof(char), 1, fPtr);
+	if (dest[1] < 33)
+	{
+		dest[1] = '\0';
+		fseek(fPtr, -1, SEEK_CUR);
+	}
+
+	return;
 }
 
 
@@ -1751,6 +1762,15 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		getNextArg(fPtr, name, MAX_LEN);
 
 		setGameFlag(name, checkGameFlag(name) - 1);
+	}
+	else if (strcmp(buffer, "changegameflag") == 0)	
+	{
+		char name[MAX_LEN] = {0};
+		getNextArg(fPtr, name, MAX_LEN);
+
+		int value = getNextArgInt(fPtr);
+
+		setGameFlag(name, checkGameFlag(name) + value);
 	}
 	else
 	{

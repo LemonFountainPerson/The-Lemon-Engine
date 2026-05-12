@@ -61,6 +61,8 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr);
 
 int loadConditionalStatement(World *GameWorld, FILE *fPtr);
 
+void getNextArgIfExpression(char dest[3], FILE *fPtr);
+
 int readBranch(World *GameWorld, FILE *fPtr, bool conditionMet);
 
 bool bracketedStatementPresent(FILE *fPtr, const char expectedPhrase[]);

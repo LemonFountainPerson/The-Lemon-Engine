@@ -987,7 +987,7 @@ int ConsoleCommand_Sound(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 		StopAudioInChannel(channel);
 	}
-	else if (strcmp(arg, "stopall") == 0 || strcmp(arg, "stop") == 0)
+	else if (strcmp(arg, "stopall") == 0 || strcmp(arg, "StopAllAudio") == 0)
 	{
 		StopAllAudio();
 	}

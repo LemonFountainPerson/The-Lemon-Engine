@@ -760,6 +760,31 @@ void setGameFlag(const char name[], int newValue)
 	return;
 }
 
+void changeGameFlagBy(const char name[], int value)
+{
+	if (strlen(name) >= MAX_LEN || name[0] == '\0')
+	{
+		return;
+	}
+
+	int index = hashGameFlag(name);
+	int count = 0;
+
+	while (GameFlags[index].name[0] != '\0' && count < GAME_FLAG_COUNT)
+	{
+		if (strcmp(GameFlags[index].name, name) == 0)
+		{
+			GameFlags[index].value += value;
+			return;
+		}
+		
+		count++;
+		index = (index + 1) % GAME_FLAG_COUNT;
+	}
+
+	return;
+}
+
 
 Uint64 TickNumber(void)
 {

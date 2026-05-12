@@ -973,6 +973,7 @@ typedef struct TextBox
 	struct TextBox *nextText;
 
 	Object *boxPtr;
+	Object *portraitObj;
 
 	char textPhrase[MAX_TEXT_LENGTH];
 	char font[FONT_FILE_NAME_MAX];

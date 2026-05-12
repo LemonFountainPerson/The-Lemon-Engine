@@ -6,7 +6,7 @@ OBJECT:		1	0	-32	48000	1	2
 OBJECT:		1	1000	96	32	32	1
 
 
-LVFLAG:	SET_BG_TRIGGER,	4400, 0, 32, 4000, 2, 1	
+
 LVFLAG:	SET_BG_TRIGGER,	4600, 0, 32, 4000, 1, 1	
 
 > Obstacle course
@@ -48,7 +48,7 @@ OBJECT:	1,	10000,	0,	192,	48, 	UNSOLID, TOBACKGROUND, SETNAME {"Backdrop Object"
 OBJECT:	MovingPlatform_Vertical	2664	192	192	500	6	100	 SETNAME {"platform"}
 OBJECT:	MovingPlatform_Vertical	7664	192	192	600	6	100	 SETNAME {"platform"}
 
-LVFLAG:	PLAYER_POSITION, 1000, 1000	
+LVFLAG:	PLAYER_POSITION, 4000, 600	
 >LVFLAG: PLAY_SOUND, 	"Music\StartUp", 0.4	
 
 >LVFLAG: Level_Trigger_SEAMLESS, 3000 0 64 1024 0
@@ -56,10 +56,11 @@ LVFLAG:	PLAYER_POSITION, 1000, 1000
 LVFLAG:	CUTSCENE_TRIGGER,	1800, 0, 128, 1280, 9
 
 LVFLAG: Add_GameFlag "flag1" 0
-IFVARIABLE: "flag1" = 0 
+IFVARIABLE: "flag1" < 2 
 THEN { 
 	REPEAT: times = 20, XOffset = 64, times=8, YOffset=64, 
 	{ OBJECT: 8 2200 192 } 
+	LVFLAG: IncrementGameFlag "flag1"
 }
 
 

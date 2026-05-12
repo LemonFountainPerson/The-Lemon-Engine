@@ -63,6 +63,8 @@ EXPORT int getGameFlag(const char name[]);
 
 EXPORT void setGameFlag(const char name[], int newValue);
 
+EXPORT void changeGameFlagBy(const char name[], int value);
+
 
 EXPORT void putConsoleString(const char input[], ...);
 

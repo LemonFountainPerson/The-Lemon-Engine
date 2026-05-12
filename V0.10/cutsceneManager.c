@@ -702,7 +702,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 
 		SceneAction_TriggerGameEvent(newEvent, GameWorld);
 	}
-	else if (strcmp(inputString, "CHANGEGAMEFLAG:") == 0 || strcmp(inputString, "INCREMENTGAMEFLAG:") == 0 || strcmp(inputString, "INCGAMEFLAG:") == 0)
+	else if (strcmp(inputString, "CHANGEGAMEFLAG:") == 0)
 	{
 		int index = getNextArgGameFlag(fPtr);
 		
@@ -710,13 +710,17 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 
 		return changeVariableBy(index, value, GameWorld);
 	}
+	else if (strcmp(inputString, "INCREMENTGAMEFLAG:") == 0 || strcmp(inputString, "INCGAMEFLAG:") == 0)
+	{
+		int index = getNextArgGameFlag(fPtr);
+
+		return changeVariableBy(index, 1, GameWorld);
+	}
 	else if (strcmp(inputString, "DECREMENTGAMEFLAG:") == 0 || strcmp(inputString, "DECGAMEFLAG:") == 0)
 	{
 		int index = getNextArgGameFlag(fPtr);
-		
-		int value = -(getNextArgInt(fPtr));
 
-		return changeVariableBy(index, value, GameWorld);
+		return changeVariableBy(index, -1, GameWorld);
 	}
 	else if (strcmp(inputString, "SETGAMEFLAG:") == 0 || strcmp(inputString, "SETFLAG:") == 0)
 	{
@@ -730,7 +734,8 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 		int index = getNextArgGameFlag(fPtr);
 
 		char expression[3] = {0};
-		getNextArg(fPtr, expression, 3);
+		getNextArgIfExpression(expression, fPtr);
+
 		int value = getNextArgInt(fPtr);
 
 		getNextArg(fPtr, inputString, MAX_LEN);
