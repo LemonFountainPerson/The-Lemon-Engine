@@ -1548,10 +1548,15 @@ int handleOptionPrompt(TextBox *inputText, World *GameWorld)
 			if (MouseOverlappingBox(inputText->boxPtr, GameWorld->MainCamera))
 			{
 				optionData->SelectedOption = clamp(i, 0, optionData->numberOfOptions - 1);
-				i = optionData->numberOfOptions;
+				break;
 			}
 
 			i++;
+
+			if (i >= optionData->numberOfOptions && buttonPressed(MOUSE_LEFT))
+			{
+				selectOption = false;
+			}
 		}
 		
 		memcpy(boxRect, &stateSave, sizeof(PhysicsBox));

@@ -1,7 +1,7 @@
 FRV<1>--LEVEL_DATA--
 Preset:  "Preset1"
 >		ID	XPos	YPos	Arg1	Arg2	Arg3	Arg4	Arg5
-OBJECT:		Spring	2494	0	30	0
+OBJECT:	Spring	2494	0	30	0
 OBJECT:		1	0	-32	48000	1	2
 OBJECT:		1	1000	96	32	32	1
 

@@ -64,6 +64,8 @@ int validateScreenDimensions(RenderFrame *ScreenData);
 int validateZoom(Camera *inputCamera, RenderFrame *ScreenData);
 
 
+GameEvent* getNextArgGameEvent(FILE *file, World *GameWorld);
+
 
 int PauseGame(World *GameWorld);
 

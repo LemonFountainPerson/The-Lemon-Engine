@@ -632,12 +632,13 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 		int numberOfOptions = getNextArgInt(fPtr);
 
 		char options[MAX_TEXT_OPTIONS][OPTION_TEXT_MAX_LEN] = {0};
-		int sceneID[MAX_TEXT_OPTIONS] = {0};
+		GameEvent *events[MAX_TEXT_OPTIONS] = { NULL };
 
 		for (int i = 0; i < numberOfOptions && i < MAX_TEXT_OPTIONS; i++)
 		{
 			getNextArg(fPtr, options[i], OPTION_TEXT_MAX_LEN);
-			sceneID[i] = getNextArgInt(fPtr);
+
+			events[i] = getNextArgGameEvent(fPtr, GameWorld);
 		}
 
 		switch (numberOfOptions)
@@ -645,31 +646,31 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 		case 1:
 			{
 				SayTextOption(textBoxString, inputString, Preset, GameWorld, 1, 
-						options[0], playCutscene(sceneID[0], GameWorld));
+						options[0], events[0]);
 			} break;
 
 		case 2:
 			{
 				SayTextOption(textBoxString, inputString, Preset, GameWorld, 2, 
-						options[0], playCutscene(sceneID[0], GameWorld), 
-						options[1], playCutscene(sceneID[1], GameWorld));
+						options[0], events[0], 
+						options[1], events[1]);
 			} break;
 
 		case 3:
 			{
 				SayTextOption(textBoxString, inputString, Preset, GameWorld, 3, 
-						options[0], playCutscene(sceneID[0], GameWorld), 
-						options[1], playCutscene(sceneID[1], GameWorld),
-						options[2], playCutscene(sceneID[2], GameWorld));
+						options[0], events[0], 
+						options[1], events[1],
+						options[2], events[2]);
 			} break;
 
 		case 4:
 			{
 				SayTextOption(textBoxString, inputString, Preset, GameWorld, 4, 
-						options[0], playCutscene(sceneID[0], GameWorld), 
-						options[1], playCutscene(sceneID[1], GameWorld),
-						options[2], playCutscene(sceneID[2], GameWorld),
-						options[3], playCutscene(sceneID[3], GameWorld));
+						options[0], events[0], 
+						options[1], events[1],
+						options[2], events[2],
+						options[3], events[3]);
 			} break;
 		 
 		default:
@@ -690,6 +691,16 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 	else if (strcmp(inputString, "ENDCUTSCENE") == 0)
 	{
 		END_SCENE_HERE;
+	}
+	else if (strcmp(inputString, "TRIGGEREVENT:") == 0 || strcmp(inputString, "TRIGGERGAMEEVENT:") == 0)
+	{
+		GameEvent *newEvent = getNextArgGameEvent(fPtr, GameWorld);
+		if (newEvent == NULL)
+		{
+			return NULL;
+		}
+
+		SceneAction_TriggerGameEvent(newEvent, GameWorld);
 	}
 	else if (strcmp(inputString, "CHANGEGAMEFLAG:") == 0 || strcmp(inputString, "INCREMENTGAMEFLAG:") == 0 || strcmp(inputString, "INCGAMEFLAG:") == 0)
 	{

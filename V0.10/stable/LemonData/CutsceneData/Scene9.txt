@@ -1,24 +1,27 @@
 FRV<1>--CUTSCENE_DATA--
-> test
-StaticScene: false
-SetCameraMode: 2
-PlaceWall: 1000, 64, 2, 10
+StaticScene: false  > decides whether the game pauses for the cutscene
+SetCameraMode: 2    > Sets camera mode to free roam so that it is not tied to player
+PlaceWall: 1000, 64, 2, 10  > places an invisible wall at coords specified with size specified
 
 SetChannelVolume: 1 1.0
 
 SetCameraMode: 0
 
+TriggerGameEvent: "Move Object"   {
+    Object: "MainPlayer"
+    Vars: 1600.0 1120.0
+}
 
 createActor: "Mysterious block" 1 1700.0 1060.0 
 setActorSize: "Mysterious block" 96 32
-animateActor: "Mysterious block" Hurt 2
+animateActor: "Mysterious block" Hurt 200
 
->SayTextOption: "A Test cutscene from a FILE? HUH!?"	NO_PORTRAIT  2    3
->		"Option 1"	0
->		"Option Two"	3
->		"This is working." 0
+SayTextOption: "A Test cutscene from a FILE? HUH!?"	NO_PORTRAIT  2    3
+		"Play cutscene 2"	    "Play Cutscene"             { vars: 2.0 }
+		"play cutscene 9"	    "Play Cutscene from file"   { string: "Scene9" }
+		"Do nothing"  
 
-Repeat: 20
+Repeat: 3
 {
 	Repeat: 200
 	{
@@ -36,10 +39,9 @@ Repeat: 20
 IFVARIABLE: "flag1" = 0 
 THEN	
 { 
-	
+	setGameFlag: "flag1" 1
 }
 
  
-changeGameFlag: "flag1" 1
 
 ENDFILE

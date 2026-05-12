@@ -3,7 +3,7 @@
 
 int loadLevel(World *GameWorld, int level)
 {
-	if (GameWorld == NULL)
+	if (GameWorld == NULL || level < 0)
 	{
 		return MISSING_DATA;
 	}
@@ -1799,7 +1799,7 @@ int loadRepeatingObject(World *GameWorld, FILE *fPtr, int *objectsLoaded)	// leg
 
 int loadObjectRepeated(World *GameWorld, FILE *fPtr)
 {
-	int args[4] = {0};
+	int args[4] = {1, 0, 1, 0};
 
 	char string[16] = {0};
 
@@ -1820,9 +1820,7 @@ int loadObjectRepeated(World *GameWorld, FILE *fPtr)
 
 	long filePos = ftell(fPtr);
 	
-	int xVal = 0;
 	int yVal = 0;
-	int xTimes = 0;
 	int xChange = args[1];
 	int yTimes = args[2];
 	int yChange = args[3];
@@ -1830,8 +1828,8 @@ int loadObjectRepeated(World *GameWorld, FILE *fPtr)
 	while (yTimes > 0)
 	{
 		yTimes--;
-		xTimes = args[0];
-		xVal = 0;
+		int xTimes = args[0];
+		int xVal = 0;
 
 		while (xTimes > 0)
 		{

@@ -93,65 +93,53 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 	switch (inputEvent->EventID)
 	{
 		case EVENT_SWITCH_LEVEL:
-			if (EventData->newLevelID > -1)
-			{
-				loadLevel(GameWorld, EventData->newLevelID);
-			} break;
+			loadLevel(GameWorld, (int)EventData->vars[0]);
+			break;
 
 		case EVENT_PLAY_CUTSCENE:
 			{
-				initialiseCutscene(EventData->sceneID, GameWorld);
+				initialiseCutscene((int)EventData->vars[0], GameWorld);
 			} break;
 
 		case EVENT_PLAY_CUTSCENE_FROM_FILE:
 			{
-				putConsoleStringTS("Bruh");
-				initialiseCutsceneFromFile(EventData->sceneName, GameWorld);
+				initialiseCutsceneFromFile(EventData->string, GameWorld);
 			} break;
 
 		case EVENT_MOVE_PLAYER:
-				GoTo(GameWorld->Player.PlayerPtr, EventData->ObjectGoTo[0], EventData->ObjectGoTo[1]);
+				GoTo(GameWorld->Player.PlayerPtr, EventData->vars[0], EventData->vars[1]);
 			break;
 
 		case EVENT_MOVE_OBJECT:
 			{
-				// need a better method than this
-				int index = (int)EventData->ObjectGoTo[2];
-				ObjectController *ObjectList = GameWorld->ObjectList;
-				if (index < 0 || index >= EngineSettings.MaxObjects || ObjectList == NULL)
-				{
-					break;
-				}
-
-				Object *object = &ObjectList->objectComponents.Objects[index];
-				GoTo(object, EventData->ObjectGoTo[0], EventData->ObjectGoTo[1]);
+				GoTo(EventData->objReference, EventData->vars[0], EventData->vars[1]);
 			} break;
 
 		case EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR:
 			{
-				if (EventData->object == NULL)
+				if (EventData->objReference == NULL)
 				{
 					break;
 				}
 
-				centerOnObject(GameWorld->Player.PlayerPtr, EventData->object);
+				centerOnObject(GameWorld->Player.PlayerPtr, EventData->objReference);
 				ResetPlayer(&GameWorld->Player);
 				PlaySound("Objects/DoorOpen", OBJECT_SFX, 1.0);
 			} break;
 
 		case EVENT_SET_BRIGHTNESS:
 			{
-				SDL_SetRenderColorScale(ScreenData->Renderer, EventData->colourScale);
+				SDL_SetRenderColorScale(ScreenData->Renderer, EventData->vars[0]);
 			} break;
 
 		case EVENT_CHANGE_SCREEN_SIZE:
 			{	
-				applyScreenSize(EventData->screenDimensions[0], EventData->screenDimensions[1], ScreenData);
+				applyScreenSize((int)EventData->vars[0], (int)EventData->vars[1], ScreenData);
 			} break;
 
 		case EVENT_CHANGE_SCREEN_SIZE_SCALE:
 			{
-				applyScreenSizeScale(EventData->screenDimensions[0], EventData->screenDimensions[1], &GameWorld->MainCamera, ScreenData);
+				applyScreenSizeScale((int)EventData->vars[0], (int)EventData->vars[1], &GameWorld->MainCamera, ScreenData);
 			} break;
 
 		case EVENT_ENABLE_FULLSCREEN:
@@ -171,27 +159,24 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 
 		case EVENT_STREAM_LEVEL_PARTITION:
 			{
-				if (!inputEvent->loadingAFile)
+				if (inputEvent->loadedFile == NULL)
 				{
 					char fileName[MAX_LEN] = {0};
-					snprintf(fileName, MAX_LEN, "Level%d_Part%d", GameWorld->level, EventData->newLevelID);
+					snprintf(fileName, MAX_LEN, "Level%d_Part%d", GameWorld->level, (int)EventData->vars[0]);
 
-					EventData->loadedFile = openFile(fileName, LEVELDATA_ROOT, "--PARTITION_DATA--");
+					inputEvent->loadedFile = openFile(fileName, LEVELDATA_ROOT, "--PARTITION_DATA--");
 
-					if (EventData->loadedFile == NULL)
+					if (inputEvent->loadedFile == NULL)
 					{
 						break;
 					}
-
-					inputEvent->loadingAFile = true;
 				}
 
-				int result = loadLevelDataChunk(GameWorld, EventData->loadedFile, 10);
+				int result = loadLevelDataChunk(GameWorld, inputEvent->loadedFile, 10);
 				if (result != LEMON_SUCCESS)
 				{
-					fclose(EventData->loadedFile);
-					EventData->loadedFile = NULL;
-					inputEvent->loadingAFile = false;
+					fclose(inputEvent->loadedFile);
+					inputEvent->loadedFile = NULL;
 				}
 			} break;
 
@@ -224,9 +209,10 @@ int deleteAllGameEvents(World *GameWorld)
 	int i = 0;
 	while (i < EngineSettings.MaxGameEvents)
 	{
-		if (eventList[i].loadingAFile)
+		if (eventList[i].loadedFile != NULL)
 		{
-			fclose(eventList[i].EventData.loadedFile);
+			fclose(eventList[i].loadedFile);
+			eventList[i].loadedFile = NULL;
 		}
 		eventList[i].EventID = NO_EVENT;
 
@@ -251,7 +237,7 @@ int clearGameEvents(World *GameWorld)
 	int i = 0;
 	while (i < EngineSettings.MaxGameEvents)
 	{
-		if (!eventList[i].loadingAFile && eventList[i].EventID != NO_EVENT)
+		if (eventList[i].loadedFile == NULL && eventList[i].EventID != NO_EVENT)
 		{
 			eventList[i].EventID = NO_EVENT;
 			GameWorld->GameEvents.eventsPending--;
@@ -270,9 +256,10 @@ GameEvent* findAvailableEvent(GameEventManager *Manager)
 	int index = Manager->nextAvailable;
 	Manager->nextAvailable = (Manager->nextAvailable + 1) % EngineSettings.MaxGameEvents;
 
-	if (events[index].EventID != NO_EVENT && events[index].loadingAFile)
+	if (events[index].EventID != NO_EVENT && events[index].loadedFile != NULL)
 	{
-		fclose(events[index].EventData.loadedFile);
+		fclose(events[index].loadedFile);
+		events[index].loadedFile = NULL;
 	}
 
 	return &events[index];
@@ -292,8 +279,9 @@ GameEvent* addNewGameEvent(World *GameWorld)
 		return NULL;
 	}
 
-	memset(eventPtr, 0, sizeof(GameEvent));
-	eventPtr->loadingAFile = false;
+	memset(&eventPtr->EventData, 0, sizeof(GameEventData));
+	eventPtr->EventData.objReference = NULL;
+	eventPtr->loadedFile = NULL;
 
 	if (GameWorld->GameEvents.eventsPending < EngineSettings.MaxGameEvents)
 	{
@@ -344,7 +332,7 @@ GameEvent* switchLevel(int level, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_SWITCH_LEVEL;
-	newEvent->EventData.newLevelID = level;
+	newEvent->EventData.vars[0] = (float)level;
 
 	return newEvent;
 }
@@ -363,7 +351,7 @@ GameEvent* playCutscene(int scene, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_PLAY_CUTSCENE;
-	newEvent->EventData.sceneID = scene;
+	newEvent->EventData.vars[0] = (float)scene;
 
 	return newEvent;
 }
@@ -382,9 +370,7 @@ GameEvent* playCutsceneFromFile(const char name[], World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_PLAY_CUTSCENE_FROM_FILE;
-	strcpy(newEvent->EventData.sceneName, name);
-
-	putConsoleStringTS("Putting new event");
+	strcpy(newEvent->EventData.string, name);
 
 	return newEvent;
 }
@@ -403,8 +389,8 @@ GameEvent* Event_MovePlayer(float xPos, float yPos, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_MOVE_PLAYER;
-	newEvent->EventData.ObjectGoTo[0] = xPos;
-	newEvent->EventData.ObjectGoTo[1] = yPos;
+	newEvent->EventData.vars[0] = xPos;
+	newEvent->EventData.vars[1] = yPos;
 
 	return newEvent;
 }
@@ -423,9 +409,9 @@ GameEvent* Event_MoveObject(Object *input, float xPos, float yPos, World *GameWo
 	}
 
 	newEvent->EventID = EVENT_MOVE_OBJECT;
-	newEvent->EventData.ObjectGoTo[0] = xPos;
-	newEvent->EventData.ObjectGoTo[1] = yPos;
-	newEvent->EventData.ObjectGoTo[2] = (float)input->index;
+	newEvent->EventData.vars[0] = xPos;
+	newEvent->EventData.vars[1] = yPos;
+	newEvent->EventData.objReference = input;
 
 	return newEvent;
 }
@@ -444,7 +430,7 @@ GameEvent* Event_TeleportPlayerToExitDoor(Object *dest, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR;
-	newEvent->EventData.object = dest;
+	newEvent->EventData.objReference = dest;
 
 	return newEvent;
 }
@@ -463,7 +449,7 @@ GameEvent* Event_SetScreenBrightness(float brightness, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_SET_BRIGHTNESS;
-	newEvent->EventData.colourScale = brightness;
+	newEvent->EventData.vars[0] = brightness;
 
 	return newEvent;
 }
@@ -482,7 +468,7 @@ GameEvent* streamPartition(int partID, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_STREAM_LEVEL_PARTITION;
-	newEvent->EventData.newLevelID = partID;
+	newEvent->EventData.vars[0] = (float)partID;
 
 	return newEvent;
 }
@@ -526,8 +512,8 @@ GameEvent* changeScreenSizeScaled(int newWidth, int newHeight, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_CHANGE_SCREEN_SIZE_SCALE;
-	newEvent->EventData.screenDimensions[0] = newWidth;
-	newEvent->EventData.screenDimensions[1] = newHeight;
+	newEvent->EventData.vars[0] = (float)newWidth;
+	newEvent->EventData.vars[1] = (float)newHeight;
 
 	return newEvent;
 }
@@ -546,8 +532,8 @@ GameEvent* changeScreenSize(int newWidth, int newHeight, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_CHANGE_SCREEN_SIZE;
-	newEvent->EventData.screenDimensions[0] = newWidth;
-	newEvent->EventData.screenDimensions[1] = newHeight;
+	newEvent->EventData.vars[0] = (float)newWidth;
+	newEvent->EventData.vars[1] = (float)newHeight;
 
 	return newEvent;
 }
@@ -796,15 +782,106 @@ const char* getEventName(GameEventID input)
 
 GameEventID getEventID(const char input[])
 {
+	char temp[64] = {0};
+	char inputLower[MAX_LEN] = {0};
+
+	LemonStrncpy(inputLower, input, MAX_LEN);
+	stringToLower(inputLower);
+
 	for (int i = 0; i < EVENT_COUNT; i++)
 	{
-		if (strcmp(input, EventNames[i]) == 0)
+		strcpy(temp, EventNames[i]);
+		stringToLower(temp);
+
+		if (strcmp(inputLower, temp) == 0)
 		{
 			return i;
 		}
 	}
 	
 	return UNDEFINED_EVENT;
+}
+
+
+GameEvent* getNextArgGameEvent(FILE *file, World *GameWorld)
+{
+	if (file == NULL || GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	long filePos = ftell(file);
+	char buffer[MAX_LEN] = {0};
+
+	getNextArg(file, buffer, MAX_LEN);
+
+	GameEventID inputEvent = getEventID(buffer);	// find ID of event via name
+
+	if (inputEvent == NO_EVENT || inputEvent == UNDEFINED_EVENT)
+	{
+		fseek(file, filePos, SEEK_SET);
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);	// create empty slot for new event
+
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = inputEvent;			// if succesful, set ID of empty slot
+
+
+	ObjectController *ObjectList = GameWorld->ObjectList;
+	filePos = ftell(file);
+	getNextArg(file, buffer, MAX_LEN);
+
+	if (buffer[0] != '{')		// if there are arguments supplied (via { String: "StringInput", Vars: 1.0 2.0 3.0, ... etc. }), read them in
+	{
+		fseek(file, filePos, SEEK_SET);
+		return newEvent;
+	}
+
+	getNextArg(file, buffer, MAX_LEN);
+
+	while (!endOfFile(file) && buffer[0] != '}')
+	{
+		stringToLower(buffer);
+
+		if (strcmp(buffer, "string:") == 0)
+		{
+			getNextArg(file, newEvent->EventData.string, MAX_LEN);
+		}
+		else if (strcmp(buffer, "vars:") == 0 || strcmp(buffer, "variables:") == 0)
+		{
+			for (int i = 0; i < GAME_EVENT_VAR_COUNT; i++)
+			{
+				newEvent->EventData.vars[i] = getNextArgFloat(file);
+			}
+		}
+		else if (strcmp(buffer, "object:") == 0 && ObjectList != NULL)
+		{
+			if (hasNextArgNumber(file))
+			{
+				int index = getNextArgInt(file);
+				if (inRange(index, 0, EngineSettings.MaxObjects - 1))
+				{
+					newEvent->EventData.objReference = &ObjectList->objectComponents.Objects[index];
+				}
+			}
+			else
+			{
+				getNextArg(file, buffer, MAX_LEN);
+
+				newEvent->EventData.objReference = FindObject(buffer, ObjectList);
+			}
+		}
+
+		getNextArg(file, buffer, MAX_LEN);
+	}
+
+	return newEvent;
 }
 
 

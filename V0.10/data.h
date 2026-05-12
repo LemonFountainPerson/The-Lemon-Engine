@@ -910,24 +910,19 @@ const char* getEventName(GameEventID input);
 GameEventID getEventID(const char input[]);
 
 
-typedef union GameEventData
+#define GAME_EVENT_VAR_COUNT 4
+typedef struct GameEventData
 {
-	int screenDimensions[2];
-	float zoomScales[2];
-	int newLevelID;
-	FILE *loadedFile;
-	float ObjectGoTo[3];
-	Object *object;
-	int sceneID;
-	char sceneName[CUTSCENE_FILE_NAME_MAX];
-	float colourScale;
+	float vars[GAME_EVENT_VAR_COUNT];
+	char string[MAX_LEN];
+	Object *objReference;
 } GameEventData;
 
 typedef struct GameEvent
 {
 	GameEventID EventID;
 	GameEventData EventData;
-	bool loadingAFile;
+	FILE *loadedFile;
 } GameEvent;
 
 typedef struct GameEventManager
