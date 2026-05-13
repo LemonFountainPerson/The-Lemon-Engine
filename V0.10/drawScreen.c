@@ -1387,18 +1387,18 @@ float getCursorPos(void)
 		return 0.0;
 	}
 
-	SDL_Surface *text = TTF_RenderText_Blended_Wrapped(getFont("DebugFont"), DebugSettings.userInputString, DebugSettings.userInputIndex, TextSettings.DebugTextColour, 0);
+	TTF_Font *debug = getFont("DebugFont");
+	if (debug == NULL)
+	{
+		return MISSING_DATA;
+	}
 
-    if (text == NULL)
-    {
-    	return LEMON_ERROR;
-    }
+	int width = 0;
+	int height = 0;
 
-    float xPos = text->w;
+	TTF_GetStringSize(debug, DebugSettings.userInputString, DebugSettings.userInputIndex, &width, &height);
 
-    SDL_DestroySurface(text);
-
-    return xPos;
+    return (float)width;
 }
 
 
