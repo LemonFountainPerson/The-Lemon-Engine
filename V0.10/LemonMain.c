@@ -930,6 +930,10 @@ void deleteObjectController(ObjectController *ObjectList)
 
 	free(ObjectList);
 
+	// texts might be attached to objects
+	RemoveAllTexts(&TextSettings.TextList);
+	RemoveAllTexts(&TextSettings.DebugTexts);
+
 	return;
 }
 

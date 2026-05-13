@@ -1456,6 +1456,13 @@ void RenderTextList(TextList *list, Camera inputCamera)
 
 		if (array[i].attachedObj != NULL)
 		{
+			if (array[i].attachedObj->State < DEFAULT_STATE)
+			{
+				array[i].beingUsed = false;
+				list->count--;
+				continue;
+			}
+			
 			PhysicsBox *box = array[i].attachedObj->ObjectBox;
 			correctedX += box->xPos;
 			correctedY -= box->yPos;
