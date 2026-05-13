@@ -208,7 +208,7 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 }
 
 
-void startTypedCommand(SDL_Window *window)
+void startTyping(SDL_Window *window)
 {
 	if (SDL_TextInputActive(window))
 	{

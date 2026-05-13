@@ -1347,7 +1347,7 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 		if (buttons[LMN_CONSOLE_OPEN] == 1)
 		{
 			AcknowledgeButton(LMN_CONSOLE_OPEN);
-			startTypedCommand(window);
+			startTyping(window);
 
 			DebugSettings.consoleOpen = true;
 			DebugSettings.consoleFocus = false;
@@ -1365,7 +1365,7 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 	if (TextSettings.Typing == false && TextSettings.userInputString[0] != '\0')
 	{
 		executeCommand(TextSettings.userInputString, GameWorld);
-		startTypedCommand(window);
+		startTyping(window);
 		return;
 	}
 
