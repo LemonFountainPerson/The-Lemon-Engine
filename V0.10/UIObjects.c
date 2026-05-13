@@ -2064,7 +2064,7 @@ void closeFont(TTF_Font *font)
 
 TTF_Font* loadFont(const char *desiredFont, const char *newName)
 {	
-	TTF_Font *newFont = getFont(desiredFont);
+	TTF_Font *newFont = getFont(newName);
 	if (newFont != NULL)
 	{
 		return newFont;
