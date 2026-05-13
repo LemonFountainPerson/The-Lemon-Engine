@@ -1268,6 +1268,16 @@ void removeControlCharacters(char input[MAX_TEXT_LENGTH], int characterCount)
 
 	while (index < characterCount)
 	{
+		if (input[index] == '^' || (input[index] < 32 && input[index] != '\n'))
+		{
+			input[index] = '\t';
+
+			for (int i = index + 1; i < MAX_TEXT_LENGTH - 1 && inRange(input[i], '0', '9'); i++)
+			{
+				input[i] = '\t';
+			}
+		}
+
 		if (input[index] < 32 && input[index] != '\n')
 		{
 			for (int i = index; i < MAX_TEXT_LENGTH - 1; i++)
@@ -1331,6 +1341,7 @@ int displayText(TextBox *currentText, World *GameWorld)
 
 		if (EXPERIMENTAL_TEXT)
 		{
+			removeControlCharacters(currentText->textPhrase, strlen(currentText->textPhrase));
 			currentText->currentIndex = strlen(currentText->textPhrase) - 1;
 			displayNextCharacter(currentText, GameWorld);
 			currentText->currentIndex = -1;
@@ -2005,7 +2016,7 @@ Text* experimentalText(TextBox *input)
 	}
 
 	char subset[MAX_TEXT_LENGTH] = {0};
-	memcpy(subset, input->textPhrase, input->currentIndex);
+	LemonStrncpy(subset, input->textPhrase, input->currentIndex + 1);
 
 	if (input->textReference != NULL)
 	{

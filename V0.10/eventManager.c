@@ -172,7 +172,7 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 					}
 				}
 
-				int result = loadLevelDataChunk(GameWorld, inputEvent->loadedFile, 10);
+				int result = loadLevelData(GameWorld, inputEvent->loadedFile, 10);
 				if (result != LEMON_SUCCESS)
 				{
 					fclose(inputEvent->loadedFile);

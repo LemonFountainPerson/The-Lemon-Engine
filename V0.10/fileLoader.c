@@ -1,6 +1,9 @@
 #include "LemonEngine.h"
 
 
+#define NO_LINE_LIMIT 0
+#define CLOSE_FILE -1
+
 int loadLevel(World *GameWorld, int level)
 {
 	if (GameWorld == NULL || level < 0)
@@ -32,7 +35,7 @@ int loadLevel(World *GameWorld, int level)
 	}
 
 	// load data
-	if (loadLevelData(GameWorld, fPtr) == INVALID_DATA)
+	if (loadLevelData(GameWorld, fPtr, CLOSE_FILE) == INVALID_DATA)
 	{
 		putConsoleString("\nError: Failed to load level %d", level);
         GameWorld->GameState = ENCOUNTERED_FATAL_ERROR;
@@ -72,7 +75,7 @@ int loadPartition(World *GameWorld, int partID)
 	}
 
 	// load data
-	if (loadLevelData(GameWorld, fPtr) == INVALID_DATA)
+	if (loadLevelData(GameWorld, fPtr, CLOSE_FILE) == INVALID_DATA)
 	{
 		return LEMON_ERROR;
 	}
@@ -124,25 +127,6 @@ int saveGame(int saveFile, World *GameWorld)
 	fclose(fPtr);
 
 	return LEMON_SUCCESS;
-}
-
-
-void writeBooleanPhrase(FILE *fPtr, const char name[], bool trueValue)
-{
-	char buffer[MAX_LEN] = {0};
-
-	if (trueValue)
-	{
-		snprintf(buffer, MAX_LEN, "%s: true\n", name);
-	}
-	else
-	{
-		snprintf(buffer, MAX_LEN, "%s: false\n", name);
-	}
-	
-	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
-
-	return;
 }
 
 int saveSettings(int saveFile, World *GameWorld)
@@ -229,6 +213,25 @@ int loadSettings(int settingsFile, World *GameWorld)
 	snprintf(fileName, MAX_LEN, "SettingsFile%d", settingsFile);
 
 	return loadSaveData(fileName, GameWorld);
+}
+
+
+void writeBooleanPhrase(FILE *fPtr, const char name[], bool trueValue)
+{
+	char buffer[MAX_LEN] = {0};
+
+	if (trueValue)
+	{
+		snprintf(buffer, MAX_LEN, "%s: true\n", name);
+	}
+	else
+	{
+		snprintf(buffer, MAX_LEN, "%s: false\n", name);
+	}
+	
+	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+
+	return;
 }
 
 int loadSaveData(const char *fileName, World *GameWorld)
@@ -1127,17 +1130,7 @@ void closeFile(FILE *file)
 }
 
 
-int loadLevelData(World *GameWorld, FILE *fPtr)
-{
-	FuncResult result = loadLevelDataChunk(GameWorld, fPtr, 10000);
-
-	closeFile(fPtr);
-	
-	return result;
-}
-
-
-int loadLevelDataChunk(World *GameWorld, FILE *fPtr, int lineLimit)
+int loadLevelData(World *GameWorld, FILE *fPtr, int lineLimit)
 {
 	char buffer[MAX_LEN] = {0};
 	int i = 0;
@@ -1193,7 +1186,7 @@ int loadLevelDataChunk(World *GameWorld, FILE *fPtr, int lineLimit)
 			if (strstr(buffer, "Level") != buffer)
 			{
 				FILE *preset = openFile(buffer, LEVELDATA_ROOT, "--LEVEL_DATA--");
-				loadLevelData(GameWorld, preset);
+				loadLevelData(GameWorld, preset, CLOSE_FILE);
 			}
 			else
 			{
@@ -1215,6 +1208,10 @@ int loadLevelDataChunk(World *GameWorld, FILE *fPtr, int lineLimit)
 		i++;
 	}
 
+	if (lineLimit == CLOSE_FILE)
+	{
+		closeFile(fPtr);
+	}
 
 	return LEMON_SUCCESS;
 }
@@ -1371,7 +1368,7 @@ int readBranch(World *GameWorld, FILE *fPtr, bool conditionMet)
 		if (conditionMet)
 		{
 			// execute commands
-			loadLevelDataChunk(GameWorld, fPtr, 0);
+			loadLevelData(GameWorld, fPtr, NO_LINE_LIMIT);
 		}
 		else
 		{
@@ -1393,7 +1390,7 @@ int readBranch(World *GameWorld, FILE *fPtr, bool conditionMet)
 
 	if (!conditionMet)
 	{
-		loadLevelDataChunk(GameWorld, fPtr, 0);
+		loadLevelData(GameWorld, fPtr, NO_LINE_LIMIT);
 	}
 	else
 	{

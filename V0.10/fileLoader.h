@@ -10,11 +10,12 @@ int saveGame(int saveFile, World *GameWorld);
 
 int saveSettings(int saveFile, World *GameWorld);
 
+
+void writeBooleanPhrase(FILE *fPtr, const char name[], bool trueValue);
+
 int loadSaveData(const char *fileName, World *GameWorld);
 
-int loadLevelData(World *GameWorld, FILE *fPtr);
-
-int loadLevelDataChunk(World *GameWorld, FILE *fPtr, int lineLimit);
+int loadLevelData(World *GameWorld, FILE *fPtr, int lineLimit);
 
 int saveGameState(World *GameWorld);
 

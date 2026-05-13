@@ -1,13 +1,3 @@
-#ifndef IS_DEFINED
-#include "data.h"
-#include "gameObjects.h"
-#include "LemonMain.h"
-#include "spriteLoader.h"
-#include "levelLoader.h"
-#endif
-
-
-
 // Draws objects from gameWorld to screen 
 int drawObjects(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen);
 
