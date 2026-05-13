@@ -331,7 +331,7 @@ const char* getSolidFlagName(SolidFlag input);
 typedef enum ObjectType 
 {
 	LEVEL_FLAG_OBJ = 0,
-	SOLID_BLOCK,
+	SOLID_BLOCK,	
 	FLAT_SLOPE_FLOOR,
 	JUMP_THRU_BLOCK,
 	PLAYER_OBJECT,
@@ -351,7 +351,6 @@ typedef enum ObjectType
 	PUSHABLE_BOX,
 	PROJECTILE,
 	BASIC_ENEMY,
-
 	OBJECT_TYPE_COUNT,
 	UNDEFINED_OBJECT
 } ObjectType;
@@ -359,6 +358,11 @@ typedef enum ObjectType
 int getObjectID(const char entry[]);
 const char* getObjectIDName(ObjectType input);
 
+typedef enum Orientation
+{
+	ROW,
+	COLUMN
+} Orientation;
 
 typedef enum Flags 
 {
@@ -1337,7 +1341,7 @@ typedef struct EngineConfig
 	int GameTicksPerSecond;
 	Uint64 TickDelta;
 
-	struct sprite *DefaultTexture;
+	Sprite *DefaultTexture;
 	DisplayData DefaultDisplay;
 } EngineConfig;
 
@@ -1363,6 +1367,8 @@ typedef struct RenderConfig
 	Uint64 RenderDelta;
 
 	bool vSync;
+
+	RenderMode TierImageMode;
 } RenderConfig;
 
 
@@ -1378,26 +1384,28 @@ typedef struct TextConfig
 	SDL_Color DebugTextColour;
 	float DebugTextPointSize;
 	TextList DebugTexts;
+
+	bool Typing;
+	char userInputString[USER_INPUT_MAX_LEN];
+	int userInputIndex;
+	float cursorXPos;
 } TextConfig;
 
 
 typedef struct DebugConfig
 {
+	bool consoleOpen;
 	ConsoleTextSetting ConsoleTextEnabled;
 	char ConsoleString[CONSOLE_STRING_LENGTH];
 	InputHistory consoleHistory;
 	float consoleXPos;
 	float consoleYPos;
 	int scrollVal;
-	bool TypingInConsole;
 	bool consoleFocus;
 	ConsoleCommand commands[MAX_CONSOLE_COMMANDS];
-
-	char userInputString[USER_INPUT_MAX_LEN];
+	
 	InputHistory userInputHistory;
-	int userInputIndex;
 	int argIndex;
-	float cursorXPos;
 
 	int PauseEngine;
 
@@ -1423,6 +1431,20 @@ typedef struct String
 } String;
 
 
+
+#define MAX_ROWS 8
+#define MAX_COLUMNS 8
+
+typedef struct TierListGrid		// -1 means empty
+{
+	int rowCount;
+	int rows[MAX_ROWS];		// defines the order of each row (e.g.  2, 3, 1, 4, 5, -1, -1, -1) where each number is the 'index' of the row
+	int columnCount;
+	int columns[MAX_COLUMNS];		// ditto but for columns
+
+	int imageCount[MAX_ROWS][MAX_COLUMNS];
+} TierListGrid;
+
 #endif
 
 
@@ -1446,5 +1468,3 @@ EXPORT extern RenderConfig RenderSettings;
 EXPORT extern TextConfig TextSettings;
 
 EXPORT extern DebugConfig DebugSettings;
-
-

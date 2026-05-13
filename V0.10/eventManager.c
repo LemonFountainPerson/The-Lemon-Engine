@@ -25,7 +25,9 @@ int HandleGameEvents(World *GameWorld, RenderFrame *ScreenData)
 		return MISSING_DATA;
 	}
 
-	updateTypedCommand(ScreenData->Window, GameWorld);
+	updateConsole(ScreenData->Window, GameWorld);
+
+	updateTyping(ScreenData->Window, GameWorld);
 
 	if (DebugSettings.PauseEngine == ENGINE_PAUSED)
 	{
@@ -68,7 +70,6 @@ int HandleGameEvents(World *GameWorld, RenderFrame *ScreenData)
 
 	return LEMON_SUCCESS;
 }
-
 
 
 int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *ScreenData)
@@ -207,6 +208,107 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 }
 
 
+void startTypedCommand(SDL_Window *window)
+{
+	if (SDL_TextInputActive(window))
+	{
+		return;
+	}
+
+	SDL_StartTextInput(window);
+	
+	TextSettings.userInputIndex = 0;
+	memset(TextSettings.userInputString, 0, USER_INPUT_MAX_LEN);
+
+	TextSettings.cursorXPos = 0.0;
+
+	TextSettings.Typing = true;
+
+	return;
+}
+
+void updateTyping(SDL_Window *window, World *GameWorld)
+{
+	if (!TextSettings.Typing)
+	{
+		return;
+	}
+
+	if (buttonPressed(LMN_BACKSPACE) && TextSettings.userInputIndex > 0)
+	{
+		TextSettings.userInputIndex--;				
+
+		char buffer[USER_INPUT_MAX_LEN] = {0};
+		if (TextSettings.userInputIndex < USER_INPUT_MAX_LEN - 1)
+		{
+			strcpy(buffer, TextSettings.userInputString + TextSettings.userInputIndex + 1);
+		}
+			
+		TextSettings.userInputString[TextSettings.userInputIndex] = 0;
+		strcat(TextSettings.userInputString, buffer);
+
+		TextSettings.cursorXPos = getCursorPos();
+	}
+
+	if (buttonPressed(LMN_LEFTARROW))
+	{
+		TextSettings.userInputIndex = clamp(TextSettings.userInputIndex - 1, 0, USER_INPUT_MAX_LEN);
+		TextSettings.cursorXPos = getCursorPos();
+	}
+
+	if (buttonPressed(LMN_RIGHTARROW))
+	{
+		TextSettings.userInputIndex = clamp(TextSettings.userInputIndex + 1, 0, strlen(TextSettings.userInputString));
+		TextSettings.cursorXPos = getCursorPos();
+	}
+
+	if (buttonPressed(LMN_ENTER))
+	{
+		TextSettings.Typing = false;
+		SDL_StopTextInput(window);
+
+		TextSettings.userInputIndex = 0;
+		TextSettings.cursorXPos = 0.0;
+	}
+
+	
+	ClearInput();
+
+	return;
+}
+
+void inputTyping(const char input[])
+{
+	int prevLength = strlen(TextSettings.userInputString);
+	TextSettings.userInputIndex = clamp(TextSettings.userInputIndex, 0, USER_INPUT_MAX_LEN - 1);
+
+	if (TextSettings.userInputIndex >= USER_INPUT_MAX_LEN - 1 || prevLength >= USER_INPUT_MAX_LEN - 1 || input == NULL)
+	{
+		return;
+	}
+
+	char buffer[USER_INPUT_MAX_LEN] = {0};
+
+	if (TextSettings.userInputString[TextSettings.userInputIndex] != '\0')
+	{
+		strcpy(buffer, TextSettings.userInputString + TextSettings.userInputIndex);
+	}
+	
+	int bytesAvailable = USER_INPUT_MAX_LEN - prevLength - 1;
+
+	LemonStrncpy(TextSettings.userInputString + TextSettings.userInputIndex, input, bytesAvailable);
+
+	strcat(TextSettings.userInputString, buffer);
+
+	TextSettings.userInputIndex += strlen(TextSettings.userInputString) - prevLength;
+
+	TextSettings.userInputString[USER_INPUT_MAX_LEN - 1] = 0;
+
+	TextSettings.cursorXPos = getCursorPos();
+
+	return;
+}
+
 int deleteAllGameEvents(World *GameWorld)
 {
 	if (GameWorld == NULL)
@@ -327,6 +429,7 @@ inline void removeEventToTriggerLater(GameEvent *inputEvent, GameEvent *storage,
 	GameWorld->GameEvents.eventsPending--;
 	inputEvent->EventID = NO_EVENT;
 }
+
 
 GameEvent* switchLevel(int level, World *GameWorld)
 {

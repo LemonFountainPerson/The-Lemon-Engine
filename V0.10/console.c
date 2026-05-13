@@ -6,8 +6,6 @@ void executeCommand(char inputSource[USER_INPUT_MAX_LEN], World *GameWorld)
 	char input[USER_INPUT_MAX_LEN] = {0};
 	strcpy(input, inputSource);
 	memset(inputSource, 0, USER_INPUT_MAX_LEN);
-	DebugSettings.userInputIndex = 0;
-	DebugSettings.cursorXPos = 0.0;
 	DebugSettings.scrollVal = 0;
 
 	putConsoleString("> %s", input);
@@ -211,6 +209,7 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 
 	int i = 0;
 
+
 	NEWCOMMAND(Version, "check engine version information", "version");
 
 	NEWCOMMAND(Quit, "quit the game", "quit");
@@ -300,6 +299,7 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 	return;
 }
 
+
 int ConsoleCommand_Version(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	putConsoleString("\n%s\n%s\nFile Reader: %s", LEMON_ENGINE_INFO, LEMON_VERSION, FILE_READER_VERSION);
@@ -325,6 +325,22 @@ int ConsoleCommand_Restart(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	initialiseWorld(GameWorld);
 
 	StartGame(GameWorld);
+
+	printTextsinfo(&TextSettings.DebugTexts, "debugtexts:");
+
+	FontList *list = &TextSettings.FontList;
+
+		for (int i = 0; i < MAX_LOADED_FONTS; i++)
+		{
+			if (list->font[i] != NULL)
+			{
+				putConsoleString("Slot %d '%s'  ", i, list->name[i]);
+			}
+			else
+			{
+				putConsoleString("Slot %d (Empty)", i);
+			}
+		}
 
 	return LEMON_SUCCESS;
 }
@@ -1324,16 +1340,32 @@ int ConsoleCommand_Noclip(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 static const float consoleWidth = 1024.0;
 static const float consoleHeight = 600.0;
 
-void updateTypedCommand(SDL_Window *window, World *GameWorld)
+void updateConsole(SDL_Window *window, World *GameWorld)
 {
-	if (DebugSettings.TypingInConsole == false)
+	if (DebugSettings.consoleOpen == false)
 	{
 		if (buttons[LMN_CONSOLE_OPEN] == 1)
 		{
 			AcknowledgeButton(LMN_CONSOLE_OPEN);
 			startTypedCommand(window);
+
+			DebugSettings.consoleOpen = true;
+			DebugSettings.consoleFocus = false;
+			DebugSettings.scrollVal = 0;
 		}
 
+		return;
+	}
+
+	if (buttonPressed(LMN_CONSOLE_OPEN))
+	{
+		DebugSettings.consoleOpen = false;
+	}
+
+	if (TextSettings.Typing == false && TextSettings.userInputString[0] != '\0')
+	{
+		executeCommand(TextSettings.userInputString, GameWorld);
+		startTypedCommand(window);
 		return;
 	}
 
@@ -1349,33 +1381,6 @@ void updateTypedCommand(SDL_Window *window, World *GameWorld)
 		}
 	}
 
-	if (buttonPressed(LMN_ENTER))
-	{
-		executeCommand(DebugSettings.userInputString, GameWorld);
-	}
-
-	if (buttonPressed(LMN_CONSOLE_OPEN))
-	{
-		SDL_StopTextInput(window);
-		DebugSettings.TypingInConsole = false;
-	}
-
-	if (buttonPressed(LMN_BACKSPACE) && DebugSettings.userInputIndex > 0)
-	{
-		DebugSettings.userInputIndex--;				
-
-		char buffer[USER_INPUT_MAX_LEN] = {0};
-		if (DebugSettings.userInputIndex < USER_INPUT_MAX_LEN - 1)
-		{
-			strcpy(buffer, DebugSettings.userInputString + DebugSettings.userInputIndex + 1);
-		}
-			
-		DebugSettings.userInputString[DebugSettings.userInputIndex] = 0;
-		strcat(DebugSettings.userInputString, buffer);
-
-		DebugSettings.cursorXPos = getCursorPos();
-	}
-
 	if (buttonPressed(LMN_UPARROW) || MouseInput.wheelYDir > 0 || GamePadInput.rightStickY > 0.9)
 	{
 		if (DebugSettings.consoleFocus || GamePadInput.rightStickY > 0.9)
@@ -1388,10 +1393,10 @@ void updateTypedCommand(SDL_Window *window, World *GameWorld)
 
 			if (next != NULL && next[0] != '\0')
 			{
-				strcpy(DebugSettings.userInputString, next);
-				DebugSettings.userInputIndex = strlen(DebugSettings.userInputString);
+				strcpy(TextSettings.userInputString, next);
+				TextSettings.userInputIndex = strlen(TextSettings.userInputString);
 
-				DebugSettings.cursorXPos = getCursorPos();
+				TextSettings.cursorXPos = getCursorPos();
 			}
 		}
 	}
@@ -1408,79 +1413,16 @@ void updateTypedCommand(SDL_Window *window, World *GameWorld)
 
 			if (prev != NULL && prev[0] != '\0')
 			{
-				strcpy(DebugSettings.userInputString, prev);
-				DebugSettings.userInputIndex = strlen(DebugSettings.userInputString);
+				strcpy(TextSettings.userInputString, prev);
+				TextSettings.userInputIndex = strlen(TextSettings.userInputString);
 
-				DebugSettings.cursorXPos = getCursorPos();
+				TextSettings.cursorXPos = getCursorPos();
 			}
 		}
 	}
 
-	if (buttonPressed(LMN_LEFTARROW))
-	{
-		DebugSettings.userInputIndex = clamp(DebugSettings.userInputIndex - 1, 0, USER_INPUT_MAX_LEN);
-		DebugSettings.cursorXPos = getCursorPos();
-	}
-
-	if (buttonPressed(LMN_RIGHTARROW))
-	{
-		DebugSettings.userInputIndex = clamp(DebugSettings.userInputIndex + 1, 0, strlen(DebugSettings.userInputString));
-		DebugSettings.cursorXPos = getCursorPos();
-	}
-
-	ClearInput();
 
 	return;
-}
-
-void startTypedCommand(SDL_Window *window)
-{
-	if (SDL_TextInputActive(window) || DebugSettings.TypingInConsole)
-	{
-		return;
-	}
-
-	SDL_StartTextInput(window);
-	DebugSettings.TypingInConsole = true;
-	DebugSettings.consoleFocus = false;
-	DebugSettings.scrollVal = 0;
-	
-	DebugSettings.userInputIndex = 0;
-	memset(DebugSettings.userInputString, 0, USER_INPUT_MAX_LEN);
-
-	DebugSettings.userInputString[0] = ' ';
-
-	DebugSettings.cursorXPos = 0.0;
-}
-
-void addTypedCommand(const char input[])
-{
-	int prevLength = strlen(DebugSettings.userInputString);
-	DebugSettings.userInputIndex = clamp(DebugSettings.userInputIndex, 0, USER_INPUT_MAX_LEN - 1);
-
-	if (DebugSettings.userInputIndex >= USER_INPUT_MAX_LEN - 1 || prevLength >= USER_INPUT_MAX_LEN - 1 || input == NULL)
-	{
-		return;
-	}
-
-	char buffer[USER_INPUT_MAX_LEN] = {0};
-
-	if (DebugSettings.userInputString[DebugSettings.userInputIndex] != '\0')
-	{
-		strcpy(buffer, DebugSettings.userInputString + DebugSettings.userInputIndex);
-	}
-	
-	int bytesAvailable = USER_INPUT_MAX_LEN - prevLength - 1;
-
-	strncpy(DebugSettings.userInputString + DebugSettings.userInputIndex, input, bytesAvailable);
-
-	strcat(DebugSettings.userInputString, buffer);
-
-	DebugSettings.userInputIndex += strlen(DebugSettings.userInputString) - prevLength;
-
-	DebugSettings.userInputString[USER_INPUT_MAX_LEN - 1] = 0;
-
-	DebugSettings.cursorXPos = getCursorPos();
 }
 
 
@@ -1494,7 +1436,6 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 	static const float topSpacing = 3.0;
 	DebugSettings.consoleXPos = -512.0;
 	DebugSettings.consoleYPos = yCorrection - consoleHeight;
-
 
 	SDL_FRect box = {0};
 
@@ -1526,7 +1467,7 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 	// render cursor
 	box.w = 2.0;
 	box.h = inputFieldHeight - (topSpacing * 2.0);
-	box.x += insideSpacing + DebugSettings.cursorXPos;
+	box.x += insideSpacing + TextSettings.cursorXPos;
 	box.y += topSpacing;
 	SDL_SetRenderDrawColor(Screen, 0xFF, 0xFF, 0xFF, 0xFF);
 	SDL_RenderFillRect(Screen, &box);
@@ -1535,9 +1476,9 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 	box.x = DebugSettings.consoleXPos + insideSpacing;
 	box.y = DebugSettings.consoleYPos;
 	int textWidth = (int)(consoleWidth - (2.0 * insideSpacing));
-	if (strlen(DebugSettings.userInputString) > 0)
+	if (strlen(TextSettings.userInputString) > 0)
 	{
-	    AddDebugText(DebugSettings.userInputString, box.x, box.y, textWidth, DTFORMAT_SCREEN_RELATIVE);
+	    AddDebugText(TextSettings.userInputString, box.x, box.y, textWidth, DTFORMAT_SCREEN_RELATIVE);
 	}
 
 	int index = modulo(DebugSettings.consoleHistory.head, USER_INPUT_HISTORY_LEN);

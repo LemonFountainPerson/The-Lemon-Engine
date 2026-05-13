@@ -1119,7 +1119,7 @@ int getExternalInput(World *GameWorld, SDL_Renderer *screen)
     		break;
 
     	case SDL_EVENT_TEXT_INPUT:
-    			addTypedCommand(event.text.text);
+    			inputTyping(event.text.text);
     		break;
 
     	default:
@@ -1136,7 +1136,7 @@ int getExternalInput(World *GameWorld, SDL_Renderer *screen)
 
 int getKeyboardInput(SDL_KeyboardEvent *key)
 {
-	if (key->repeat && !DebugSettings.TypingInConsole)
+	if (key->repeat && !TextSettings.Typing)
 	{
 		return EXECUTION_UNNECESSARY;
 	}
@@ -1758,7 +1758,7 @@ int setRenderRefreshRate(int desiredRenderRate)
 
 void MasterControls(World *GameWorld, SDL_Window *window)
 {
-	if (GameWorld == NULL || !DEBUG_MODE || DebugSettings.TypingInConsole)
+	if (GameWorld == NULL || !DEBUG_MODE || TextSettings.Typing)
 	{
 		return;
 	}
@@ -2148,6 +2148,10 @@ void SetTextSettingsToDefault(void)
 	}
 
 	RemoveAllTexts(&TextSettings.DebugTexts);
+
+	TextSettings.Typing = SDL_TextInputActive(ScreenData.Window);
+	TextSettings.userInputIndex = -1;
+	TextSettings.cursorXPos = 0.0;
 }
 
 void SetDebugSettingsToDefault(void)
@@ -2164,10 +2168,8 @@ void SetDebugSettingsToDefault(void)
 	DebugSettings.showErrors = DEBUG_MODE ? true : false;
 
 	DebugSettings.ConsoleTextEnabled = DEBUG_MODE ? CONSOLE_ONLY_ERRORS : CONSOLE_TEXT_DISABLED;
-	DebugSettings.TypingInConsole = SDL_TextInputActive(ScreenData.Window);
-	DebugSettings.userInputIndex = -1;
 	DebugSettings.argIndex = 0;
-	DebugSettings.cursorXPos = 0.0;
+	DebugSettings.consoleOpen = false;
 
 	DebugSettings.PauseEngine = ENGINE_UNPAUSED;
 

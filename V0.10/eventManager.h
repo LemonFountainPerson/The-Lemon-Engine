@@ -1,9 +1,28 @@
 EXPORT int StartGame(World *GameWorld);
 
+int getCurrentIndex(int input[], int ID);
+
+int getIndexDistance(int input[], int ID);
+
+int getMostImagesOnRow(int row);
+
+int getMostImagesOnColumn(int column);
+
+int createRow(World *GameWorld);
+
+int createColumn(World *GameWorld);
+
 
 int HandleGameEvents(World *GameWorld, RenderFrame *ScreenData);
 
 int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *ScreenData);
+
+void startTypedCommand(SDL_Window *window);
+
+void updateTyping(SDL_Window *window, World *GameWorld);
+
+void inputTyping(const char input[]);
+
 
 int deleteAllGameEvents(World *GameWorld);
 

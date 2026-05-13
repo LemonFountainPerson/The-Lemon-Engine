@@ -10,11 +10,7 @@ void parseArgumentFlag(char input[USER_INPUT_MAX_LEN], char argDest[USER_INPUT_M
 
 bool parseArgumentAsBoolean(const char input[USER_INPUT_MAX_LEN]);
 
-void updateTypedCommand(SDL_Window *window, World *GameWorld);
-
-void startTypedCommand(SDL_Window *window);
-
-void addTypedCommand(const char input[]);
+void updateConsole(SDL_Window *window, World *GameWorld);
 
 Object* parseArgumentToFindObject(const char input[USER_INPUT_MAX_LEN], ObjectController *ObjectList);
 

@@ -1382,7 +1382,7 @@ int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, Debu
 
 float getCursorPos(void)
 {
-	if (DebugSettings.userInputIndex < 1)
+	if (TextSettings.userInputIndex < 1)
 	{
 		return 0.0;
 	}
@@ -1396,7 +1396,7 @@ float getCursorPos(void)
 	int width = 0;
 	int height = 0;
 
-	TTF_GetStringSize(debug, DebugSettings.userInputString, DebugSettings.userInputIndex, &width, &height);
+	TTF_GetStringSize(debug, TextSettings.userInputString, TextSettings.userInputIndex, &width, &height);
 
     return (float)width;
 }
@@ -1414,7 +1414,7 @@ void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 	}
 	
 	// render console
-	if (DebugSettings.TypingInConsole)
+	if (DebugSettings.consoleOpen)
 	{
 		renderConsole(GameWorld, Screen);	
 	}
