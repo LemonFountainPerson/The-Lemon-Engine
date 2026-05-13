@@ -505,7 +505,7 @@ FuncResult RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 	case SCENE_PLAY_SOUND:
 		{
-			PlaySound(currentData.soundData.soundName, currentData.soundData.channel, currentData.soundData.volume);
+			PlaySound(currentData.soundData.soundName, currentData.soundData.volume, currentData.soundData.channel);
 		} break;
 
 	case SCENE_SET_CAMERA_POS:
@@ -547,7 +547,7 @@ FuncResult RunSceneAction(SceneAction *inputAction, World *GameWorld)
 			GameWorld->MainCamera.CameraY += currentData.CameraData[1];
 			break;
 
-	case SCENE_MOVE_CAMERA_SMOOTH:
+	case SCENE_MOVE_CAMERA_TO:
 		{
 			float xDest = currentData.CameraData[0];
 			float yDest = currentData.CameraData[1];
@@ -585,6 +585,34 @@ FuncResult RunSceneAction(SceneAction *inputAction, World *GameWorld)
 		{
 			GameWorld->MainCamera.zoomX += currentData.zoomScales[0];
 			GameWorld->MainCamera.zoomY += currentData.zoomScales[1];
+		} break;
+
+	case SCENE_CHANGE_CAMERA_ZOOM_TO:
+		{
+			float xDest = currentData.zoomScales[0];
+			float yDest = currentData.zoomScales[1];
+			float speedCoefficient = currentData.zoomScales[2];
+
+			float xDifference = xDest - GameWorld->MainCamera.zoomX;
+			float yDifference = yDest - GameWorld->MainCamera.zoomY;
+
+			if (fabs(xDifference) < 0.01)
+			{
+				GameWorld->MainCamera.zoomX = xDest;
+			}
+			else
+			{
+				GameWorld->MainCamera.zoomX += xDifference / speedCoefficient;
+			}
+
+			if (fabs(yDifference) < 0.01)
+			{
+				GameWorld->MainCamera.zoomY = yDest;
+			}
+			else
+			{
+				GameWorld->MainCamera.zoomY += yDifference / speedCoefficient;
+			}
 		} break;
 
 	case SCENE_SET_CAMERA_MODE:
@@ -887,8 +915,8 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 	else if (strcmp(inputString, "PLAYSOUND:") == 0)
 	{
 		getNextArg(fPtr, inputString, MAX_LEN);
-		int channel = getNextArgInt(fPtr);
 		float volume = getNextArgFloat(fPtr);
+		int channel = getNextArgInt(fPtr);
 
 		return SceneAction_PlaySound(inputString, channel, volume, GameWorld);
 	}
@@ -906,14 +934,20 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 	}
 	else if (strcmp(inputString, "SETCAMERAPOS:") == 0)
 	{
-		float xPos = getNextArgFloat(fPtr);
-		float yPos = getNextArgFloat(fPtr);
-		return SceneAction_SetCameraPosition(xPos, yPos, GameWorld);
-	}
-	else if (strcmp(inputString, "SETCAMERAMODE:") == 0 || strcmp(inputString, "SETCAMMODE:") == 0)
-	{
-		int mode = getNextArgInt(fPtr);
-		return SceneAction_SetCameraMode(mode, GameWorld);
+		if (hasNextArgNumber(fPtr))
+		{
+			float xPos = getNextArgFloat(fPtr);
+			float yPos = getNextArgFloat(fPtr);
+			return SceneAction_SetCameraPosition(xPos, yPos, GameWorld);
+		}
+		else
+		{
+			char name[OBJECT_NAME_LENGTH] = {0};
+			getNextArg(fPtr, name, OBJECT_NAME_LENGTH);
+
+			return SceneAction_MoveCameraToObject(name, 0.0, GameWorld);
+		}
+		
 	}
 	else if (strcmp(inputString, "MOVECAMERA:") == 0)
 	{
@@ -921,21 +955,26 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 		float yMove = getNextArgFloat(fPtr);
 		return SceneAction_MoveCamera(xMove, yMove, GameWorld);
 	}
-	else if (!strcmp(inputString, "SMOOTHMOVECAMERATO:") || !strcmp(inputString, "MOVECAMERATO:"))
+	else if (!strcmp(inputString, "SMOOTHMOVECAMERATO:") || strcmp(inputString, "MOVECAMERATO:") == 0)
 	{
 		if (hasNextArgNumber(fPtr))
 		{
 			float xPos = getNextArgFloat(fPtr);
 			float yPos = getNextArgFloat(fPtr);
 
-			return SceneAction_MoveCameraSmooth(xPos, yPos, getNextArgFloat(fPtr), GameWorld);
+			return SceneAction_MoveCameraTo(xPos, yPos, getNextArgFloat(fPtr), GameWorld);
 		}
 		else
 		{
 			char name[OBJECT_NAME_LENGTH] = {0};
 			getNextArg(fPtr, name, OBJECT_NAME_LENGTH);
-			return SceneAction_MoveCameraTo(name, getNextArgFloat(fPtr), GameWorld);
+			return SceneAction_MoveCameraToObject(name, getNextArgFloat(fPtr), GameWorld);
 		}
+	}
+	else if (strcmp(inputString, "SETCAMERAMODE:") == 0 || strcmp(inputString, "SETCAMMODE:") == 0)
+	{
+		int mode = getNextArgInt(fPtr);
+		return SceneAction_SetCameraMode(mode, GameWorld);
 	}
 	else if (!strcmp(inputString, "SETCAMERAZOOM:") || !strcmp(inputString, "SETZOOM:"))
 	{
@@ -943,11 +982,17 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 		float yZoom = getNextArgFloat(fPtr);
 		return SceneAction_SetZoom(xZoom, yZoom, GameWorld);
 	}
-	else if (!strcmp(inputString, "SETCAMERAZOOM:") || !strcmp(inputString, "SETZOOM:"))
+	else if (!strcmp(inputString, "CHANGECAMERAZOOM:") || !strcmp(inputString, "CHANGEZOOM:"))
 	{
 		float xZoom = getNextArgFloat(fPtr);
 		float yZoom = getNextArgFloat(fPtr);
 		return SceneAction_ChangeZoom(xZoom, yZoom, GameWorld);
+	}
+	else if (!strcmp(inputString, "CHANGEZOOMTOSMOOTH:") || !strcmp(inputString, "CHANGECAMERAZOOMTO:") || !strcmp(inputString, "CHANGEZOOMTO:"))
+	{
+		float xZoom = getNextArgFloat(fPtr);
+		float yZoom = getNextArgFloat(fPtr);
+		return SceneAction_ChangeZoomTo(xZoom, yZoom, getNextArgFloat(fPtr), GameWorld);
 	}
 	else if (!strcmp(inputString, "PLACEWALL:") || !strcmp(inputString, "PLACEINVISWALL:") || !strcmp(inputString, "PLACEINVISIBLEWALL"))
 	{
@@ -1110,8 +1155,11 @@ const char* getSceneActionName(SceneActionID input)
 	case SCENE_MOVE_CAMERA:
 		return "Move Camera";
 
-	case SCENE_MOVE_CAMERA_SMOOTH:
-		return "Move Camera smoothly";
+	case SCENE_MOVE_CAMERA_TO:
+		return "Move Camera to";
+
+	case SCENE_MOVE_CAMERA_TO_OBJECT:
+		return "Move Camera to Object";
 
 	case SCENE_SET_CAMERA_POS:
 		return "Set Camera Position";
@@ -1124,6 +1172,9 @@ const char* getSceneActionName(SceneActionID input)
 
 	case SCENE_CHANGE_CAMERA_ZOOM:
 		return "Change Camera zoom";
+
+	case SCENE_CHANGE_CAMERA_ZOOM_TO:
+		return "Change Camera zoom to";
 
 	case SCENE_SET_ACTOR_POS:
 		return "Set Actor position";
@@ -1938,24 +1989,6 @@ SceneAction* SceneAction_SetCameraPosition(float xPos, float yPos, World *GameWo
 	return newAction;
 }
 
-SceneAction* SceneAction_SetCameraMode(int mode, World *GameWorld)
-{
-	if (GameWorld == NULL)
-	{
-		return NULL;
-	}
-
-	SceneAction *newAction = createSceneAction(SCENE_SET_CAMERA_MODE, GameWorld);
-	if (newAction == NULL)
-	{
-		return NULL;
-	}
-
-	newAction->ActionData.cameraMode = mode;
-
-	return newAction;
-}
-
 SceneAction* SceneAction_MoveCamera(float xVel, float yVel, World *GameWorld)
 {
 	if (GameWorld == NULL)
@@ -1976,14 +2009,14 @@ SceneAction* SceneAction_MoveCamera(float xVel, float yVel, World *GameWorld)
 }
 
 
-SceneAction* SceneAction_MoveCameraSmooth(float xPos, float yPos, float coefficient, World *GameWorld)
+SceneAction* SceneAction_MoveCameraTo(float xPos, float yPos, float coefficient, World *GameWorld)
 {
 	if (GameWorld == NULL || coefficient < 0.1)
 	{
 		return NULL;
 	}
 
-	SceneAction *newAction = createSceneAction(SCENE_MOVE_CAMERA_SMOOTH, GameWorld);
+	SceneAction *newAction = createSceneAction(SCENE_MOVE_CAMERA_TO, GameWorld);
 	if (newAction == NULL)
 	{
 		return NULL;
@@ -1996,9 +2029,9 @@ SceneAction* SceneAction_MoveCameraSmooth(float xPos, float yPos, float coeffici
 	return newAction;
 }
 
-SceneAction* SceneAction_MoveCameraTo(char objectName[], float coefficient, World *GameWorld)
+SceneAction* SceneAction_MoveCameraToObject(char objectName[], float coefficient, World *GameWorld)
 {
-	if (GameWorld == NULL || objectName == NULL || coefficient < 0.1)
+	if (GameWorld == NULL || objectName == NULL)
 	{
 		return NULL;
 	}
@@ -2029,6 +2062,23 @@ SceneAction* SceneAction_MoveCameraTo(char objectName[], float coefficient, Worl
 	return newAction;
 }
 
+SceneAction* SceneAction_SetCameraMode(int mode, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_SET_CAMERA_MODE, GameWorld);
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->ActionData.cameraMode = mode;
+
+	return newAction;
+}
 
 SceneAction* SceneAction_SetZoom(float zoomX, float zoomY, World *GameWorld)
 {
@@ -2065,6 +2115,26 @@ SceneAction* SceneAction_ChangeZoom(float zoomX, float zoomY, World *GameWorld)
 
 	newAction->ActionData.zoomScales[0] = zoomX;
 	newAction->ActionData.zoomScales[1] = zoomY;
+
+	return newAction;
+}
+
+SceneAction* SceneAction_ChangeZoomTo(float zoomX, float zoomY, float coefficient, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return NULL;
+	}
+
+	SceneAction *newAction = createSceneAction(SCENE_CHANGE_CAMERA_ZOOM_TO, GameWorld);
+	if (newAction == NULL)
+	{
+		return NULL;
+	}
+
+	newAction->ActionData.zoomScales[0] = zoomX;
+	newAction->ActionData.zoomScales[1] = zoomY;
+	newAction->ActionData.zoomScales[2] = coefficient;
 
 	return newAction;
 }

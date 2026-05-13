@@ -98,17 +98,19 @@ SceneAction* SceneAction_ChangeSoundChannelVolume(ChannelName soundChannel, floa
 
 SceneAction* SceneAction_SetCameraPosition(float xPos, float yPos, World *GameWorld);
 
-SceneAction* SceneAction_SetCameraMode(int mode, World *GameWorld);
-
 SceneAction* SceneAction_MoveCamera(float xVel, float yVel, World *GameWorld);
 
-SceneAction* SceneAction_MoveCameraSmooth(float xPos, float yPos, float coefficient, World *GameWorld);
+SceneAction* SceneAction_MoveCameraTo(float xPos, float yPos, float coefficient, World *GameWorld);
 
-SceneAction* SceneAction_MoveCameraTo(char objectName[], float coefficient, World *GameWorld);
+SceneAction* SceneAction_MoveCameraToObject(char objectName[], float coefficient, World *GameWorld);
+
+SceneAction* SceneAction_SetCameraMode(int mode, World *GameWorld);
 
 SceneAction* SceneAction_SetZoom(float zoomX, float zoomY, World *GameWorld);
 
 SceneAction* SceneAction_ChangeZoom(float zoomX, float zoomY, World *GameWorld);
+
+SceneAction* SceneAction_ChangeZoomTo(float zoomX, float zoomY, float coefficient, World *GameWorld);
 
 
 SceneAction* createSceneAction(SceneActionID newActionID, World *GameWorld);

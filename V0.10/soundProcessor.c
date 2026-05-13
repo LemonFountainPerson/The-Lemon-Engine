@@ -21,7 +21,7 @@ static int scheduledSounds = ASYNC_AUDIO_CLOSED;
 static volatile bool closeAllThreads = false;
 
 
-SoundInstance* PlaySound(const char fileName[], ChannelName channel, float volume)
+SoundInstance* PlaySound(const char fileName[], float volume, ChannelName channel)
 {
 	if (channel < 0 || channel >= CHANNEL_COUNT || fileName == NULL)
 	{
@@ -253,22 +253,22 @@ SoundInstance* PlaySoundFadeIn(const char fileName[], ChannelName channel, float
 {
 	Sint64 milis = (Sint64)(1000.0 * secondsToFade);
 	SDL_SetNumberProperty(propertiesContainer, MIX_PROP_PLAY_FADE_IN_MILLISECONDS_NUMBER, milis);
-	SoundInstance *sound = PlaySound(fileName, channel, 1.0);
+	SoundInstance *sound = PlaySound(fileName, 1.0, channel);
 	SDL_SetNumberProperty(propertiesContainer, MIX_PROP_PLAY_FADE_IN_MILLISECONDS_NUMBER, 0);
 
 	return sound;
 }
 
 
-SoundInstance* PlaySoundSpeed(const char fileName[], ChannelName channel, float volume, float speed)
+SoundInstance* PlaySoundSpeed(const char fileName[], float volume, ChannelName channel, float speed)
 {
-	return SetSoundSpeed(PlaySound(fileName, channel, volume), speed);
+	return SetSoundSpeed(PlaySound(fileName, volume, channel), speed);
 }
 
 
-SoundInstance* PlaySoundRepeat(const char fileName[], ChannelName channel, float volume, int repeatTimes)
+SoundInstance* PlaySoundRepeat(const char fileName[], float volume, ChannelName channel, int repeatTimes)
 {
-	return RepeatSound(PlaySound(fileName, channel, volume), repeatTimes);
+	return RepeatSound(PlaySound(fileName, volume, channel), repeatTimes);
 }
 
 
@@ -307,7 +307,7 @@ SoundInstance* RepeatSound(SoundInstance *input, int repeatTimes)
 
 SoundInstance* PlaySoundPositional(const char fileName[], float xPos, float yPos, Camera positionCam)
 {
-	return PositionSound(PlaySound(fileName, OBJECT_SFX, 1.0), xPos, yPos, positionCam);
+	return PositionSound(PlaySound(fileName, 1.0, OBJECT_SFX), xPos, yPos, positionCam);
 }
 
 SoundInstance* updateSoundPosition(SoundInstance *input, Camera positionCam)

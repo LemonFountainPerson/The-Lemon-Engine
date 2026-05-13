@@ -72,7 +72,7 @@ to those save files.
 -> The 'CIRCLE' solidtype is now correctly visuallised and detected by other hitboxes.
 
 -> Added the ability to have sounds play during animations on specific frames. This can be done via the animation-data files by adding 
-'PlaySound: [SoundName] [optional; channel ID] [optional; volume]' next to the desired frame.
+'PlaySound: [SoundName] [optional; volume] [optional; channel ID]' next to the desired frame.
 
 
 ## Structure Changes:
@@ -148,7 +148,20 @@ process for a noticable amount of time.
    -  Asynchronous sound loading can be disabled altogether by setting 'ASYNC_AUDIO_LOADER' to false in config.h.
    -  'ASYNC_AUDIO_SIZE_THRESHOLD' controls the minimum size the audio file must be in bytes for it to be loaded asynchronously. This is to avoid unnecessary overhead when 
       loading very small sound files. 
+
+-> Swapped the order of channel and volume in the PlaySound function, to be more consistent with inputs from script files.
   
+
+# UPCOMING FEATURES IN V0.11:
+
+-> A textBox addition that will allow dialogue to be read from files, instead of having to hardcode text. (This will make text editing and translations easier.)
+
+-> Basic networking; a certain amount of desired Objects, Texts, TextBoxes, SceneActions and GameEvents will be synced across clients. 
+(Possibly in the form of a server-client interface.)
+
+-> More animation features; Randomisable sounds, self-triggering animations, etc.
+
+-> And more!
 
 
 # v0.09

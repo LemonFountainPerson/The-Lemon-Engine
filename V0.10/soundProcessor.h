@@ -1,8 +1,10 @@
-SoundInstance* PlaySound(const char fileName[], ChannelName channel, float volume);
+SoundInstance* PlaySound(const char fileName[], float volume, ChannelName channel);
 
 SoundInstance* PlaySoundFadeIn(const char fileName[], ChannelName channel, float secondsToFade);
 
-SoundInstance* PlaySoundRepeat(const char fileName[], ChannelName channel, float volume, int repeatTimes);
+SoundInstance* PlaySoundSpeed(const char fileName[], float volume, ChannelName channel, float speed);
+
+SoundInstance* PlaySoundRepeat(const char fileName[], float volume, ChannelName channel, int repeatTimes);
 
 SoundInstance* PlaySoundPositional(const char fileName[], float xPos, float yPos, Camera positionCam);
 

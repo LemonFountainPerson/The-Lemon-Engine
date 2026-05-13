@@ -1419,7 +1419,7 @@ int displayNextCharacter(TextBox *inputText, World *GameWorld)
 	{
 		inputText->currentIndex = -1;
 
-		return LEMON_SUCCESS;
+		return EXECUTION_UNNECESSARY;
 	}
 
 	switch(decodedChar)

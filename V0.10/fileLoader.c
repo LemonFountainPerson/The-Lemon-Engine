@@ -1527,8 +1527,17 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	}
 	else if (strcmp(buffer, "startcutscene") == 0)		// START_LVL_WITH_CUTSCENE
 	{
-		int sceneID = getNextArgInt(fPtr);
-		playCutscene(sceneID, GameWorld);
+		if (hasNextArgNumber(fPtr))
+		{
+			int sceneID = getNextArgInt(fPtr);
+			playCutscene(sceneID, GameWorld);
+		}
+		else
+		{
+			getNextArg(fPtr, buffer, MAX_LEN);
+			playCutsceneFromFile(buffer, GameWorld);
+		}
+		
 	}
 	else if (strcmp(buffer, "cutscenetrigger") == 0)
 	{
@@ -1558,6 +1567,22 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		readIntArgs(fPtr, args, 5);
 	
 		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], LEVEL_TRIGGER_SEAMLESS, args[4], 0, 0, 0), args[2], args[3]);
+	}
+	else if (strcmp(buffer, "deleteobjecttrigger") == 0)
+	{
+		int args[5] = {0};
+
+		readIntArgs(fPtr, args, 5);
+	
+		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], DELETE_OBJECT_TRIGGER, args[4], 0, 0, 0), args[2], args[3]);
+	}
+	else if (strcmp(buffer, "deletebodytrigger") == 0)
+	{
+		int args[4] = {0};
+
+		readIntArgs(fPtr, args, 4);
+	
+		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], DELETE_BODY_TRIGGER, 0, 0, 0, 0), args[2], args[3]);
 	}
 	else if (strcmp(buffer, "setcambox") == 0)
 	{

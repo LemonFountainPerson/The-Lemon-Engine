@@ -1,0 +1,14 @@
+FRV<1>--CUTSCENE_DATA--
+StaticScene: false  > decides whether the game pauses for the cutscene
+SetCameraMode: 2    > Sets camera mode to free roam so that it is not tied to player
+
+SetCameraZoom: 3.0 3.0
+
+Repeat: 88
+{
+	SetCameraPos: "MainPlayer"
+	ChangeCameraZoomTo: 1.0 1.0 18.0
+}
+
+SetCameraZoom: 1.0 1.0
+SetCameraMode: 0

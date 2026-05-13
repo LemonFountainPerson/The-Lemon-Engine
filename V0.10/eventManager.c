@@ -106,6 +106,16 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 				initialiseCutsceneFromFile(EventData->string, GameWorld);
 			} break;
 
+		case EVENT_PLAY_SOUND:
+			{
+				if (EventData->vars[0] < 0.01)
+				{
+					EventData->vars[0] = 1.0;
+				}
+
+				PlaySound(EventData->string, EventData->vars[0], (int)EventData->vars[1]);
+			} break;
+
 		case EVENT_MOVE_PLAYER:
 				GoTo(GameWorld->Player.PlayerPtr, EventData->vars[0], EventData->vars[1]);
 			break;
@@ -124,7 +134,7 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 
 				centerOnObject(GameWorld->Player.PlayerPtr, EventData->objReference);
 				ResetPlayer(&GameWorld->Player);
-				PlaySound("Objects/DoorOpen", OBJECT_SFX, 1.0);
+				PlaySound("Objects/DoorOpen", 1.0, OBJECT_SFX);
 			} break;
 
 		case EVENT_SET_BRIGHTNESS:
@@ -948,7 +958,6 @@ bool detectPlayer(Object* inputObject, PlayerData *Player)
 		return false;
 	}
 
-
 	int touchingPlayer = checkBoxOverlapsBoxBroad(Player->PlayerBox, inputObject->ObjectBox);
 
 	if (touchingPlayer == 1 && inputObject->Action == 0)
@@ -1042,75 +1051,123 @@ int InitialiseLevelFlag(Object *inputObject, ObjectController *ObjectList)
 	return LEMON_SUCCESS;
 }
 
-int UpdateFlagObject(Object* inputObject, World *GameWorld)
+int UpdateFlagObject(Object* flag, World *GameWorld)
 {
-	if (GameWorld == NULL || GameWorld->ObjectList == NULL || inputObject == NULL)
+	if (GameWorld == NULL || GameWorld->ObjectList == NULL || flag == NULL)
 	{
 		return MISSING_DATA;
 	}
 
 	PlayerData *Player = &GameWorld->Player;
 
-	if (GameWorld->GameState != GAMEPLAY || GameWorld->Player.PlayerPtr == NULL)
+	if (GameWorld->GameState != GAMEPLAY)
 	{
 		return ACTION_DISABLED;
 	}
 
 
-	switch (getSubType(inputObject))
+	switch (getSubType(flag))
 	{
 		case CACHE_TRIGGER:
-		if (detectCamera(inputObject, GameWorld->MainCamera))
+		if (detectCamera(flag, GameWorld->MainCamera))
 		{
 			PhysicsBox boundingBox;
 			mapPhysicsBoxToCamera(&boundingBox, GameWorld->MainCamera);
 
 			cacheObjects(GameWorld->ObjectList, boundingBox);
-			inputObject->Action = 2;
+			flag->Action = 2;
 		} break;
 
 
 		case CUTSCENE_TRIGGER:
-		if (detectPlayer(inputObject, Player))
+		if (detectPlayer(flag, Player))
 		{
-			playCutscene(inputObject->arg2, GameWorld);
-			MarkObjectForDeletion(inputObject);
+			playCutscene(flag->arg2, GameWorld);
+			MarkObjectForDeletion(flag);
 		} break;
 
 		case LEVEL_TRIGGER:
-		if (detectPlayer(inputObject, Player))
+		if (detectPlayer(flag, Player))
 		{
-			switchLevel(inputObject->arg2, GameWorld);
+			switchLevel(flag->arg2, GameWorld);
 		}
 		break;
 
 		case LEVEL_TRIGGER_SEAMLESS:
-		if (detectPlayer(inputObject, Player))
+		if (detectPlayer(flag, Player))
 		{
 			Player->PlayerPtr->reserved |= RFLAG_PRESERVE_ONCE;
-			switchLevel(inputObject->arg2, GameWorld);
+			switchLevel(flag->arg2, GameWorld);
 		}
 		break;
 
-		case SET_BACKGROUND_TRIGGER:
-		if (detectPlayer(inputObject, Player))
+		case DELETE_OBJECT_TRIGGER:
 		{
-			switchBackGroundSprite(inputObject->arg2, inputObject->arg3, &GameWorld->WorldBackground);
+			Object *cursor = GameWorld->ObjectList->firstObject;
+			PhysicsBox *box;
+			Object *current;
+
+			while (cursor != NULL)
+			{
+				current = cursor;
+				cursor = cursor->nextObject;
+
+				if (getDisplayLayer(current) == HUD || current->State == STATIC_STATE)
+				{
+					continue;
+				}
+
+				box = current->ObjectBox;
+				if (checkBoxOverlapsBoxBroad(box, flag->ObjectBox) && (flag->arg2 == 0 || box->solid != UNSOLID))
+				{
+					MarkObjectForDeletion(current);
+				}
+			}
+		} break;
+
+		case DELETE_BODY_TRIGGER:
+		{
+			Object *cursor = GameWorld->ObjectList->firstObject;
+			PhysicsBox *box;
+			Object *current;
+
+			while (cursor != NULL)
+			{
+				current = cursor;
+				cursor = cursor->nextObject;
+
+				if (getDisplayLayer(current) == HUD || current->State == STATIC_STATE)
+				{
+					continue;
+				}
+
+				box = current->ObjectBox;
+				if (box->solid == BODY && checkBoxOverlapsBoxBroad(box, flag->ObjectBox))
+				{
+					MarkObjectForDeletion(current);
+				}
+			}
+		} break;
+
+		case SET_BACKGROUND_TRIGGER:
+		if (detectPlayer(flag, Player))
+		{
+			switchBackGroundSprite(flag->arg2, flag->arg3, &GameWorld->WorldBackground);
 		} break;
 
 
 		case FALSE_CAMERA_BOUNDARY:
 		{
-			if (detectPlayer(inputObject, Player))
+			if (detectPlayer(flag, Player))
 			{
-				MarkObjectForDeletion(inputObject);
+				MarkObjectForDeletion(flag);
 			}
 		}
 
 		case CAMERA_BOUNDARY:
 		{
 			Camera *cam = &GameWorld->MainCamera;
-			PhysicsBox *box = inputObject->ObjectBox;
+			PhysicsBox *box = flag->ObjectBox;
 			float halfWidth = (float)(cam->width / 2);
 			float halfHeight = (float)(cam->height / 2);
 
@@ -1148,40 +1205,38 @@ int UpdateFlagObject(Object* inputObject, World *GameWorld)
 		} break;
 
 		case LOAD_PART_TRIGGER:
-		if (detectPlayer(inputObject, Player))
+		if (detectPlayer(flag, Player))
 		{
-			streamPartition(inputObject->arg2, GameWorld);
+			streamPartition(flag->arg2, GameWorld);
 		}
 		break;
 
 		case SWITCH_TO_NEW_PART_TRIGGER:
-		if (detectPlayer(inputObject, Player))
+		if (detectPlayer(flag, Player))
 		{
-			switchToNewPartition(inputObject->arg2, GameWorld);
+			switchToNewPartition(flag->arg2, GameWorld);
 		} break;
 
 		case SET_PLAYER_LAYER:
-		if (detectPlayer(inputObject, Player))
+		if (detectPlayer(flag, Player))
 		{
-			setDisplayLayer(Player->PlayerPtr, getDisplayLayer(inputObject));
+			setDisplayLayer(Player->PlayerPtr, getDisplayLayer(flag));
 		} break;
 
 		case PLAY_SOUND_TRIGGER:
-		if (detectPlayer(inputObject, Player))
+		if (detectPlayer(flag, Player))
 		{
-			MarkObjectForDeletion(inputObject);
-			//Entity *triggerEntity = getEntity(inputObject);
+			MarkObjectForDeletion(flag);
+			//Entity *triggerEntity = getEntity(flag);
 			//if (triggerEntity == NULL) { return TASK_FAILED; }
 			//PlaySound(triggerEntity->SoundMeta.name, triggerEntity->SoundMeta.folder, triggerEntity->SoundMeta.channel, triggerEntity->SoundMeta.volume);
 		} break;
 
 		default:
 		#ifndef LEMON_USE_CUSTOM_CALLBACKS
-		MarkObjectForDeletion(inputObject);
-		#endif
-
-		#ifdef LEMON_USE_CUSTOM_CALLBACKS
-		UpdateCustomLevelFlag(inputObject, GameWorld);
+		MarkObjectForDeletion(flag);
+		#else 
+		UpdateCustomLevelFlag(flag, GameWorld);
 		#endif
 		break;
 	}

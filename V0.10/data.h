@@ -366,6 +366,8 @@ typedef enum Flags
 	SET_BACKGROUND_TRIGGER,
 	START_LVL_WITH_CUTSCENE,
 	CUTSCENE_TRIGGER,
+	DELETE_OBJECT_TRIGGER,
+	DELETE_BODY_TRIGGER,
 	START_PLAYER_POSITION,
 	START_CAMERA_POSITION,
 	SET_CAMBOX,
@@ -376,7 +378,6 @@ typedef enum Flags
 	SET_PLAYER_LAYER,
 	START_WITH_MUSIC,
 	PLAY_SOUND_TRIGGER,
-	STOP_ALL_SOUND_LOOPS,
 	CACHE_TRIGGER,
 	LOAD_PART_TRIGGER,
 	SWITCH_TO_NEW_PART_TRIGGER,
@@ -891,6 +892,7 @@ typedef enum GameEventID
 	EVENT_SWITCH_LEVEL,
 	EVENT_PLAY_CUTSCENE,
 	EVENT_PLAY_CUTSCENE_FROM_FILE,
+	EVENT_PLAY_SOUND,
 	EVENT_MOVE_PLAYER,
 	EVENT_MOVE_OBJECT,
 	EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR,
@@ -1126,7 +1128,6 @@ union SceneActionArguments
 	int SceneID;
 	int instructionsToSkip;
 	int WaitTicks[2];
-	float zoomScales[2];
 	struct TextBox *sceneText;
 	int animationDetails[2];
 	float positions[2];
@@ -1134,6 +1135,7 @@ union SceneActionArguments
 	struct ObjectMeta objectInfo;
 	bool hidden;
 	float CameraData[3];
+	float zoomScales[3];
 	int cameraMode;
 	Layer layer;
 	SceneBranchData branchData;
@@ -1178,10 +1180,11 @@ typedef enum SceneActionID
 	SCENE_SET_CAMERA_POS,
 	SCENE_SET_CAMERA_MODE,
 	SCENE_MOVE_CAMERA,
-	SCENE_MOVE_CAMERA_SMOOTH,
+	SCENE_MOVE_CAMERA_TO,
 	SCENE_MOVE_CAMERA_TO_OBJECT,
 	SCENE_SET_CAMERA_ZOOM,
 	SCENE_CHANGE_CAMERA_ZOOM,
+	SCENE_CHANGE_CAMERA_ZOOM_TO,
 	UNDEFINED_SCENE_ACTION
 } SceneActionID;
 

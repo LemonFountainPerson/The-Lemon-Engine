@@ -257,12 +257,13 @@ void loadFrameSound(FILE *fPtr, AnimationFrame *newFrame, Animation *anim)
 		// load sound
 		getNextArg(fPtr, buffer, MAX_LEN);
 
-		int channel = getNextArgInt(fPtr);
 		float volume = getNextArgFloat(fPtr);
 		if (volume < 0.01)
 		{
 			volume = 1.0;
 		}
+
+		int channel = getNextArgInt(fPtr);
 
 		newFrame->soundIndex = addSoundToAnimation(buffer, channel, volume, anim);
 	}
@@ -312,7 +313,7 @@ int useThisAnimation(Animation *anim, int loopCount, DisplayData *inputData)
 	if (soundIndex > -1 && soundIndex < anim->soundCount)
 	{
 		SoundMeta *meta = &anim->animationSounds[soundIndex];
-		PlaySound(meta->soundName, meta->channel, meta->volume);
+		PlaySound(meta->soundName, meta->volume, meta->channel);
 	}
 
 	return LEMON_SUCCESS;
@@ -549,7 +550,7 @@ int iterateAnimation(DisplayData *inputData, float deltaTime)
 		if (soundIndex > -1 && soundIndex < anim->soundCount)
 		{
 			SoundMeta *meta = &anim->animationSounds[soundIndex];
-			PlaySound(meta->soundName, meta->channel, meta->volume);
+			PlaySound(meta->soundName, meta->volume, meta->channel);
 		}
 	}
 	

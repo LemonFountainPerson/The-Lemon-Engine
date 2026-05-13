@@ -3218,7 +3218,7 @@ int UpdateCoin(Object *coin, World *GameWorld)
 
 		AddParticle(GameWorld, SPARKLE, coinBox->xPos + 20 - (rand() % 40), coinBox->yPos + 20 - (rand() % 40), 1, 0);
 		MarkObjectForDeletion(coin);
-		PlaySound("Objects/Coin_Collect", OBJECT_SFX, 0.75);
+		PlaySound("Objects/Coin_Collect", 0.75, OBJECT_SFX);
 	}
 
 /*
@@ -3267,7 +3267,7 @@ int UpdateSpring(Object *spring, World *GameWorld)
 			PlayerBox->xVelocity = xForce;
 		}
 		
-		PlaySound("Objects/Spring", OBJECT_SFX, 1.0);
+		PlaySound("Objects/Spring", 1.0, OBJECT_SFX);
 		PlayAnimation("Bounce", 1, getDisplay(spring));
 	}
 
@@ -3417,7 +3417,7 @@ int toggleGateSwitch(Object *gateSwitch, ObjectController *ObjectList)
 		PlayAnimation("FlipSwitchOn", 1, getDisplay(gateSwitch));
 	}
 	
-	PlaySound("Objects/GateSwitchToggle", OBJECT_SFX, 1.0);
+	PlaySound("Objects/GateSwitchToggle", 1.0, OBJECT_SFX);
 
 	return LEMON_SUCCESS;
 }
@@ -3473,7 +3473,7 @@ int UpdateVerticalGate(Object *gate, World *GameWorld)
 			{
 				gate->arg4 = 3;
 				PlayObjectAnimation("Closing", 1, gate);
-				PlaySound("Objects/GateClose", 4, 1.0);
+				PlaySound("Objects/GateClose", 1.0, OBJECT_SFX);
 			}
 
 		} break;
@@ -3509,7 +3509,7 @@ int UpdateVerticalGate(Object *gate, World *GameWorld)
 			{
 				gate->arg4 = 1;
 				PlayObjectAnimation("Opening", 1, gate);
-				PlaySound("Objects/GateOpen", 4, 1.0);
+				PlaySound("Objects/GateOpen", 1.0, OBJECT_SFX);
 			}
 		
 		} break;
@@ -3571,7 +3571,7 @@ int UpdateHorizontalGate(Object *gate, World *GameWorld)
 			{
 				gate->arg4 = 3;
 				PlayObjectAnimation("Closing", 1, gate);
-				PlaySound("Objects/GateClose", 4, 1.0);
+				PlaySound("Objects/GateClose", 1.0, OBJECT_SFX);
 			}
 
 		} break;
@@ -3607,7 +3607,7 @@ int UpdateHorizontalGate(Object *gate, World *GameWorld)
 			{
 				gate->arg4 = 1;
 				PlayObjectAnimation("Opening", 1, gate);
-				PlaySound("Objects/GateOpen", 4, 1.0);
+				PlaySound("Objects/GateOpen", 1.0, OBJECT_SFX);
 			}
 		
 		} break;
@@ -3812,8 +3812,7 @@ int UpdateDoor(Object *Door, World *GameWorld)
 		else
 		{
 			// Test dialogue, replace with prompt "Go through door?" or something
-			SayText("I", NO_PORTRAIT, BASIC_FADE, GameWorld);
-			SayText(".\f20.\f30.^40.^50Or is it?^60\nIt just looks like a big pink and black rectangle...", "Test_Face", BASIC_FADE, GameWorld);
+			SayText(".\f10.\f10.^10.^10Or is it?^30\nIt just looks like a big pink and black rectangle...", "Test_Face", BASIC_FADE, GameWorld);
 
 			SayTextOption("Enter the Door?", "Test_Face", BASIC_FADE, GameWorld, 3, 
 				"Yes", Event_TeleportPlayerToExitDoor(Door->Parent, GameWorld), 
@@ -3840,7 +3839,7 @@ int TeleportPlayerToExitDoor(Object *Door, World *GameWorld)
 	//GoTo(Player->PlayerPtr, Door->ObjectBox->xPos, Door->ObjectBox->yPos);
 	centerOnObject(Player->PlayerPtr, Door);
 
-	PlaySound("Objects/DoorOpen", OBJECT_SFX, 1.0);
+	PlaySound("Objects/DoorOpen", 1.0, OBJECT_SFX);
 			
 	ResetPlayer(Player);
 

@@ -1,5 +1,7 @@
 FRV<1>--LEVEL_DATA--
 Preset:  "Preset1"
+LVFLAG: Start_Cutscene, "Scene8"
+
 >		ID	XPos	YPos	Arg1	Arg2	Arg3	Arg4	Arg5
 OBJECT:	Spring	2494	0	30	0
 OBJECT:		1	0	-32	48000	1	2
@@ -63,6 +65,7 @@ THEN {
 	LVFLAG: IncrementGameFlag "flag1"
 }
 
+LVFLAG: Delete_Body_Trigger, -128, 0, 128, 3000		> deletes all 'body' objects it touches; typically players, enemies, npcs, etc.
 
 ENDFILE
 

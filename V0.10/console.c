@@ -971,7 +971,7 @@ int ConsoleCommand_Sound(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 		ChannelName channel = parseArgumentAsInt(input);
 
-		if (PlaySound(name, channel, volume) == NULL)
+		if (PlaySound(name, volume, channel) == NULL)
 		{
 			putConsoleString("Couldn't play or find '%s'", name);
 		}
