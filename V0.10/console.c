@@ -1,6 +1,98 @@
 #include "LemonEngine.h"
 
+
 // command console
+static const float consoleWidth = 1024.0;
+static const float consoleHeight = 600.0;
+
+void updateConsole(SDL_Window *window, World *GameWorld)
+{
+	if (DebugSettings.consoleOpen == false)
+	{
+		if (buttons[LMN_CONSOLE_OPEN] == 1 && !TextSettings.Typing)
+		{
+			AcknowledgeButton(LMN_CONSOLE_OPEN);
+			startTyping(window);
+
+			DebugSettings.consoleOpen = true;
+			DebugSettings.consoleFocus = false;
+			DebugSettings.scrollVal = 0;
+		}
+
+		return;
+	}
+
+	if (buttonPressed(LMN_CONSOLE_OPEN))
+	{
+		DebugSettings.consoleOpen = false;
+		stopTyping(window);
+		return;
+	}
+
+	if (TextSettings.Typing == false)
+	{
+		executeCommand(TextSettings.userInputString, GameWorld);
+		startTyping(window);
+		return;
+	}
+
+	if (buttonPressed(MOUSE_LEFT))
+	{
+		if (MouseInput.xPos > DebugSettings.consoleXPos && MouseInput.xPos < DebugSettings.consoleXPos + consoleWidth && MouseInput.yPos > DebugSettings.consoleYPos && MouseInput.yPos < DebugSettings.consoleYPos + consoleHeight)
+		{
+			DebugSettings.consoleFocus = true;
+		}
+		else
+		{
+			DebugSettings.consoleFocus = false;
+		}
+	}
+
+	if (buttonPressed(LMN_UPARROW) || MouseInput.wheelYDir > 0 || GamePadInput.rightStickY > 0.9)
+	{
+		if (DebugSettings.consoleFocus || GamePadInput.rightStickY > 0.9)
+		{
+			DebugSettings.scrollVal = clamp(DebugSettings.scrollVal + 1, 0, USER_INPUT_HISTORY_LEN);
+		}
+		else
+		{
+			char *next = getNextInputHistory(&DebugSettings.userInputHistory);
+
+			if (next != NULL && next[0] != '\0')
+			{
+				strcpy(TextSettings.userInputString, next);
+				TextSettings.userInputIndex = strlen(TextSettings.userInputString);
+
+				TextSettings.cursorXPos = getCursorPos();
+			}
+		}
+	}
+
+	if (buttonPressed(LMN_DOWNARROW) || MouseInput.wheelYDir < 0 || GamePadInput.rightStickY < -0.9)
+	{
+		if (DebugSettings.consoleFocus || GamePadInput.rightStickY < -0.9)
+		{
+			DebugSettings.scrollVal = clamp(DebugSettings.scrollVal - 1, 0, USER_INPUT_HISTORY_LEN);
+		}
+		else
+		{
+			char *prev = getPreviousInputHistory(&DebugSettings.userInputHistory);
+
+			if (prev != NULL && prev[0] != '\0')
+			{
+				strcpy(TextSettings.userInputString, prev);
+				TextSettings.userInputIndex = strlen(TextSettings.userInputString);
+
+				TextSettings.cursorXPos = getCursorPos();
+			}
+		}
+	}
+
+
+	return;
+}
+
+
 void executeCommand(char inputSource[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	if (inputSource[0] == '\0')
@@ -848,7 +940,7 @@ int ConsoleCommand_List(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	else if (strcmp(arg, "text") == 0)
 	{
-		printTextsinfo(&TextSettings.TextList, "TextList");
+		printTextsinfo(&GameWorld->TextList, "TextList");
 	}
 	else if (strcmp(arg, "fonts") == 0)
 	{
@@ -1342,97 +1434,6 @@ int ConsoleCommand_Noclip(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 }
 
 
-static const float consoleWidth = 1024.0;
-static const float consoleHeight = 600.0;
-
-void updateConsole(SDL_Window *window, World *GameWorld)
-{
-	if (DebugSettings.consoleOpen == false)
-	{
-		if (buttons[LMN_CONSOLE_OPEN] == 1)
-		{
-			AcknowledgeButton(LMN_CONSOLE_OPEN);
-			startTyping(window);
-
-			DebugSettings.consoleOpen = true;
-			DebugSettings.consoleFocus = false;
-			DebugSettings.scrollVal = 0;
-		}
-
-		return;
-	}
-
-	if (buttonPressed(LMN_CONSOLE_OPEN))
-	{
-		DebugSettings.consoleOpen = false;
-		stopTyping(window);
-		return;
-	}
-
-	if (TextSettings.Typing == false)
-	{
-		executeCommand(TextSettings.userInputString, GameWorld);
-		startTyping(window);
-		return;
-	}
-
-	if (buttonPressed(MOUSE_LEFT))
-	{
-		if (MouseInput.xPos > DebugSettings.consoleXPos && MouseInput.xPos < DebugSettings.consoleXPos + consoleWidth && MouseInput.yPos > DebugSettings.consoleYPos && MouseInput.yPos < DebugSettings.consoleYPos + consoleHeight)
-		{
-			DebugSettings.consoleFocus = true;
-		}
-		else
-		{
-			DebugSettings.consoleFocus = false;
-		}
-	}
-
-	if (buttonPressed(LMN_UPARROW) || MouseInput.wheelYDir > 0 || GamePadInput.rightStickY > 0.9)
-	{
-		if (DebugSettings.consoleFocus || GamePadInput.rightStickY > 0.9)
-		{
-			DebugSettings.scrollVal = clamp(DebugSettings.scrollVal + 1, 0, USER_INPUT_HISTORY_LEN);
-		}
-		else
-		{
-			char *next = getNextInputHistory(&DebugSettings.userInputHistory);
-
-			if (next != NULL && next[0] != '\0')
-			{
-				strcpy(TextSettings.userInputString, next);
-				TextSettings.userInputIndex = strlen(TextSettings.userInputString);
-
-				TextSettings.cursorXPos = getCursorPos();
-			}
-		}
-	}
-
-	if (buttonPressed(LMN_DOWNARROW) || MouseInput.wheelYDir < 0 || GamePadInput.rightStickY < -0.9)
-	{
-		if (DebugSettings.consoleFocus || GamePadInput.rightStickY < -0.9)
-		{
-			DebugSettings.scrollVal = clamp(DebugSettings.scrollVal - 1, 0, USER_INPUT_HISTORY_LEN);
-		}
-		else
-		{
-			char *prev = getPreviousInputHistory(&DebugSettings.userInputHistory);
-
-			if (prev != NULL && prev[0] != '\0')
-			{
-				strcpy(TextSettings.userInputString, prev);
-				TextSettings.userInputIndex = strlen(TextSettings.userInputString);
-
-				TextSettings.cursorXPos = getCursorPos();
-			}
-		}
-	}
-
-
-	return;
-}
-
-
 void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 {
 	float xCorrection = (float)(ScreenData.screenWidth >> 1);
@@ -1485,7 +1486,7 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 	int textWidth = (int)(consoleWidth - (2.0 * insideSpacing));
 	if (strlen(TextSettings.userInputString) > 0)
 	{
-	    AddDebugText(TextSettings.userInputString, box.x, box.y, textWidth, DTFORMAT_SCREEN_RELATIVE);
+	    addDebugText(TextSettings.userInputString, box.x, box.y, textWidth, DTFORMAT_SCREEN_RELATIVE);
 	}
 
 	int index = modulo(DebugSettings.consoleHistory.head, USER_INPUT_HISTORY_LEN);
@@ -1505,7 +1506,7 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 	// render text history
 	box.y += insideSpacing;
 
-    AddDebugText(all, box.x, box.y, textWidth, DTFORMAT_JUSTIFY_TOP);
+    addDebugText(all, box.x, box.y, textWidth, DTFORMAT_JUSTIFY_TOP);
 
 	return;
 }

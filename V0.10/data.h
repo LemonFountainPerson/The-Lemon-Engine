@@ -49,6 +49,7 @@ typedef enum LemonKeys
 	LMN_TEXT_SKIP = 159,
 	LMN_MENU_CONFIRM = 160,
 	LMN_MENU_OPEN,
+	LMN_TYPING_END,
 	LMN_CONSOLE_OPEN,
 
 	MOUSE_LEFT,
@@ -1263,6 +1264,8 @@ typedef struct World
 	PlayerData Player;
 	ObjectController *ObjectList;
 
+	TextList TextList;
+
 	int GamePaused;
 	int level;
 	LemonGameState GameState;
@@ -1387,7 +1390,6 @@ typedef struct TextConfig
 	float defaultTextPointSize;
 	char defaultFont[FONT_FILE_NAME_MAX];
 
-	TextList TextList;
 	FontList FontList;
 
 	SDL_Color DebugTextColour;

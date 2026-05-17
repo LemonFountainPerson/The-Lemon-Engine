@@ -34,8 +34,7 @@ int InitialisePlayerObject(Object *Player, World *GameWorld)
 
 	char counter[30];
 	snprintf(counter, 30, "CoinCount: %d", GameWorld->Player.coinCount);
-	addTextWithName(counter, "CoinCounter", -600.0, 300.0);
-	//attachTextToObject("CoinCounter", FindObject("Cursor", GameWorld->ObjectList));
+	addTextWithName(counter, "CoinCounter", -600.0, 300.0, GameWorld);
 
 	return LEMON_SUCCESS;
 }
@@ -97,8 +96,6 @@ int PlayerObjectAboutToBeDeleted(PlayerData *Player)
 	Player->PlayerBox = NULL;
 	Player->PlayerPtr = NULL;
 	Player->PlayerDisplay = NULL;
-
-	RemoveTextWithName("CoinCounter");
 
 	return LEMON_SUCCESS;
 }

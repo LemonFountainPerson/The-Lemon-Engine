@@ -278,7 +278,7 @@ void updateTyping(SDL_Window *window, World *GameWorld)
 		TextSettings.cursorXPos = getCursorPos();
 	}
 
-	if (buttonPressed(LMN_ENTER) && TextSettings.userInputString[0] != '\0')
+	if (buttonPressed(LMN_TYPING_END) && TextSettings.userInputString[0] != '\0')
 	{
 		stopTyping(window);
 	}

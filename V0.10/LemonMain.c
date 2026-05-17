@@ -138,7 +138,6 @@ int StartUpLemonEngine(void)
     // initialise text data to ensure pointers are null
     initialiseFontList(&TextSettings.FontList);
     initialiseTextList(&TextSettings.DebugTextList);
-    initialiseTextList(&TextSettings.TextList);
     createConsoleCommands(DebugSettings.commands);
 
     SetEngineSettingsToDefault();
@@ -164,6 +163,7 @@ int initialiseWorld(World *GameWorld)
 	memset(GameWorld, 0, sizeof(World));
 	ResetCamera(&GameWorld->MainCamera);
     initialiseCameraViews(GameWorld->views);
+    initialiseTextList(&GameWorld->TextList);
 
 	GameWorld->GameState = EMPTY_GAME;
 	GameWorld->TextQueue = NULL;
@@ -314,7 +314,7 @@ int Render(World *GameWorld, RenderFrame *ScreenData)
 
 	RenderEngine(&GameWorld->MainCamera, GameWorld, ScreenData->Renderer);
 
-    FPSCounter();
+    FPSCounter(GameWorld);
 
 	renderTexts(GameWorld->MainCamera, GameWorld, ScreenData->Renderer);
 	
@@ -798,7 +798,7 @@ void setTickNumber(Uint64 input)
 	return;
 }
 
-int FPSCounter(void)
+int FPSCounter(World *GameWorld)
 {
 	static Text *textRef = NULL;
 
@@ -813,7 +813,7 @@ int FPSCounter(void)
 
 	        if (textRef == NULL)
 	        {
-	        	textRef = addText(buffer, 20 - (ScreenData.screenWidth >> 1), (ScreenData.screenHeight >> 1) - 40);
+	        	textRef = addText(buffer, 20 - (ScreenData.screenWidth >> 1), (ScreenData.screenHeight >> 1) - 40, GameWorld);
 	        	setFontSize("DefaultFont", 20.0);
 	        }
 	        else
@@ -828,7 +828,7 @@ int FPSCounter(void)
 
     if (DebugSettings.FPSCounter == 0 && textRef != NULL)
     {
- 		RemoveText(textRef);
+ 		RemoveText(textRef, GameWorld);
  		textRef = NULL;
     }
 
@@ -930,6 +930,9 @@ void deleteObjectController(ObjectController *ObjectList)
 
 	free(ObjectList);
 
+	// texts might be attached to objects
+	RemoveAllTexts(&TextSettings.DebugTextList);
+
 	return;
 }
 
@@ -947,6 +950,7 @@ void destroyWorld(World *GameWorld)	// honestly picked this name because its fun
 	deleteAllGameEvents(GameWorld);
 
 	removeAllCameraViews(GameWorld);
+	cleanUpTexts(&GameWorld->TextList);
 
 	deleteObjectController(GameWorld->ObjectList);
 
@@ -1249,6 +1253,7 @@ void updateCustomKeys(void)
 	keyPressedWhen(LMN_TEXT_CONFIRM, buttons[LMN_INTERACT] || GamePadInput.southButton || MouseInput.LeftButton || buttons[LMN_ENTER]);
 	keyPressedWhen(LMN_MENU_CONFIRM, buttons[LMN_INTERACT] || GamePadInput.southButton || buttons[LMN_ENTER]);
 	keyPressedWhen(LMN_MENU_OPEN, buttons[LMN_ESCAPE] || GamePadInput.start);
+	keyPressedWhen(LMN_TYPING_END, buttons[LMN_ENTER] || GamePadInput.northButton);
 
 	keyPressedWhen(LMN_CONSOLE_OPEN, buttons[LMN_GRAVE] || GamePadInput.back);
 	
@@ -2140,7 +2145,7 @@ void SetTextSettingsToDefault(void)
 
 	if (TextSettings.FontList.font[0] == NULL)
 	{
-		loadFontWithSize("PTSansBold.ttf", "DebugFont", TextSettings.DebugTextPointSize);
+		loadFontWithSize("PTSansBold.ttf", "DebugFont", TextSettings.DebugTextPointSize, NULL);
 	}
 
 	TextSettings.Typing = SDL_TextInputActive(ScreenData.Window);

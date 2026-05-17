@@ -3216,7 +3216,7 @@ int UpdateCoin(Object *coin, World *GameWorld)
 
 		char text[30];
 		snprintf(text, 30, "Coin Count: %d", Player->coinCount);
-		updateTextWithName("CoinCounter", text);
+		updateTextWithName("CoinCounter", text, GameWorld);
 
 		AddParticle(GameWorld, SPARKLE, coinBox->xPos + 20 - (rand() % 40), coinBox->yPos + 20 - (rand() % 40), 1, 0);
 		MarkObjectForDeletion(coin);

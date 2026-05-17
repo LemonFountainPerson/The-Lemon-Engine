@@ -31,7 +31,7 @@ EXPORT void RenderEngine(Camera *renderCamera, World *GameWorld, SDL_Renderer *S
 
 EXPORT Uint64 TickNumber(void);
 
-EXPORT int FPSCounter(void);
+EXPORT int FPSCounter(World *GameWorld);
 
 
 EXPORT void initialiseCameraViews(CameraView list[VIEW_COUNT]);

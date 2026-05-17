@@ -26,6 +26,7 @@
 #include "playerController.h"
 #include "eventManager.h"
 #include "UIObjects.h"
+#include "textHandler.h"
 #include "LemonMain.h"
 #include "fileLoader.h"
 #include "cutsceneManager.h"

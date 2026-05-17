@@ -35,7 +35,7 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Camera renderCamera);
 
 
-int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, DebugTextFormatting format);
+Text* addDebugText(const char inputPhrase[], float x, float y, int wrapwidth, DebugTextFormatting format);
 
 
 void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen);

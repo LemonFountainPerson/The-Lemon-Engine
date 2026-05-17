@@ -950,7 +950,7 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 		snprintf(text + strlen(text), DEBUG_TEXT_MAX_LENGTH - strlen(text), "\nlevel: %d \nMouse x: %f  Mouse y: %f", 
 			GameWorld->level, getMouseXCam(GameWorld->MainCamera), getMouseYCam(GameWorld->MainCamera));
 
-		AddDebugText(text, 16 - (renderCamera.width >> 1), (renderCamera.height >> 1) - 60, 0, DTFORMAT_SCREEN_RELATIVE);
+		addDebugText(text, 16 - (renderCamera.width >> 1), (renderCamera.height >> 1) - 60, 0, DTFORMAT_SCREEN_RELATIVE);
 	}
 
 	DisplaySoundChannelDebugInfo(DebugSettings.SoundInfo - 1);
@@ -960,19 +960,19 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 	{
 	case 1:
 		sprintf(text, "Camera X: %.2f  Camera Y: %.2f", renderCamera.CameraX, renderCamera.CameraY);
-		AddDebugText(text, -140, (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
+		addDebugText(text, -140, (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
 		break;
 
 	case 2: 
 		sprintf(text, "Camera X: %.2f  Camera Y: %.2f \nCameraLatch: %d \nBuffer X: %.2f  Buffer Y: %.2f", 
 			renderCamera.CameraX, renderCamera.CameraY, renderCamera.CameraLatch, renderCamera.CameraXBuffer, renderCamera.CameraYBuffer);
-		AddDebugText(text, -140, (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
+		addDebugText(text, -140, (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
 		break;
 
 	case 3: 
 		sprintf(text, "Camera X: %.2f  Camera Y: %.2f \nX zoom: %.2f \nY zoom X: %.2f", 
 			renderCamera.CameraX, renderCamera.CameraY, renderCamera.zoomX, renderCamera.zoomY);
-		AddDebugText(text, -140, (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
+		addDebugText(text, -140, (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
 		break;
 
 	default:
@@ -1069,7 +1069,7 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 	}
 
 	snprintf(text, DEBUG_TEXT_MAX_LENGTH, "%s \nTick: %llu", LEMON_VERSION, (long long unsigned int)TickNumber());
-	AddDebugText(text, 16 - (renderCamera.width >> 1), 48 - (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
+	addDebugText(text, 16 - (renderCamera.width >> 1), 48 - (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
 
 	return;
 }
@@ -1302,17 +1302,17 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 
 	if(goToMouse)
 	{
-		AddDebugText(text, MouseInput.xPos, MouseInput.yPos - 16.0, 0, DTFORMAT_SCREEN_RELATIVE);
+		addDebugText(text, MouseInput.xPos, MouseInput.yPos - 16.0, 0, DTFORMAT_SCREEN_RELATIVE);
 		return LEMON_SUCCESS;
 	}
 
 	if (getDisplayLayer(input) == HUD)
 	{
-		AddDebugText(text, inputBox->xPos, inputBox->yPos, 0, DTFORMAT_SCREEN_RELATIVE);
+		addDebugText(text, inputBox->xPos, inputBox->yPos, 0, DTFORMAT_SCREEN_RELATIVE);
 	}
 	else
 	{
-		AddDebugText(text, inputBox->xPos, inputBox->yPos, 0, DTFORMAT_CAMERA_RELATIVE);
+		addDebugText(text, inputBox->xPos, inputBox->yPos, 0, DTFORMAT_CAMERA_RELATIVE);
 	}
 	
 
@@ -1320,12 +1320,12 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 }
 
 
-int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, DebugTextFormatting format)
+Text* addDebugText(const char inputPhrase[], float x, float y, int wrapwidth, DebugTextFormatting format)
 {
 	TextList *list = &TextSettings.DebugTextList;
 	if (inputPhrase == NULL || strlen(inputPhrase) < 1 || list->count >= MAX_TEXT_TEXTURES)
 	{
-		return INVALID_DATA;
+		return NULL;
 	}
 
 	Text *TextsArray = list->texts; 
@@ -1339,7 +1339,7 @@ int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, Debu
 	if (index >= MAX_TEXT_TEXTURES)
 	{
 		list->count = MAX_TEXT_TEXTURES;
-		return ACTION_DISABLED;
+		return NULL;
 	}
 
 	if (TextsArray[index].text == NULL)
@@ -1347,7 +1347,7 @@ int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, Debu
     	TTF_Font *debugFont = getFont("DebugFont");
     	if (debugFont == NULL)
     	{
-    		return MISSING_DATA;
+    		return NULL;
     	}
 
     	TextsArray[index].text = TTF_CreateText(ScreenData.textEngine, debugFont, inputPhrase, wrapwidth);
@@ -1383,7 +1383,7 @@ int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, Debu
 	    TextsArray[index].yPos += (float)height;
     }
     
-	return index;
+	return &TextsArray[index];
 }
 
 float getCursorPos(void)
@@ -1416,7 +1416,7 @@ void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 	// render in-game text (immune to camera zoom, centered on the screen)
 	if (GameWorld->GamePaused == 0)
 	{
-		RenderTextList(&TextSettings.TextList, renderCamera);
+		RenderTextList(&GameWorld->TextList, renderCamera);
 	}
 	
 	// render console
