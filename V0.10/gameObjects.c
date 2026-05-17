@@ -473,6 +473,8 @@ int initialiseGenericObject(Object *inputObject, ObjectType objectID, ObjectCont
 	inputObject->arg3 = 0;
 	inputObject->arg4 = 0;
 
+	inputObject->instanceNumber++;	// counts how many times this slot was used
+
 	return LEMON_SUCCESS;
 }
 

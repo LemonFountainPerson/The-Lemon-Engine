@@ -48,11 +48,13 @@ EXPORT CameraView* getCameraView(World *GameWorld, int id);
 
 EXPORT void printCameraViewInfo(CameraView list[VIEW_COUNT]);
 
+EXPORT void removeCameraView(CameraView *input);
+
 EXPORT void removeAllCameraViewsFromList(CameraView list[VIEW_COUNT]);
 
 EXPORT void removeAllCameraViews(World *GameWorld);
 
-EXPORT void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Renderer *Screen, Layer drawLayer);
+EXPORT void renderCameraViews(Camera mainCam, World *GameWorld, SDL_Renderer *Screen, Layer drawLayer);
 
 
 EXPORT void addGameFlag(const char name[], int startValue);

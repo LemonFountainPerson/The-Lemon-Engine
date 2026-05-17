@@ -154,6 +154,11 @@ typedef enum TextType
 	TEXTBOX_TRIGGER_EVENT
 } TextType;
 
+typedef enum TextPosition
+{
+	TEXT_BOTTOM_LEFT,
+	TEXT_CENTERED
+} TextPosition;
 
 // If the Object's render mode is less than 0 (the default) the sprite is rendered according to the sprite's individual render mode
 // Otherwise, it is overridden to be the rendermode of the Object
@@ -666,6 +671,7 @@ typedef struct Object
 	ObjectState State;
 	CurrentAction Action;
 	ReservedFlags reserved;
+	int instanceNumber;
 
 	struct Object *Parent;
 	ParentType ParentLink;
@@ -965,14 +971,30 @@ typedef struct Text
 	float xPos;
 	float yPos;
 
-	TTF_Text *text;
-	Object *attachedObj;
-
 	bool CameraRelative;
 	bool beingUsed;
 
+	TTF_Text *text;
+
+	Object *attachedObj;
+	int recordedInstance;
+	TextPosition textPos;
+
 	char name[TEXT_NAME_MAX_LEN];
 } Text;
+
+typedef struct TextList
+{
+	Text texts[MAX_TEXT_TEXTURES];
+	int count;
+} TextList;
+
+typedef struct FontList
+{
+	int head;
+	char name[MAX_LOADED_FONTS][FONT_FILE_NAME_MAX];
+	TTF_Font *font[MAX_LOADED_FONTS];
+} FontList;
 
 typedef struct TextBox 
 {
@@ -1049,10 +1071,11 @@ typedef struct CameraView
 	float viewWidth;
 	float viewHeight;
 	double direction;
-
-	Object *attachedObj;
 	Layer layer;
 
+	Object *attachedObj;
+	int recordedInstance;
+	
 	SDL_Texture *target;
 
 	Uint64 nextRender;
@@ -1203,20 +1226,6 @@ typedef struct SceneAction
 	struct SceneAction *nextSceneAction;
 	struct SceneAction *prevSceneAction;
 } SceneAction;
-
-
-typedef struct TextList
-{
-	Text texts[MAX_TEXT_TEXTURES];
-	int count;
-} TextList;
-
-typedef struct FontList
-{
-	int head;
-	char name[MAX_LOADED_FONTS][FONT_FILE_NAME_MAX];
-	TTF_Font *font[MAX_LOADED_FONTS];
-} FontList;
 
 
 typedef int (*ConsoleCommandFunction)(char *, World *);
@@ -1383,7 +1392,7 @@ typedef struct TextConfig
 
 	SDL_Color DebugTextColour;
 	float DebugTextPointSize;
-	TextList DebugTexts;
+	TextList DebugTextList;
 
 	bool Typing;
 	char userInputString[USER_INPUT_MAX_LEN];
@@ -1429,21 +1438,6 @@ typedef struct String
 	char *stringChars;
 	int length;
 } String;
-
-
-
-#define MAX_ROWS 8
-#define MAX_COLUMNS 8
-
-typedef struct TierListGrid		// -1 means empty
-{
-	int rowCount;
-	int rows[MAX_ROWS];		// defines the order of each row (e.g.  2, 3, 1, 4, 5, -1, -1, -1) where each number is the 'index' of the row
-	int columnCount;
-	int columns[MAX_COLUMNS];		// ditto but for columns
-
-	int imageCount[MAX_ROWS][MAX_COLUMNS];
-} TierListGrid;
 
 #endif
 

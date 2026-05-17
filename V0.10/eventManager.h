@@ -19,6 +19,8 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 
 void startTyping(SDL_Window *window);
 
+void stopTyping(SDL_Window *window);
+
 void updateTyping(SDL_Window *window, World *GameWorld);
 
 void inputTyping(const char input[]);

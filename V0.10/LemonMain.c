@@ -137,7 +137,7 @@ int StartUpLemonEngine(void)
 
     // initialise text data to ensure pointers are null
     initialiseFontList(&TextSettings.FontList);
-    initialiseTextList(&TextSettings.DebugTexts);
+    initialiseTextList(&TextSettings.DebugTextList);
     initialiseTextList(&TextSettings.TextList);
     createConsoleCommands(DebugSettings.commands);
 
@@ -349,6 +349,11 @@ void initialiseCameraViews(CameraView list[VIEW_COUNT])
 
 CameraView* addCameraViewToList(float camX, float camY, int camWidth, int camHeight, float viewPosX, float viewPosY, float width, float height, Layer drawLayer, bool useMain, CameraView list[VIEW_COUNT])
 {
+	if (camWidth < MINIMUM_SCREEN_WIDTH || camHeight < MINIMUM_SCREEN_HEIGHT)
+	{
+		return NULL;
+	}
+
 	for (int i = 0; i < VIEW_COUNT; i++)
 	{	
 		if (!list[i].active)
@@ -374,10 +379,18 @@ CameraView* addCameraViewToList(float camX, float camY, int camWidth, int camHei
 			list[i].nextRender = TickNumber();
 			list[i].ticksUntilRefresh = EngineSettings.GameTicksPerSecond / DEFAULT_VIEW_REFRESH_RATE;
 
-			if (list[i].target != NULL)
+			// create streamed texture to display camera view
+			if (list[i].target != NULL)	// shouldn't happen, but just in case
 			{
 				SDL_DestroyTexture(list[i].target);
-				list[i].target = NULL;
+			}
+
+			list[i].target = SDL_CreateTexture(ScreenData.Renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, camWidth, camHeight);
+
+			if (list[i].target == NULL)
+			{
+				removeCameraView(&list[i]);
+				return NULL;
 			}
 
 			return &list[i];
@@ -394,7 +407,7 @@ CameraView* addCameraView(float camX, float camY, int camWidth, int camHeight, f
 
 CameraView* addMainCameraView(float viewX, float viewY, float width, float height, Layer drawLayer, World *GameWorld)
 {
-	return addCameraViewToList(0.0, 0.0, 1, 1, viewX, viewY, width, height, drawLayer, true, GameWorld->views);
+	return addCameraViewToList(0.0, 0.0, GameWorld->MainCamera.width, GameWorld->MainCamera.height, viewX, viewY, width, height, drawLayer, true, GameWorld->views);
 }
 
 void attachCameraViewToObject(CameraView *input, Object *attach)
@@ -405,6 +418,7 @@ void attachCameraViewToObject(CameraView *input, Object *attach)
 	}
 
 	input->attachedObj = attach;
+	input->recordedInstance = attach->instanceNumber;
 
 	attach->ObjectDisplay->RenderModeOverride = DO_NOT_RENDER;
 
@@ -490,12 +504,14 @@ void removeAllCameraViews(World *GameWorld)
 	return;
 }
 
-void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Renderer *Screen, Layer drawLayer)
+void renderCameraViews(Camera mainCam, World *GameWorld, SDL_Renderer *Screen, Layer drawLayer)
 {
-	if (RenderSettings.drawCamViews == false)
+	if (RenderSettings.drawCamViews == false || GameWorld == NULL)
 	{
 		return;
 	}
+
+	CameraView *list = GameWorld->views;
 
 	bool prevHUD = RenderSettings.drawHUD;
 	RenderSettings.drawHUD = false;
@@ -503,7 +519,6 @@ void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Render
 
 	SDL_SetRenderDrawColor(Screen, 0x00, 0x00, 0x00, 0xFF);
 
-	Camera mainCam = GameWorld->MainCamera;
 	float halfW = (float)(mainCam.width >> 1);
 	float halfH = (float)(mainCam.height >> 1);
 	SDL_FRect box = {0};
@@ -521,31 +536,32 @@ void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Render
 		{
 			attached = list[i].attachedObj;
 
-			if (attached->State < DEFAULT_STATE)
+			if (attached->State == EMPTY_OBJECT || attached->instanceNumber != list[i].recordedInstance)
 			{
 				list[i].attachedObj = NULL;
 				removeCameraView(&list[i]);
 				continue;
 			}
 
+			list[i].layer = getDisplayLayer(list[i].attachedObj);
+			list[i].direction = getDisplayDirection(attached);
+
+
 			PhysicsBox *objBox = attached->ObjectBox;
 			if (getRenderMode(attached) == SINGLE)
 			{
-				box.x = (objBox->xSize >> 1) + objBox->xPos - (box.w / 2.0) + halfW;
-				box.y = (objBox->ySize >> 1) - objBox->yPos + (box.h / 2.0) + halfH;
 				box.w = list[i].viewWidth;
 				box.h = list[i].viewHeight;
+				box.x = (objBox->xSize >> 1) + objBox->xPos - (box.w / 2.0) + halfW;
+				box.y = (objBox->ySize >> 1) - objBox->yPos + (box.h / 2.0) + halfH;	
 			}
 			else
 			{
 				box.w = objBox->xSize;
 				box.h = objBox->ySize;
 				box.x = halfW + objBox->xPos;
-				box.y = halfH - objBox->yPos - (box.h);
+				box.y = halfH - objBox->yPos - box.h;
 			}	
-
-			list[i].direction = getDisplayDirection(attached);
-			list[i].layer = getDisplayLayer(list[i].attachedObj);
 		}
 		else
 		{
@@ -578,25 +594,8 @@ void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Render
 
 		if (list[i].target == NULL)
 		{
-			int width, height;
-			if (list[i].useMainCam)
-			{
-				width = mainCam.zoomedWidth;
-				height = mainCam.zoomedHeight;
-			}
-			else
-			{
-				width = list[i].cam.zoomedWidth;
-				height = list[i].cam.zoomedHeight;
-			}
-
-			list[i].target = SDL_CreateTexture(Screen, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
-
-			if (list[i].target == NULL)
-			{
-				removeCameraView(&list[i]);
-				continue;
-			}
+			removeCameraView(&list[i]);
+			continue;			
 		}
 
 		SDL_Texture *previousTarget = SDL_GetRenderTarget(Screen);
@@ -615,6 +614,7 @@ void renderCameraViews(CameraView list[VIEW_COUNT], World *GameWorld, SDL_Render
 		SDL_SetRenderTarget(Screen, previousTarget);
 
 		list[i].nextRender = TickNumber() + list[i].ticksUntilRefresh;
+
 
 		Skip_CamView_Rerender:
 
@@ -930,10 +930,6 @@ void deleteObjectController(ObjectController *ObjectList)
 
 	free(ObjectList);
 
-	// texts might be attached to objects
-	RemoveAllTexts(&TextSettings.TextList);
-	RemoveAllTexts(&TextSettings.DebugTexts);
-
 	return;
 }
 
@@ -950,11 +946,11 @@ void destroyWorld(World *GameWorld)	// honestly picked this name because its fun
 
 	deleteAllGameEvents(GameWorld);
 
+	removeAllCameraViews(GameWorld);
+
 	deleteObjectController(GameWorld->ObjectList);
 
 	deleteAllSpriteSets(&GameWorld->WorldBackground.bgSpriteSets);
-
-	removeAllCameraViews(GameWorld);
 
 	GameWorld->GameState = EMPTY_GAME;
 
@@ -2146,8 +2142,6 @@ void SetTextSettingsToDefault(void)
 	{
 		loadFontWithSize("PTSansBold.ttf", "DebugFont", TextSettings.DebugTextPointSize);
 	}
-
-	RemoveAllTexts(&TextSettings.DebugTexts);
 
 	TextSettings.Typing = SDL_TextInputActive(ScreenData.Window);
 	TextSettings.userInputIndex = -1;

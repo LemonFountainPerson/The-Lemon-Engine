@@ -1706,6 +1706,7 @@ Text* addTextToList(TextList *list, const char textPhrase[], float xPos, float y
     newText->CameraRelative = false;
     newText->beingUsed = true;
     newText->attachedObj = NULL;
+    newText->textPos = TEXT_BOTTOM_LEFT;
     memset(newText->name, 0, MAX_LEN);
 
     if (newText->text == NULL)
@@ -1762,7 +1763,20 @@ void updateTextWithName(const char name[], const char newPhrase[])
 	return;
 }
 
-void attachTextToObject(const char name[], Object *input)
+void attachTextToObject(Text *input, Object *obj)
+{
+	if (input == NULL || obj == NULL)
+	{
+		return;
+	}
+	
+	input->attachedObj = obj;
+	input->recordedInstance = obj->instanceNumber;
+
+	return;
+}
+
+void attachTextWithNameToObject(const char name[], Object *input)
 {
 	if (input == NULL || name == NULL)
 	{
@@ -1776,10 +1790,10 @@ void attachTextToObject(const char name[], Object *input)
 		if (strcmp(name, list[i].name) == 0)
 		{
 			list[i].attachedObj = input;
+			list[i].recordedInstance = input->instanceNumber;
 			return;
 		}
 	}
-
 
 	return;
 }
@@ -1956,6 +1970,7 @@ int RemoveText(Text *input)
 	}
 
 	input->beingUsed = false;
+	input->attachedObj = NULL;
 	TextSettings.TextList.count--;
 
 	return LEMON_SUCCESS;
@@ -1967,7 +1982,7 @@ int RemoveTextWithName(const char name[])
 }
 
 
-int RemoveAllTexts(TextList *list)
+void RemoveAllTexts(TextList *list)
 {
 	int i = 0;
 	while (i < MAX_TEXT_TEXTURES)
@@ -1975,6 +1990,7 @@ int RemoveAllTexts(TextList *list)
 		if (list->texts[i].beingUsed)
 		{
 			list->texts[i].beingUsed = false;
+			list->texts[i].attachedObj = NULL;
 			list->count--;
 		}
 
@@ -1983,15 +1999,16 @@ int RemoveAllTexts(TextList *list)
 
 	list->count = 0;
 
-	return LEMON_SUCCESS;
+	return;
 }
 
-void removeAssociatedTexts(TextBox *input)
+void removeAttachedTexts(Object *input)
 {
-	if (input == NULL || !EXPERIMENTAL_TEXT)
+	if (input == NULL || TextSettings.TextList.count < 1 || !EXPERIMENTAL_TEXT)
 	{
 		return;
 	}
+
 
 	TextList *list = &TextSettings.TextList;
 
@@ -1999,13 +2016,13 @@ void removeAssociatedTexts(TextBox *input)
 
 	for (int i = 0; i < MAX_TEXT_TEXTURES; i++)
 	{
-		if (array[i].attachedObj == input->boxPtr)
+		if (array[i].attachedObj == input)
 		{
-			array[i].attachedObj = NULL;
-			array[i].beingUsed = false;
-			list->count--;
+			RemoveText(&array[i]);
 		}
 	}
+
+	return;
 }
 
 Text* experimentalText(TextBox *input)
@@ -2032,7 +2049,7 @@ Text* experimentalText(TextBox *input)
 		return NULL;
 	}
 
-	input->textReference->attachedObj = input->boxPtr;
+	attachTextToObject(input->textReference, input->boxPtr);
 	TTF_SetTextColor(input->textReference->text, input->color.r, input->color.g, input->color.b, input->color.a);
 
 	input->textReference->yPos += 10.0 + input->TextSize;
@@ -2187,7 +2204,7 @@ void cleanUpTexts(TextList *list)
 void cleanUpTextData(RenderFrame *ScreenData)
 {
 	cleanUpTexts(&TextSettings.TextList);
-	cleanUpTexts(&TextSettings.DebugTexts);
+	cleanUpTexts(&TextSettings.DebugTextList);
 
 	TTF_Font **fonts = TextSettings.FontList.font;
 	for (int i = 0; i < MAX_LOADED_FONTS; i++)
@@ -2442,10 +2459,10 @@ int deleteTextBox(TextBox *input, World *GameWorld)
 	
 	MarkObjectForDeletion(input->boxPtr);
 
+	removeAttachedTexts(input->boxPtr);
+
 	DeleteTextSceneAction(input, GameWorld);
 
-	removeAssociatedTexts(input);
-	
 	free(input);
 
 	return LEMON_SUCCESS;

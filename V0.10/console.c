@@ -3,6 +3,11 @@
 // command console
 void executeCommand(char inputSource[USER_INPUT_MAX_LEN], World *GameWorld)
 {
+	if (inputSource[0] == '\0')
+	{
+		return;
+	}
+
 	char input[USER_INPUT_MAX_LEN] = {0};
 	strcpy(input, inputSource);
 	memset(inputSource, 0, USER_INPUT_MAX_LEN);
@@ -326,7 +331,7 @@ int ConsoleCommand_Restart(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 	StartGame(GameWorld);
 
-	printTextsinfo(&TextSettings.DebugTexts, "debugtexts:");
+	printTextsinfo(&TextSettings.DebugTextList, "debugtexts:");
 
 	FontList *list = &TextSettings.FontList;
 
@@ -863,7 +868,7 @@ int ConsoleCommand_List(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	else if (strcmp(arg, "debugtext") == 0)
 	{
-		printTextsinfo(&TextSettings.DebugTexts, "Debug Textlist");
+		printTextsinfo(&TextSettings.DebugTextList, "Debug Textlist");
 	}
 	else if (strcmp(arg, "spritesets") == 0)
 	{
@@ -1085,11 +1090,11 @@ int ConsoleCommand_DebugText(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 	if (strcmp(arg, "info") == 0)
 	{
-		printTextsinfo(&TextSettings.DebugTexts, "TextList");
+		printTextsinfo(&TextSettings.DebugTextList, "TextList");
 	}
 	else if (strcmp(arg, "clear") == 0)
 	{
-		RemoveAllTexts(&TextSettings.DebugTexts);
+		RemoveAllTexts(&TextSettings.DebugTextList);
 	}
 	else 
 	{
@@ -1360,9 +1365,11 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 	if (buttonPressed(LMN_CONSOLE_OPEN))
 	{
 		DebugSettings.consoleOpen = false;
+		stopTyping(window);
+		return;
 	}
 
-	if (TextSettings.Typing == false && TextSettings.userInputString[0] != '\0')
+	if (TextSettings.Typing == false)
 	{
 		executeCommand(TextSettings.userInputString, GameWorld);
 		startTyping(window);

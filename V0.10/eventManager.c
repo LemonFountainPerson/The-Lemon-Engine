@@ -227,6 +227,22 @@ void startTyping(SDL_Window *window)
 	return;
 }
 
+void stopTyping(SDL_Window *window)
+{
+	if (!TextSettings.Typing)
+	{
+		return;
+	}
+
+	SDL_StopTextInput(window);
+
+	TextSettings.Typing = false;
+	TextSettings.userInputIndex = 0;
+	TextSettings.cursorXPos = 0.0;
+
+	return;
+}
+
 void updateTyping(SDL_Window *window, World *GameWorld)
 {
 	if (!TextSettings.Typing)
@@ -262,13 +278,9 @@ void updateTyping(SDL_Window *window, World *GameWorld)
 		TextSettings.cursorXPos = getCursorPos();
 	}
 
-	if (buttonPressed(LMN_ENTER))
+	if (buttonPressed(LMN_ENTER) && TextSettings.userInputString[0] != '\0')
 	{
-		TextSettings.Typing = false;
-		SDL_StopTextInput(window);
-
-		TextSettings.userInputIndex = 0;
-		TextSettings.cursorXPos = 0.0;
+		stopTyping(window);
 	}
 
 	

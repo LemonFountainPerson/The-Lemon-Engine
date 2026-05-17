@@ -91,7 +91,9 @@ void updateText(Text *input, const char newPhrase[]);
 
 void updateTextWithName(const char name[], const char newPhrase[]);
 
-void attachTextToObject(const char name[], Object *input);
+void attachTextToObject(Text *input, Object *obj);
+
+void attachTextWithNameToObject(const char name[], Object *input);
 
 void moveText(Text *input, float xPos, float yPos);
 
@@ -113,9 +115,9 @@ void initialiseTextList(TextList *input);
 
 void printTextsinfo(TextList *list, const char name[]);
 
-int RemoveAllTexts(TextList *list);
+void RemoveAllTexts(TextList *list);
 
-void removeAssociatedTexts(TextBox *input);
+void removeAttachedTexts(Object *input);
 
 Text* experimentalText(TextBox *input);
 

@@ -238,7 +238,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 		}
 
 		No_Objects_To_Render:
-		renderCameraViews(GameWorld->views, GameWorld, Screen, drawLayer);
+		renderCameraViews(inputCamera, GameWorld, Screen, drawLayer);
 	}
 
 	return LEMON_SUCCESS;
@@ -635,9 +635,9 @@ int renderTiledSprite(SDL_Renderer *Screen, Camera inputCamera, DisplayData inpu
 		float modPixelY = (float)modulo(inputData.pixelYOffset, sprite->height);
 		float fHeight = (float)sprite->height;
 		spriteBox.x = (float)inputData.pixelXOffset;
-		spriteBox.y = fModulo((fHeight - renderBox->h - modPixelY), fHeight);
 		spriteBox.w = (float)sprite->width - spriteBox.x;
-		spriteBox.h = fHeight - modPixelY;
+		spriteBox.h = fClamp(fHeight - modPixelY, 0.0, renderBox->h);
+		spriteBox.y = fHeight - fClamp((modPixelY + spriteBox.h), 0.0, fHeight);
 
 		// cull rendered box to visible portion, as tiled sprites can be infinitely long
 		cullTiledSprite(renderBox, inputCamera, spriteBox.w, spriteBox.h);
@@ -1322,7 +1322,7 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 
 int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, DebugTextFormatting format)
 {
-	TextList *list = &TextSettings.DebugTexts;
+	TextList *list = &TextSettings.DebugTextList;
 	if (inputPhrase == NULL || strlen(inputPhrase) < 1 || list->count >= MAX_TEXT_TEXTURES)
 	{
 		return INVALID_DATA;
@@ -1341,6 +1341,22 @@ int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, Debu
 		list->count = MAX_TEXT_TEXTURES;
 		return ACTION_DISABLED;
 	}
+
+	if (TextsArray[index].text == NULL)
+    {
+    	TTF_Font *debugFont = getFont("DebugFont");
+    	if (debugFont == NULL)
+    	{
+    		return MISSING_DATA;
+    	}
+
+    	TextsArray[index].text = TTF_CreateText(ScreenData.textEngine, debugFont, inputPhrase, wrapwidth);
+    }
+    else
+    {
+    	TTF_SetTextString(TextsArray[index].text, inputPhrase, 0);
+    	TTF_SetTextWrapWidth(TextsArray[index].text, wrapwidth);
+    }
 	
 	list->count++;
 
@@ -1358,16 +1374,6 @@ int AddDebugText(const char inputPhrase[], float x, float y, int wrapwidth, Debu
     TextsArray[index].CameraRelative = (format == DTFORMAT_CAMERA_RELATIVE);
     TextsArray[index].beingUsed = true;
     TextsArray[index].attachedObj = NULL;
-    
-    if (TextsArray[index].text == NULL)
-    {
-    	TextsArray[index].text = TTF_CreateText(ScreenData.textEngine, getFont("DebugFont"), inputPhrase, wrapwidth);
-    }
-    else
-    {
-    	TTF_SetTextString(TextsArray[index].text, inputPhrase, 0);
-    	TTF_SetTextWrapWidth(TextsArray[index].text, wrapwidth);
-    }
 
     if (format == DTFORMAT_JUSTIFY_TOP)
     {
@@ -1425,8 +1431,8 @@ void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
     	DisplayDebugInfo(renderCamera, GameWorld, Screen);	
     }
 
-    RenderTextList(&TextSettings.DebugTexts, renderCamera);
-    RemoveAllTexts(&TextSettings.DebugTexts);
+    RenderTextList(&TextSettings.DebugTextList, renderCamera);
+    RemoveAllTexts(&TextSettings.DebugTextList);
 
     SDL_SetRenderScale(Screen, renderCamera.zoomX, renderCamera.zoomY);
     SDL_SetRenderLogicalPresentation(Screen, renderCamera.width, renderCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
@@ -1444,6 +1450,9 @@ void RenderTextList(TextList *list, Camera inputCamera)
 	Text *array = list->texts; 
 
 	float correctedX, correctedY;
+	int textXSize = 0;
+	int textYSize = 0;
+
 	for (int i = 0; i < MAX_TEXT_TEXTURES; i++)
 	{
 		if (array[i].text == NULL || !array[i].beingUsed)
@@ -1456,18 +1465,31 @@ void RenderTextList(TextList *list, Camera inputCamera)
 
 		if (array[i].attachedObj != NULL)
 		{
-			if (array[i].attachedObj->State < DEFAULT_STATE)
+			Object *obj = array[i].attachedObj;
+			if (obj->State == EMPTY_OBJECT || array[i].recordedInstance != obj->instanceNumber)
 			{
 				array[i].beingUsed = false;
+				array[i].attachedObj = NULL;
 				list->count--;
 				continue;
 			}
 			
-			PhysicsBox *box = array[i].attachedObj->ObjectBox;
+			// position text relative to object
+			PhysicsBox *box = obj->ObjectBox;
+
 			correctedX += box->xPos;
 			correctedY -= box->yPos;
 
-			if (getDisplayLayer(array[i].attachedObj) == HUD)
+			if (array[i].textPos == TEXT_CENTERED)
+			{
+				TTF_GetTextSize(array[i].text, &textXSize, &textYSize);
+				correctedX += (box->xSize / 2) - (textXSize / 2);
+				correctedY -= (box->ySize / 2) + (textYSize / 2);
+			}
+			
+			putConsoleString("%f %f", correctedX, correctedY);
+
+			if (getDisplayLayer(obj) == HUD)
 			{
 				array[i].CameraRelative = false;
 			}
