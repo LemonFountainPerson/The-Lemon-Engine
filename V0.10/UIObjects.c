@@ -65,6 +65,27 @@ int ShowHUD(ObjectController *ObjectList)
 	return LEMON_SUCCESS;
 }
 
+void adjustHUD(int prevScreenWidth, int prevScreenHeight, RenderFrame *ScreenData, ObjectController *ObjectList)
+{
+	if (prevScreenWidth == ScreenData->screenWidth && prevScreenHeight == ScreenData->screenHeight)
+	{
+		return;
+	}
+	
+	TTF_Font **list = TextSettings.FontList.font;
+
+	for (int i = 0; i < MAX_LOADED_FONTS; i++)
+	{
+		if (list[i] != NULL)
+		{
+			int newSize = 96;
+			TTF_SetFontSize(list[i], newSize);
+		}
+	}
+
+	return;
+}
+
 
 UISubType convertEntryToUIType(char name[])
 {

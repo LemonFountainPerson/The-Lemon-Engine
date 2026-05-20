@@ -12,7 +12,7 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 		if (buttons[LMN_CONSOLE_OPEN] == 1 && !TextSettings.Typing)
 		{
 			AcknowledgeButton(LMN_CONSOLE_OPEN);
-			startTyping(window);
+			startTyping(window, NULL);
 
 			DebugSettings.consoleOpen = true;
 			DebugSettings.consoleFocus = false;
@@ -24,15 +24,20 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 
 	if (buttonPressed(LMN_CONSOLE_OPEN))
 	{
+		AcknowledgeButton(LMN_CONSOLE_OPEN);
 		DebugSettings.consoleOpen = false;
 		stopTyping(window);
+
+		RemoveDebugTextWithName("ConsoleHistory");
+		RemoveDebugTextWithName("ConsoleUserInput");
+
 		return;
 	}
 
 	if (TextSettings.Typing == false)
 	{
 		executeCommand(TextSettings.userInputString, GameWorld);
-		startTyping(window);
+		startTyping(window, NULL);
 		return;
 	}
 
@@ -63,7 +68,7 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 				strcpy(TextSettings.userInputString, next);
 				TextSettings.userInputIndex = strlen(TextSettings.userInputString);
 
-				TextSettings.cursorXPos = getCursorPos();
+				setCursorPos();
 			}
 		}
 	}
@@ -83,7 +88,7 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 				strcpy(TextSettings.userInputString, prev);
 				TextSettings.userInputIndex = strlen(TextSettings.userInputString);
 
-				TextSettings.cursorXPos = getCursorPos();
+				setCursorPos();
 			}
 		}
 	}
@@ -457,7 +462,17 @@ int ConsoleCommand_Fullscreen(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	else
 	{
-		enableFullscreen(GameWorld);
+		char flag[USER_INPUT_MAX_LEN] = {0};
+		parseArgumentFlag(input, flag);
+
+		if (strcmp(flag, "scaled") == 0)
+		{
+			enableFullscreenScaled(GameWorld);
+		}
+		else
+		{
+			enableFullscreen(GameWorld);
+		}
 	}
 
 	return LEMON_SUCCESS;
@@ -1441,8 +1456,9 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 
 	static const float inputFieldHeight = 28.0;
 	static const float insideSpacing = 8.0;
-	static const float topSpacing = 3.0;
-	DebugSettings.consoleXPos = -512.0;
+	static const int consoleLinesDisplayed = 32;
+	static const int textWidth = (int)(consoleWidth - (2.0 * insideSpacing));
+	DebugSettings.consoleXPos = -(consoleWidth / 2.0);
 	DebugSettings.consoleYPos = yCorrection - consoleHeight;
 
 	SDL_FRect box = {0};
@@ -1471,28 +1487,16 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 	SDL_RenderFillRect(Screen, &box);
 	box.y += consoleHeight;
 
-
-	// render cursor
-	box.w = 2.0;
-	box.h = inputFieldHeight - (topSpacing * 2.0);
-	box.x += insideSpacing + TextSettings.cursorXPos;
-	box.y += topSpacing;
-	SDL_SetRenderDrawColor(Screen, 0xFF, 0xFF, 0xFF, 0xFF);
-	SDL_RenderFillRect(Screen, &box);
-
 	// render user input
 	box.x = DebugSettings.consoleXPos + insideSpacing;
-	box.y = DebugSettings.consoleYPos;
-	int textWidth = (int)(consoleWidth - (2.0 * insideSpacing));
-	if (strlen(TextSettings.userInputString) > 0)
-	{
-	    addDebugText(TextSettings.userInputString, box.x, box.y, textWidth, DTFORMAT_SCREEN_RELATIVE);
-	}
+	box.y = DebugSettings.consoleYPos + insideSpacing;
 
-	int index = modulo(DebugSettings.consoleHistory.head, USER_INPUT_HISTORY_LEN);
+	int firstLineOffset = consoleLinesDisplayed + clamp(DebugSettings.scrollVal, 0, USER_INPUT_HISTORY_LEN - consoleLinesDisplayed);
+	int index = modulo(DebugSettings.consoleHistory.head - firstLineOffset, USER_INPUT_HISTORY_LEN);
 	char all[USER_INPUT_MAX_LEN * USER_INPUT_HISTORY_LEN] = {0};
 
-	for (int i = USER_INPUT_HISTORY_LEN - DebugSettings.scrollVal; i > 0; i--)
+
+	for (int i = consoleLinesDisplayed; i > 0; i--)
 	{
 		strcat(all, DebugSettings.consoleHistory.inputs[index]);
 		index = (index + 1) % USER_INPUT_HISTORY_LEN;
@@ -1504,9 +1508,15 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 	}
 
 	// render text history
-	box.y += insideSpacing;
+    addDebugTextWithName(all, "ConsoleHistory", box.x, box.y, textWidth, DTFORMAT_JUSTIFY_TOP);
 
-    addDebugText(all, box.x, box.y, textWidth, DTFORMAT_JUSTIFY_TOP);
+    if (TextSettings.Typing)
+    {
+    	box.y -= insideSpacing;
 
+    	TextSettings.typingText = addDebugTextWithName(TextSettings.userInputString, "ConsoleUserInput", box.x, box.y, textWidth, DTFORMAT_SCREEN_RELATIVE);
+    }
+
+	
 	return;
 }

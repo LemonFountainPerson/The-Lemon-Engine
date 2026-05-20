@@ -26,7 +26,7 @@ EXPORT int GameFrame(World *GameWorld);
 
 EXPORT int Render(World *GameWorld, RenderFrame *ScreenData);
 
-EXPORT void RenderEngine(Camera *renderCamera, World *GameWorld, SDL_Renderer *Screen);
+EXPORT void RenderEngine(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen);
 
 
 EXPORT Uint64 TickNumber(void);

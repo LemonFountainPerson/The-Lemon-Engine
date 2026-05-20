@@ -37,10 +37,16 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 
 Text* addDebugText(const char inputPhrase[], float x, float y, int wrapwidth, DebugTextFormatting format);
 
+Text* addDebugTextWithName(const char textPhrase[], const char name[], float xPos, float yPos, int wrapWidth, DebugTextFormatting format);
+
+Text* getDebugTextWithName(const char name[]);
+
+int RemoveDebugTextWithName(const char name[]);
+
 
 void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen);
 
-void RenderTextList(TextList *list, Camera inputCamera);
+void RenderTextList(TextList *list, Camera inputCamera, SDL_Renderer *Screen);
 
 
-float getCursorPos(void);
+void setCursorPos(void);

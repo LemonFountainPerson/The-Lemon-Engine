@@ -815,6 +815,13 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 			fseek(fPtr, filePos, SEEK_SET);
 		}
 
+		if (data->branchDistanceIfFalse < 1)
+		{
+			deleteSceneAction(ifStatement, GameWorld);
+
+			return NULL;
+		}
+
 		return ifStatement;
 	}
 	else if (strcmp(inputString, "ANIMATEACTOR:") == 0)
@@ -1055,6 +1062,10 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 		int count = loadBracketedSceneActions(fPtr, GameWorld);
 
 		return Repeat(repeatTimes, count, GameWorld);
+	}
+	else 
+	{
+		putConsoleError("Couldn't identity '%s' as a scene action. Correct SceneAction syntax is: \n[Action name]: [Number], [String], \"[String with gaps]\"", inputString);
 	}
 
 

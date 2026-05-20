@@ -145,7 +145,11 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 
 		case EVENT_CHANGE_SCREEN_SIZE:
 			{	
+				int prevWidth = ScreenData->screenWidth;
+				int prevHeight = ScreenData->screenHeight;
+
 				applyScreenSize((int)EventData->vars[0], (int)EventData->vars[1], ScreenData);
+				adjustHUD(prevWidth, prevHeight, ScreenData, GameWorld->ObjectList);
 			} break;
 
 		case EVENT_CHANGE_SCREEN_SIZE_SCALE:
@@ -155,12 +159,21 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 
 		case EVENT_ENABLE_FULLSCREEN:
 			{
+				int prevWidth = ScreenData->screenWidth;
+				int prevHeight = ScreenData->screenHeight;
+
 				applyEnableFullscreen(ScreenData);
+
+				adjustHUD(prevWidth, prevHeight, ScreenData, GameWorld->ObjectList);
 			} break;
 
 		case EVENT_DISABLE_FULLSCREEN:
-			{
+			{			
+				int prevWidth = ScreenData->screenWidth;
+				int prevHeight = ScreenData->screenHeight;
+
 				applyDisableFullscreen(ScreenData, &GameWorld->MainCamera);
+				adjustHUD(prevWidth, prevHeight, ScreenData, GameWorld->ObjectList);
 			} break;
 
 		case EVENT_ENABLE_FULLSCREEN_SCALE:
@@ -208,7 +221,7 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 }
 
 
-void startTyping(SDL_Window *window)
+void startTyping(SDL_Window *window, Text *inputTypingText)
 {
 	if (SDL_TextInputActive(window))
 	{
@@ -223,6 +236,8 @@ void startTyping(SDL_Window *window)
 	TextSettings.cursorXPos = 0.0;
 
 	TextSettings.Typing = true;
+
+	TextSettings.typingText = inputTypingText;
 
 	return;
 }
@@ -239,6 +254,7 @@ void stopTyping(SDL_Window *window)
 	TextSettings.Typing = false;
 	TextSettings.userInputIndex = 0;
 	TextSettings.cursorXPos = 0.0;
+	TextSettings.typingText = NULL;
 
 	return;
 }
@@ -262,20 +278,24 @@ void updateTyping(SDL_Window *window, World *GameWorld)
 			
 		TextSettings.userInputString[TextSettings.userInputIndex] = 0;
 		strcat(TextSettings.userInputString, buffer);
-
-		TextSettings.cursorXPos = getCursorPos();
+		setCursorPos();
 	}
 
 	if (buttonPressed(LMN_LEFTARROW))
 	{
 		TextSettings.userInputIndex = clamp(TextSettings.userInputIndex - 1, 0, USER_INPUT_MAX_LEN);
-		TextSettings.cursorXPos = getCursorPos();
+		setCursorPos();
 	}
 
 	if (buttonPressed(LMN_RIGHTARROW))
 	{
 		TextSettings.userInputIndex = clamp(TextSettings.userInputIndex + 1, 0, strlen(TextSettings.userInputString));
-		TextSettings.cursorXPos = getCursorPos();
+		setCursorPos();
+	}
+
+	if (TextSettings.typingText != NULL)
+	{
+		updateText(TextSettings.typingText, TextSettings.userInputString);
 	}
 
 	if (buttonPressed(LMN_TYPING_END) && TextSettings.userInputString[0] != '\0')
@@ -316,7 +336,7 @@ void inputTyping(const char input[])
 
 	TextSettings.userInputString[USER_INPUT_MAX_LEN - 1] = 0;
 
-	TextSettings.cursorXPos = getCursorPos();
+	setCursorPos();
 
 	return;
 }
@@ -878,7 +898,7 @@ int validateScreenDimensions(RenderFrame *ScreenData)
 }
 
 
-const static char EventNames[EVENT_COUNT][64] = {
+const static char EventNames[EVENT_COUNT][EVENT_NAME_MAX_LEN] = {
 	[NO_EVENT] = "No Event",
  	[EVENT_SWITCH_LEVEL] = "Switch Level",
  	[EVENT_MOVE_OBJECT] = "Move Object",
@@ -886,6 +906,7 @@ const static char EventNames[EVENT_COUNT][64] = {
  	[EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR] = "Teleport Player to exit door",
  	[EVENT_PLAY_CUTSCENE] = "Play Cutscene",
  	[EVENT_PLAY_CUTSCENE_FROM_FILE] = "Play Cutscene from file",
+ 	[EVENT_SET_BRIGHTNESS] = "Set Brightness",
  	[EVENT_ENABLE_FULLSCREEN] = "Enable fullscreen",
  	[EVENT_DISABLE_FULLSCREEN] = "Disable fullscreen",
  	[EVENT_ENABLE_FULLSCREEN_SCALE] = "Enable fullscreen scaled",
@@ -907,18 +928,28 @@ const char* getEventName(GameEventID input)
 
 GameEventID getEventID(const char input[])
 {
-	char temp[64] = {0};
+	// filled in once the first time this is called, then all modified names are cached for future file-reading use
+	static char compareEventNames[EVENT_COUNT][EVENT_NAME_MAX_LEN] = {0};	
+
+	if (compareEventNames[0][0] == '\0')
+	{
+		for (int i = 0; i < EVENT_COUNT; i++)
+		{
+			strcpy(compareEventNames[i], EventNames[i]);
+			stringToLower(compareEventNames[i]);
+			removeChar(compareEventNames[i], ' ', EVENT_NAME_MAX_LEN);
+		}
+	}
+
 	char inputLower[MAX_LEN] = {0};
 
 	LemonStrncpy(inputLower, input, MAX_LEN);
 	stringToLower(inputLower);
+	removeChar(inputLower, ' ', MAX_LEN);
 
 	for (int i = 0; i < EVENT_COUNT; i++)
 	{
-		strcpy(temp, EventNames[i]);
-		stringToLower(temp);
-
-		if (strcmp(inputLower, temp) == 0)
+		if (strcmp(inputLower, compareEventNames[i]) == 0)
 		{
 			return i;
 		}

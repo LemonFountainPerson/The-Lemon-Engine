@@ -4224,7 +4224,14 @@ int PointObjectToMouse(Object *inputObject, World *GameWorld)
 	float MouseX = MouseInput.xPos + GameWorld->MainCamera.CameraX;
 	float MouseY = MouseInput.yPos + GameWorld->MainCamera.CameraY;
 
-	PointObjectToXY(inputObject, MouseX, MouseY);
+	if (getDisplayLayer(inputObject) == HUD)
+	{
+		PointObjectToXY(inputObject, MouseX, MouseY);
+	}
+	else
+	{
+		PointObjectToXY(inputObject, getMouseXCam(GameWorld->MainCamera), getMouseYCam(GameWorld->MainCamera));
+	}
 
 	return LEMON_SUCCESS;
 }

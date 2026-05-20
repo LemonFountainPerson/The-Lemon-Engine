@@ -819,6 +819,9 @@ Text* addTextWithName(const char textPhrase[], const char name[], float xPos, fl
 	Text* text = getTextWithName(name, GameWorld);
 	if (text != NULL)
 	{
+		TTF_SetTextString(text->text, textPhrase, 0);
+		text->xPos = xPos;
+		text->yPos = yPos;
 		return text;
 	}
 
@@ -1103,37 +1106,47 @@ void initialiseTextList(TextList *input)
 void printTextsinfo(TextList *list, const char name[])
 {
 	putConsoleString("\n%s: ", name);
-	char buffer[MAX_LEN + 30] = {0};
+	char buffer[MAX_LEN + TEXT_NAME_MAX_LEN + OBJECT_NAME_LENGTH] = {0};
 
 	Text *array = list->texts;
 
 	for (int i = 0; i < MAX_TEXT_TEXTURES; i++)
 	{
-		if (array[i].text != NULL)
+		if (array[i].name[0] != '\0')
 		{
-			snprintf(buffer, 20, "(Data loaded)  ");
+			snprintf(buffer, TEXT_NAME_MAX_LEN + 2, "'%s'", array[i].name);
 		}
 		else
 		{
-			snprintf(buffer, 20, "(Data empty)   ");
+			strcpy(buffer, "(No name)");
+		}
+
+		
+		if (array[i].text != NULL)
+		{
+			strcat(buffer, " (Data loaded)  ");
+		}
+		else
+		{
+			strcat(buffer, " (Data empty)   ");
 		}
 
 		if (array[i].beingUsed)
 		{
-			strcat(buffer, "(Being used)");
+			strcat(buffer, "(Being used)   ");
 		}
 		else
 		{
-			strcat(buffer, "(Unused)");
+			strcat(buffer, "(Unused)   ");
 		}
 
 		if (array[i].CameraRelative)
 		{
-			strcat(buffer, "(Camera relative)");
+			strcat(buffer, "(Camera relative)   ");
 		}
 		else
 		{
-			strcat(buffer, "(Screen relative)");
+			strcat(buffer, "(Screen relative)   ");
 		}
 
 		if (array[i].attachedObj != NULL)
@@ -1194,6 +1207,24 @@ void RemoveAllTexts(TextList *list)
 	}
 
 	list->count = 0;
+
+	return;
+}
+
+void RemoveUnnamedTexts(TextList *list)
+{
+	int i = 0;
+	while (i < MAX_TEXT_TEXTURES)
+	{
+		if (list->texts[i].beingUsed && list->texts[i].name[0] == '\0')
+		{
+			list->texts[i].beingUsed = false;
+			list->texts[i].attachedObj = NULL;
+			list->count--;
+		}
+
+		i++;
+	}
 
 	return;
 }

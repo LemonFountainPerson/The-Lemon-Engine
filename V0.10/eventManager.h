@@ -17,7 +17,7 @@ int HandleGameEvents(World *GameWorld, RenderFrame *ScreenData);
 
 int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *ScreenData);
 
-void startTyping(SDL_Window *window);
+void startTyping(SDL_Window *window, Text *inputTypingText);
 
 void stopTyping(SDL_Window *window);
 

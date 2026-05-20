@@ -164,8 +164,6 @@ int drawObjects(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 
 	RenderSettings.drawnObjects = 0;
 
-	inputCamera.CameraX += (float)((inputCamera.width - inputCamera.zoomedWidth) >> 1);
-	inputCamera.CameraY += (float)((inputCamera.zoomedHeight - inputCamera.height) >> 1);
 	Camera hudCam = {0};
 	ResetCamera(&hudCam);
 
@@ -175,7 +173,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 	
 	for (Layer drawLayer = BACKGROUND; drawLayer < LAYER_COUNT; drawLayer++)
 	{	
-		if (drawLayer != BACKGROUND)
+		if (drawLayer != BACKGROUND && drawLayer >= 0)
 		{
 			if (layerStarts[drawLayer] != NULL)
 			{
@@ -195,7 +193,7 @@ int drawObjects(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 			}
 
 			SDL_SetRenderScale(Screen, 1.0, 1.0);
-			SDL_SetRenderLogicalPresentation(Screen, hudCam.width, hudCam.height, SDL_LOGICAL_PRESENTATION_STRETCH);
+			SDL_SetRenderLogicalPresentation(Screen, ScreenData.screenWidth, ScreenData.screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
 
 			while(currentObject != NULL)
 			{
@@ -255,8 +253,6 @@ void drawHitboxes(Camera inputCamera, World *GameWorld, SDL_Renderer *Screen)
 
 	Object *currentObject = GameWorld->ObjectList->firstObject;
 
-	inputCamera.CameraX += (float)((inputCamera.width - inputCamera.zoomedWidth) >> 1);
-	inputCamera.CameraY += (float)((inputCamera.zoomedHeight - inputCamera.height) >> 1);
 	Camera hudCamera = {0};
 	ResetCamera(&hudCamera);
 
@@ -778,10 +774,6 @@ int renderBackGroundSprite(Camera inputCamera, BackgroundData *WorldBackground, 
 		return MISSING_DATA;
 	}
 
-	inputCamera.CameraX += (float)((inputCamera.width - inputCamera.zoomedWidth) >> 1);
-	inputCamera.CameraY += (float)((inputCamera.zoomedHeight - inputCamera.height) >> 1);
-	
-
 	RenderMode bgRenderMode = WorldBackground->BackgroundRenderMode;
 
 	if (bgRenderMode == DEFAULT_TO_SPRITE)
@@ -919,7 +911,7 @@ int getTileAtPosition(float x, float y, TilePlane *input)
 // Debug text functions
 void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 {
-	if (GameWorld == NULL || GameWorld->ObjectList == NULL)
+	if (GameWorld == NULL || GameWorld->ObjectList == NULL || DebugSettings.DebugTextDisplayMode == DEBUG_TEXT_DISABLED)
 	{
 		return;
 	}
@@ -1323,7 +1315,7 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 Text* addDebugText(const char inputPhrase[], float x, float y, int wrapwidth, DebugTextFormatting format)
 {
 	TextList *list = &TextSettings.DebugTextList;
-	if (inputPhrase == NULL || strlen(inputPhrase) < 1 || list->count >= MAX_TEXT_TEXTURES)
+	if (inputPhrase == NULL || list->count >= MAX_TEXT_TEXTURES)
 	{
 		return NULL;
 	}
@@ -1374,6 +1366,7 @@ Text* addDebugText(const char inputPhrase[], float x, float y, int wrapwidth, De
     TextsArray[index].CameraRelative = (format == DTFORMAT_CAMERA_RELATIVE);
     TextsArray[index].beingUsed = true;
     TextsArray[index].attachedObj = NULL;
+    memset(TextsArray[index].name, 0, TEXT_NAME_MAX_LEN);
 
     if (format == DTFORMAT_JUSTIFY_TOP)
     {
@@ -1386,40 +1379,141 @@ Text* addDebugText(const char inputPhrase[], float x, float y, int wrapwidth, De
 	return &TextsArray[index];
 }
 
-float getCursorPos(void)
+Text* addDebugTextWithName(const char textPhrase[], const char name[], float xPos, float yPos, int wrapWidth, DebugTextFormatting format)
 {
-	if (TextSettings.userInputIndex < 1)
+	Text* text = getDebugTextWithName(name);
+	if (text != NULL)
 	{
-		return 0.0;
+		TTF_SetTextString(text->text, textPhrase, 0);
+		text->xPos = xPos;
+		text->yPos = yPos;
+
+		if (format == DTFORMAT_JUSTIFY_TOP)
+	    {
+	    	int height = 0;
+		    TTF_GetTextSize(text->text, NULL, &height);
+
+		    text->yPos += (float)height;
+	    }
+
+	    TTF_SetTextWrapWidth(text->text, wrapWidth);
+	}
+	else
+	{
+		text = addDebugText(textPhrase, xPos, yPos, wrapWidth, format);
+
+		setTextName(text, name);
 	}
 
-	TTF_Font *debug = getFont("DebugFont");
-	if (debug == NULL)
+
+	return text;
+}
+
+Text* getDebugTextWithName(const char name[])
+{
+	Text *list = TextSettings.DebugTextList.texts;
+
+	for (int i = 0; i < MAX_TEXT_TEXTURES; i++)
+	{
+		if (list[i].beingUsed && strcmp(name, list[i].name) == 0)
+		{
+			return &list[i];
+		}
+	}
+
+	return NULL;
+}
+
+int RemoveDebugTextWithName(const char name[])
+{
+	Text *input = getDebugTextWithName(name);
+	if (input == NULL)
 	{
 		return MISSING_DATA;
 	}
 
+	if (!input->beingUsed)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	input->beingUsed = false;
+	input->attachedObj = NULL;
+	TextSettings.DebugTextList.count--;
+
+	return LEMON_SUCCESS;
+}
+
+void setCursorPos(void)
+{
+	if (TextSettings.userInputIndex < 1)
+	{
+		TextSettings.cursorXPos = 0.0;
+		return;
+	}
+
+	TTF_Font *font = NULL;
+
+
 	int width = 0;
 	int height = 0;
+	int wrapWidth = 0;
 
-	TTF_GetStringSize(debug, TextSettings.userInputString, TextSettings.userInputIndex, &width, &height);
+	Text *typingText = TextSettings.typingText;
 
-    return (float)width;
+	if (typingText == NULL)
+	{
+		font = getFont("DebugFont");
+	}
+	else
+	{
+		font = TTF_GetTextFont(typingText->text);
+
+		TTF_GetTextWrapWidth(typingText->text, &wrapWidth);
+	}
+	
+	if (font == NULL)
+	{
+		return;
+	}
+	
+	TTF_GetStringSizeWrapped(font, TextSettings.userInputString, TextSettings.userInputIndex, wrapWidth, &width, &height);
+
+	if (wrapWidth > 0)
+	{
+		int lineSkip = TTF_GetFontLineSkip(font);
+
+		TTF_SubString lastLine = {0};
+		TTF_GetTextSubStringForLine(typingText->text, (height / lineSkip) - 1, &lastLine);
+
+		TTF_GetStringSize(font, TextSettings.userInputString + lastLine.offset, TextSettings.userInputIndex - lastLine.offset, &width, &height);
+		TextSettings.cursorYPos = (float)(height - lineSkip);
+	}
+	else
+	{
+		TextSettings.cursorYPos = 0.0;
+	}
+
+	TextSettings.cursorXPos = (float)width;
+
+    return;
 }
 
 
 void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 {
+	renderCamera.CameraX += (float)((renderCamera.width - renderCamera.zoomedWidth) >> 1);
+	renderCamera.CameraY += (float)((renderCamera.zoomedHeight - renderCamera.height) >> 1);
+	
+
 	SDL_SetRenderScale(Screen, 1.0, 1.0);
 	SDL_SetRenderLogicalPresentation(Screen, ScreenData.screenWidth, ScreenData.screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
 
 	// render in-game text (immune to camera zoom, centered on the screen)
-	if (GameWorld->GamePaused == 0)
-	{
-		RenderTextList(&GameWorld->TextList, renderCamera);
-	}
+	RenderTextList(&GameWorld->TextList, renderCamera, Screen);
 	
 	// render console
+	RemoveUnnamedTexts(&TextSettings.DebugTextList);
 	if (DebugSettings.consoleOpen)
 	{
 		renderConsole(GameWorld, Screen);	
@@ -1431,8 +1525,7 @@ void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
     	DisplayDebugInfo(renderCamera, GameWorld, Screen);	
     }
 
-    RenderTextList(&TextSettings.DebugTextList, renderCamera);
-    RemoveAllTexts(&TextSettings.DebugTextList);
+    RenderTextList(&TextSettings.DebugTextList, renderCamera, Screen);
 
     SDL_SetRenderScale(Screen, renderCamera.zoomX, renderCamera.zoomY);
     SDL_SetRenderLogicalPresentation(Screen, renderCamera.width, renderCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
@@ -1440,9 +1533,9 @@ void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
     return;
 }
 
-void RenderTextList(TextList *list, Camera inputCamera)
+void RenderTextList(TextList *list, Camera inputCamera, SDL_Renderer *Screen)
 {
-	if (list->count < 1)
+	if (list->count < 1 || Screen == NULL)
 	{
 		return;
 	}
@@ -1473,6 +1566,11 @@ void RenderTextList(TextList *list, Camera inputCamera)
 				list->count--;
 				continue;
 			}
+
+			if (obj->ObjectDisplay->hidden)
+			{
+				continue;
+			}
 			
 			// position text relative to object
 			PhysicsBox *box = obj->ObjectBox;
@@ -1486,8 +1584,6 @@ void RenderTextList(TextList *list, Camera inputCamera)
 				correctedX += (box->xSize / 2) - (textXSize / 2);
 				correctedY -= (box->ySize / 2) + (textYSize / 2);
 			}
-			
-			putConsoleString("%f %f", correctedX, correctedY);
 
 			if (getDisplayLayer(obj) == HUD)
 			{
@@ -1501,11 +1597,38 @@ void RenderTextList(TextList *list, Camera inputCamera)
 
 		if (array[i].CameraRelative == true)
 		{
-			correctedX -= inputCamera.CameraX;
-			correctedY += inputCamera.CameraY;
+			correctedX -= inputCamera.CameraX + (float)((ScreenData.screenWidth - inputCamera.zoomedWidth) >> 1);
+			correctedY += inputCamera.CameraY + (float)((inputCamera.zoomedHeight - ScreenData.screenHeight) >> 1);
+			SDL_SetRenderScale(Screen, inputCamera.zoomX, inputCamera.zoomY);
+    		SDL_SetRenderLogicalPresentation(Screen, inputCamera.width, inputCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
 		}
 
 		TTF_DrawRendererText(array[i].text, correctedX, correctedY);
+
+		if (TextSettings.Typing && TextSettings.typingText == &array[i])
+		{
+			SDL_FRect box;
+		   	box.w = 2.0;
+		   	if (array == TextSettings.DebugTextList.texts)
+		   	{
+		   		box.h = TextSettings.DebugTextPointSize;
+		   	}
+		   	else
+		   	{
+		   		box.h = TextSettings.defaultTextPointSize;
+		   	}
+			
+			box.x = correctedX + TextSettings.cursorXPos;
+			box.y = correctedY + TextSettings.cursorYPos + 3.0;
+			SDL_SetRenderDrawColor(Screen, 0xFF, 0xFF, 0xFF, 0xFF);
+			SDL_RenderFillRect(Screen, &box);
+		}
+
+		if (array[i].CameraRelative == true)
+		{
+			SDL_SetRenderScale(Screen, 1.0, 1.0);
+    		SDL_SetRenderLogicalPresentation(Screen, ScreenData.screenWidth, ScreenData.screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+		}
 	}
 
 	return;

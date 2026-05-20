@@ -72,6 +72,8 @@ void printTextsinfo(TextList *list, const char name[]);
 
 void RemoveAllTexts(TextList *list);
 
+void RemoveUnnamedTexts(TextList *list);
+
 void closeFont(TTF_Font *font, TextList *list);
 
 Text* experimentalText(TextBox *input, World *GameWorld);

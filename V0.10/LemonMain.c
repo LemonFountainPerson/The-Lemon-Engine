@@ -279,22 +279,22 @@ int GameFrame(World *GameWorld)
 }
 
 
-void RenderEngine(Camera *renderCamera, World *GameWorld, SDL_Renderer *Screen)
+void RenderEngine(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 {
-	renderCamera->zoomedWidth = renderCamera->width / renderCamera->zoomX;
-	renderCamera->zoomedHeight = renderCamera->height / renderCamera->zoomY;
+	renderCamera.CameraX += (float)((renderCamera.width - renderCamera.zoomedWidth) >> 1);
+	renderCamera.CameraY += (float)((renderCamera.zoomedHeight - renderCamera.height) >> 1);
+	
 
-	SDL_SetRenderScale(Screen, renderCamera->zoomX, renderCamera->zoomY);
-	SDL_SetRenderLogicalPresentation(Screen, renderCamera->width, renderCamera->height, SDL_LOGICAL_PRESENTATION_STRETCH);
+	SDL_SetRenderScale(Screen, renderCamera.zoomX, renderCamera.zoomY);
+	SDL_SetRenderLogicalPresentation(Screen, renderCamera.width, renderCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
 
+	renderBackGroundSprite(renderCamera, &GameWorld->WorldBackground, Screen);
 
-	renderBackGroundSprite(*renderCamera, &GameWorld->WorldBackground, Screen);
-
-	drawObjects(*renderCamera, GameWorld, Screen);
+	drawObjects(renderCamera, GameWorld, Screen);
 
 	if (RenderSettings.drawHitboxes)
 	{
-		drawHitboxes(*renderCamera, GameWorld, Screen);
+		drawHitboxes(renderCamera, GameWorld, Screen);
 	}
 
 	return;
@@ -308,11 +308,14 @@ int Render(World *GameWorld, RenderFrame *ScreenData)
 		return MISSING_DATA;
 	}
 
+	GameWorld->MainCamera.zoomedWidth = GameWorld->MainCamera.width / GameWorld->MainCamera.zoomX;
+	GameWorld->MainCamera.zoomedHeight = GameWorld->MainCamera.height / GameWorld->MainCamera.zoomY;
+
 	// main camera
 	SDL_SetRenderDrawColor(ScreenData->Renderer, 0, 0, 0, 0xFF);
 	SDL_RenderClear(ScreenData->Renderer);
 
-	RenderEngine(&GameWorld->MainCamera, GameWorld, ScreenData->Renderer);
+	RenderEngine(GameWorld->MainCamera, GameWorld, ScreenData->Renderer);
 
     FPSCounter(GameWorld);
 
@@ -604,11 +607,14 @@ void renderCameraViews(Camera mainCam, World *GameWorld, SDL_Renderer *Screen, L
 
 		if (list[i].useMainCam)
 		{
-			RenderEngine(&mainCam, GameWorld, Screen);
+			RenderEngine(mainCam, GameWorld, Screen);
 		}
 		else
 		{
-			RenderEngine(&list[i].cam, GameWorld, Screen);
+			list[i].cam.zoomedWidth = list[i].cam.width / list[i].cam.zoomX;
+			list[i].cam.zoomedHeight = list[i].cam.height / list[i].cam.zoomY;
+
+			RenderEngine(list[i].cam, GameWorld, Screen);
 		}
 
 		SDL_SetRenderTarget(Screen, previousTarget);
@@ -997,7 +1003,6 @@ FuncResult CheckResourceData(void)
 		return MISSING_DATA;
 	}
 
-	// check save data
 
 	return LEMON_SUCCESS;
 }
@@ -2151,6 +2156,11 @@ void SetTextSettingsToDefault(void)
 	TextSettings.Typing = SDL_TextInputActive(ScreenData.Window);
 	TextSettings.userInputIndex = -1;
 	TextSettings.cursorXPos = 0.0;
+
+	if (TextSettings.Typing == false)
+	{
+		TextSettings.typingText = NULL;
+	}
 }
 
 void SetDebugSettingsToDefault(void)

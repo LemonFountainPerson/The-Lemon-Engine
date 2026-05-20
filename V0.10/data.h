@@ -1400,6 +1400,8 @@ typedef struct TextConfig
 	char userInputString[USER_INPUT_MAX_LEN];
 	int userInputIndex;
 	float cursorXPos;
+	float cursorYPos;
+	Text *typingText;
 } TextConfig;
 
 
