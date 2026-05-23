@@ -43,7 +43,9 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 
 	if (buttonPressed(MOUSE_LEFT))
 	{
-		if (MouseInput.xPos > DebugSettings.consoleXPos && MouseInput.xPos < DebugSettings.consoleXPos + consoleWidth && MouseInput.yPos > DebugSettings.consoleYPos && MouseInput.yPos < DebugSettings.consoleYPos + consoleHeight)
+		bool xOverlap = MouseInput.xPos > DebugSettings.consoleXPos && MouseInput.xPos < DebugSettings.consoleXPos + consoleWidth;
+		bool yOverlap = MouseInput.yPos > DebugSettings.consoleYPos && MouseInput.yPos < DebugSettings.consoleYPos + consoleHeight;
+		if (xOverlap && yOverlap)
 		{
 			DebugSettings.consoleFocus = true;
 		}
@@ -430,13 +432,13 @@ int ConsoleCommand_Restart(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 	printTextsinfo(&TextSettings.DebugTextList, "debugtexts:");
 
-	FontList *list = &TextSettings.FontList;
+	FontList *list = &GameWorld->FontList;
 
 		for (int i = 0; i < MAX_LOADED_FONTS; i++)
 		{
-			if (list->font[i] != NULL)
+			if (list->fonts[i] != NULL)
 			{
-				putConsoleString("Slot %d '%s'  ", i, list->name[i]);
+				putConsoleString("Slot %d '%s'  ", i, list->names[i]);
 			}
 			else
 			{
@@ -465,7 +467,7 @@ int ConsoleCommand_Fullscreen(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 		char flag[USER_INPUT_MAX_LEN] = {0};
 		parseArgumentFlag(input, flag);
 
-		if (strcmp(flag, "scaled") == 0)
+		if (strcmp(flag, "-scaled") == 0)
 		{
 			enableFullscreenScaled(GameWorld);
 		}
@@ -518,6 +520,7 @@ int ConsoleCommand_Vsync(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 int ConsoleCommand_Debug(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	DebugSettings.DebugTextDisplayMode = parseArgumentAsInt(input);
+	RemoveUnnamedTexts(&TextSettings.DebugTextList);
 
 	return LEMON_SUCCESS;
 }
@@ -959,13 +962,13 @@ int ConsoleCommand_List(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	else if (strcmp(arg, "fonts") == 0)
 	{
-		FontList *list = &TextSettings.FontList;
+		FontList *list = &GameWorld->FontList;
 
 		for (int i = 0; i < MAX_LOADED_FONTS; i++)
 		{
-			if (list->font[i] != NULL)
+			if (list->fonts[i] != NULL)
 			{
-				putConsoleString("Slot %d '%s'  ", i, list->name[i]);
+				putConsoleString("Slot %d '%s'  ", i, list->names[i]);
 			}
 			else
 			{

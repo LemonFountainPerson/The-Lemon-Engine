@@ -4,7 +4,7 @@ int HideHUD(ObjectController *ObjectList);
 
 int ShowHUD(ObjectController *ObjectList);
 
-void adjustHUD(int prevScreenWidth, int prevScreenHeight, RenderFrame *ScreenData, ObjectController *ObjectList);
+void adjustHUD(int prevScreenWidth, int prevScreenHeight, RenderFrame *ScreenData, World *GameWorld);
 
 
 UISubType convertEntryToUIType(char name[]);

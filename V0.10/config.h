@@ -12,6 +12,7 @@
 
 #define DEFAULT_TEXTURE "Missing.png"
 #define DEFAULT_FONT "PTSansBold"
+#define DEBUG_FONT "PTSansBold.ttf"
 
 #define MAX_OBJECTS_RENDER 256
 #define MAX_PARTICLES_RENDER 64

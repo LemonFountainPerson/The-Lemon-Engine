@@ -65,22 +65,76 @@ int ShowHUD(ObjectController *ObjectList)
 	return LEMON_SUCCESS;
 }
 
-void adjustHUD(int prevScreenWidth, int prevScreenHeight, RenderFrame *ScreenData, ObjectController *ObjectList)
+void adjustHUD(int prevScreenWidth, int prevScreenHeight, RenderFrame *ScreenData, World *GameWorld)
 {
+	return;
+	
 	if (prevScreenWidth == ScreenData->screenWidth && prevScreenHeight == ScreenData->screenHeight)
 	{
 		return;
 	}
+
+	if (prevScreenWidth < 1 || prevScreenHeight < 1 || GameWorld == NULL)
+	{
+		// just in case to avoid division by zero
+		return;
+	}
+
+	ObjectController *ObjectList = GameWorld->ObjectList;
+
+	float differenceValueX = (float)ScreenData->screenWidth / (float)prevScreenWidth;
+	float differenceValueY = (float)ScreenData->screenHeight / (float)prevScreenHeight;
+
+
 	
-	TTF_Font **list = TextSettings.FontList.font;
+	TTF_Font **fontList = GameWorld->FontList.fonts;
+	float oldSize = 0;
 
 	for (int i = 0; i < MAX_LOADED_FONTS; i++)
 	{
-		if (list[i] != NULL)
+		if (fontList[i] != NULL)
 		{
-			int newSize = 96;
-			TTF_SetFontSize(list[i], newSize);
+			oldSize = TTF_GetFontSize(fontList[i]);
+			TTF_SetFontSize(fontList[i], oldSize * differenceValueX);
 		}
+	}
+
+	Text *textList = GameWorld->TextList.texts;
+
+	for (int i = 0; i < MAX_TEXT_TEXTURES; i++)
+	{
+		if (textList[i].beingUsed)
+		{
+			textList[i].xPos *= differenceValueX;
+			textList[i].yPos *= differenceValueY;
+		}
+	}
+
+	TextSettings.defaultTextPointSize *= differenceValueX;
+
+
+	Object *current = ObjectList->firstObject;
+	PhysicsBox *box;
+
+	while(current != NULL)
+	{
+		if (getDisplayLayer(current) == HUD)
+		{
+			box = current->ObjectBox;
+			// adjust sizes
+
+			box->xSize = (int)((float)box->xSize * differenceValueX);
+			box->ySize = (int)((float)box->ySize * differenceValueY);
+			box->xPos *= differenceValueX;
+			box->yPos *= differenceValueY;
+
+			if (getRenderMode(current) == TILE)
+			{
+				current->ObjectDisplay->size *= differenceValueX;
+			}
+		}
+
+		current = current->nextObject;
 	}
 
 	return;

@@ -12,4 +12,4 @@ DrawHitboxes: false
 HitboxThickness: 4
 DefaultTextSize: 44.000000
 DefaultFont: "PTSansBold"
-ENDFILE
+ENDFILE	

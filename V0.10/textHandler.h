@@ -39,7 +39,7 @@ Text* addTextWithName(const char textPhrase[], const char name[], float xPos, fl
 
 Text* getTextWithName(const char name[], World *GameWorld);
 
-Text* addTextToList(TextList *list, const char textPhrase[], float xPos, float yPos, int wrapWidth, const char *desiredFont);
+Text* addTextToList(const char textPhrase[], float xPos, float yPos, int wrapWidth, const char *desiredFont, World *GameWorld);
 
 
 void updateText(Text *input, const char newPhrase[]);
@@ -81,16 +81,18 @@ Text* experimentalText(TextBox *input, World *GameWorld);
 
 void initialiseFontList(FontList *input);
 
-TTF_Font* loadFont(const char *desiredFont, const char *newName, TextList *texts);
+TTF_Font* loadFont(const char *desiredFont, const char *newName, World *GameWorld);
 
-TTF_Font* loadFontWithSize(const char *desiredFont, const char *newName, float pointSize, TextList *texts);
+TTF_Font* loadFontWithSize(const char *desiredFont, const char *newName, float pointSize, World *GameWorld);
 
-TTF_Font* getFont(const char *name);
+TTF_Font* getFont(const char *name, World *GameWorld);
 
-void setFontSize(const char *name, int size);
+void setFontSize(const char *name, int size, World *GameWorld);
 
 
 void cleanUpTexts(TextList *list);
+
+void cleanUpFonts(FontList *input);
 
 void cleanUpTextData(RenderFrame *ScreenData);
 

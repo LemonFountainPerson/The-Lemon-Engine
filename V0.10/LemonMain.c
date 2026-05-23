@@ -136,14 +136,20 @@ int StartUpLemonEngine(void)
 	}
 
     // initialise text data to ensure pointers are null
-    initialiseFontList(&TextSettings.FontList);
-    initialiseTextList(&TextSettings.DebugTextList);
-    createConsoleCommands(DebugSettings.commands);
-
     SetEngineSettingsToDefault();
 	SetRenderSettingsToDefault();
 	SetTextSettingsToDefault();
 	SetDebugSettingsToDefault();
+
+	 
+    char debugFontPath[MAX_LEN * 2] = {0};
+    strcpy(debugFontPath, FONT_ROOT);
+    strcat(debugFontPath, DEBUG_FONT);
+
+    TextSettings.DebugFont = TTF_OpenFont(debugFontPath, TextSettings.DebugTextPointSize);
+    initialiseTextList(&TextSettings.DebugTextList);
+    createConsoleCommands(DebugSettings.commands);
+
 
 	GamePadInput.gamepad = NULL;
     ClearInput();
@@ -164,6 +170,7 @@ int initialiseWorld(World *GameWorld)
 	ResetCamera(&GameWorld->MainCamera);
     initialiseCameraViews(GameWorld->views);
     initialiseTextList(&GameWorld->TextList);
+    initialiseFontList(&GameWorld->FontList);
 
 	GameWorld->GameState = EMPTY_GAME;
 	GameWorld->TextQueue = NULL;
@@ -194,6 +201,105 @@ int initialiseWorld(World *GameWorld)
 	putConsoleString("World Initialised!\n");
 
 	return LEMON_SUCCESS;
+}
+
+ObjectController* createObjectController(void)
+{
+	ObjectController *newController = calloc(1, sizeof(ObjectController));
+
+	if (newController == NULL)
+	{
+		putConsoleError("Error: Could not allocate space for Object Controller.\n\n");
+		return NULL;
+	}
+
+	newController->lastObject = NULL;
+	newController->firstObject = NULL;
+	initialiseSpriteSetList(&newController->spriteSets);
+	newController->cachedFirstObject = NULL;
+	newController->cachedLastObject = NULL;
+	newController->availableSlots = NULL;
+	newController->FrameUpdates = NULL;
+
+	initialiseComponents(newController);
+
+	putConsoleString("Initialising object slots...");
+	
+	ComponentData *newArena = &newController->objectComponents;
+
+	int i = EngineSettings.MaxObjects - 1;
+	Object *newObject = NULL;
+
+	while (i >= 0)
+	{
+		newObject = &newArena->Objects[i];
+		clearObjectData(newObject);
+
+		// This pointer nonsense is used to circumvent the const modifier; this should not be used elsewhere as these values should not change
+		// pointers to the objectbox, objectdisplay and index values of the object are cast to regular values without const, before being dereferenced to be assigned with new values
+		(*(PhysicsBox * *)&newObject->ObjectBox) = &newArena->PhysicsBoxes[i];
+		(*(DisplayData * *)&newObject->ObjectDisplay) = &newArena->Displays[i];
+		*((int *)&newObject->index) = i;
+
+		if (newController->availableSlots != NULL)
+		{
+			newController->availableSlots->prevObject = newObject;
+		}
+
+		newObject->nextObject = newController->availableSlots;
+		newController->availableSlots = newObject;
+		i--;
+	}
+
+
+	return newController;
+}
+
+
+void deleteObjectController(ObjectController *ObjectList)
+{
+	if (ObjectList == NULL)
+	{
+		return;
+	}
+
+	deleteAllObjects(ObjectList);
+	deleteAllCachedObjects(ObjectList);	
+
+	deleteAllSpriteSets(&ObjectList->spriteSets);
+
+	free(ObjectList);
+
+	// texts might be attached to objects
+	RemoveAllTexts(&TextSettings.DebugTextList);
+
+	return;
+}
+
+
+void destroyWorld(World *GameWorld)	// honestly picked this name because its funny
+{
+	if (GameWorld == NULL || GameWorld->ObjectList == NULL)
+	{
+		return;
+	}
+	
+	clearTextQueue(GameWorld);
+	deleteAllSceneActions(GameWorld);
+
+	deleteAllGameEvents(GameWorld);
+
+	removeAllCameraViews(GameWorld);
+	cleanUpTexts(&GameWorld->TextList);
+	cleanUpFonts(&GameWorld->FontList);
+
+	deleteObjectController(GameWorld->ObjectList);
+
+	deleteAllSpriteSets(&GameWorld->WorldBackground.bgSpriteSets);
+
+	GameWorld->GameState = EMPTY_GAME;
+
+	return;
 }
 
 
@@ -820,7 +926,7 @@ int FPSCounter(World *GameWorld)
 	        if (textRef == NULL)
 	        {
 	        	textRef = addText(buffer, 20 - (ScreenData.screenWidth >> 1), (ScreenData.screenHeight >> 1) - 40, GameWorld);
-	        	setFontSize("DefaultFont", 20.0);
+	        	setFontSize("DefaultFont", 20.0, GameWorld);
 	        }
 	        else
 	        {
@@ -866,105 +972,6 @@ int initialiseBackGround(BackgroundData *input)
 	
 	
 	return LEMON_SUCCESS;
-}
-
-
-ObjectController* createObjectController(void)
-{
-	ObjectController *newController = calloc(1, sizeof(ObjectController));
-
-	if (newController == NULL)
-	{
-		putConsoleError("Error: Could not allocate space for Object Controller.\n\n");
-		return NULL;
-	}
-
-	newController->lastObject = NULL;
-	newController->firstObject = NULL;
-	initialiseSpriteSetList(&newController->spriteSets);
-	newController->cachedFirstObject = NULL;
-	newController->cachedLastObject = NULL;
-	newController->availableSlots = NULL;
-	newController->FrameUpdates = NULL;
-
-	initialiseComponents(newController);
-
-	putConsoleString("Initialising object slots...");
-	
-	ComponentData *newArena = &newController->objectComponents;
-
-	int i = EngineSettings.MaxObjects - 1;
-	Object *newObject = NULL;
-
-	while (i >= 0)
-	{
-		newObject = &newArena->Objects[i];
-		clearObjectData(newObject);
-
-		// This pointer nonsense is used to circumvent the const modifier; this should not be used elsewhere as these values should not change
-		// pointers to the objectbox, objectdisplay and index values of the object are cast to regular values without const, before being dereferenced to be assigned with new values
-		(*(PhysicsBox * *)&newObject->ObjectBox) = &newArena->PhysicsBoxes[i];
-		(*(DisplayData * *)&newObject->ObjectDisplay) = &newArena->Displays[i];
-		*((int *)&newObject->index) = i;
-
-		if (newController->availableSlots != NULL)
-		{
-			newController->availableSlots->prevObject = newObject;
-		}
-
-		newObject->nextObject = newController->availableSlots;
-		newController->availableSlots = newObject;
-		i--;
-	}
-
-
-	return newController;
-}
-
-
-void deleteObjectController(ObjectController *ObjectList)
-{
-	if (ObjectList == NULL)
-	{
-		return;
-	}
-
-	deleteAllObjects(ObjectList);
-	deleteAllCachedObjects(ObjectList);	
-
-	deleteAllSpriteSets(&ObjectList->spriteSets);
-
-	free(ObjectList);
-
-	// texts might be attached to objects
-	RemoveAllTexts(&TextSettings.DebugTextList);
-
-	return;
-}
-
-
-void destroyWorld(World *GameWorld)	// honestly picked this name because its funny
-{
-	if (GameWorld == NULL || GameWorld->ObjectList == NULL)
-	{
-		return;
-	}
-	
-	clearTextQueue(GameWorld);
-	deleteAllSceneActions(GameWorld);
-
-	deleteAllGameEvents(GameWorld);
-
-	removeAllCameraViews(GameWorld);
-	cleanUpTexts(&GameWorld->TextList);
-
-	deleteObjectController(GameWorld->ObjectList);
-
-	deleteAllSpriteSets(&GameWorld->WorldBackground.bgSpriteSets);
-
-	GameWorld->GameState = EMPTY_GAME;
-
-	return;
 }
 
 
@@ -1802,6 +1809,7 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 	if (buttons['1'] == 1)
 	{
 		DebugSettings.DebugTextDisplayMode = (DebugSettings.DebugTextDisplayMode + 1) % DEBUG_TEXT_MODE_COUNT;
+		RemoveUnnamedTexts(&TextSettings.DebugTextList);
 		putConsoleString("\nToggling draw Debug Text: %d", DebugSettings.DebugTextDisplayMode);
 	}
 
@@ -2148,14 +2156,10 @@ void SetTextSettingsToDefault(void)
 	TextSettings.DebugTextColour.a = SDL_ALPHA_TRANSPARENT;
 	TextSettings.DebugTextPointSize = 18.0;
 
-	if (TextSettings.FontList.font[0] == NULL)
-	{
-		loadFontWithSize("PTSansBold.ttf", "DebugFont", TextSettings.DebugTextPointSize, NULL);
-	}
-
 	TextSettings.Typing = SDL_TextInputActive(ScreenData.Window);
 	TextSettings.userInputIndex = -1;
 	TextSettings.cursorXPos = 0.0;
+	TextSettings.cursorYPos = 0.0;
 
 	if (TextSettings.Typing == false)
 	{

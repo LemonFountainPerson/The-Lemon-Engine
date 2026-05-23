@@ -993,8 +993,8 @@ typedef struct TextList
 typedef struct FontList
 {
 	int head;
-	char name[MAX_LOADED_FONTS][FONT_FILE_NAME_MAX];
-	TTF_Font *font[MAX_LOADED_FONTS];
+	char names[MAX_LOADED_FONTS][FONT_FILE_NAME_MAX];
+	TTF_Font *fonts[MAX_LOADED_FONTS];
 } FontList;
 
 typedef struct TextBox 
@@ -1265,6 +1265,7 @@ typedef struct World
 	ObjectController *ObjectList;
 
 	TextList TextList;
+	FontList FontList;
 
 	int GamePaused;
 	int level;
@@ -1379,8 +1380,6 @@ typedef struct RenderConfig
 	Uint64 RenderDelta;
 
 	bool vSync;
-
-	RenderMode TierImageMode;
 } RenderConfig;
 
 
@@ -1390,10 +1389,9 @@ typedef struct TextConfig
 	float defaultTextPointSize;
 	char defaultFont[FONT_FILE_NAME_MAX];
 
-	FontList FontList;
-
 	SDL_Color DebugTextColour;
 	float DebugTextPointSize;
+	TTF_Font *DebugFont;
 	TextList DebugTextList;
 
 	bool Typing;

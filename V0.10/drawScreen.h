@@ -47,6 +47,3 @@ int RemoveDebugTextWithName(const char name[]);
 void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen);
 
 void RenderTextList(TextList *list, Camera inputCamera, SDL_Renderer *Screen);
-
-
-void setCursorPos(void);

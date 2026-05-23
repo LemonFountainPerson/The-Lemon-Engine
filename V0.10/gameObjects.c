@@ -777,22 +777,21 @@ bool setDisplayLayer(Object *input, Layer newLayer)
 
 RenderMode getRenderModeOverride(Object *input)
 {
-	DisplayData *display = getDisplay(input);
-	if (display == NULL)
+	if (input == NULL)
 	{
 		return UNDEFINED_RENDERMODE;
 	}
 
-	return display->RenderModeOverride;
+	return input->ObjectDisplay->RenderModeOverride;
 }
 
 RenderMode getRenderMode(Object *input)
 {
-	DisplayData *display = getDisplay(input);
-	if (display == NULL)
+	if (input == NULL)
 	{
 		return UNDEFINED_RENDERMODE;
 	}
+	DisplayData *display = input->ObjectDisplay;
 
 	if (display->spriteBuffer == NULL || display->RenderModeOverride != DEFAULT_TO_SPRITE)
 	{

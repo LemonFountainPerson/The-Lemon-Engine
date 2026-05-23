@@ -25,6 +25,8 @@ void updateTyping(SDL_Window *window, World *GameWorld);
 
 void inputTyping(const char input[]);
 
+void setCursorPos(void);
+
 
 int deleteAllGameEvents(World *GameWorld);
 
@@ -70,15 +72,15 @@ GameEvent* enableFullscreenScaled(World *GameWorld);
 GameEvent* disableFullscreen(World *GameWorld);
 
 
-int applyScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData);
+int applyScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData, World *GameWorld);
 
 int applyScreenSizeScale(int newWidth, int newHeight, Camera *inputCamera, RenderFrame *ScreenData);
 
-int applyEnableFullscreen(RenderFrame *ScreenData);
+int applyEnableFullscreen(RenderFrame *ScreenData, World *GameWorld);
 
 int applyEnableFullscreenScaled(RenderFrame *ScreenData, Camera *inputCamera);
 
-int applyDisableFullscreen(RenderFrame *ScreenData, Camera *inputCamera);
+int applyDisableFullscreen(RenderFrame *ScreenData, Camera *inputCamera, World *GameWorld);
 
 int validateScreenDimensions(RenderFrame *ScreenData);
 

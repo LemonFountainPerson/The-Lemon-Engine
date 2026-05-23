@@ -145,11 +145,7 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 
 		case EVENT_CHANGE_SCREEN_SIZE:
 			{	
-				int prevWidth = ScreenData->screenWidth;
-				int prevHeight = ScreenData->screenHeight;
-
-				applyScreenSize((int)EventData->vars[0], (int)EventData->vars[1], ScreenData);
-				adjustHUD(prevWidth, prevHeight, ScreenData, GameWorld->ObjectList);
+				applyScreenSize((int)EventData->vars[0], (int)EventData->vars[1], ScreenData, GameWorld);
 			} break;
 
 		case EVENT_CHANGE_SCREEN_SIZE_SCALE:
@@ -159,21 +155,12 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 
 		case EVENT_ENABLE_FULLSCREEN:
 			{
-				int prevWidth = ScreenData->screenWidth;
-				int prevHeight = ScreenData->screenHeight;
-
-				applyEnableFullscreen(ScreenData);
-
-				adjustHUD(prevWidth, prevHeight, ScreenData, GameWorld->ObjectList);
+				applyEnableFullscreen(ScreenData, GameWorld);
 			} break;
 
 		case EVENT_DISABLE_FULLSCREEN:
-			{			
-				int prevWidth = ScreenData->screenWidth;
-				int prevHeight = ScreenData->screenHeight;
-
-				applyDisableFullscreen(ScreenData, &GameWorld->MainCamera);
-				adjustHUD(prevWidth, prevHeight, ScreenData, GameWorld->ObjectList);
+			{	
+				applyDisableFullscreen(ScreenData, &GameWorld->MainCamera, GameWorld);
 			} break;
 
 		case EVENT_ENABLE_FULLSCREEN_SCALE:
@@ -339,6 +326,61 @@ void inputTyping(const char input[])
 	setCursorPos();
 
 	return;
+}
+
+void setCursorPos(void)
+{
+	if (TextSettings.userInputIndex < 1)
+	{
+		TextSettings.cursorXPos = 0.0;
+		return;
+	}
+
+	TTF_Font *font = NULL;
+
+
+	int width = 0;
+	int height = 0;
+	int wrapWidth = 0;
+
+	Text *typingText = TextSettings.typingText;
+
+	if (typingText == NULL)
+	{
+		font = TextSettings.DebugFont;
+	}
+	else
+	{
+		font = TTF_GetTextFont(typingText->text);
+
+		TTF_GetTextWrapWidth(typingText->text, &wrapWidth);
+	}
+	
+	if (font == NULL)
+	{
+		return;
+	}
+	
+	TTF_GetStringSizeWrapped(font, TextSettings.userInputString, TextSettings.userInputIndex, wrapWidth, &width, &height);
+
+	if (wrapWidth > 0)
+	{
+		int lineSkip = TTF_GetFontLineSkip(font);
+
+		TTF_SubString lastLine = {0};
+		TTF_GetTextSubStringForLine(typingText->text, (height / lineSkip) - 1, &lastLine);
+
+		TTF_GetStringSize(font, TextSettings.userInputString + lastLine.offset, TextSettings.userInputIndex - lastLine.offset, &width, &height);
+		TextSettings.cursorYPos = (float)(height - lineSkip);
+	}
+	else
+	{
+		TextSettings.cursorYPos = 0.0;
+	}
+
+	TextSettings.cursorXPos = (float)width;
+
+    return;
 }
 
 int deleteAllGameEvents(World *GameWorld)
@@ -738,7 +780,7 @@ GameEvent* disableFullscreen(World *GameWorld)
 }
 
 
-int applyScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData)
+int applyScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData, World *GameWorld)
 {
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 	{
@@ -755,9 +797,14 @@ int applyScreenSize(int newWidth, int newHeight, RenderFrame *ScreenData)
 		return INVALID_DATA;
 	}
 
+	int prevWidth = ScreenData->screenWidth;
+	int prevHeight = ScreenData->screenHeight;
+
 	SDL_SetWindowSize(ScreenData->Window, newWidth, newHeight);
     SDL_SyncWindow(ScreenData->Window);
 	SDL_GetWindowSize(ScreenData->Window, &ScreenData->screenWidth, &ScreenData->screenHeight);
+
+	adjustHUD(prevWidth, prevHeight, ScreenData, GameWorld);
 
 	return LEMON_SUCCESS;
 }
@@ -790,12 +837,11 @@ int applyScreenSizeScale(int newWidth, int newHeight, Camera *inputCamera, Rende
 	inputCamera->width = ScreenData->screenWidth * ScaleX;
 	inputCamera->height = ScreenData->screenHeight * ScaleY;
 
-
 	return LEMON_SUCCESS;
 }
 
 
-int applyEnableFullscreen(RenderFrame *ScreenData)
+int applyEnableFullscreen(RenderFrame *ScreenData, World *GameWorld)
 {
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 	{
@@ -806,6 +852,11 @@ int applyEnableFullscreen(RenderFrame *ScreenData)
 	{
 		return ACTION_DISABLED;
 	}
+
+
+	int prevWidth = ScreenData->screenWidth;
+	int prevHeight = ScreenData->screenHeight;
+
 	SDL_SetWindowFullscreen(ScreenData->Window, true);
 	SDL_SyncWindow(ScreenData->Window);
 
@@ -813,6 +864,9 @@ int applyEnableFullscreen(RenderFrame *ScreenData)
 
 	ScreenData->Fullscreen = true;
 	ScreenData->Scaled = false;
+
+	adjustHUD(prevWidth, prevHeight, ScreenData, GameWorld);
+
 
 	return LEMON_SUCCESS;
 }
@@ -831,7 +885,6 @@ int applyEnableFullscreenScaled(RenderFrame *ScreenData, Camera *inputCamera)
 
 	validateScreenDimensions(ScreenData);
 
-
 	float ScaleX = ((float)inputCamera->width/(float)ScreenData->screenWidth);
 	float ScaleY = ((float)inputCamera->height/(float)ScreenData->screenHeight);
 
@@ -849,7 +902,7 @@ int applyEnableFullscreenScaled(RenderFrame *ScreenData, Camera *inputCamera)
 }
 
 
-int applyDisableFullscreen(RenderFrame *ScreenData, Camera *inputCamera)
+int applyDisableFullscreen(RenderFrame *ScreenData, Camera *inputCamera, World *GameWorld)
 {
 	if (ScreenData == NULL || ScreenData->Window == NULL || ScreenData->Renderer == NULL)
 	{
@@ -858,6 +911,8 @@ int applyDisableFullscreen(RenderFrame *ScreenData, Camera *inputCamera)
 
 	float ScaleX = 1.0;
 	float ScaleY = 1.0;
+	int prevWidth = ScreenData->screenWidth;
+	int prevHeight = ScreenData->screenHeight;
 
 	if (ScreenData->Scaled)
 	{
@@ -873,6 +928,10 @@ int applyDisableFullscreen(RenderFrame *ScreenData, Camera *inputCamera)
 	{
 		inputCamera->width = ScreenData->screenWidth * ScaleX;
 		inputCamera->height = ScreenData->screenHeight * ScaleY;
+	}
+	else
+	{
+		adjustHUD(prevWidth, prevHeight, ScreenData, GameWorld);
 	}
 
 	ScreenData->Fullscreen = false;
