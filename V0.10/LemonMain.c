@@ -387,6 +387,8 @@ int GameFrame(World *GameWorld)
 
 void RenderEngine(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 {
+	renderCamera.zoomedWidth = renderCamera.width / renderCamera.zoomX;
+	renderCamera.zoomedHeight = renderCamera.height / renderCamera.zoomY;
 	renderCamera.CameraX += (float)((renderCamera.width - renderCamera.zoomedWidth) >> 1);
 	renderCamera.CameraY += (float)((renderCamera.zoomedHeight - renderCamera.height) >> 1);
 	
@@ -413,10 +415,7 @@ int Render(World *GameWorld, RenderFrame *ScreenData)
 	{
 		return MISSING_DATA;
 	}
-
-	GameWorld->MainCamera.zoomedWidth = GameWorld->MainCamera.width / GameWorld->MainCamera.zoomX;
-	GameWorld->MainCamera.zoomedHeight = GameWorld->MainCamera.height / GameWorld->MainCamera.zoomY;
-
+	
 	// main camera
 	SDL_SetRenderDrawColor(ScreenData->Renderer, 0, 0, 0, 0xFF);
 	SDL_RenderClear(ScreenData->Renderer);
@@ -717,9 +716,6 @@ void renderCameraViews(Camera mainCam, World *GameWorld, SDL_Renderer *Screen, L
 		}
 		else
 		{
-			list[i].cam.zoomedWidth = list[i].cam.width / list[i].cam.zoomX;
-			list[i].cam.zoomedHeight = list[i].cam.height / list[i].cam.zoomY;
-
 			RenderEngine(list[i].cam, GameWorld, Screen);
 		}
 

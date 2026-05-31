@@ -1324,7 +1324,7 @@ Text* addDebugText(const char inputPhrase[], float x, float y, int wrapwidth, De
 
 	int index = 0;
 	while (index < MAX_TEXT_TEXTURES && TextsArray[index].beingUsed)
-	{
+	{  
 		index++;
 	}
 
@@ -1446,6 +1446,8 @@ int RemoveDebugTextWithName(const char name[])
 
 void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 {
+	renderCamera.zoomedWidth = renderCamera.width / renderCamera.zoomX;
+	renderCamera.zoomedHeight = renderCamera.height / renderCamera.zoomY;
 	renderCamera.CameraX += (float)((renderCamera.width - renderCamera.zoomedWidth) >> 1);
 	renderCamera.CameraY += (float)((renderCamera.zoomedHeight - renderCamera.height) >> 1);
 	
