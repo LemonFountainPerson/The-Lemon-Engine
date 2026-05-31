@@ -15,24 +15,17 @@ Everything is subject to change.
 
 **Core design methodology**
 
-This is not yet 100% uniform across the entire codebase, but in general:
+This is not 100% uniform across the entire codebase, but in general:
 
 -> Functions starting with a lowercase letter are intended to operate a core function for the engine and should not be changed unless the core functionality of 
 the engine needs to be changed. Conversely, functions that start with a capital letter are intended to be modified or added to in order to facilitate your game.
 
 -> The FunctionResult enum defines a few simple exit conditions for functions to take - these can be used to clarify why a function is returning, primarily for 
-debugging purposes. For compatibility, 0 is still success (LEMON_SUCCESS) and -1 is generally error (LEMON_ERROR).
+debugging purposes. For compatibility, 0 is still success (LEMON_SUCCESS) and -1 is a general error (LEMON_ERROR). Most functions will use these enums as their 
+return value.
 
--> The playerController is intended to be able to be swapped out for a custom one, and should only require a PhysicsRect structure to be added in order to keep 
-it compatible with other engine functions. Objects however, are not. All functions that use objects will assume it contains the variables that the engine defaults
-with. While data may be added to objects for custom function, no variable should be removed. Any added variable should be initialised in the createNewObject 
-function.
-
--> Some functions will purposely abstract its process or take a more roundabout algorithm in order to facilitate eligability: the only exception to this are 
-extremely perfomance-sensitive functions such as those used in rendering sprites.
-
--> Any enums which define data categories that are expected to be expanded/added for a game will contain an additional UNDEFINED_XXX value to denote where the 
-defined data ends. This means when checking for out of bounds data (at least in the > 0 direction) you may simply ensure [data] < UNDEFINED_DATA.
+-> The playerController can have its functionality completely swapped out or removed. If you are planning to have multiple physics formats in your game (for 
+example, switching between top-down and platforming), you should include multiple controllers than can be switched dependent on the state of the game.
 
 
 
@@ -40,6 +33,10 @@ defined data ends. This means when checking for out of bounds data (at least in 
 
 The core asset in the Lemon Engine are objects; these represent almost everything in the gameworld such as the player, visible elements, geometry, etc. 
 Objects consist of three main parts: 
+
+The main Object struct is the most important element of an object, and it represents all logical attributes of an object. Objects are organised by IDs, 
+with each ID uniquely defining behaviour. (E.g representing what the object is, enemy, collectable, interactable sign, etc.)
+
 ```
 typedef struct Object
 {
@@ -57,8 +54,14 @@ typedef struct Object
 } Object;
 ```
 
-The main Object struct is the most important element of an object, and it represents all logical attributes of an object. Objects are organised with IDs, with each 
-ID uniquely defining behaviour. 
+PhysicsBoxes represent the shape and collision state of an object. It controls how it will collide with other objects (if it should) as well as its
+current position, direction and velocities. The current position (xPos, yPos) is stored alongside the previous position (prevXPos, prevYPos) from 1 GameTick ago.
+'XVelocity' and 'YVelocity' are self-explanitory, but 'forwardVelocity' defines a separate velocity that is used to move the object along its pointed direction. Using
+this is optional.
+'PhysicsXVelocity' and 'PhysicsYVelocity' are used by the built-in physics to control momentum given by a moving platform, and do not need to be modified directly.
+Likewise, 'inAir' and 'GroundBox' are also paramters used to controlphysics; inair is set to 0 when on the ground, and is incremented once per tick while the object 
+is in the air, up to 100. 
+The 'shape' variable defines what shape the hitbox is, while the 'solid' variable describes its behaviour.
 
 ```
 typedef struct PhysicsBox
@@ -81,8 +84,7 @@ typedef struct PhysicsBox
 	struct PhysicsBox *GroundBox;
 
 	SolidType solid;
-	SolidFlag flag;
-	CollideType collideMode;
+	SolidShape shape;
 	Layer collideLayer;
 
 	double direction;

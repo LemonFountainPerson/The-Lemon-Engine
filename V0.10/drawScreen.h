@@ -41,7 +41,7 @@ Text* addDebugTextWithName(const char textPhrase[], const char name[], float xPo
 
 Text* getDebugTextWithName(const char name[]);
 
-int RemoveDebugTextWithName(const char name[]);
+int removeDebugTextWithName(const char name[]);
 
 
 void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen);

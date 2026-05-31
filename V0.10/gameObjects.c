@@ -124,7 +124,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 	//Angle: Y = (X * ySize/xSize)
 	//Angle: X = (Y / (ySize/xSize))
 		snapPositionToTileGrid(newObject, xPos, yPos);
-		newObject->ObjectBox->solid = FLAT_SLOPE;
+		newObject->ObjectBox->shape = FLAT_SLOPE;
 		newObject->State = STATIC_STATE;
 		newObject->ObjectBox->xSize = arg1;
 		newObject->ObjectBox->ySize = arg2;
@@ -679,6 +679,7 @@ int resetPhysicsBox(PhysicsBox *input)
 	input->yFlip = 1;
 	input->direction = DEFAULT_DIRECTION;
 
+	input->shape = RECTANGLE;
 	input->solid = SOLID;
 	input->flag = DEFAULT_SOLIDFLAG;
 	input->collideLayer = MIDDLEGROUND;
@@ -1525,6 +1526,24 @@ const char* getObjectStateName(ObjectState input)
 	}
 }
 
+const char* getSolidShapeName(SolidShape input)
+{
+	switch(input)
+	{
+	case RECTANGLE:
+		return "Rectangle";
+
+	case FLAT_SLOPE:
+		return "Flat Slope";
+
+	case CIRCLE:
+		return "Circle";
+
+	default:
+		return "Undefined";
+	}
+}
+
 const char* getSolidTypeName(SolidType input)
 {
 	switch(input)
@@ -1538,17 +1557,11 @@ const char* getSolidTypeName(SolidType input)
 	case BODY:
 		return "Body";
 
-	case FLAT_SLOPE:
-		return "Flat Slope";
-
 	case JUMP_THROUGH:
 		return "Jump-Through Solid";
 
 	case PUSHABLE_SOLID:
 		return "Pushable Solid";
-
-	case CIRCLE:
-		return "Solid Circle";
 
 	default:
 		return "Undefined";
@@ -2137,6 +2150,10 @@ int applyMagnetisation(PhysicsBox *inputBox, PhysicsBox *GroundBox, World *GameW
 	{	
 		inputBox->PhysicsXVelocity = xChange;
 	}
+	else
+	{
+		inputBox->PhysicsXVelocity *= 0.8;
+	}
 
 	inputBox->xPos = prevX;
 	inputBox->yPos -= yChange;
@@ -2144,6 +2161,10 @@ int applyMagnetisation(PhysicsBox *inputBox, PhysicsBox *GroundBox, World *GameW
 	if (!CheckBoxCollidesBox(inputBox, GroundBox))
 	{	
 		inputBox->PhysicsYVelocity = yChange;
+	}
+	else
+	{
+		inputBox->PhysicsYVelocity *= 0.8;
 	}
 
 	inputBox->yPos = prevY;
@@ -2777,7 +2798,8 @@ bool isHurt(Object *input)
 BulletComponent* addBulletComponent(Object *input, Object *owner, int damage, ParticleSubType particleType)
 {
 	centerOnObject(input, owner);
-	input->ObjectBox->solid = CIRCLE;
+	input->ObjectBox->shape = CIRCLE;
+	input->ObjectBox->solid = SOLID;
 	input->ObjectBox->flag = GET_IGNORED;
 
 	BulletComponent *newBullet = addComponentType(input, BulletComponent);
@@ -4846,20 +4868,20 @@ bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 		return false;
 	}
 
-	if (compareBox->solid == CIRCLE)
+	if (compareBox->shape == CIRCLE)
 	{
 		PhysicsBox *temp = inputBox;
 		inputBox = compareBox;
 		compareBox = temp;
 	}
 
-	if (inputBox->solid == CIRCLE)
+	if (inputBox->shape == CIRCLE)
 	{
-		if (compareBox->solid == CIRCLE)
+		if (compareBox->shape == CIRCLE)
 		{
 			return OverlapComparison_CircleCircle(inputBox, compareBox);
 		}
-		else if (compareBox->solid == FLAT_SLOPE)
+		else if (compareBox->shape == FLAT_SLOPE)
 		{
 			return OverlapComparison_SlopeCircle(compareBox, inputBox);
 		}
@@ -4880,7 +4902,7 @@ bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 	int compareY = compareBox->yPos;
 	int compareYTop = compareBox->yPos + compareBox->ySize;
 
-	if (inputBox->solid == FLAT_SLOPE)
+	if (inputBox->shape == FLAT_SLOPE)
 	{
 		if (inputBox->xFlip == 1)
 		{
@@ -4902,7 +4924,7 @@ bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 		inputYTop += inputBox->yPos;
 	} 
 
-	if (compareBox->solid == FLAT_SLOPE)
+	if (compareBox->shape == FLAT_SLOPE)
 	{
 		if (compareBox->xFlip == 1)
 		{
@@ -5060,7 +5082,7 @@ int AssignDirection(PhysicsBox *inputBox, PhysicsBox *compareBox)
 	}
 
 	
-	switch (compareBox->solid)
+	switch (compareBox->shape)
 	{
 		case FLAT_SLOPE:
 		{
@@ -5763,28 +5785,38 @@ int ResolveXCollision(PhysicsBox *movingBox, PhysicsBox *compareBox, ObjectContr
 
 	int prevXPosInt = movingBox->prevXPos;
 
-	if (movingBox->solid == CIRCLE)
-	{
-		if (compareBox->solid == CIRCLE)
-		{
-			float radius = (float)(movingBox->ySize >> 1);
-			float compareRadius = (float)(compareBox->ySize >> 1);
-
-			float prevDistX = (movingBox->prevXPos + (movingBox->xSize >> 1)) - (compareBox->xPos + (compareBox->xSize >> 1));
-			float prevDistY = (movingBox->prevYPos + (movingBox->ySize >> 1)) - (compareBox->yPos + (compareBox->ySize >> 1));
-			float direction = atan2(prevDistX, prevDistY);
-
-			movingBox->xPos = compareBox->xPos + ((radius + compareRadius) * sin(direction));
-			movingBox->yPos = compareBox->yPos + ((radius + compareRadius) * cos(direction));
-
-			ApplyXPhysics(movingBox, compareBox);
-
-			return LEMON_SUCCESS;
-		}
-	}
-
 	switch(compareBox->solid)
 	{
+		case JUMP_THROUGH:
+		case UNSOLID:
+			return EXECUTION_UNNECESSARY;
+
+		default:
+			break;
+	}
+
+	switch(compareBox->shape)
+	{
+		case CIRCLE:
+		{
+			if (movingBox->shape == CIRCLE)
+			{
+				float radius = (float)(movingBox->ySize >> 1);
+				float compareRadius = (float)(compareBox->ySize >> 1);
+
+				float prevDistX = (movingBox->prevXPos + (movingBox->xSize >> 1)) - (compareBox->xPos + (compareBox->xSize >> 1));
+				float prevDistY = (movingBox->prevYPos + (movingBox->ySize >> 1)) - (compareBox->yPos + (compareBox->ySize >> 1));
+				float direction = atan2(prevDistX, prevDistY);
+
+				movingBox->xPos = compareBox->xPos + ((radius + compareRadius) * sin(direction));
+				movingBox->yPos = compareBox->yPos + ((radius + compareRadius) * cos(direction));
+
+				ApplyXPhysics(movingBox, compareBox);
+
+				return LEMON_SUCCESS;
+			}
+		} break;
+
 		// Y = X * (ySize/xSize)
 		case FLAT_SLOPE:
 		{
@@ -5834,12 +5866,6 @@ int ResolveXCollision(PhysicsBox *movingBox, PhysicsBox *compareBox, ObjectContr
 				ClimbSlope(movingBox, ObjectList);
 			}
 		} break;
-
-
-		case JUMP_THROUGH:
-		case UNSOLID:
-			break;
-
 
 		default:
 		{
@@ -5946,28 +5972,48 @@ int ResolveYCollision(PhysicsBox *movingBox, PhysicsBox *compareBox)
 
 	int prevYPosInt = movingBox->prevYPos;
 
-	if (movingBox->solid == CIRCLE)
-	{
-		if (compareBox->solid == CIRCLE)
-		{
-			float radius = (float)(movingBox->ySize >> 1);
-			float compareRadius = (float)(compareBox->ySize >> 1);
-
-			float prevDistX = (movingBox->prevXPos + (movingBox->xSize >> 1)) - (compareBox->xPos + (compareBox->xSize >> 1));
-			float prevDistY = (movingBox->prevYPos + (movingBox->ySize >> 1)) - (compareBox->yPos + (compareBox->ySize >> 1));
-			float direction = atan2(prevDistX, prevDistY);
-
-			movingBox->xPos = compareBox->xPos + ((radius + compareRadius) * sin(direction));
-			movingBox->yPos = compareBox->yPos + ((radius + compareRadius) * cos(direction));
-
-			ApplyYPhysics(movingBox, compareBox);
-
-			return LEMON_SUCCESS;
-		}
-	}
-
 	switch(compareBox->solid)
 	{
+		case JUMP_THROUGH:
+		{
+			if (movingBox->yVelocity < compareBox->yVelocity + 0.001 && movingBox->crouch == false)
+			{
+				movingBox->yPos = compareBox->yPos + compareBox->ySize;
+			}
+
+		} break;
+
+		case UNSOLID:
+			return EXECUTION_UNNECESSARY;
+
+		default:
+			break;
+	}
+
+
+	switch(compareBox->shape)
+	{
+		case CIRCLE:
+		{
+			if (movingBox->shape == CIRCLE)
+			{
+				float radius = (float)(movingBox->ySize >> 1);
+				float compareRadius = (float)(compareBox->ySize >> 1);
+
+				float prevDistX = (movingBox->prevXPos + (movingBox->xSize >> 1)) - (compareBox->xPos + (compareBox->xSize >> 1));
+				float prevDistY = (movingBox->prevYPos + (movingBox->ySize >> 1)) - (compareBox->yPos + (compareBox->ySize >> 1));
+				float direction = atan2(prevDistX, prevDistY);
+
+				movingBox->xPos = compareBox->xPos + ((radius + compareRadius) * sin(direction));
+				movingBox->yPos = compareBox->yPos + ((radius + compareRadius) * cos(direction));
+
+				ApplyYPhysics(movingBox, compareBox);
+
+				return LEMON_SUCCESS;
+			}
+		} break;
+
+
 		case FLAT_SLOPE:
 		{
 			if (compareBox->yFlip == 1 && prevYPosInt + movingBox->ySize < compareBox->yPos)
@@ -6005,25 +6051,6 @@ int ResolveYCollision(PhysicsBox *movingBox, PhysicsBox *compareBox)
 
 			movingBox->yPos = slopeFloor + compareBox->yPos; 		
 		} break;
-
-		case CIRCLE:
-		{
-			
-		} break;
-
-		case JUMP_THROUGH:
-		{
-			if (movingBox->yVelocity < compareBox->yVelocity + 0.001 && movingBox->crouch == false)
-			{
-				movingBox->yPos = compareBox->yPos + compareBox->ySize;
-			}
-
-		} break;
-
-
-		case UNSOLID:
-			break;
-
 
 		default:
 		{

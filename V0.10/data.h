@@ -304,15 +304,24 @@ typedef enum ParentType
 } ParentType;
 
 
+typedef enum SolidShape
+{
+	RECTANGLE,
+	CIRCLE = 2,
+	FLAT_SLOPE = 3,
+	UNDEFINED_SHAPE
+} SolidShape;
+
+const char* getSolidShapeName(SolidShape input);
+
+
 typedef enum SolidType 
 {
 	UNSOLID = 0,
-	SOLID = 1,
-	CIRCLE = 2,
-	FLAT_SLOPE = 3,
-	JUMP_THROUGH = 4,
-	BODY = 5,
-	PUSHABLE_SOLID = 6,
+	SOLID,
+	JUMP_THROUGH,
+	BODY,
+	PUSHABLE_SOLID,
 	UNDEFINED_SOLID
 } SolidType;
 
@@ -654,6 +663,7 @@ typedef struct PhysicsBox
 	float PhysicsYVelocity;
 	struct PhysicsBox *GroundBox;
 
+	SolidShape shape;
 	SolidType solid;
 	SolidFlag flag;
 	Layer collideLayer;
@@ -671,18 +681,19 @@ typedef struct Object
 	int ObjectID;
 	ObjectState State;
 	CurrentAction Action;
-	ReservedFlags reserved;
-	int instanceNumber;
 
 	struct Object *Parent;
 	ParentType ParentLink;
 
-	const int index;
 	PhysicsBox * const ObjectBox;
 	DisplayData * const ObjectDisplay;
 
 	struct Object *nextObject;
 	struct Object *prevObject;	
+
+	ReservedFlags reserved;
+	int instanceNumber;
+	const int index;
 
 	// Multi-purpose args
 	int arg1;

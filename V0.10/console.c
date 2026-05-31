@@ -28,8 +28,8 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 		DebugSettings.consoleOpen = false;
 		stopTyping(window);
 
-		RemoveDebugTextWithName("ConsoleHistory");
-		RemoveDebugTextWithName("ConsoleUserInput");
+		removeDebugTextWithName("ConsoleHistory");
+		removeDebugTextWithName("ConsoleUserInput");
 
 		return;
 	}

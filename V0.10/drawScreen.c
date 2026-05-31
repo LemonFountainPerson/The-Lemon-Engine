@@ -357,7 +357,7 @@ int renderHitbox(Camera inputCamera, PhysicsBox *inputBox, SDL_Renderer *Screen)
 	float xCoord = (inputCamera.width >> 1) + inputBox->xPos - inputCamera.CameraX;
 	float yCoord = inputCamera.CameraY + (inputCamera.height >> 1) - inputBox->yPos - inputBox->ySize;
 
-	if (inputBox->solid == CIRCLE)
+	if (inputBox->shape == CIRCLE)
 	{
 		int radius = inputBox->ySize >> 1;
 		xCoord += (inputBox->xSize >> 1);
@@ -400,7 +400,7 @@ int renderHitbox(Camera inputCamera, PhysicsBox *inputBox, SDL_Renderer *Screen)
 	SDL_RenderFillRect(Screen, &Hitbox);
 
 	// SDL why do you make it so difficult to draw thick lines )':
-	if (inputBox->solid == FLAT_SLOPE)
+	if (inputBox->shape == FLAT_SLOPE)
 	{
 		float xCoord2 = xCoord + (float)inputBox->xSize;
 		float yCoord2 = yCoord + (float)inputBox->ySize;
@@ -1104,8 +1104,9 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 
 	case 4:
 		snprintf(text, DEBUG_TEXT_MAX_LENGTH, 
-			"SolidType: %d (%s) \nSolidFlag: %d (%s) \nCollision Layer: %d \nObject List position: %d \nIndex: %d", 
-			inputBox->solid, getSolidTypeName(inputBox->solid), inputBox->flag, getSolidFlagName(inputBox->flag), inputBox->collideLayer, objectNumber, input->index);
+			"SolidShape: %d (%s) \nSolidType: %d (%s) \nSolidFlag: %d (%s) \nCollision Layer: %d", 
+			inputBox->shape, getSolidShapeName(inputBox->shape), inputBox->solid, getSolidTypeName(inputBox->solid), inputBox->flag, 
+			getSolidFlagName(inputBox->flag), inputBox->collideLayer);
 		break;
 
 	case 5:
@@ -1255,8 +1256,9 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 
 	case 12:
 		snprintf(text, DEBUG_TEXT_MAX_LENGTH, 
-			"Object State: %d (%s) \nCurrent Action: %d \nDisplayLayer: %d (%s)", 
-			input->State, getObjectStateName(input->State), input->Action, getDisplayLayer(input), getLayerName(getDisplayLayer(input)));
+			"Object State: %d (%s) \nCurrent Action: %d \nDisplayLayer: %d (%s) \nObject List Position: %d \nIndex: %d", 
+			input->State, getObjectStateName(input->State), input->Action, getDisplayLayer(input), 
+			getLayerName(getDisplayLayer(input)), objectNumber, input->index);
 		break;
 
 
@@ -1286,8 +1288,8 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 		break;
 
 	default:
-		snprintf(text, DEBUG_TEXT_MAX_LENGTH, "ObjectID: %d (%s) \nObjectName: %s \nXPos: %.2f \nYPos: %.2f", 
-			input->ObjectID, getObjectIDName(input->ObjectID), input->name, inputBox->xPos, inputBox->yPos);	
+		snprintf(text, DEBUG_TEXT_MAX_LENGTH, "ObjectID: %d (%s) \nObjectName: %s \nXPos: %.2f \nYPos: %.2f \nIndex: %d", 
+			input->ObjectID, getObjectIDName(input->ObjectID), input->name, inputBox->xPos, inputBox->yPos, input->index);	
 		break;
 	}
 	
@@ -1423,7 +1425,7 @@ Text* getDebugTextWithName(const char name[])
 	return NULL;
 }
 
-int RemoveDebugTextWithName(const char name[])
+int removeDebugTextWithName(const char name[])
 {
 	Text *input = getDebugTextWithName(name);
 	if (input == NULL)
