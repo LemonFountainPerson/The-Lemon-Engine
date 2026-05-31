@@ -1343,13 +1343,15 @@ int loadConditionalStatement(World *GameWorld, FILE *fPtr)
 void getNextArgIfExpression(char dest[3], FILE *fPtr)
 {
 	memset(dest, 0, 3 * sizeof(char));
-	while (dest[0] < 33 && !feof(fPtr))
+	int readData = fread(dest, sizeof(char), 1, fPtr);
+
+	while (dest[0] < 33 && !feof(fPtr) && readData < 1)
 	{
-		fread(dest, sizeof(char), 1, fPtr);
+		readData = fread(dest, sizeof(char), 1, fPtr);
 	}
 
-	fread(dest + 1, sizeof(char), 1, fPtr);
-	if (dest[1] < 33)
+	readData = fread(dest + 1, sizeof(char), 1, fPtr);
+	if (dest[1] < 33 || readData < 1)
 	{
 		dest[1] = '\0';
 		fseek(fPtr, -1, SEEK_CUR);

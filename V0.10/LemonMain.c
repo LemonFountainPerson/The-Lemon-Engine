@@ -405,6 +405,10 @@ void RenderEngine(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 		drawHitboxes(renderCamera, GameWorld, Screen);
 	}
 
+	FPSCounter(GameWorld);
+
+	renderTexts(renderCamera, GameWorld, Screen);
+
 	return;
 }
 
@@ -421,10 +425,6 @@ int Render(World *GameWorld, RenderFrame *ScreenData)
 	SDL_RenderClear(ScreenData->Renderer);
 
 	RenderEngine(GameWorld->MainCamera, GameWorld, ScreenData->Renderer);
-
-    FPSCounter(GameWorld);
-
-	renderTexts(GameWorld->MainCamera, GameWorld, ScreenData->Renderer);
 	
 	SDL_RenderPresent(ScreenData->Renderer);
 
@@ -1400,12 +1400,12 @@ void updateMousePos()
 // Get mouse position corrected for camera position and zoom (HUD layer is immune to this already, so this is only for other layers)
 float getMouseXCam(Camera inputCamera)
 {
-	return (MouseInput.xPos * (float)inputCamera.zoomedWidth/(float)ScreenData.screenWidth) + inputCamera.CameraX;
+	return ((MouseInput.xPos * (float)inputCamera.width) / (inputCamera.zoomX * (float)ScreenData.screenWidth)) + inputCamera.CameraX;
 }
 
 float getMouseYCam(Camera inputCamera)
 {
-	return (MouseInput.yPos * (float)inputCamera.zoomedHeight/(float)ScreenData.screenHeight) + inputCamera.CameraY;
+	return ((MouseInput.yPos * (float)inputCamera.height) / (inputCamera.zoomY * (float)ScreenData.screenHeight)) + inputCamera.CameraY;
 }
 
 

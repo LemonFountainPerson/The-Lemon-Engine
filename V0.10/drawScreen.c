@@ -1446,12 +1446,6 @@ int RemoveDebugTextWithName(const char name[])
 
 void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 {
-	renderCamera.zoomedWidth = renderCamera.width / renderCamera.zoomX;
-	renderCamera.zoomedHeight = renderCamera.height / renderCamera.zoomY;
-	renderCamera.CameraX += (float)((renderCamera.width - renderCamera.zoomedWidth) >> 1);
-	renderCamera.CameraY += (float)((renderCamera.zoomedHeight - renderCamera.height) >> 1);
-	
-
 	SDL_SetRenderScale(Screen, 1.0, 1.0);
 	SDL_SetRenderLogicalPresentation(Screen, ScreenData.screenWidth, ScreenData.screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
 
