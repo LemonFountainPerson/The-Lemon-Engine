@@ -2372,11 +2372,11 @@ void stringToLower(char input[])
 	return;
 }
 
-void LemonStrncpy(char dest[], const char source[], int capacity)	// safer version of strncpy; always guarantees that string is null-terminated
+int LemonStrncpy(char dest[], const char source[], int capacity)	// safer version of strncpy; always guarantees that string is null-terminated
 {
 	if (capacity < 2)
 	{
-		return;
+		return 0;
 	}
 
 	int i = 0;
@@ -2388,7 +2388,7 @@ void LemonStrncpy(char dest[], const char source[], int capacity)	// safer versi
 
 	dest[i] = '\0';
 
-	return;
+	return i;
 }
 
 void removeChar(char string[], char remove, int capacity)

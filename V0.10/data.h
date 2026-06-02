@@ -937,10 +937,16 @@ GameEventID getEventID(const char input[]);
 #define GAME_EVENT_VAR_COUNT 4
 typedef struct GameEventData
 {
-	float vars[GAME_EVENT_VAR_COUNT];
+	float vars[GAME_EVENT_VAR_COUNT];		
 	char string[MAX_LEN];
 	Object *objReference;
 } GameEventData;
+
+// possible chat message format:  
+// vars[0]: PlayerID, vars[1]: long message boolean, vars[2]: length of string if msg is long  
+// if msg is long, text is added via dedicated struct? 
+// string: msg text if msg is short
+// short msg < 80 chars, long msg >= 80 chars
 
 typedef struct GameEvent
 {

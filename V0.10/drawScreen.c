@@ -1357,6 +1357,13 @@ Text* addDebugText(const char inputPhrase[], float x, float y, int wrapwidth, De
     {
     	TextsArray[index].yPos = 50.0 - (y * 20.0);
     }
+    else if (format == DTFORMAT_JUSTIFY_TOP)
+    {
+    	int height = 0;
+	    TTF_GetTextSize(TextsArray[index].text, NULL, &height);
+
+	    TextsArray[index].yPos = y + (float)height;
+    }
     else
     {
     	TextsArray[index].yPos = y;
@@ -1369,13 +1376,6 @@ Text* addDebugText(const char inputPhrase[], float x, float y, int wrapwidth, De
     TextsArray[index].attachedObj = NULL;
     memset(TextsArray[index].name, 0, TEXT_NAME_MAX_LEN);
 
-    if (format == DTFORMAT_JUSTIFY_TOP)
-    {
-    	int height = 0;
-	    TTF_GetTextSize(TextsArray[index].text, NULL, &height);
-
-	    TextsArray[index].yPos += (float)height;
-    }
     
 	return &TextsArray[index];
 }
@@ -1383,6 +1383,7 @@ Text* addDebugText(const char inputPhrase[], float x, float y, int wrapwidth, De
 Text* addDebugTextWithName(const char textPhrase[], const char name[], float xPos, float yPos, int wrapWidth, DebugTextFormatting format)
 {
 	Text* text = getDebugTextWithName(name);
+
 	if (text != NULL)
 	{
 		TTF_SetTextString(text->text, textPhrase, 0);
@@ -1402,6 +1403,9 @@ Text* addDebugTextWithName(const char textPhrase[], const char name[], float xPo
 	else
 	{
 		text = addDebugText(textPhrase, xPos, yPos, wrapWidth, format);
+
+		putConsoleString("Hey %f %f", xPos, yPos);
+
 
 		setTextName(text, name);
 	}
@@ -1440,6 +1444,7 @@ int removeDebugTextWithName(const char name[])
 
 	input->beingUsed = false;
 	input->attachedObj = NULL;
+	input->name[0] = '\0';
 	TextSettings.DebugTextList.count--;
 
 	return LEMON_SUCCESS;

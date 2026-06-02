@@ -4,27 +4,41 @@
 // command console
 static const float consoleWidth = 1024.0;
 static const float consoleHeight = 600.0;
+static const float insideSpacing = 8.0;
+static const int consoleTextWidth =  (int)(consoleWidth - (2.0 * insideSpacing));
 
 void updateConsole(SDL_Window *window, World *GameWorld)
 {
 	if (DebugSettings.consoleOpen == false)
 	{
-		if (buttons[LMN_CONSOLE_OPEN] == 1 && !TextSettings.Typing)
+		// open console
+		if (buttonPressed(LMN_CONSOLE_OPEN) && !TextSettings.Typing)
 		{
 			AcknowledgeButton(LMN_CONSOLE_OPEN);
-			startTyping(window, NULL);
 
+			DebugSettings.consoleXPos = -(consoleWidth / 2.0);
+			DebugSettings.consoleYPos = (ScreenData.screenHeight >> 1) - consoleHeight;
+
+			float inputXPos = DebugSettings.consoleXPos + insideSpacing;
+			float inputYPos = DebugSettings.consoleYPos;
+			putConsoleString("text found %f %f", inputXPos, inputYPos);
+
+			Text *consoleInput = addDebugTextWithName("", "ConsoleUserInput", inputXPos, inputYPos, consoleTextWidth, DTFORMAT_SCREEN_RELATIVE);
+    
 			DebugSettings.consoleOpen = true;
 			DebugSettings.consoleFocus = false;
 			DebugSettings.scrollVal = 0;
+			startTyping(window, consoleInput);
 		}
 
 		return;
 	}
 
+	// close console
 	if (buttonPressed(LMN_CONSOLE_OPEN))
 	{
 		AcknowledgeButton(LMN_CONSOLE_OPEN);
+
 		DebugSettings.consoleOpen = false;
 		stopTyping(window);
 
@@ -37,7 +51,8 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 	if (TextSettings.Typing == false)
 	{
 		executeCommand(TextSettings.userInputString, GameWorld);
-		startTyping(window, NULL);
+		startTyping(window, getDebugTextWithName("ConsoleUserInput"));
+
 		return;
 	}
 
@@ -1458,11 +1473,7 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 	float yCorrection = (float)(ScreenData.screenHeight >> 1);
 
 	static const float inputFieldHeight = 28.0;
-	static const float insideSpacing = 8.0;
 	static const int consoleLinesDisplayed = 32;
-	static const int textWidth = (int)(consoleWidth - (2.0 * insideSpacing));
-	DebugSettings.consoleXPos = -(consoleWidth / 2.0);
-	DebugSettings.consoleYPos = yCorrection - consoleHeight;
 
 	SDL_FRect box = {0};
 
@@ -1511,14 +1522,7 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 	}
 
 	// render text history
-    addDebugTextWithName(all, "ConsoleHistory", box.x, box.y, textWidth, DTFORMAT_JUSTIFY_TOP);
-
-    if (TextSettings.Typing)
-    {
-    	box.y -= insideSpacing;
-
-    	TextSettings.typingText = addDebugTextWithName(TextSettings.userInputString, "ConsoleUserInput", box.x, box.y, textWidth, DTFORMAT_SCREEN_RELATIVE);
-    }
+ //   addDebugTextWithName(all, "ConsoleHistory", box.x, box.y, consoleTextWidth, DTFORMAT_JUSTIFY_TOP);
 
 	
 	return;
