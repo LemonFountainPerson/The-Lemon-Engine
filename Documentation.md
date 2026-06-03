@@ -168,7 +168,7 @@ struct animation
 ```
 
 The currently playing animation is referenced by the DisplayData in the animationBuffer pointer, although it is not updated when no animation is 
-playing. The currentAnimation integer is set to the value of the currently playing animation and is set to 0 when no animation is playing. The
+playing. The currentAnimation integer is set to the ID value of the currently playing animation and is set to 0 when no animation is playing. The
 currentAnimation variable being 0 is how to check if the displayData isn't playing an animation.
 The frameBuffer pointer contains the reference to the currently frame of the Animation that the object is displaying. Due to each frame being
 contained in a linked list that makes up the animation, in order to progress the animation the program simply sets the frameBuffer to [frameBuffer->nextFrame].
@@ -179,29 +179,7 @@ To play an animation, the PlayAnimation function is called, with the number of r
 int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputData);
 ```
 
-To create an animation, you may either encode them via the animation data files located within the Animations folder in the LemonData or by hard-coding them 
-with code. These animation files are organised by which object ID they correspond to, and are the same files used to load sprites into an object's spriteset.
-To see how to use these files, refer to the LemonData section.
 
-To create animations via code, two functions are used; initialiseNewAnimation and addSpriteToAnimation. The initialiseNewAnimation function returns a
-pointer to a newly allocated animation struct, and automatically assigns it to the provided spriteSet. The addSpriteToAnimation function is 
-used to add a new sprite to the animation. In order to create an animation, the desired frames should be sequentially added via this function 
-in the order of the animation. Any created animations should be done within the LoadAnimations function in animations.c.
-
-Frames can be created with additional arguements to allow for dynamic position offsetting or rotation.
-
-```
-Animation* initialiseNewAnimation(const char animationName[], int frameRate, SpriteSet *inputSet)
-
-			Animation *newAnim = initialiseNewAnimation("Bounce", 24, newSet);
-			addSpriteToAnimation("Spring3", newAnim, newSet);
-			addSpriteToAnimation("Spring4", newAnim, newSet);
-			addSpriteToAnimation("Spring5", newAnim, newSet);
-			addSpriteToAnimation("Spring4", newAnim, newSet);
-			addSpriteToAnimation("Spring3", newAnim, newSet);
-			addSpriteToAnimation("Spring2", newAnim, newSet);
-			addSpriteToAnimation("Spring", newAnim, newSet);
-```
 
 
 # LemonData
