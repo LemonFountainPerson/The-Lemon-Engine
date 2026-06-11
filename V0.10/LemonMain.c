@@ -12,6 +12,10 @@ MouseData MouseInput = {0};
 
 GamePadData GamePadInput = {0};
 
+GameFlag GameFlags[GAME_FLAG_COUNT] = {0};
+
+ChatLog Chat;
+
 
 EngineConfig EngineSettings = { 
 	.MaxGameEvents = MAX_QUEUED_GAME_EVENTS,
@@ -22,8 +26,6 @@ RenderConfig RenderSettings = {0};
 TextConfig TextSettings = {0};
 
 DebugConfig DebugSettings = {0};
-
-GameFlag GameFlags[GAME_FLAG_COUNT] = {0};
 
 
 Uint64 TickNum = 0;
@@ -73,13 +75,14 @@ int RunLemonEngine(void)
 
 
 	    // World updates
-	    GameFrame(&GameWorld);
-
 	    while (gameTick >= EngineSettings.TickDelta)
 	    {
 	    	gameTick -= EngineSettings.TickDelta;
 			GameTick(&GameWorld);
 	    }
+
+	    GameFrame(&GameWorld);
+
 
 	    // Render screen
 	    if (renderRefresh >= RenderSettings.RenderDelta)
@@ -95,14 +98,22 @@ int RunLemonEngine(void)
 
 	CloseGame(&GameWorld, &ScreenData);
 
-	putConsoleString("\nLemon Engine closed successfully!");
+	putConsole("\nLemon Engine closed successfully!");
 
 	return LEMON_SUCCESS;
 }
 
 int StartUpLemonEngine(void)
 {
-	putConsoleString("\nStarting up...\n");
+	putConsole("\nStarting up...\n");
+
+	// Check for resource data access
+	if (CheckResourceData() == MISSING_DATA)
+	{
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Missing Data", 
+			"Missing Lemon resource data! \nPlease check that the LemonData folder is available and in the same directory as the executable.", ScreenData.Window);
+		return MISSING_DATA;
+	}
 
 	// SDL initialisation
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD))
@@ -113,12 +124,25 @@ int StartUpLemonEngine(void)
 
 	if (!TTF_Init())
 	{
+		SDL_Quit();
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Failed to initialise TTF! \nEnsure SDL3_ttf.dll is in directory with executable.", NULL);
 		return LEMON_ERROR;
 	}
 
+	// if (!NET_Init())
+	// {
+	//	SDL_Quit();
+	//	TTF_Quit();
+	// 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Failed to initialise Networking! \nEnsure SDL3_net.dll is in directory with executable.", NULL);
+	// 	return LEMON_ERROR;
+	// }
+
 	if (initialiseScreen(&ScreenData, H_RESOLUTION, V_RESOLUTION, false) != LEMON_SUCCESS)
 	{
+		SDL_Quit();
+		TTF_Quit();
+	// 	NET_Quit();
+
 		return LEMON_ERROR;
 	}
 
@@ -127,36 +151,29 @@ int StartUpLemonEngine(void)
 		return LEMON_ERROR;
 	}
 
-	// Check for resource data access
-	if (CheckResourceData() == MISSING_DATA)
-	{
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Missing Data", 
-			"Missing Lemon resource data! \nPlease check that the LemonData folder is available and in the same directory as the executable.", ScreenData.Window);
-		return MISSING_DATA;
-	}
-
-    // initialise text data to ensure pointers are null
+    // initialise data not attached to GameWorld
     SetEngineSettingsToDefault();
 	SetRenderSettingsToDefault();
 	SetTextSettingsToDefault();
 	SetDebugSettingsToDefault();
 
+	GamePadInput.gamepad = NULL;
+	GamePadInput.ID = 0;
+    ClearInput();
 	 
     char debugFontPath[MAX_LEN * 2] = {0};
     strcpy(debugFontPath, FONT_ROOT);
     strcat(debugFontPath, DEBUG_FONT);
-
     TextSettings.DebugFont = TTF_OpenFont(debugFontPath, TextSettings.DebugTextPointSize);
     initialiseTextList(&TextSettings.DebugTextList);
+
+    initialiseChatLog(&Chat);
+    
     createConsoleCommands(DebugSettings.commands);
-
-
-	GamePadInput.gamepad = NULL;
-    ClearInput();
 
 	srand(RANDOM_SEED);
 
-	putConsoleString("Engine initialised!\n");
+	putConsole("Engine initialised!\n");
 
 
 	return LEMON_SUCCESS;
@@ -185,20 +202,20 @@ int initialiseWorld(World *GameWorld)
 		return LEMON_ERROR;
 	}
 
-	putConsoleString("Object Controller initialised!\n");
+	putConsole("Object Controller initialised!\n");
 
 
 	// Load backgrounds
 	initialiseBackGround(&GameWorld->WorldBackground);
 
 	InitialisePlayerData(&GameWorld->Player);
-	putConsoleString("Initialised Player!\n");
+	putConsole("Initialised Player!\n");
 
 	SetGravity(GameWorld, 1.0, 180.0);
 
 	GameWorld->PhysicsType = PLATFORMER;
 
-	putConsoleString("World Initialised!\n");
+	putConsole("World Initialised!\n");
 
 	return LEMON_SUCCESS;
 }
@@ -223,7 +240,7 @@ ObjectController* createObjectController(void)
 
 	initialiseComponents(newController);
 
-	putConsoleString("Initialising object slots...");
+	putConsole("Initialising object slots...");
 	
 	ComponentData *newArena = &newController->objectComponents;
 
@@ -312,8 +329,9 @@ int CloseGame(World *GameWorld, RenderFrame *ScreenData)
 
 	cleanUpSDLRenderer(ScreenData);
 
+// 	NET_Quit();
+	TTF_Quit();
     SDL_Quit();
-    TTF_Quit();
 
 
 	return LEMON_SUCCESS;
@@ -366,20 +384,18 @@ int GameFrame(World *GameWorld)
 		return MISSING_DATA;
 	}
 
-	HandleGameEvents(GameWorld, &ScreenData);
-
-	if (DebugSettings.PauseEngine == ENGINE_PAUSED)
+	if (DebugSettings.PauseEngine != ENGINE_PAUSED)
 	{
-		return ACTION_DISABLED;
+		updateObjectsFrame(GameWorld);
+
+		updateObjectDisplays(GameWorld);		// for allowing animations to happen between ticks; not being restricted to multiples/factors of gameTick amount
+
+		#ifdef LEMON_USE_CUSTOM_CALLBACKS
+		Update(GameWorld);
+		#endif
 	}
 
-	updateObjectsFrame(GameWorld);
-
-	updateObjectDisplays(GameWorld);		// for allowing animations to happen between ticks; not being restricted to multiples/factors of gameTick amount
-
-	#ifdef LEMON_USE_CUSTOM_CALLBACKS
-	Update(GameWorld);
-	#endif
+	HandleGameEvents(GameWorld, &ScreenData);
 
 	return LEMON_SUCCESS;
 }
@@ -558,12 +574,12 @@ void printCameraViewInfo(CameraView list[VIEW_COUNT])
 		{
 			if (list[i].attachedObj != NULL)
 			{
-				putConsoleString("%d: (Active) (Attached object ID: %d) CamX: %.2f CamY: %.2f  Ticks until render: %lld", 
+				putConsole("%d: (Active) (Attached object ID: %d) CamX: %.2f CamY: %.2f  Ticks until render: %lld", 
 					i, list[i].attachedObj->index, list[i].cam.CameraX, list[i].cam.CameraY, list[i].cam.zoomedWidth, list[i].ticksUntilRefresh);
 			}
 			else
 			{
-				putConsoleString("%d: (Active) (No attached object) CamX: %.2f CamY: %.2f  Ticks until render: %lld", 
+				putConsole("%d: (Active) (No attached object) CamX: %.2f CamY: %.2f  Ticks until render: %lld", 
 					i, list[i].cam.CameraX, list[i].cam.CameraY, list[i].ticksUntilRefresh);
 			}
 		}
@@ -1092,11 +1108,11 @@ int getExternalInput(World *GameWorld, SDL_Renderer *screen)
     			GamePadInput.gamepad = newJoy;
     			GamePadInput.ID = new;
 
-    			putConsoleStringTS("Added gamepad with ID: %d", new);
+    			putConsoleTS("Added gamepad with ID: %d", new);
     		}
     		else
     		{
-    			putConsoleStringTS("Failed to open gamepad ID: %u", new);
+    			putConsoleTS("Failed to open gamepad ID: %u", new);
     		}
     		break;
 
@@ -1107,7 +1123,7 @@ int getExternalInput(World *GameWorld, SDL_Renderer *screen)
     		{
 	    		SDL_CloseGamepad(GamePadInput.gamepad);
 	    		
-	    		putConsoleStringTS("Removed gamepad with ID: %d", GamePadInput.ID);
+	    		putConsoleTS("Removed gamepad with ID: %d", GamePadInput.ID);
 
     			GamePadInput.gamepad = NULL;
     			GamePadInput.ID = 0;
@@ -1666,7 +1682,7 @@ int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullsc
 	SetWindowTitle("Lemon Engine");							// Initial window title
 	SetWindowIcon("MissingIcon");							// Initial window icon
 
-	putConsoleString("Screen initialised!\n");
+	putConsole("Screen initialised!\n");
 
 	return LEMON_SUCCESS;
 }
@@ -1806,20 +1822,20 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 	{
 		DebugSettings.DebugTextDisplayMode = (DebugSettings.DebugTextDisplayMode + 1) % DEBUG_TEXT_MODE_COUNT;
 		RemoveUnnamedTexts(&TextSettings.DebugTextList);
-		putConsoleString("\nToggling draw Debug Text: %d", DebugSettings.DebugTextDisplayMode);
+		putConsole("\nToggling draw Debug Text: %d", DebugSettings.DebugTextDisplayMode);
 	}
 
 	if (buttons['2'] == 1)
 	{
     	DebugSettings.PauseEngine = (DebugSettings.PauseEngine + 1) % 2;
-		putConsoleString("\nToggling Pause: %d", DebugSettings.PauseEngine);
+		putConsole("\nToggling Pause: %d", DebugSettings.PauseEngine);
     }
 
 
 	if (buttons['3'] == 1)
 	{
 		DebugSettings.ConsoleTextEnabled = (DebugSettings.ConsoleTextEnabled + 1) % CONSOLE_TEXT_SETTING_COUNT;
-		putConsoleString("\nToggling Console Text: %d",DebugSettings.ConsoleTextEnabled);
+		putConsole("\nToggling Console Text: %d",DebugSettings.ConsoleTextEnabled);
 	}
 
 
@@ -1915,23 +1931,25 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 }
 
 
-void putConsoleString(const char input[], ...)
+void putConsole(const char input[], ...)
 {
 	if (input[0] < 9)
 	{
 		return;
 	}
 
+	char consoleString[MESSAGE_LENGTH] = {0};
+
 	va_list argptr;
     va_start(argptr, input);
-    vsnprintf(DebugSettings.ConsoleString, CONSOLE_STRING_LENGTH, input, argptr);
+    vsnprintf(consoleString, MESSAGE_LENGTH, input, argptr);
     va_end(argptr);
 
-    addInputHistory(DebugSettings.ConsoleString, &DebugSettings.consoleHistory);
+    addMessageHistory(consoleString, &DebugSettings.consoleHistory);
 
     if (DEBUG_MODE)
     {
-    	printf("%s\n", DebugSettings.ConsoleString);
+    	printf("%s\n", consoleString);
     	fflush(stdout);
     }
 
@@ -1939,26 +1957,28 @@ void putConsoleString(const char input[], ...)
 }
 
 
-void putConsoleStringTS(const char input[], ...)
+void putConsoleTS(const char input[], ...)
 {
 	if (input[0] < 9)
 	{
 		return;
 	}
 
-	char buffer[CONSOLE_STRING_LENGTH] = {0};
-	snprintf(buffer, CONSOLE_STRING_LENGTH, "[Tick: %llu] %s", (long long unsigned int)TickNum, input);
+	char consoleString[MESSAGE_LENGTH] = {0};
+	char buffer[MESSAGE_LENGTH] = {0};
+
+	snprintf(buffer, MESSAGE_LENGTH, "[Tick: %llu] %s", (long long unsigned int)TickNum, input);
 
 	va_list argptr;
     va_start(argptr, input);
-    vsnprintf(DebugSettings.ConsoleString, CONSOLE_STRING_LENGTH, buffer, argptr);
+    vsnprintf(consoleString, MESSAGE_LENGTH, buffer, argptr);
     va_end(argptr);
 
-    addInputHistory(DebugSettings.ConsoleString, &DebugSettings.consoleHistory);
+    addMessageHistory(consoleString, &DebugSettings.consoleHistory);
 
    	if (DEBUG_MODE)
     {
-    	printf("%s\n", DebugSettings.ConsoleString);
+    	printf("%s\n", consoleString);
     	fflush(stdout);
     }
 	
@@ -1972,77 +1992,118 @@ void putConsoleError(const char input[], ...)
 		return;
 	}
 
-	char errorString[CONSOLE_STRING_LENGTH] = {0};
-	snprintf(errorString, CONSOLE_STRING_LENGTH, "Error: %s", input);
+	char consoleString[MESSAGE_LENGTH] = {0};
+	char errorString[MESSAGE_LENGTH] = {0};
+
+	snprintf(errorString, MESSAGE_LENGTH, "Error: %s", input);
 
 	va_list argptr;
     va_start(argptr, input);
-    vsnprintf(DebugSettings.ConsoleString, CONSOLE_STRING_LENGTH, errorString, argptr);
+    vsnprintf(consoleString, MESSAGE_LENGTH, errorString, argptr);
     va_end(argptr);
 
-    addInputHistory(DebugSettings.ConsoleString, &DebugSettings.consoleHistory);
+    addMessageHistory(consoleString, &DebugSettings.consoleHistory);
 
     if (DEBUG_MODE)
     {
-    	printf("%s\n", DebugSettings.ConsoleString);
+    	printf("%s\n", consoleString);
     	fflush(stdout);
     }
 
     return;
 }
 
-void addInputHistory(const char input[], InputHistory *history)
+void addMessageHistory(const char input[], MessageHistory *history)
 {
 	int length = strlen(input);
-	if (length >= CONSOLE_STRING_LENGTH)
+	if (length >= MESSAGE_LENGTH)
 	{
-		length = CONSOLE_STRING_LENGTH - 1;
+		length = MESSAGE_LENGTH - 1;
 	}
 
 	memcpy(history->inputs[history->head], input, length);
 
-	history->inputs[history->head % USER_INPUT_HISTORY_LEN][length] = 0;
+	history->inputs[history->head % INPUT_HISTORY_LEN][length] = 0;
 
-	history->head = (history->head + 1) % USER_INPUT_HISTORY_LEN;
+	history->head = (history->head + 1) % INPUT_HISTORY_LEN;
 	history->searchIndex = history->head;
-	if (history->entries < USER_INPUT_HISTORY_LEN)
-	{
-		history->entries++;
-	}
-	
+	history->inputCount++;
 
 	return;
 }
 
-char* getPreviousInputHistory(InputHistory *history)
+char* getPreviousMessageHistory(MessageHistory *history)
 {
-	history->searchIndex = modulo(history->searchIndex - 1, USER_INPUT_HISTORY_LEN);
+	history->searchIndex = modulo(history->searchIndex - 1, INPUT_HISTORY_LEN);
 		
 	if (history->inputs[history->searchIndex][0] == '\0')
 	{
-		history->searchIndex = modulo(history->searchIndex + 1, USER_INPUT_HISTORY_LEN);
+		history->searchIndex = modulo(history->searchIndex + 1, INPUT_HISTORY_LEN);
 	} 
 
 	return history->inputs[history->searchIndex];
 }
 
-char* getNextInputHistory(InputHistory *history)
+char* getNextMessageHistory(MessageHistory *history)
 {
 	if (history->searchIndex != history->head)
 	{
-		history->searchIndex = modulo(history->searchIndex + 1, USER_INPUT_HISTORY_LEN);
+		history->searchIndex = modulo(history->searchIndex + 1, INPUT_HISTORY_LEN);
 			
 		if (history->inputs[history->searchIndex][0] == '\0')
 		{
-			history->searchIndex = modulo(history->searchIndex - 1, USER_INPUT_HISTORY_LEN);
+			history->searchIndex = modulo(history->searchIndex - 1, INPUT_HISTORY_LEN);
 		} 
 	}
 	else
 	{
-		history->searchIndex = modulo(history->searchIndex, USER_INPUT_HISTORY_LEN);
+		history->searchIndex = modulo(history->searchIndex, INPUT_HISTORY_LEN);
 	}
 
 	return history->inputs[history->searchIndex];
+}
+
+
+void initialiseChatLog(ChatLog *chat)
+{
+	chat->current = 0;
+	chat->chatCount = 0;
+	memset(chat->Log, 0, sizeof(ChatMessage) * CHAT_LOG_COUNT);
+
+	return;
+}
+
+void addMessageToChatLog(const char msg[], int ID, Uint64 tickSent)
+{
+	// chatlog copy
+	ChatMessage *log = Chat.Log;
+	Chat.current = abs(Chat.current) % CHAT_LOG_COUNT;
+	LemonStrncpy(log[Chat.current].message, msg, MESSAGE_LENGTH);
+	log[Chat.current].speakerID = ID;
+	log[Chat.current].tickSent = tickSent;
+
+	Chat.current = (Chat.current + 1) % CHAT_LOG_COUNT;
+	Chat.chatCount++;
+
+	// console copy
+	char chatMsg[MESSAGE_LENGTH] = {0};
+
+	switch (ID)
+	{
+	case SYSTEM_MSG:
+		strcpy(chatMsg, "System: ");
+		break;
+
+	default:
+		break;
+	}
+
+	int length = strlen(chatMsg);
+	LemonStrncpy(chatMsg + length, msg, MESSAGE_LENGTH - length);
+
+	putConsole(chatMsg);
+
+	return;
 }
 
 

@@ -22,7 +22,7 @@ manipulating the vertices, such as with the 'movePolygonVertex' function.
 -> Added TTF font support for textboxes, using rendered textures for entire blocks of text instead of objects to represent each character. (This mode is currently togglable with 
 the 'EXPERIMENTAL_TEXT' flag in config.h, although this may be removed in future versions)
 
--> Added the in-engine command console via the eventManager; allowing commands to be typed and executed within the process. (e.g: setPlayerPos, drawHitboxes, loadLevel, cutscene_play, etc.)
+-> Added the in-engine command console, allowing commands to be typed and executed within the process. (e.g: setPlayerPos, drawHitboxes, loadLevel, cutscene_play, etc.)
 
 -> Added 'Text' that allows you to place regular text using the new TTF renderer anywhere on the screen, with any font, any colour, etc. Use 'addText' or 'addTextToList' for this.
 (TextInstances/TextBoxes use a modified form of these.)
@@ -31,8 +31,8 @@ the 'EXPERIMENTAL_TEXT' flag in config.h, although this may be removed in future
 data and initialising a new cutscene. To reflect this, the 'StartCutscene' functions have been renamed to 'initialiseCutscene' to make it clearer and more distinct from 
 playing a cutscene.
 
--> Added the 'Event_movePlayer' and 'Event_moveObject' game event functions to schedule the movement of specific objects; this can be useful across loaded levels or for 
-guaranteeing some action if physics may get in the way, for example.
+-> Added the 'Event_movePlayer' game event function to schedule the movement of the player object; this can be useful across loaded levels or for guaranteeing some action if 
+physics may get in the way, for example.
 
 -> Added file loading support for several more scene actions:
    -Added the 'WaitUntil' instruction to the cutscene file loader. Any scene action that you wish to be complete before progressing to the next instruction can be performed
@@ -111,6 +111,9 @@ new method - PlaySound("Objects/CoinCollect", OBJECT_SFX, 1.0)
 -> The 'IfVariable:' scene command now works on regular commands and as many as you want instead of only accepting integer values that represent a new cutscene to trigger.
 old method: IfVariable: 0 = 1 THEN 0 ELSE 1
 new method: IfVariable: 0 = 1 THEN { PlaySound: "Sound.wav", 1, 1.0  HideActor: "ExampleActor" [...] } ELSE { PlayCutscene: 1 [...] }
+
+-> The PhysicsBox now defines the hitbox using three variables; shape to denote the shape of the hitbox, solid to determine how the hitbox acts, and flag to apply any 
+additional special properties.
 
 
 ## Bug fixes/Improvements:

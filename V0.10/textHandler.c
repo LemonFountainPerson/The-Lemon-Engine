@@ -1310,7 +1310,7 @@ void initialiseTextList(TextList *input)
 
 void printTextsinfo(TextList *list, const char name[])
 {
-	putConsoleString("\n%s: ", name);
+	putConsole("\n%s: ", name);
 	char buffer[MAX_LEN + TEXT_NAME_MAX_LEN + OBJECT_NAME_LENGTH] = {0};
 
 	Text *array = list->texts;
@@ -1365,7 +1365,7 @@ void printTextsinfo(TextList *list, const char name[])
 			strcat(buffer, "(independent)");
 		}
 
-		putConsoleString("Index: %d  %s", i, buffer);
+		putConsole("Index: %d  %s", i, buffer);
 	}
 
 	return;
@@ -1518,7 +1518,7 @@ TTF_Font* loadFont(const char *desiredFont, const char *newName, World *GameWorl
 
 	if (newFont == NULL)
 	{ 
-    	putConsoleString("\nFailed to load font! (%s)\n", SDL_GetError());
+    	putConsole("\nFailed to load font! (%s)\n", SDL_GetError());
     	return NULL;
 	}
 
@@ -1848,7 +1848,7 @@ int endTextBox(World *GameWorld)
 				break;
 			}
 
-			triggerGameEvent(&optionData->optionTriggers[optionData->SelectedOption], GameWorld);
+			triggerGameEvent(&optionData->optionTriggers[optionData->SelectedOption], GameWorld);	
 		} break;
 
 		case TEXTBOX_TRIGGER_EVENT:
@@ -1893,10 +1893,31 @@ int deleteTextBox(TextBox *input, World *GameWorld)
 			prev->nextText = input->nextText;
 		}
 	}
-	
+
+	switch (input->textTypeSetting)
+	{
+		case TEXTBOX_OPTION_PROMPT:
+		{
+			struct TextOptionPrompt *optionData = &input->textTypeData.OptionPrompt;
+
+			for (int i = 0; i < optionData->numberOfOptions; i++)
+			{
+				cleanUpGameEventArgs(&optionData->optionTriggers[i]);
+			}
+		} break;
+
+		case TEXTBOX_TRIGGER_EVENT:
+		{
+			cleanUpGameEventArgs(&input->textTypeData.TriggerEvent);
+		} break;
+
+		default:
+		break;	
+	}
+
 	MarkObjectForDeletion(input->boxPtr);
 
-	removeAttachedTexts(input->boxPtr, GameWorld);	// technically unnecessary, as deleting the gameworld also deletes text references
+	removeAttachedTexts(input->boxPtr, GameWorld);	// technically unnecessary, as deleting the object also deletes text references
 
 	DeleteTextSceneAction(input, GameWorld);
 

@@ -86,71 +86,83 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 
 	if (DebugSettings.showEvents)
 	{
-		putConsoleStringTS("Executing event %d (%s)...", inputEvent->EventID, getEventName(inputEvent->EventID));
+		putConsoleTS("Executing event %d (%s)...", inputEvent->EventID, getEventName(inputEvent->EventID));
 	}
-
-	GameEventData *EventData = &inputEvent->EventData;
 
 	switch (inputEvent->EventID)
 	{
 		case EVENT_SWITCH_LEVEL:
-			loadLevel(GameWorld, (int)EventData->vars[0]);
+			loadLevel(GameWorld, getGameEventInt(inputEvent, "level"));
 			break;
 
 		case EVENT_PLAY_CUTSCENE:
 			{
-				initialiseCutscene((int)EventData->vars[0], GameWorld);
+				initialiseCutscene(getGameEventInt(inputEvent, "cutsceneID"), GameWorld);
 			} break;
 
 		case EVENT_PLAY_CUTSCENE_FROM_FILE:
 			{
-				initialiseCutsceneFromFile(EventData->string, GameWorld);
+				initialiseCutsceneFromFile(getGameEventString(inputEvent, "cutsceneName"), GameWorld);
 			} break;
 
 		case EVENT_PLAY_SOUND:
 			{
-				if (EventData->vars[0] < 0.01)
+				char *path = getGameEventString(inputEvent, NULL);
+
+				float volume = getGameEventFloat(inputEvent, "volume");
+				if (volume < 0.01)
 				{
-					EventData->vars[0] = 1.0;
+					volume = 1.0;
 				}
 
-				PlaySound(EventData->string, EventData->vars[0], (int)EventData->vars[1]);
+				int channel = getGameEventInt(inputEvent, "channel");
+
+				PlaySound(path, volume, channel);
+			} break;
+
+		case EVENT_CHAT_MESSAGE:
+			{
+				int speakerID = getGameEventInt(inputEvent, "speaker");
+				char *msg = getGameEventString(inputEvent, "message");
+
+				addMessageToChatLog(msg, speakerID, inputEvent->tickTriggered);
 			} break;
 
 		case EVENT_MOVE_PLAYER:
-				GoTo(GameWorld->Player.PlayerPtr, EventData->vars[0], EventData->vars[1]);
-			break;
-
-		case EVENT_MOVE_OBJECT:
 			{
-				GoTo(EventData->objReference, EventData->vars[0], EventData->vars[1]);
+				float xPos = getGameEventFloat(inputEvent, "xPos");
+				float yPos = getGameEventFloat(inputEvent, "yPos");
+
+				GoTo(GameWorld->Player.PlayerPtr, xPos, yPos);
 			} break;
 
 		case EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR:
 			{
-				if (EventData->objReference == NULL)
-				{
-					break;
-				}
+				float xPos = getGameEventFloat(inputEvent, "xPos");
+				float yPos = getGameEventFloat(inputEvent, "yPos");
 
-				centerOnObject(GameWorld->Player.PlayerPtr, EventData->objReference);
+				centerOnXY(GameWorld->Player.PlayerPtr, xPos, yPos);
 				ResetPlayer(&GameWorld->Player);
 				PlaySound("Objects/DoorOpen", 1.0, OBJECT_SFX);
 			} break;
 
 		case EVENT_SET_BRIGHTNESS:
 			{
-				SDL_SetRenderColorScale(ScreenData->Renderer, EventData->vars[0]);
+				SDL_SetRenderColorScale(ScreenData->Renderer, getGameEventFloat(inputEvent, NULL));
 			} break;
 
 		case EVENT_CHANGE_SCREEN_SIZE:
 			{	
-				applyScreenSize((int)EventData->vars[0], (int)EventData->vars[1], ScreenData, GameWorld);
+				int width = getGameEventInt(inputEvent, "newWidth");
+				int height = getGameEventInt(inputEvent, "newHeight");
+				applyScreenSize(width, height, ScreenData, GameWorld);
 			} break;
 
 		case EVENT_CHANGE_SCREEN_SIZE_SCALE:
 			{
-				applyScreenSizeScale((int)EventData->vars[0], (int)EventData->vars[1], &GameWorld->MainCamera, ScreenData);
+				int width = getGameEventInt(inputEvent, "newWidth");
+				int height = getGameEventInt(inputEvent, "newHeight");
+				applyScreenSizeScale(width, height, &GameWorld->MainCamera, ScreenData);
 			} break;
 
 		case EVENT_ENABLE_FULLSCREEN:
@@ -173,7 +185,8 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 				if (inputEvent->loadedFile == NULL)
 				{
 					char fileName[MAX_LEN] = {0};
-					snprintf(fileName, MAX_LEN, "Level%d_Part%d", GameWorld->level, (int)EventData->vars[0]);
+					int partID = getGameEventInt(inputEvent, NULL);
+					snprintf(fileName, MAX_LEN, "Level%d_Part%d", GameWorld->level, partID);
 
 					inputEvent->loadedFile = openFile(fileName, LEVELDATA_ROOT, "--PARTITION_DATA--");
 
@@ -224,6 +237,10 @@ int deleteAllGameEvents(World *GameWorld)
 			fclose(eventList[i].loadedFile);
 			eventList[i].loadedFile = NULL;
 		}
+
+		// delete strings if any existed 
+		cleanUpGameEventArgs(&eventList[i]);
+
 		eventList[i].EventID = NO_EVENT;
 
 		i++;
@@ -249,8 +266,12 @@ int clearGameEvents(World *GameWorld)
 	{
 		if (eventList[i].loadedFile == NULL && eventList[i].EventID != NO_EVENT)
 		{
-			eventList[i].EventID = NO_EVENT;
 			GameWorld->GameEvents.eventsPending--;
+
+			// delete strings if any existed 
+			cleanUpGameEventArgs(&eventList[i]);
+
+			eventList[i].EventID = NO_EVENT;
 		}
 
 		i++;
@@ -289,10 +310,15 @@ GameEvent* addNewGameEvent(World *GameWorld)
 		return NULL;
 	}
 
-	memset(&eventPtr->EventData, 0, sizeof(GameEventData));
-	eventPtr->EventData.objReference = NULL;
+	eventPtr->tickTriggered = TickNumber();
 	eventPtr->loadedFile = NULL;
 
+	GameEventArg *args = eventPtr->args;
+	for (int index = 0; index < EVENT_VAR_COUNT; index++)
+	{	
+		args[index].type = ARG_UNUSED;		
+	}
+	
 	if (GameWorld->GameEvents.eventsPending < EngineSettings.MaxGameEvents)
 	{
 		GameWorld->GameEvents.eventsPending++;
@@ -316,6 +342,10 @@ int triggerGameEvent(GameEvent *inputEvent, World *GameWorld)
 	}
 
 	memcpy(eventPtr, inputEvent, sizeof(GameEvent));
+	eventPtr->tickTriggered = TickNumber();
+
+	memset(inputEvent, 0, sizeof(GameEvent));
+	inputEvent->EventID = NO_EVENT;
 
 	return LEMON_SUCCESS;
 }
@@ -325,6 +355,8 @@ inline void removeEventToTriggerLater(GameEvent *inputEvent, GameEvent *storage,
 {
 	memcpy(storage, inputEvent, sizeof(GameEvent));
 	GameWorld->GameEvents.eventsPending--;
+
+	memset(inputEvent, 0, sizeof(GameEvent));
 	inputEvent->EventID = NO_EVENT;
 }
 
@@ -343,7 +375,7 @@ GameEvent* switchLevel(int level, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_SWITCH_LEVEL;
-	newEvent->EventData.vars[0] = (float)level;
+	addGameEventInt(newEvent, "level", level);
 
 	return newEvent;
 }
@@ -362,14 +394,14 @@ GameEvent* playCutscene(int scene, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_PLAY_CUTSCENE;
-	newEvent->EventData.vars[0] = (float)scene;
+	addGameEventInt(newEvent, "cutsceneID", scene);
 
 	return newEvent;
 }
 
 GameEvent* playCutsceneFromFile(const char name[], World *GameWorld)
 {
-	if (GameWorld == NULL || strlen(name) <= 0)
+	if (GameWorld == NULL || name == NULL)
 	{
 		return NULL;
 	}
@@ -381,7 +413,27 @@ GameEvent* playCutsceneFromFile(const char name[], World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_PLAY_CUTSCENE_FROM_FILE;
-	strcpy(newEvent->EventData.string, name);
+	addGameEventString(newEvent, "cutsceneName", name);
+
+	return newEvent;
+}
+
+GameEvent* Message(char msg[], int speakerID, World *GameWorld)
+{
+	if (GameWorld == NULL || msg == NULL)
+	{
+		return NULL;
+	}
+
+	GameEvent *newEvent = addNewGameEvent(GameWorld);
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->EventID = EVENT_CHAT_MESSAGE;
+	addGameEventString(newEvent, "message", msg);
+	addGameEventInt(newEvent, "speaker", speakerID);
 
 	return newEvent;
 }
@@ -400,29 +452,8 @@ GameEvent* Event_MovePlayer(float xPos, float yPos, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_MOVE_PLAYER;
-	newEvent->EventData.vars[0] = xPos;
-	newEvent->EventData.vars[1] = yPos;
-
-	return newEvent;
-}
-
-GameEvent* Event_MoveObject(Object *input, float xPos, float yPos, World *GameWorld)
-{
-	if (GameWorld == NULL || input == NULL)
-	{
-		return NULL;
-	}
-
-	GameEvent *newEvent = addNewGameEvent(GameWorld);
-	if (newEvent == NULL)
-	{
-		return NULL;
-	}
-
-	newEvent->EventID = EVENT_MOVE_OBJECT;
-	newEvent->EventData.vars[0] = xPos;
-	newEvent->EventData.vars[1] = yPos;
-	newEvent->EventData.objReference = input;
+	addGameEventFloat(newEvent, "xPos", xPos);
+	addGameEventFloat(newEvent, "yPos", yPos);
 
 	return newEvent;
 }
@@ -441,7 +472,8 @@ GameEvent* Event_TeleportPlayerToExitDoor(Object *dest, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR;
-	newEvent->EventData.objReference = dest;
+	addGameEventFloat(newEvent, "xPos", dest->ObjectBox->xPos + (dest->ObjectBox->xSize / 2));
+	addGameEventFloat(newEvent, "yPos", dest->ObjectBox->yPos + (dest->ObjectBox->ySize / 2));
 
 	return newEvent;
 }
@@ -460,7 +492,7 @@ GameEvent* Event_SetScreenBrightness(float brightness, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_SET_BRIGHTNESS;
-	newEvent->EventData.vars[0] = brightness;
+	addGameEventFloat(newEvent, "brightness", brightness);
 
 	return newEvent;
 }
@@ -479,7 +511,7 @@ GameEvent* streamPartition(int partID, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_STREAM_LEVEL_PARTITION;
-	newEvent->EventData.vars[0] = (float)partID;
+	addGameEventFloat(newEvent, "partID", partID);
 
 	return newEvent;
 }
@@ -523,8 +555,8 @@ GameEvent* changeScreenSizeScaled(int newWidth, int newHeight, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_CHANGE_SCREEN_SIZE_SCALE;
-	newEvent->EventData.vars[0] = (float)newWidth;
-	newEvent->EventData.vars[1] = (float)newHeight;
+	addGameEventInt(newEvent, "newWidth", newWidth);
+	addGameEventInt(newEvent, "newHeight", newHeight);
 
 	return newEvent;
 }
@@ -543,8 +575,8 @@ GameEvent* changeScreenSize(int newWidth, int newHeight, World *GameWorld)
 	}
 
 	newEvent->EventID = EVENT_CHANGE_SCREEN_SIZE;
-	newEvent->EventData.vars[0] = (float)newWidth;
-	newEvent->EventData.vars[1] = (float)newHeight;
+	addGameEventInt(newEvent, "newWidth", newWidth);
+	addGameEventInt(newEvent, "newHeight", newHeight);
 
 	return newEvent;
 }
@@ -784,11 +816,12 @@ int validateScreenDimensions(RenderFrame *ScreenData)
 const static char EventNames[EVENT_COUNT][EVENT_NAME_MAX_LEN] = {
 	[NO_EVENT] = "No Event",
  	[EVENT_SWITCH_LEVEL] = "Switch Level",
- 	[EVENT_MOVE_OBJECT] = "Move Object",
- 	[EVENT_MOVE_PLAYER] = "Move Player",
- 	[EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR] = "Teleport Player to exit door",
  	[EVENT_PLAY_CUTSCENE] = "Play Cutscene",
  	[EVENT_PLAY_CUTSCENE_FROM_FILE] = "Play Cutscene from file",
+ 	[EVENT_PLAY_SOUND] = "Play Sound",
+ 	[EVENT_CHAT_MESSAGE] = "Chat Message",
+ 	[EVENT_MOVE_PLAYER] = "Move Player",
+ 	[EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR] = "Teleport Player to exit door",
  	[EVENT_SET_BRIGHTNESS] = "Set Brightness",
  	[EVENT_ENABLE_FULLSCREEN] = "Enable fullscreen",
  	[EVENT_DISABLE_FULLSCREEN] = "Disable fullscreen",
@@ -871,8 +904,6 @@ GameEvent* getNextArgGameEvent(FILE *file, World *GameWorld)
 
 	newEvent->EventID = inputEvent;			// if succesful, set ID of empty slot
 
-
-	ObjectController *ObjectList = GameWorld->ObjectList;
 	filePos = ftell(file);
 	getNextArg(file, buffer, MAX_LEN);
 
@@ -886,41 +917,257 @@ GameEvent* getNextArgGameEvent(FILE *file, World *GameWorld)
 
 	while (!endOfFile(file) && buffer[0] != '}')
 	{
-		stringToLower(buffer);
+		char type[MAX_LEN] = {0};
+		strcpy(type, buffer);
+		stringToLower(type);
 
-		if (strcmp(buffer, "string:") == 0)
+		if (strcmp(type, "string") == 0 || strcmp(type, "text") == 0)
 		{
-			getNextArg(file, newEvent->EventData.string, MAX_LEN);
+			char name[EVENT_ARG_NAME_MAX_LEN] = {0};
+			getNextArg(file, name, EVENT_ARG_NAME_MAX_LEN);
+			consumeStatement(file, '=');
+
+			char text[MESSAGE_LENGTH] = {0};
+			getNextArg(file, text, MESSAGE_LENGTH);
+
+			addGameEventString(newEvent, name, text);
 		}
-		else if (strcmp(buffer, "vars:") == 0 || strcmp(buffer, "variables:") == 0)
+		else if (strcmp(type, "int") == 0 || strcmp(type, "integer") == 0)
 		{
-			for (int i = 0; i < GAME_EVENT_VAR_COUNT; i++)
-			{
-				newEvent->EventData.vars[i] = getNextArgFloat(file);
-			}
+			char name[EVENT_ARG_NAME_MAX_LEN] = {0};
+			getNextArg(file, name, EVENT_ARG_NAME_MAX_LEN);
+			consumeStatement(file, '=');
+
+			int val = getNextArgInt(file);
+
+			addGameEventInt(newEvent, name, val);
 		}
-		else if (strcmp(buffer, "object:") == 0 && ObjectList != NULL)
+		else if (strcmp(type, "float") == 0 || strcmp(type, "number") == 0)
 		{
-			if (hasNextArgNumber(file))
+			char name[EVENT_ARG_NAME_MAX_LEN] = {0};
+			getNextArg(file, name, EVENT_ARG_NAME_MAX_LEN);
+			consumeStatement(file, '=');
+
+			float val = getNextArgFloat(file);
+
+			addGameEventFloat(newEvent, name, val);
+		}
+		else
+		{
+			// if type is not specified, assume it is a float if next arg is a number, otherwise a string
+			char equals[3] = {0};
+			getNextArg(file, equals, 3);
+
+			if (strcmp(equals, "=") == 0)
 			{
-				int index = getNextArgInt(file);
-				if (inRange(index, 0, EngineSettings.MaxObjects - 1))
+				if (hasNextArgNumber(file))
 				{
-					newEvent->EventData.objReference = &ObjectList->objectComponents.Objects[index];
+					float val = getNextArgFloat(file);
+
+					addGameEventFloat(newEvent, buffer, val);
+				}
+				else
+				{
+					char text[MESSAGE_LENGTH] = {0};
+					getNextArg(file, text, MESSAGE_LENGTH);
+
+					addGameEventString(newEvent, buffer, text);
 				}
 			}
-			else
-			{
-				getNextArg(file, buffer, MAX_LEN);
-
-				newEvent->EventData.objReference = FindObject(buffer, ObjectList);
-			}
 		}
+		
 
 		getNextArg(file, buffer, MAX_LEN);
 	}
 
 	return newEvent;
+}
+
+void addGameEventInt(GameEvent *input, const char name[], int val)
+{
+	if (input == NULL)
+	{
+		return;
+	}
+
+	// find available arg slot
+	int i = 0;
+	while (i < EVENT_VAR_COUNT && input->args[i].type != ARG_UNUSED)
+	{
+		i++;
+	}
+
+	if (i >= EVENT_VAR_COUNT)
+	{
+		return;
+	}
+
+	GameEventArg *newArg = &input->args[i];
+	
+	LemonStrncpy(newArg->name, name, EVENT_ARG_NAME_MAX_LEN);
+
+	newArg->type = ARG_INTEGER;
+	newArg->data.iNumber = val;
+
+	return;
+}
+
+int getGameEventInt(GameEvent *input, const char name[])
+{
+	if (input == NULL)
+	{
+		return 0;
+	}
+
+	GameEventArg *args = input->args;
+
+	for (int i = 0; i < EVENT_VAR_COUNT; i++)
+	{
+		if (args[i].type == ARG_INTEGER && (name == NULL || strcmp(args[i].name, name) == 0))
+		{
+			return args[i].data.iNumber;
+		}
+	}
+
+	return 0;
+}
+
+
+void addGameEventFloat(GameEvent *input, const char name[], float val)
+{
+	if (input == NULL)
+	{
+		return;
+	}
+
+	// find available arg slot
+	int i = 0;
+	while (i < EVENT_VAR_COUNT && input->args[i].type != ARG_UNUSED)
+	{
+		i++;
+	}
+
+	if (i >= EVENT_VAR_COUNT)
+	{
+		return;
+	}
+
+	GameEventArg *newArg = &input->args[i];
+	
+	LemonStrncpy(newArg->name, name, EVENT_ARG_NAME_MAX_LEN);
+
+	newArg->type = ARG_FLOAT;
+	newArg->data.fNumber = val;
+
+	return;
+}
+
+int getGameEventFloat(GameEvent *input, const char name[])
+{
+	if (input == NULL)
+	{
+		return 0.0;
+	}
+
+	GameEventArg *args = input->args;
+
+	for (int i = 0; i < EVENT_VAR_COUNT; i++)
+	{
+		if (args[i].type == ARG_FLOAT && (name == NULL || strcmp(args[i].name, name) == 0))
+		{
+			return args[i].data.fNumber;
+		}
+	}
+
+	return 0.0;
+}
+
+void addGameEventString(GameEvent *input, const char name[], const char val[])
+{
+	if (input == NULL)
+	{
+		return;
+	}
+
+	int length = strlen(val);
+
+	if (length >= MESSAGE_LENGTH)
+	{
+		return;
+	}
+
+	// find available arg slot
+	int i = 0;
+	while (i < EVENT_VAR_COUNT && input->args[i].type != ARG_UNUSED)
+	{
+		i++;
+	}
+
+	if (i >= EVENT_VAR_COUNT)
+	{
+		return;
+	}
+
+	GameEventArg *newArg = &input->args[i];
+
+	char *stringHolder = malloc(length + 1);
+	strcpy(stringHolder, val);
+
+	if (stringHolder == NULL)
+	{
+		return;
+	}
+
+	LemonStrncpy(newArg->name, name, EVENT_ARG_NAME_MAX_LEN);
+
+	newArg->type = ARG_STRING;
+	newArg->data.string = stringHolder;
+
+	return;
+}
+
+char* getGameEventString(GameEvent *input, const char name[])
+{
+	if (input == NULL)
+	{
+		return NULL;
+	}
+
+	GameEventArg *args = input->args;
+
+	for (int i = 0; i < EVENT_VAR_COUNT; i++)
+	{
+		if (args[i].type == ARG_STRING && (name == NULL || strcmp(args[i].name, name) == 0))
+		{
+			return args[i].data.string;
+		}
+	}
+
+	return NULL;
+}
+
+// specifically just to clean up any strings that were allocated
+void cleanUpGameEventArgs(GameEvent *input)
+{
+	if (input == NULL || input->EventID == NO_EVENT)
+	{
+		return;
+	}
+
+	GameEventArg *args = input->args;
+
+	for (int index = 0; index < EVENT_VAR_COUNT; index++)
+	{
+		if (args[index].type == ARG_STRING && args[index].data.string != NULL)
+		{
+			free(args[index].data.string);
+			args[index].data.string = NULL;
+		}	
+
+		args[index].type = ARG_UNUSED;
+	}
+
+	return;
 }
 
 

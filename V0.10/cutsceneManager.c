@@ -29,7 +29,7 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 		return INVALID_DATA;
 	}
 
-	putConsoleStringTS("Starting Cutscene... ID: %d", inputID);
+	putConsoleTS("Starting Cutscene... ID: %d", inputID);
 
 	prepareCutsceneEnvironment(GameWorld);
 	
@@ -40,7 +40,6 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 		GameWorld->MainCamera.CameraMode = FREE_ROAM_RESTRICTED;
 
 		SayText("A test cutscene, huh?", NO_PORTRAIT, BASIC_TEXT, GameWorld);
-		SayText("How fantastic.", NO_PORTRAIT, COMIC_TEXT, GameWorld);
 	
 		SayTextOption("Play new cutscene?", NO_PORTRAIT, BASIC_FADE, GameWorld, 3, 
 					"Test scene", 	playCutscene(TEST_SCENE, GameWorld), 
@@ -51,7 +50,6 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 	case TEST_SCENE_2:
 		GameFlags[0].value++;
 
-//	ifElse(ifGreaterThan(0, 1, TEST_SCENE_2_AGAIN, GameWorld), NO_CUTSCENE);
 		SayText("A small tomato is really just a cherry.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
 		break;
 
@@ -100,7 +98,7 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 
 int initialiseCutsceneFromFile(const char sceneName[], World *GameWorld)
 {
-	putConsoleString("Starting Cutscene... Name: %s", sceneName);
+	putConsole("Starting Cutscene... Name: %s", sceneName);
 
 	prepareCutsceneEnvironment(GameWorld);
 
@@ -187,7 +185,7 @@ int updateSceneActions(SceneAction *queue, World *GameWorld)
 	{
 		if (queue->ActionID == SCENE_LOOP_POINT)
 		{
-			SceneLoop *data = &queue->ActionData.loopData; 
+			LoopData *data = &queue->ActionData.sceneLoop; 
 
 			data->currentLoop++;
 			if (data->currentLoop < data->repeatTimes)
@@ -222,7 +220,7 @@ int updateSceneActions(SceneAction *queue, World *GameWorld)
 		{
 			bool truth = false;
 
-			SceneBranchData *data = &queue->ActionData.branchData;
+			IfStatementData *data = &queue->ActionData.sceneIfStatement;
 			if (data->variableIndex >= 0 && data->variableIndex < GAME_FLAG_COUNT)
 			{
 				if (strcmp(data->expression, "=") == 0 || strcmp(data->expression, "==") == 0)
@@ -340,7 +338,7 @@ FuncResult RunSceneAction(SceneAction *inputAction, World *GameWorld)
 
 	case SCENE_TRIGGER_GAME_EVENT:
 		{
-			triggerGameEvent(&currentData.TriggerEvent, GameWorld);
+			triggerGameEvent(&inputAction->ActionData.TriggerEvent, GameWorld);
 		} break;
 
 	case SCENE_DISABLE_PLAYER:
@@ -757,7 +755,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 		int value = getNextArgInt(fPtr);
 		return setVariableTo(index, value, GameWorld);
 	}
-	else if (strcmp(inputString, "IFVARIABLE:") == 0)
+	else if (strcmp(inputString, "IFVARIABLE:") == 0 || strcmp(inputString, "IF:") == 0)
 	{
 		int index = getNextArgGameFlag(fPtr);
 
@@ -776,7 +774,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 			return NULL;
 		}
 
-		SceneBranchData *data = &ifStatement->ActionData.branchData;
+		IfStatementData *data = &ifStatement->ActionData.sceneIfStatement;
 		data->variableIndex = index;
 		data->comparisonValue = value;
 		memcpy(data->expression, expression, 3);
@@ -808,7 +806,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 
 			elseStatement->ActionData.instructionsToSkip = loadBracketedSceneActions(fPtr, GameWorld);
 			data->elseBranchPresent = true;
-			data->branchDistanceIfFalse++;	// to account for 'skip instructions' scene action
+			data->branchDistanceIfFalse++;	// +1 to account for 'skip instructions' scene action
 		}
 		else
 		{
@@ -1001,7 +999,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 		float yZoom = getNextArgFloat(fPtr);
 		return SceneAction_ChangeZoomTo(xZoom, yZoom, getNextArgFloat(fPtr), GameWorld);
 	}
-	else if (!strcmp(inputString, "PLACEWALL:") || !strcmp(inputString, "PLACEINVISWALL:") || !strcmp(inputString, "PLACEINVISIBLEWALL"))
+	else if (!strcmp(inputString, "PLACEWALL:") || !strcmp(inputString, "PLACEINVISWALL:") || !strcmp(inputString, "PLACEINVISIBLEWALL:"))
 	{
 		int xPos = getNextArgInt(fPtr);
 		int yPos = getNextArgInt(fPtr);
@@ -1009,18 +1007,21 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 		int ySize = getNextArgInt(fPtr);
 
 		// add 'CamRelative' or 'OnScreen' after the command to place the wall relative to the camera position
-		if (!atEndOfLine(fPtr))
+		long filePos = ftell(fPtr);
+
+		getNextArg(fPtr, inputString, MAX_LEN); 
+		stringToUpper(inputString);
+
+		if (!strcmp(inputString, "CAMRELATIVE") || !strcmp(inputString, "ONSCREEN"))
 		{
-			getNextArg(fPtr, inputString, MAX_LEN); 
-			stringToUpper(inputString);
-
-			if (!strcmp(inputString, "CAMRELATIVE") || !strcmp(inputString, "ONSCREEN"))
-			{
-				return placeInvisibleWall(xPos + (int)GameWorld->MainCamera.CameraX, yPos + (int)GameWorld->MainCamera.CameraY, xSize, ySize, GameWorld);
-			}
+			return placeInvisibleWall(xPos + (int)GameWorld->MainCamera.CameraX, yPos + (int)GameWorld->MainCamera.CameraY, xSize, ySize, GameWorld);
 		}
+		else
+		{
+			fseek(fPtr, filePos, SEEK_SET);
 
-		return placeInvisibleWall(xPos, yPos, xSize, ySize, GameWorld);
+			return placeInvisibleWall(xPos, yPos, xSize, ySize, GameWorld);
+		}
 	}
 	else if (!strcmp(inputString, "ENABLEPLAYER") || !strcmp(inputString, "ALLOWPLAYERCONTROL"))
 	{
@@ -1065,7 +1066,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 	}
 	else 
 	{
-		putConsoleError("Couldn't identity '%s' as a scene action. Correct SceneAction syntax is: \n[Action name]: [Number], [String], \"[String with gaps]\"", inputString);
+		putConsoleError("Couldn't identify '%s' as a scene action. Correct SceneAction syntax is: \n[Action name]: [Number], [String], \"[String with gaps]\"", inputString);
 	}
 
 
@@ -1240,7 +1241,7 @@ int EndCutscene(World *GameWorld)
 		return EXECUTION_UNNECESSARY;
 	}
 
-	putConsoleStringTS("Ending cutscene, returning to gameplay.");
+	putConsoleTS("Ending cutscene, returning to gameplay.");
 
 	GameWorld->CurrentCutscene = NO_CUTSCENE;
 	deleteAllSceneActions(GameWorld);
@@ -1390,8 +1391,8 @@ SceneAction* Repeat(int repeatTimes, int instructions, World *GameWorld)
 	}
 
 	newAction->parallelAction = false;
-	newAction->ActionData.loopData.repeatTimes = repeatTimes;
-	newAction->ActionData.loopData.instructionCount = instructions;
+	newAction->ActionData.sceneLoop.repeatTimes = repeatTimes;
+	newAction->ActionData.sceneLoop.instructionCount = instructions;
 
 	return newAction;
 }
@@ -2200,7 +2201,7 @@ SceneAction* createSceneAction(SceneActionID newActionID, World *GameWorld)
 
 	if (DebugSettings.showSceneActions)
 	{
-		putConsoleStringTS("Running scene action ID: %d (%s)", newActionID, getSceneActionName(newActionID));
+		putConsoleTS("Running scene action ID: %d (%s)", newActionID, getSceneActionName(newActionID));
 	}
 
 	return newAction;
@@ -2229,6 +2230,11 @@ SceneAction* deleteSceneAction(SceneAction *deleteAction, World *GameWorld)
 	if (nextAction != NULL)
 	{
 		nextAction->prevSceneAction = prevAction;
+	}
+
+	if (deleteAction->ActionID == SCENE_TRIGGER_GAME_EVENT)
+	{
+		cleanUpGameEventArgs(&deleteAction->ActionData.TriggerEvent);
 	}
 
 	GameWorld->SceneActionCount--;

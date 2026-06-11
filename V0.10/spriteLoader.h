@@ -18,7 +18,7 @@ Sprite* loadSprite(const char spriteName[], const char folderName[], RenderMode 
 
 
 // Loads sprite directly into provided spriteSet (inputSet)
-int loadSpriteIntoSpriteSet(const char spriteName[], const char folderName[], SpriteSet *inputSet, RenderMode renderMode);
+Sprite* loadSpriteIntoSpriteSet(const char spriteName[], const char folderName[], SpriteSet *inputSet, RenderMode renderMode);
 
 // Do not put char arrays that dont end with a null terminator; it doesnt check for this
 int removeFileExtension(char input[], const char fileName[]);
@@ -38,10 +38,9 @@ int switchSprite(int spriteID, int spriteSet, DisplayData *inputData);
 int switchSpriteByName(const char spriteName[], int spriteSet, DisplayData *inputData);
 
 
-int loadBackGroundSprite(const char spriteName[], int desiredSetID, RenderMode renderMode, BackgroundData *inputData);
+Sprite* loadBackGroundSprite(const char spriteName[], int desiredSetID, RenderMode renderMode, BackgroundData *inputData);
 
-
-int loadObjectSprite(const char spriteName[], SpriteSet *inputSet, RenderMode renderMode);
+Sprite* loadObjectSprite(const char spriteName[], SpriteSet *inputSet, RenderMode renderMode);
 
 
 int deleteSprite(SpriteSet *spriteSet, Sprite *input);

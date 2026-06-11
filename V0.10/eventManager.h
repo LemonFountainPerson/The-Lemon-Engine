@@ -1,17 +1,5 @@
 EXPORT int StartGame(World *GameWorld);
 
-int getCurrentIndex(int input[], int ID);
-
-int getIndexDistance(int input[], int ID);
-
-int getMostImagesOnRow(int row);
-
-int getMostImagesOnColumn(int column);
-
-int createRow(World *GameWorld);
-
-int createColumn(World *GameWorld);
-
 
 int HandleGameEvents(World *GameWorld, RenderFrame *ScreenData);
 
@@ -44,6 +32,8 @@ GameEvent* switchLevel(int level, World *GameWorld);
 GameEvent* playCutscene(int scene, World *GameWorld);
 
 GameEvent* playCutsceneFromFile(const char name[], World *GameWorld);
+
+GameEvent* Message(char msg[], int speakerID, World *GameWorld);
 
 GameEvent* Event_MovePlayer(float xPos, float yPos, World *GameWorld);
 
@@ -88,6 +78,21 @@ int validateZoom(Camera *inputCamera, RenderFrame *ScreenData);
 
 
 GameEvent* getNextArgGameEvent(FILE *file, World *GameWorld);
+
+void addGameEventInt(GameEvent *input, const char name[], int val);
+
+int getGameEventInt(GameEvent *input, const char name[]);
+
+void addGameEventFloat(GameEvent *input, const char name[], float val);
+
+int getGameEventFloat(GameEvent *input, const char name[]);
+
+void addGameEventString(GameEvent *input, const char name[], const char val[]);
+
+char* getGameEventString(GameEvent *input, const char name[]);
+
+void cleanUpGameEventArgs(GameEvent *input);
+
 
 
 int PauseGame(World *GameWorld);

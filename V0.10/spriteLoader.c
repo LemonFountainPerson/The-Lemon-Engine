@@ -275,7 +275,7 @@ SpriteSet* createNewSpriteSet(SpriteSetList *setList, int desiredSetID)
 	
 	if (DebugSettings.showSpriteset)
 	{
-		putConsoleStringTS("Creating new spriteset with ID: %d\n", desiredSetID);
+		putConsoleTS("Creating new spriteset with ID: %d (%s)\n", desiredSetID, getObjectIDName(desiredSetID));
 	}
 
 	return newSet;
@@ -340,7 +340,7 @@ Sprite* loadSprite(const char spriteName[], const char folderName[], RenderMode 
 }
 
 
-int loadSpriteIntoDesiredSet(const char spriteName[], const char folderName[], SpriteSetList *spriteSetSource, int desiredSetID, RenderMode renderMode)
+Sprite* loadSpriteIntoDesiredSet(const char spriteName[], const char folderName[], SpriteSetList *spriteSetSource, int desiredSetID, RenderMode renderMode)
 {
 	SpriteSet *desiredSet = getSpriteSet(spriteSetSource, desiredSetID);
 
@@ -348,23 +348,23 @@ int loadSpriteIntoDesiredSet(const char spriteName[], const char folderName[], S
 }
 
 
-int loadSpriteIntoSpriteSet(const char spriteName[], const char folderName[], SpriteSet *inputSet, RenderMode renderMode)
+Sprite* loadSpriteIntoSpriteSet(const char spriteName[], const char folderName[], SpriteSet *inputSet, RenderMode renderMode)
 {
 	if (inputSet == NULL || spriteName == NULL)
 	{
-		return MISSING_DATA;
+		return NULL;
 	}
 
 	if (getSpriteIndexSpriteSet(spriteName, inputSet) != -1)
 	{
-		return EXECUTION_UNNECESSARY;
+		return NULL;
 	}
 
 	Sprite *newSprite = loadSprite(spriteName, folderName, renderMode);
 
 	if (newSprite == NULL)
 	{
-		return LEMON_ERROR;
+		return NULL;
 	}
 
 	Sprite *currentSpritePtr = inputSet->lastSprite;
@@ -391,7 +391,7 @@ int loadSpriteIntoSpriteSet(const char spriteName[], const char folderName[], Sp
 
 	inputSet->lastSprite = newSprite;
 	
-	return LEMON_SUCCESS;
+	return newSprite;
 }
 
 
@@ -737,11 +737,11 @@ int compareFileNames(const char firstInput[], const char secondInput[])
 
 
 
-int loadBackGroundSprite(const char spriteName[], int desiredSetID, RenderMode renderMode, BackgroundData *inputData)
+Sprite* loadBackGroundSprite(const char spriteName[], int desiredSetID, RenderMode renderMode, BackgroundData *inputData)
 {
 	if (spriteName == NULL || inputData == NULL)
 	{
-		return MISSING_DATA;
+		return NULL;
 	}
 
 	SpriteSet *desiredSet = getSpriteSet(&inputData->bgSpriteSets, desiredSetID);
@@ -750,11 +750,11 @@ int loadBackGroundSprite(const char spriteName[], int desiredSetID, RenderMode r
 }
 
 
-int loadObjectSprite(const char spriteName[], SpriteSet *inputSet, RenderMode renderMode)
+Sprite* loadObjectSprite(const char spriteName[], SpriteSet *inputSet, RenderMode renderMode)
 {
 	if (spriteName == NULL || inputSet == NULL)
 	{
-		return MISSING_DATA;
+		return NULL;
 	}
 
 	if (inputSet->setID == PARTICLE)
@@ -818,7 +818,7 @@ int deleteSpriteSet(SpriteSet *inputSet, SpriteSetList *setList)
 
 	if (DebugSettings.showSpriteset)
 	{
-		putConsoleStringTS("Deleting spriteset with ID: %d", inputSet->setID);
+		putConsoleTS("Deleting spriteset with ID: %d (%s)", inputSet->setID, getObjectIDName(inputSet->setID));
 	}
 
 	int check = 0;

@@ -492,7 +492,7 @@ int asyncAudioLoad(void *data)
 		return LEMON_SUCCESS;
 	}
 
-	putConsoleString("\nOpening async loader...");
+	putConsole("\nOpening async loader...");
 
 	int count = 1;
 	while(closeAllThreads == false && count > 0)
@@ -554,7 +554,7 @@ int asyncAudioLoad(void *data)
 	SDL_UnlockMutex(scheduleLock);
 	SDL_UnlockMutex(threadLock);
 
-	putConsoleString("Closing async loader...");
+	putConsole("Closing async loader...");
 
 	return LEMON_SUCCESS;
 }
@@ -904,7 +904,12 @@ SoundInstance* createEmptySoundInstance(ChannelName Channel)
 
 int initialiseAudio(void)
 {
-	MIX_Init();
+	if (!MIX_Init())
+	{
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Failed to initialise audio system! \nEnsure SDL3_mixer.dll is in directory with executable.", NULL);
+		return LEMON_ERROR;
+	}
+
 	audioMixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
 
 	if (audioMixer == NULL)
@@ -1087,7 +1092,7 @@ void putConsoleCachedSounds(void)
 	{
 		if (storedSounds.list[i].name[0] != '\0')
 		{
-			putConsoleString("%d: '%s'", i, storedSounds.list[i].name);
+			putConsole("%d: '%s'", i, storedSounds.list[i].name);
 		}
 	}
 	

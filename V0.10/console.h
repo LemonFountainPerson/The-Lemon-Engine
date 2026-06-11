@@ -25,6 +25,8 @@ int ConsoleCommand_Restart(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_Tick(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
+int ConsoleCommand_Say(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
 int ConsoleCommand_SetCameraZoom(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_Fullscreen(char input[USER_INPUT_MAX_LEN], World *GameWorld);
@@ -97,5 +99,7 @@ int ConsoleCommand_DoABarrelRoll(char input[USER_INPUT_MAX_LEN], World *GameWorl
 
 int ConsoleCommand_Noclip(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
+
+void updateConsoleHistoryText(Text *input);
 
 void renderConsole(World *GameWorld, SDL_Renderer *Screen);

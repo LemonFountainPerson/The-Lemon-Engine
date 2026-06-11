@@ -1404,9 +1404,6 @@ Text* addDebugTextWithName(const char textPhrase[], const char name[], float xPo
 	{
 		text = addDebugText(textPhrase, xPos, yPos, wrapWidth, format);
 
-		putConsoleString("Hey %f %f", xPos, yPos);
-
-
 		setTextName(text, name);
 	}
 

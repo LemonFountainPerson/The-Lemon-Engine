@@ -31,13 +31,13 @@ int loadLevel(World *GameWorld, int level)
     // Debug
 	if (DebugSettings.ConsoleTextEnabled == CONSOLE_ALL_EVENTS)
 	{
-		putConsoleString("\nLoading into level %d...", level);
+		putConsole("\nLoading into level %d...", level);
 	}
 
 	// load data
 	if (loadLevelData(GameWorld, fPtr, CLOSE_FILE) == INVALID_DATA)
 	{
-		putConsoleString("\nError: Failed to load level %d", level);
+		putConsole("\nError: Failed to load level %d", level);
         GameWorld->GameState = ENCOUNTERED_FATAL_ERROR;
 		return LEMON_ERROR;
 	}
@@ -394,7 +394,7 @@ int logLevel(World *GameWorld)
 
 	if (fPtr == NULL)
 	{
-		putConsoleString("\nCould not save level %d", GameWorld->level);
+		putConsole("\nCould not save level %d", GameWorld->level);
 		return LEMON_ERROR;
 	}
 
@@ -633,7 +633,7 @@ int saveGameState(World *GameWorld)
 
 	closeFile(file);
 
-	putConsoleString("\nGame State Saved!\n");
+	putConsole("\nGame State Saved!\n");
 
 
 	return LEMON_SUCCESS;
@@ -914,7 +914,7 @@ int loadGameState(World *GameWorld)
 	closeFile(file);
 
 
-	putConsoleString("\nGame State Loaded!\n");
+	putConsole("\nGame State Loaded!\n");
 
 	return LEMON_SUCCESS;
 }
@@ -950,7 +950,7 @@ int checkFileHeader(FILE *fPtr, const char FileType[])
 	{
 		if (strcmp(charBuffer, LEMON_VERSION) != 0)
 		{
-			putConsoleString("\nFile load failed: Incompatible version number! Got: %s", charBuffer);
+			putConsole("\nFile load failed: Incompatible version number! Got: %s", charBuffer);
 			return INVALID_DATA;
 		}
 	}
@@ -967,7 +967,7 @@ int checkFileHeader(FILE *fPtr, const char FileType[])
 
 		if (strcmp(charBuffer, FILE_READER_VERSION) != 0)
 		{
-			putConsoleString("\nFile load failed: Incompatible version number! Got: %s", charBuffer);
+			putConsole("\nFile load failed: Incompatible version number! Got: %s", charBuffer);
 			return INVALID_DATA;
 		}
 	}
@@ -978,7 +978,7 @@ int checkFileHeader(FILE *fPtr, const char FileType[])
 
 	if (strcmp(charBuffer, FileType) != 0)
 	{
-		putConsoleString("\nFile load failed: This file does not contain expected data type!");
+		putConsole("\nFile load failed: This file does not contain expected data type!");
 		return INVALID_DATA;
 	}
 
@@ -1075,13 +1075,7 @@ FILE* openFile(const char fileName[], const char rootPath[], const char header[]
 	int rootPathLength = strlen(rootPath);
 	int fileNameLength = strlen(fileName);
 
-	if (fileNameLength >= MAX_LEN || rootPathLength >= MAX_LEN)
-	{
-		return NULL;
-	}
-
-
-	char path[MAX_LEN + MAX_LEN + 10] = {0};
+	char path[rootPathLength + fileNameLength + 10];
 	int pathLength = rootPathLength + fileNameLength;
 	strcpy(path, rootPath);
 	strcat(path, fileName);
@@ -1175,7 +1169,7 @@ int loadLevelData(World *GameWorld, FILE *fPtr, int lineLimit)
 		{
 			loadLevelFlag(GameWorld, fPtr);
 		}
-		else if (strcmp(buffer, "IFVARIABLE:") == 0)
+		else if (strcmp(buffer, "IFVARIABLE:") == 0 || strcmp(buffer, "IF") == 0)
 		{
 			loadConditionalStatement(GameWorld, fPtr);
 		}
@@ -1190,16 +1184,16 @@ int loadLevelData(World *GameWorld, FILE *fPtr, int lineLimit)
 			}
 			else
 			{
-				putConsoleString("Tried to load preset from file: %s", buffer);
+				putConsole("Tried to load preset from file: %s", buffer);
 			}
 		}
 		else
 		{
 			int lineCount = getCurrentLineNumber(fPtr);
-			putConsoleString("\nLevelData load failed. Unrecognised data found at Line: %d", lineCount);
+			putConsole("\nLevelData load failed. Unrecognised data found at Line: %d", lineCount);
 			if (DEBUG_MODE)
 			{
-				putConsoleString("\nRead: %s", buffer);
+				putConsole("\nRead: %s", buffer);
 			}
 
 			//return INVALID_DATA;
@@ -1279,7 +1273,7 @@ int loadConditionalStatement(World *GameWorld, FILE *fPtr)
 		if (!inRange(flagIndex, 0, GAME_FLAG_COUNT - 1))
 		{
 			// this will result in the level load being aborted
-			putConsoleString("\nInvalid game flag index! Got: %d \nGame flags can only go from 0 to %d", flagIndex, GAME_FLAG_COUNT - 1);
+			putConsole("\nInvalid game flag index! Got: %d \nGame flags can only go from 0 to %d", flagIndex, GAME_FLAG_COUNT - 1);
 			return INVALID_DATA;
 		}
 	}
@@ -1292,7 +1286,7 @@ int loadConditionalStatement(World *GameWorld, FILE *fPtr)
 
 		if (flagIndex < 0)
 		{
-			putConsoleString("\nGameFlag '%s' does not exist", name);
+			putConsole("\nGameFlag '%s' does not exist", name);
 			return INVALID_DATA;
 		}
 	}
@@ -1343,9 +1337,9 @@ int loadConditionalStatement(World *GameWorld, FILE *fPtr)
 void getNextArgIfExpression(char dest[3], FILE *fPtr)
 {
 	memset(dest, 0, 3 * sizeof(char));
-	int readData = fread(dest, sizeof(char), 1, fPtr);
+	int readData = 1;
 
-	while (dest[0] < 33 && !feof(fPtr) && readData < 1)
+	while (dest[0] < 33 && !feof(fPtr) && readData == 1)
 	{
 		readData = fread(dest, sizeof(char), 1, fPtr);
 	}
@@ -1758,7 +1752,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		if (getGameFlag(name) >= 0)
 		{
-			putConsoleString("GameFlag \"%s\" already exists", name);
+			putConsole("GameFlag \"%s\" already exists", name);
 			return LEMON_SUCCESS;
 		}
 
@@ -2171,6 +2165,30 @@ void setFilePos(FILE *file, int pos)
 
 	long position = ftell(file);
 	fseek(file, pos, SEEK_SET);
+
+	if (prevPositions.file != file)
+	{
+		prevPositions.file = file;
+		prevPositions.head = 0;
+		prevPositions.stored = 0;
+	}
+
+	prevPositions.positions[prevPositions.head] = position;
+	prevPositions.head = (prevPositions.head + 1) % FILE_POSITION_HISTORY_LENGTH;
+	if (prevPositions.stored < FILE_POSITION_HISTORY_LENGTH)
+	{
+		prevPositions.stored++;
+	}
+}
+
+void saveFilePos(FILE *file)
+{
+	if (!file)
+	{
+		return;
+	}
+
+	long position = ftell(file);
 
 	if (prevPositions.file != file)
 	{

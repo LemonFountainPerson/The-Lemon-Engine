@@ -68,17 +68,22 @@ EXPORT void setGameFlag(const char name[], int newValue);
 EXPORT void changeGameFlagBy(const char name[], int value);
 
 
-EXPORT void putConsoleString(const char input[], ...);
+EXPORT void putConsole(const char input[], ...);
 
-EXPORT void putConsoleStringTS(const char input[], ...);
+EXPORT void putConsoleTS(const char input[], ...);
 
 EXPORT void putConsoleError(const char input[], ...);
 
-EXPORT void addInputHistory(const char input[], InputHistory *history);
+EXPORT void addMessageHistory(const char input[], MessageHistory *history);
 
-EXPORT char* getPreviousInputHistory(InputHistory *history);
+EXPORT char* getPreviousMessageHistory(MessageHistory *history);
 
-EXPORT char* getNextInputHistory(InputHistory *history);
+EXPORT char* getNextMessageHistory(MessageHistory *history);
+
+
+EXPORT void initialiseChatLog(ChatLog *chat);
+
+EXPORT void addMessageToChatLog(const char msg[], int ID, Uint64 tickSent);
 
 
 EXPORT int ResetCamera(Camera *inputCam);

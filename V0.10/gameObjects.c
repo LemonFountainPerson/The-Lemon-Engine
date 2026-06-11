@@ -21,7 +21,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 
 	if (objectID >= OBJECT_TYPE_COUNT || objectID < LEVEL_FLAG_OBJ)
 	{
-		putConsoleString("\nThis object is not defined! Type: %d", objectID);
+		putConsole("\nThis object is not defined! Type: %d", objectID);
 		return NULL;
 	}
 
@@ -36,7 +36,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 	// Debug
 	if (DebugSettings.ConsoleTextEnabled == CONSOLE_ALL_EVENTS)
 	{
-		putConsoleStringTS("Created object ---- ID: %d (%s) ", objectID, getObjectIDName(objectID));
+		putConsoleTS("Created object ---- ID: %d (%s) ", objectID, getObjectIDName(objectID));
 	}
 
 
@@ -320,7 +320,7 @@ Object* AddNamedObject(World *GameWorld, const char name[], int objectID, int xP
 	if (DebugSettings.ConsoleTextEnabled == 9999)	// this is still kind of dumb
 	{
 		DebugSettings.ConsoleTextEnabled = CONSOLE_ALL_EVENTS;
-		putConsoleStringTS("Created object ---- ID: %d (%s)  Named: %s", objectID, getObjectIDName(objectID), name);
+		putConsoleTS("Created object ---- ID: %d (%s)  Named: %s", objectID, getObjectIDName(objectID), name);
 	}
 
 	return createdObject;
@@ -381,7 +381,7 @@ Object* cloneObject(Object *input, World *GameWorld)
 	// Debug
 	if (DebugSettings.ConsoleTextEnabled == CONSOLE_ALL_EVENTS)
 	{
-		putConsoleString("as clone of %s", input->name);
+		putConsole("as clone of %s", input->name);
 	}
 
 	return newObject;
@@ -540,7 +540,7 @@ Object* createNewObject(void)
 
 	if (newObject == NULL)
 	{
-		putConsoleString("\nError: Could not allocate memory for new object.\n");
+		putConsole("\nError: Could not allocate memory for new object.\n");
 		return NULL;
 	}
 
@@ -548,7 +548,7 @@ Object* createNewObject(void)
 
 	if (newObject->ObjectBox == NULL)
 	{
-		putConsoleString("\nError: Could not allocate memory for new object's physics box.\n");
+		putConsole("\nError: Could not allocate memory for new object's physics box.\n");
 		free(newObject);
 		return NULL;
 	}
@@ -557,7 +557,7 @@ Object* createNewObject(void)
 
 	if (newObject->ObjectDisplay == NULL)
 	{
-		putConsoleString("\nError: Could not allocate memory for new object's display data.\n");
+		putConsole("\nError: Could not allocate memory for new object's display data.\n");
 		free(newObject->ObjectBox);
 		free(newObject);
 		return NULL;
@@ -1050,7 +1050,7 @@ Object* deleteObject(Object *input, ObjectController *ObjectList)
 
 	if (DebugSettings.ConsoleTextEnabled == CONSOLE_ALL_EVENTS)
 	{
-		putConsoleStringTS("Deleted object ---- ID: %d (%s)  Name: '%s'", input->ObjectID, getObjectIDName(input->ObjectID), input->name);
+		putConsoleTS("Deleted object ---- ID: %d (%s)  Name: '%s'", input->ObjectID, getObjectIDName(input->ObjectID), input->name);
 	}
 
 	return nextObject;
@@ -1225,7 +1225,7 @@ int UnmarkObjectForDeletion(Object *inputObject)
 
 	if (DebugSettings.ConsoleTextEnabled == CONSOLE_ALL_EVENTS)
 	{
-		putConsoleString("Unmarked '%s' for deletion! ---- ID: %d (%s)", 
+		putConsole("Unmarked '%s' for deletion! ---- ID: %d (%s)", 
 		inputObject->name, inputObject->ObjectID, getObjectIDName(inputObject->ObjectID));
 	}
 
@@ -2390,7 +2390,7 @@ int removeComponents(Object *input, ObjectController *ObjectList)
 void initialiseSparseList(SparseList *input, const char name[])
 {
 	strcpy(input->componentName, name);
-	putConsoleString("Initialising %s...", name);
+	putConsole("Initialising %s...", name);
 
 	// -1 is tombstone value (empty slot)
 	for (int i = 0; i < EngineSettings.MaxObjects; i++)
@@ -4037,7 +4037,7 @@ Object* CheckForGround(Object *input, World *GameWorld)
 		// GroundBox should only be set once, ideally by the AppyGravity function, so if it has been set, do not override
 		if ((input->reserved & RFLAG_GROUND_SET) == 0)
 		{
-			//putConsoleStringTS("Updating");
+			//putConsoleTS("Updating");
 			input->reserved |= RFLAG_GROUND_SET;
 
 			actualBox->GroundBox = GroundObject->ObjectBox;

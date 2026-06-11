@@ -22,4 +22,8 @@ cd installation/SDL_ttf-3.2.2
 cmake -S . -B build
 cmake --build build
 sudo cmake --install build --prefix /usr/local
+cd installation/SDL_net-3.2.0
+cmake -S . -B build
+cmake --build build
+sudo cmake --install build --prefix /usr/local
 exec bash

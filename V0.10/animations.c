@@ -102,7 +102,7 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 
 			if (DebugSettings.ConsoleTextEnabled == CONSOLE_ALL_EVENTS)
 			{
-				putConsoleString("Allocating animation (%s) of size: %d + %d", newAnimation->name, sizeof(Animation), (sizeof(AnimationFrame) * count));
+				putConsole("Allocating animation (%s) of size: %d + %d", newAnimation->name, sizeof(Animation), (sizeof(AnimationFrame) * count));
 			}
 
 			newAnimation->contiguousFrames = true;
@@ -149,19 +149,22 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 				fseek(fPtr, tempFilePosition, SEEK_SET);
 			}
 			
-			loadSpriteIntoSpriteSet(SpriteName, FolderName, newSet, renderMode);
+			Sprite *newSprite = loadSpriteIntoSpriteSet(SpriteName, FolderName, newSet, renderMode);
 
-			// Sprite *newSprite = getSpriteSpriteSet(SpriteName, newSet);
+			if (newSprite == NULL)
+			{
+				continue;
+			}
 
 			// tempFilePosition = ftell(fPtr);
 			// getNextArg(fPtr, argBuffer, MAX_LEN);
 			// stringToLower(argBuffer);
 
-			// if (!strcmp(argBuffer, "pixelmode") && newSprite != NULL)
+			// if (!strcmp(argBuffer, "pixelmode"))
 			// {
 			// 	SDL_SetTextureScaleMode(newSprite->texture, SDL_SCALEMODE_PIXELART);
 			// }
-			// else if ((!strcmp(argBuffer, "aliasingmode") || !strcmp(argBuffer, "linearmode")) && newSprite != NULL)
+			// else if (!strcmp(argBuffer, "aliasingmode") || !strcmp(argBuffer, "linearmode"))
 			// {
 			// 	SDL_SetTextureScaleMode(newSprite->texture, SDL_SCALEMODE_LINEAR);
 			// }

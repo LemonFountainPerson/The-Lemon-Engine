@@ -713,8 +713,6 @@ typedef struct FrameUpdateFunction
 	TriggerableFunction FunctionPointer;
 } FrameUpdateFunction;
 
-#define MAX_COMPONENT_SLOTS 256
-
 
 typedef struct HealthComponent
 {
@@ -915,8 +913,8 @@ typedef enum GameEventID
 	EVENT_PLAY_CUTSCENE,
 	EVENT_PLAY_CUTSCENE_FROM_FILE,
 	EVENT_PLAY_SOUND,
+	EVENT_CHAT_MESSAGE,
 	EVENT_MOVE_PLAYER,
-	EVENT_MOVE_OBJECT,
 	EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR,
 	EVENT_SET_BRIGHTNESS,
 	EVENT_CHANGE_SCREEN_SIZE,
@@ -934,25 +932,44 @@ const char* getEventName(GameEventID input);
 GameEventID getEventID(const char input[]);
 
 
-#define GAME_EVENT_VAR_COUNT 4
 typedef struct GameEventData
 {
-	float vars[GAME_EVENT_VAR_COUNT];		
-	char string[MAX_LEN];
-	Object *objReference;
+	float numbers[EVENT_VAR_COUNT];		
+	char string[MESSAGE_LENGTH];
 } GameEventData;
 
-// possible chat message format:  
-// vars[0]: PlayerID, vars[1]: long message boolean, vars[2]: length of string if msg is long  
-// if msg is long, text is added via dedicated struct? 
-// string: msg text if msg is short
-// short msg < 80 chars, long msg >= 80 chars
+
+typedef enum ArgType
+{
+	ARG_UNUSED,
+	ARG_STRING,
+	ARG_FLOAT,
+	ARG_INTEGER
+} ArgType;
+
+typedef union ArgData
+{
+	int iNumber;
+	float fNumber;
+	char *string;
+} ArgData;
+
+typedef struct GameEventArg
+{
+	char name[EVENT_ARG_NAME_MAX_LEN];
+	ArgType type;	
+	ArgData data;
+} GameEventArg;
 
 typedef struct GameEvent
 {
 	GameEventID EventID;
-	GameEventData EventData;
+
+	//GameEventData EventData;
+	GameEventArg args[EVENT_VAR_COUNT];
 	FILE *loadedFile;
+
+	Uint64 tickTriggered;
 } GameEvent;
 
 typedef struct GameEventManager
@@ -1142,16 +1159,16 @@ typedef struct BackgroundData
 } BackgroundData;
 
 
-struct ObjectMeta
+typedef struct ObjectMeta
 {
-	char name[OBJECT_NAME_LENGTH + 1];
+	char name[OBJECT_NAME_LENGTH];
 	ObjectType objectID;
 	int xPos;
 	int yPos;
-};
+} ObjectMeta;
 
 
-typedef struct sceneBranchData
+typedef struct IfStatementData
 {
 	int variableIndex;
 	int comparisonValue;
@@ -1159,35 +1176,35 @@ typedef struct sceneBranchData
 
 	bool elseBranchPresent;
 	int branchDistanceIfFalse;	// amount of instructions to skip if false
-} SceneBranchData;
+} IfStatementData;
 
-typedef struct SceneLoop
+typedef struct LoopData
 {
 	int repeatTimes;
 	int currentLoop;
 	int instructionCount;
-} SceneLoop;
+} LoopData;
 
 union SceneActionArguments
 {
-	int SceneID;
+	LoopData sceneLoop;
 	int instructionsToSkip;
+	int SceneID;
+	GameEvent TriggerEvent;
 	int WaitTicks[2];
+	int variableArgs[2];
+	IfStatementData sceneIfStatement;
 	struct TextBox *sceneText;
 	int animationDetails[2];
 	float positions[2];
-	struct SoundMeta soundData;
-	struct ObjectMeta objectInfo;
+	ObjectMeta sceneObjectInfo;
 	bool hidden;
+	Layer layer;
+	int invisWall[4];
+	SoundMeta soundData;
 	float CameraData[3];
 	float zoomScales[3];
 	int cameraMode;
-	Layer layer;
-	SceneBranchData branchData;
-	int variableArgs[2];
-	int invisWall[4];
-	GameEvent TriggerEvent;
-	SceneLoop loopData;
 };
 
 typedef enum SceneActionID
@@ -1251,25 +1268,39 @@ typedef int (*ConsoleCommandFunction)(char *, World *);
 typedef struct ConsoleCommand
 {
 	char name[MAX_LEN];
-	char helpString[HELP_STRING_MAX];
+	char helpString[CONSOLE_HELP_MAX_LEN];
 	char formatString[MAX_LEN];
 	ConsoleCommandFunction function;
 } ConsoleCommand;
 
-typedef struct InputHistory
+typedef struct MessageHistory
 {
 	int head;
 	int searchIndex;
-	int entries;
-	char inputs[USER_INPUT_HISTORY_LEN][CONSOLE_STRING_LENGTH];
-} InputHistory;
+	Uint64 inputCount;
+	char inputs[INPUT_HISTORY_LEN][MESSAGE_LENGTH];
+} MessageHistory;
 
-
-typedef struct Entity
+typedef struct ChatMessage
 {
-	int EntityID;
+	Uint64 tickSent;
+	int speakerID;
+	char message[MESSAGE_LENGTH];
+} ChatMessage;
 
-} Entity;
+typedef struct ChatLog
+{
+	ChatMessage Log[CHAT_LOG_COUNT];
+	int current;
+	Uint64 chatCount;
+} ChatLog;
+
+typedef enum ChatSpeakerID
+{
+	MYSELF_MSG = -2,
+	SYSTEM_MSG = -1
+} ChatSpeakerID;
+
 
 typedef struct World
 {
@@ -1300,6 +1331,43 @@ typedef struct World
 	float GlobalGravityY;
 	float GlobalGravityX;
 } World;
+
+
+/*
+	required data to be sent across networking
+
+	- Game Events (Triggering level transitions, cutscenes, sounds, etc.)
+	- Chat messages (part of game event system or separate?)
+	- State of specifically tracked objects (probably can't be game events, modular components to only signify changed data points?)
+
+
+*/
+
+
+typedef enum ConnectionType
+{
+	OFFLINE,
+	SERVER,
+	CLIENT
+} ConnectionType;
+
+#define MAX_CLIENTS 32
+
+typedef struct NetworkData
+{
+	ConnectionType connectMode;
+
+	// data if app is server
+	NET_Server *Server;
+	NET_StreamSocket *connectedClients[MAX_CLIENTS];
+	int clientCount;
+	
+	// data if app is client
+	NET_StreamSocket *myClient;
+	NET_Status connectionStatus;
+	NET_Address *serverAddress;
+} NetworkData;
+
 
 typedef struct MouseData
 {
@@ -1424,15 +1492,14 @@ typedef struct DebugConfig
 {
 	bool consoleOpen;
 	ConsoleTextSetting ConsoleTextEnabled;
-	char ConsoleString[CONSOLE_STRING_LENGTH];
-	InputHistory consoleHistory;
+	MessageHistory consoleHistory;
 	float consoleXPos;
 	float consoleYPos;
 	int scrollVal;
 	bool consoleFocus;
 	ConsoleCommand commands[MAX_CONSOLE_COMMANDS];
 	
-	InputHistory userInputHistory;
+	MessageHistory userInputHistory;
 	int argIndex;
 
 	int PauseEngine;
@@ -1473,6 +1540,8 @@ EXPORT extern GamePadData GamePadInput;
 EXPORT extern ButtonState buttons[INPUT_COUNT];
 
 EXPORT extern GameFlag GameFlags[GAME_FLAG_COUNT];
+
+EXPORT extern ChatLog Chat;
 
 EXPORT extern EngineConfig EngineSettings;
 
