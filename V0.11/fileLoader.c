@@ -1,0 +1,2524 @@
+#include "LemonEngine.h"
+
+
+int loadLevel(World *GameWorld, int level)
+{
+	if (GameWorld == NULL || level < 0)
+	{
+		return MISSING_DATA;
+	}
+
+
+	// load file
+	char fileName[20] = {0};
+	snprintf(fileName, 20, "Level%d", level);
+
+	FILE *fPtr = openFile(fileName, LEVELDATA_ROOT, "--LEVEL_DATA--");
+
+	if (fPtr == NULL)
+	{
+		return INVALID_DATA;
+	}
+
+	// Erase existing data
+	GameWorld->GameState = LOADING;
+	clearLevelData(GameWorld);
+    GameWorld->level = level;
+
+    // Debug
+	if (DebugSettings.ConsoleTextEnabled == CONSOLE_ALL_EVENTS)
+	{
+		putConsole("\nLoading into level %d...", level);
+	}
+
+	// load data
+	if (loadLevelData(GameWorld, fPtr, true) == INVALID_DATA)
+	{
+		putConsole("\nError: Failed to load level %d", level);
+        GameWorld->GameState = ENCOUNTERED_FATAL_ERROR;
+		return LEMON_ERROR;
+	}
+
+	GameWorld->GameState = GAMEPLAY;
+	GameWorld->GamePaused = 0;
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int loadPartition(World *GameWorld, int partID)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (partID < 0)
+	{
+		return INVALID_DATA;
+	}
+
+
+	// load file
+	char fileName[MAX_LEN] = {0};
+	snprintf(fileName, MAX_LEN, "Level%d_Part%d", GameWorld->level, partID);
+
+	FILE *fPtr = openFile(fileName, LEVELDATA_ROOT, "--PARTITION_DATA--");
+
+	if (fPtr == NULL)
+	{
+		return INVALID_DATA;
+	}
+
+	// load data
+	if (loadLevelData(GameWorld, fPtr, true) == INVALID_DATA)
+	{
+		return LEMON_ERROR;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+#define SAVE_FILE_HEADER "--SAVE_DATA--"
+int saveGame(int saveFile, World *GameWorld)
+{
+	char path[MAX_LEN * 2] = {0};
+	snprintf(path, MAX_LEN * 2, "%sSaveFile%d.txt", SAVEDATA_ROOT, saveFile);
+	FILE *fPtr = fopen(path, "wb+");
+
+	if (fPtr == NULL)
+	{
+		return INVALID_DATA;
+	}
+
+	// write header
+	fwrite(LEMON_VERSION, sizeof(char), strlen(LEMON_VERSION), fPtr);
+	fwrite(SAVE_FILE_HEADER, sizeof(char), strlen(SAVE_FILE_HEADER), fPtr);
+	fwrite("\n", sizeof(char), 1, fPtr);
+
+	char buffer[MAX_LEN + 20] = {0};
+	char name[MAX_LEN] = {0};
+
+	snprintf(buffer, MAX_LEN, "Level: %d\n", GameWorld->level);
+	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+
+	fwrite("GameFlags: {", sizeof(char), 12, fPtr);
+	for (int i = 0; i < GAME_FLAG_COUNT; i++)
+	{
+		if (GameFlags[i].name[0] != '\0')
+		{
+			memset(name, 0, MAX_LEN);
+			memcpy(name, GameFlags[i].name, GameFlags[i].nameLength);
+			snprintf(buffer, MAX_LEN + 20, "\n\"%s\": %d", name, GameFlags[i].value);
+			fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+		}
+	}
+	fwrite(" }\n", sizeof(char), 3, fPtr);
+
+	fwrite("ENDFILE", sizeof(char), 7, fPtr);
+
+	//encodeLEMFile(fPtr, path);
+
+	fclose(fPtr);
+
+	return LEMON_SUCCESS;
+}
+
+int saveSettings(int saveFile, World *GameWorld)
+{
+	char path[MAX_LEN * 2] = {0};
+	snprintf(path, MAX_LEN * 2, "%sSettingsFile%d.txt", SAVEDATA_ROOT, saveFile);
+	FILE *fPtr = fopen(path, "wb+");
+
+	if (fPtr == NULL)
+	{
+		return INVALID_DATA;
+	}
+
+	// write header
+	fwrite(LEMON_VERSION, sizeof(char), strlen(LEMON_VERSION), fPtr);
+	fwrite(SAVE_FILE_HEADER, sizeof(char), strlen(SAVE_FILE_HEADER), fPtr);
+	fwrite("\n", sizeof(char), 1, fPtr);
+
+	char buffer[MAX_LEN + 20] = {0};
+
+	snprintf(buffer, MAX_LEN, "Resolution: %d %d\n", ScreenData.screenWidth, ScreenData.screenHeight);
+	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+
+	if (ScreenData.Fullscreen)
+	{
+		fwrite("Fullscreen: true\n", sizeof(char), 17, fPtr);
+	}
+	else
+	{
+		fwrite("Fullscreen: false\n", sizeof(char), 18, fPtr);
+	}
+
+	writeBooleanPhrase(fPtr, "Vsync", RenderSettings.vSync);
+	writeBooleanPhrase(fPtr, "DrawSprites", RenderSettings.drawSprites);
+	writeBooleanPhrase(fPtr, "DrawBackGround", RenderSettings.drawBackGround);
+	writeBooleanPhrase(fPtr, "DrawHUD", RenderSettings.drawHUD);
+	writeBooleanPhrase(fPtr, "DrawParticles", RenderSettings.drawParticles);
+	writeBooleanPhrase(fPtr, "DrawCamViews", RenderSettings.drawCamViews);
+
+	snprintf(buffer, MAX_LEN, "MaxFrameRate: %d\n", RenderSettings.RendersPerSecond);
+	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+
+	writeBooleanPhrase(fPtr, "DrawHitboxes", RenderSettings.drawHitboxes);
+
+	snprintf(buffer, MAX_LEN, "HitboxThickness: %d\n", RenderSettings.HitboxThickness);
+	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+
+	snprintf(buffer, MAX_LEN, "DefaultTextSize: %f\n", TextSettings.defaultTextPointSize);
+	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+
+	snprintf(buffer, MAX_LEN, "DefaultFont: \"%s\"\n", TextSettings.defaultFont);
+	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+
+	fwrite("ENDFILE", sizeof(char), 7, fPtr);
+
+	//encodeLEMFile(fPtr, path);
+
+	fclose(fPtr);
+
+	return LEMON_SUCCESS;
+}
+
+int loadSave(int saveFile, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	char fileName[MAX_LEN] = {0};
+	snprintf(fileName, MAX_LEN, "SaveFile%d", saveFile);
+
+	return loadSaveData(fileName, GameWorld);
+}
+
+int loadSettings(int settingsFile, World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	char fileName[MAX_LEN] = {0};
+	snprintf(fileName, MAX_LEN, "SettingsFile%d", settingsFile);
+
+	return loadSaveData(fileName, GameWorld);
+}
+
+
+void writeBooleanPhrase(FILE *fPtr, const char name[], bool trueValue)
+{
+	char buffer[MAX_LEN] = {0};
+
+	if (trueValue)
+	{
+		snprintf(buffer, MAX_LEN, "%s: true\n", name);
+	}
+	else
+	{
+		snprintf(buffer, MAX_LEN, "%s: false\n", name);
+	}
+	
+	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+
+	return;
+}
+
+int loadSaveData(const char *fileName, World *GameWorld)
+{
+	if (Networking.connectMode != OFFLINE)
+	{
+		putConsoleError("Cannot load save data while online!");
+		return LEMON_ERROR;
+	}
+
+	FILE *fPtr = openFile(fileName, SAVEDATA_ROOT, SAVE_FILE_HEADER);
+
+	if (fPtr == NULL)
+	{
+		return INVALID_DATA;
+	}
+
+	char readPhrase[MAX_LEN] = {0};
+	while (!endOfFile(fPtr))
+	{
+		Next_Save_Instruction:
+
+		getNextArg(fPtr, readPhrase, MAX_LEN);
+		stringToUpper(readPhrase);
+
+		if (!strcmp(readPhrase, "FULLSCREEN:"))
+		{
+			getNextArg(fPtr, readPhrase, MAX_LEN);
+			stringToUpper(readPhrase);
+
+			if (!strcmp(readPhrase, "TRUE") || !strcmp(readPhrase, "YES"))
+			{
+				enableFullscreen(GameWorld);
+			}
+			else if (!strcmp(readPhrase, "EXPAND") || !strcmp(readPhrase, "TRUE/EXPAND"))
+			{
+				enableFullscreenScaled(GameWorld);
+			}
+			else if (!strcmp(readPhrase, "FALSE") || !strcmp(readPhrase, "NO"))
+			{
+				disableFullscreen(GameWorld);
+			}
+		}
+		if (!strcmp(readPhrase, "MAXFRAMERATE:"))
+		{
+			int framerate = getNextArgInt(fPtr);
+			
+			setRenderRefreshRate(framerate);
+		}
+		else if (!strcmp(readPhrase, "RESOLUTION:"))
+		{
+			int width = getNextArgInt(fPtr);
+			int height = getNextArgInt(fPtr);
+
+			changeScreenSize(width, height, GameWorld);
+		}
+		else if (!strcmp(readPhrase, "GAMEFLAGS:"))
+		{
+			if (!bracketedStatementPresent(fPtr, NULL))
+			{
+				goto Next_Save_Instruction;
+			}
+
+			consumeStatement(fPtr, '{');
+
+			int i = 0;
+			int index;
+			int flagValue = 0;
+			while (i < GAME_FLAG_COUNT)
+			{
+				i++;
+				getNextArg(fPtr, readPhrase, MAX_LEN);
+				index = getGameFlag(readPhrase);
+				consumeStatement(fPtr, ':');
+
+				if (!hasNextArgNumber(fPtr))
+				{
+					break;
+				}
+
+				flagValue = getNextArgInt(fPtr);
+				if (index >= 0)
+				{
+					GameFlags[index].value = flagValue;
+				}
+				else
+				{
+					addGameFlag(readPhrase, flagValue);
+				}
+			}
+
+			consumeStatement(fPtr, '}');
+		}
+		else if (!strcmp(readPhrase, "LEVEL:"))
+		{
+			switchLevel(getNextArgInt(fPtr), GameWorld);
+		}	
+		else if (!strcmp(readPhrase, "HITBOXTHICKNESS:"))
+		{
+			RenderSettings.HitboxThickness = getNextArgInt(fPtr);
+		}
+		else if (!strcmp(readPhrase, "DEFAULTTEXTSIZE:"))
+		{
+			TextSettings.defaultTextPointSize = getNextArgFloat(fPtr);
+			if (TextSettings.defaultTextPointSize < 1.0)
+			{
+				TextSettings.defaultTextPointSize = 44.0;
+			}
+		}
+		else if (!strcmp(readPhrase, "DEFAULTFONT:"))
+		{
+			getNextArg(fPtr, TextSettings.defaultFont, FONT_FILE_NAME_MAX);
+		}
+		else
+		{
+			bool value = getNextArgBool(fPtr);
+
+			if (!strcmp(readPhrase, "DRAWSPRITES:"))
+			{	
+				RenderSettings.drawSprites = value;
+			}
+			else if (!strcmp(readPhrase, "DRAWBACKGROUND:"))
+			{
+				RenderSettings.drawBackGround = value;
+			}
+			else if (!strcmp(readPhrase, "DRAWHUD:"))
+			{
+				RenderSettings.drawHUD = value;
+			}
+			else if (!strcmp(readPhrase, "DRAWPARTICLES:"))
+			{
+				RenderSettings.drawParticles = value;
+			}
+			else if (!strcmp(readPhrase, "DRAWCAMVIEWS:"))
+			{
+				RenderSettings.drawCamViews = value;
+			}		
+			else if (!strcmp(readPhrase, "DRAWHITBOXES:"))
+			{
+				RenderSettings.drawHitboxes = value;
+			}
+			else if (!strcmp(readPhrase, "VSYNC:"))
+			{
+				setVsync(value);
+			}	
+		}
+	}
+
+	closeFile(fPtr);
+
+	return LEMON_SUCCESS;
+} 
+
+
+int logLevel(World *GameWorld)
+{
+	// BROKEN
+	FILE *fPtr;
+
+	char path[strlen(LEVELDATA_ROOT) + 18];
+	strcpy(path, LEVELDATA_ROOT);
+	strcat(path, "Level0LOG.txt");
+	path[strlen(LEVELDATA_ROOT) + 5] = GameWorld->level + 48;
+
+	fPtr = fopen(path, "wb");
+
+	if (fPtr == NULL)
+	{
+		putConsole("\nCould not save level %d", GameWorld->level);
+		return LEMON_ERROR;
+	}
+
+	char Header[25] = LEMON_VERSION;
+	strcat(Header, "--LOG_DATA--");
+
+	fwrite(Header, sizeof(char), 20, fPtr);
+
+	fwrite("\n", sizeof(char), 2, fPtr);
+
+
+	Object *currentObject = GameWorld->ObjectList.firstObject;
+	PhysicsBox *currentBox;
+
+	char buffer[INT_MAX_LEN] = {0};
+
+	while (currentObject != NULL)
+	{
+		switch(currentObject->ObjectID)
+		{
+			case LEVEL_FLAG_OBJ:
+				fwrite("LVFLAG: ", sizeof(char), 8, fPtr);
+				break;
+
+			default:
+				fwrite("OBJECT: ", sizeof(char), 8, fPtr);
+				break;
+		}
+
+
+		int size = convertIntToStr(buffer, currentObject->ObjectID);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+		fwrite(", ", sizeof(char), 2, fPtr);
+
+		currentBox = currentObject->ObjectBox;
+
+		size = convertIntToStr(buffer, currentBox->xPos);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+		fwrite(", ", sizeof(char), 2, fPtr);
+
+		size = convertIntToStr(buffer, currentBox->yPos);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+		fwrite(", ", sizeof(char), 2, fPtr);
+
+		size = convertIntToStr(buffer, currentBox->xSize);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+		fwrite(", ", sizeof(char), 2, fPtr);
+
+		size = convertIntToStr(buffer, currentBox->ySize);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+		fwrite(", ", sizeof(char), 2, fPtr);
+
+
+		size = convertIntToStr(buffer, currentObject->arg1);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+		fwrite(", ", sizeof(char), 2, fPtr);
+
+		size = convertIntToStr(buffer, currentObject->arg2);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+		fwrite(", ", sizeof(char), 2, fPtr);
+
+		size = convertIntToStr(buffer, currentObject->arg4);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+		fwrite(", ", sizeof(char), 2, fPtr);
+
+		size = convertIntToStr(buffer, currentObject->arg4);
+
+		fwrite(buffer, sizeof(char), size, fPtr);
+
+
+		fwrite("\n", sizeof(char), 5, fPtr);
+
+		currentObject = currentObject->nextObject;
+	}
+
+	fwrite("ENDFILE", sizeof(char), 8, fPtr);
+
+	closeFile(fPtr);
+
+	return LEMON_SUCCESS;
+}
+
+
+int saveGameState(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	char title[MAX_LEN];
+	snprintf(title, MAX_LEN, "SaveState%d", GameWorld->level);
+	FILE *file = fopen(title, "wb");
+
+	//write file version
+	fwrite(LEMON_VERSION, sizeof(char), strlen(LEMON_VERSION), file);
+
+	//write Gameworld data
+	int emptyValue = -1;
+	fwrite(GameWorld, sizeof(World), 1, file);
+
+	BackgroundData *gameBG = &GameWorld->WorldBackground;
+	if (gameBG->BackgroundSpriteBuffer != NULL)
+	{
+		int bgIndex = gameBG->BackgroundSpriteBuffer->spriteID;
+		fwrite(&bgIndex, 4, 1, file);
+	}
+	else
+	{
+		fwrite(&emptyValue, 4, 1, file);
+	}
+
+	if (gameBG->bgSpriteSets.start != NULL)
+	{
+		int bgSetIndex = gameBG->bgSpriteSets.start->setID;
+		fwrite(&bgSetIndex, 4, 1, file);
+	}
+	else
+	{
+		fwrite(&emptyValue, 4, 1, file);
+	}
+	
+
+	//write indexes for player pointer
+	if (GameWorld->Player.PlayerPtr == NULL)
+	{
+		fwrite(&emptyValue, 4, 1, file);
+	}
+	else
+	{
+		fwrite(&GameWorld->Player.PlayerPtr->index, 4, 1, file);
+	}
+
+	// write object controller data
+	fwrite(&GameWorld->ObjectList, sizeof(ObjectController), 1, file);
+
+	// write object controller indices to replace pointers
+	Object *list = GameWorld->ObjectList.objectComponents.Objects;
+	int i = 0;
+	while(i < EngineSettings.MaxObjects)
+	{
+		writeObjectIndices(&list[i], file);
+
+		i++;
+	}
+
+	Object *current = GameWorld->ObjectList.firstObject;
+	if (current != NULL)
+	{
+		fwrite(&current->index, 4, 1, file);
+	}
+	else
+	{
+		fwrite(&emptyValue, 4, 1, file);
+	}
+
+	current = GameWorld->ObjectList.lastObject;
+	if (current != NULL)
+	{
+		fwrite(&current->index, 4, 1, file);
+	}
+	else
+	{
+		fwrite(&emptyValue, 4, 1, file);
+	}
+
+	current = GameWorld->ObjectList.availableSlots;
+	if (current != NULL)
+	{
+		fwrite(&current->index, 4, 1, file);
+	}
+	else
+	{
+		fwrite(&emptyValue, 4, 1, file);
+	}
+
+	current = GameWorld->ObjectList.cachedFirstObject;
+	if (current != NULL)
+	{
+		fwrite(&current->index, 4, 1, file);
+	}
+	else
+	{
+		fwrite(&emptyValue, 4, 1, file);
+	}
+
+	current = GameWorld->ObjectList.cachedLastObject;
+	if (current != NULL)
+	{
+		fwrite(&current->index, 4, 1, file);
+	}
+	else
+	{
+		fwrite(&emptyValue, 4, 1, file);
+	}
+
+
+	// int var = GameWorld->SceneActionCount;
+	// fwrite(&var, 4, 1, file);
+
+	// SceneAction *action = GameWorld->SceneActionQueue;
+	// while (var > 0 && action != NULL)
+	// {
+	// 	fwrite(action, sizeof(SceneAction), 1, file);
+
+	// 	int index = -1;
+	// 	if (action->ActorObject != NULL)
+	// 	{
+	// 		index = action->ActorObject->index;
+	// 	}
+
+	// 	fwrite(&index, 4, 1, file);
+		
+	// 	var--;
+	// 	action = action->nextSceneAction;
+	// }
+
+
+	fwrite("ENDFILE", 8, 1, file);
+
+	closeFile(file);
+
+	putConsole("\nGame State Saved!\n");
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int writeObjectIndices(Object *input, FILE *file)
+{
+	if (file == NULL || input == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	int negative = -1;
+
+	if (input->prevObject != NULL)
+	{
+		fwrite(&input->prevObject->index, 4, 1, file);
+	}
+	else
+	{
+		fwrite(&negative, 4, 1, file);
+	}
+
+	if (input->nextObject != NULL)
+	{
+		fwrite(&input->nextObject->index, 4, 1, file);
+	}
+	else
+	{
+		fwrite(&negative, 4, 1, file);
+	}
+
+	if (input->Parent != NULL)
+	{
+		fwrite(&input->Parent->index, 4, 1, file);
+	}
+	else
+	{
+		fwrite(&negative, 4, 1, file);
+	}
+
+	return LEMON_SUCCESS;
+}
+
+int loadObjectIndices(Object *input, ObjectController *ObjectList, FILE *file)
+{
+	if (file == NULL || input == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	input->prevObject = NULL;
+	input->nextObject = NULL;
+	input->Parent = NULL;
+
+	Object *objects = ObjectList->objectComponents.Objects;
+
+    size_t bytesRead = 0;
+	int readVal = 0;
+	bytesRead = fread(&readVal, 4, 1, file);
+
+	if (readVal > -1 && readVal < EngineSettings.MaxObjects && bytesRead > 0)
+	{
+		input->prevObject = &objects[readVal];
+	}
+
+	bytesRead = fread(&readVal, 4, 1, file);
+
+	if (readVal > -1 && readVal < EngineSettings.MaxObjects && bytesRead > 0)
+	{
+		input->nextObject = &objects[readVal];
+	}
+
+	bytesRead = fread(&readVal, 4, 1, file);
+
+	if (readVal > -1 && readVal < EngineSettings.MaxObjects && bytesRead > 0)
+	{
+		input->Parent = &objects[readVal];
+	}
+
+	input->ObjectBox->GroundBox = NULL;
+	
+	DisplayData *display = getDisplay(input);
+
+	if (display->currentSprite < 0)
+	{
+		display->spriteBuffer = EngineSettings.DefaultTexture;
+	}
+	else
+	{
+		display->spriteBuffer = NULL;
+	}
+
+
+	display->spriteSetSource = loadSpriteSet(ObjectList, input->ObjectID);	
+
+	// TO DO: restore animation/frame here
+	display->frameBuffer = NULL;
+	display->animationBuffer = NULL;
+
+	return LEMON_SUCCESS;
+}
+
+
+int loadGameState(World *GameWorld)
+{
+	// This function is not complete, and is not memory safe. Use at your own risk!
+    size_t readData = 0;
+
+	char title[MAX_LEN] = {0};
+	snprintf(title, MAX_LEN, "SaveState%d", GameWorld->level);
+	FILE *file = fopen(title, "rb");
+
+	if (!file)
+	{
+		return MISSING_DATA;
+	}
+
+	char buffer[MAX_LEN] = {0};
+	readData = fread(buffer, sizeof(char), strlen(LEMON_VERSION), file);
+
+	if (strcmp(buffer, LEMON_VERSION) || readData != strlen(LEMON_VERSION))
+	{
+		closeFile(file);
+		return INVALID_DATA;
+	}
+
+	BackgroundData *bgs = &GameWorld->WorldBackground;
+	ObjectController *list = &GameWorld->ObjectList;
+
+	clearLevelData(GameWorld);
+	deleteAllObjects(list);
+	deleteAllSpriteSets(&bgs->bgSpriteSets);
+	deleteAllSpriteSets(&list->spriteSets);
+
+	World copy = {0};
+
+	readData = fread(&copy, sizeof(World), 1, file);
+	GameWorld->level = copy.level;
+	GameWorld->GameState = copy.GameState;
+	memcpy(&GameWorld->MainCamera, &copy.MainCamera, sizeof(Camera));
+
+	// restore backgrounds
+	GameWorld->WorldBackground.BackgroundSpriteBuffer = NULL;
+	initialiseBackGround(&GameWorld->WorldBackground);
+
+	int bgIndex = 0;
+	readData = fread(&bgIndex, 4, 1, file);
+
+	int bgSetIndex = 0;
+	readData = fread(&bgSetIndex, 4, 1, file);
+
+	switchBackGroundSprite(bgIndex, bgSetIndex, &GameWorld->WorldBackground);
+
+
+	int index = -1;
+	readData = fread(&index, 4, 1, file);
+	
+	if (index > -1)
+	{
+		GameWorld->Player.PlayerPtr = &GameWorld->ObjectList.objectComponents.Objects[index];
+	}
+	else
+	{
+		GameWorld->Player.PlayerPtr = NULL;
+	}
+
+
+	// read objectlist
+	readData = fread(&GameWorld->ObjectList, sizeof(ObjectController), 1, file);
+
+	list->FrameUpdates = NULL;
+	initialiseSpriteSetList(&list->spriteSets);
+
+	Object *objects = list->objectComponents.Objects;
+	int i = 0;
+	while(i < EngineSettings.MaxObjects)
+	{
+		loadObjectIndices(&objects[i], list, file);
+
+		i++;
+	}
+
+	readData = fread(&i, 4, 1, file);
+	if (i == -1)
+	{
+		list->firstObject = NULL;
+	}
+	else
+	{
+		list->firstObject = &objects[i];
+	}
+
+	readData = fread(&i, 4, 1, file);
+	if (i == -1)
+	{
+		list->lastObject = NULL;
+	}
+	else
+	{
+		list->lastObject = &objects[i];
+	}
+
+	readData = fread(&i, 4, 1, file);
+	if (i == -1)
+	{
+		list->availableSlots = NULL;
+	}
+	else
+	{
+		list->availableSlots = &objects[i];
+	}
+
+	readData = fread(&i, 4, 1, file);
+	if (i == -1)
+	{
+		list->cachedFirstObject = NULL;
+	}
+	else
+	{
+		list->cachedFirstObject = &objects[i];
+	}
+
+	readData = fread(&i, 4, 1, file);
+	if (i == -1)
+	{
+		list->cachedLastObject = NULL;
+	}
+	else
+	{
+		list->cachedLastObject = &objects[i];
+	}
+
+
+	// # of scene actions
+	// readData = fread(&i, 4, 1, file);
+
+	// while (i > 0)
+	// {
+	// 	i--;
+
+	// 	SceneAction *action = createSceneAction(SCENE_END, GameWorld);
+	// 	if (action == NULL)
+	// 	{
+	// 		i = 0;
+	// 		continue;
+	// 	}
+
+	// 	SceneAction *prev = action->prevSceneAction;
+	// 	readData = fread(action, sizeof(SceneAction), 1, file);
+	// 	action->prevSceneAction = prev;
+	// 	action->nextSceneAction = NULL;
+
+	// 	int index = -1;
+	// 	readData = fread(&index, 4, 1, file);
+
+	// 	if (index == -1)
+	// 	{
+	// 		action->ActorObject = NULL;
+	// 	}
+	// 	else
+	// 	{
+	// 		action->ActorObject = &objects[index];
+	// 	}
+
+	// 	if (action->ActionID == SCENE_SAY_TEXT)
+	// 	{
+	// 		deleteSceneAction(action, GameWorld);
+	// 	}
+	// }
+
+
+	closeFile(file);
+
+
+	putConsole("\nGame State Loaded!\n");
+
+	return LEMON_SUCCESS;
+}
+
+
+int checkFileHeader(FILE *fPtr, const char FileType[])
+{
+	if (fPtr == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	size_t readData = 0;
+	char charBuffer[32] = {0};
+
+	if (DEBUG_MODE)
+	{
+		getNextArg(fPtr, charBuffer, 32);
+		return LEMON_SUCCESS;
+	}
+
+	// Read version number
+	int LemVerLength = strlen(LEMON_VERSION);
+	readData = fread(charBuffer, sizeof(char), LemVerLength, fPtr);
+	if (readData < LemVerLength)
+	{
+		return MISSING_DATA;
+	}
+
+	charBuffer[LemVerLength] = 0;
+
+	if (charBuffer[0] == 'V')
+	{
+		if (strcmp(charBuffer, LEMON_VERSION) != 0)
+		{
+			putConsole("\nFile load failed: Incompatible version number! Got: %s", charBuffer);
+			return INVALID_DATA;
+		}
+	}
+	else
+	{
+		fseek(fPtr, 0, SEEK_SET);
+
+		int FileVerLength = strlen(LEMON_SCRIPT_VERSION);
+		readData = fread(charBuffer, sizeof(char), FileVerLength, fPtr);
+		if (readData < FileVerLength)
+		{
+			return MISSING_DATA;
+		}
+
+		if (strcmp(charBuffer, LEMON_SCRIPT_VERSION) != 0)
+		{
+			putConsole("\nFile load failed: Incompatible version number! Got: %s", charBuffer);
+			return INVALID_DATA;
+		}
+	}
+
+
+	// Read data type
+	getNextArg(fPtr, charBuffer, 20);
+
+	if (strcmp(charBuffer, FileType) != 0)
+	{
+		putConsole("\nFile load failed: This file does not contain expected data type!");
+		return INVALID_DATA;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+char circulateBit(char input, int bit)
+{
+	return (input >> bit) | (input << (8 - bit));	// 00101011
+}
+
+void encodeLEMFile(FILE *file, const char name[MAX_LEN * 2])
+{
+	printf("%x >> 2 == %x", 156, circulateBit(156, 2));	// 1001 1100 -> 0111 0000
+	char newName[MAX_LEN * 2] = {0};
+	memcpy(newName, name, MAX_LEN * 2);
+	int i = 0;
+	while (i < (MAX_LEN * 2) - 4)
+	{
+		if (newName[i] == '.')
+		{
+			strcpy(newName + i, ".lem");
+			i = MAX_LEN * 2;
+		}
+		i++;
+	}
+
+	FILE *encoded = fopen(newName, "wb");
+
+	char buffer[16] = {0};
+	int readData = 0;
+	fseek(file, 0, SEEK_SET);
+
+	while(!feof(file))
+	{
+		readData = fread(buffer, sizeof(char), 16, file);
+		for (i = 0; i < 16; i++)
+		{
+			buffer[i] += 2;
+		}
+
+		fwrite(buffer, sizeof(char), readData, encoded);
+	}
+
+	fclose(encoded);
+
+	return;
+}
+
+
+FILE* decodeLEMFile(FILE *file)
+{
+	FILE *decoded = fopen("temp.txt", "wb+");
+
+	char buffer[16] = {0};
+	int readData = 0;
+
+	fseek(file, 0, SEEK_SET);
+
+	int iterations = 0;
+
+	while (!feof(file) && iterations < 1000)
+	{
+		readData = fread(buffer, sizeof(char), 16, file);
+		if (readData < 16)
+		{
+			break;
+		}
+
+		for (int i = 0; i < 16; i++)
+		{
+			buffer[i] -= 2;
+		}
+
+		fwrite(buffer, sizeof(char), readData, decoded);
+
+		iterations++;
+	}
+	
+	closeFile(file);
+
+
+	return decoded;
+}
+
+FILE* openFile(const char fileName[], const char rootPath[], const char header[])
+{
+	if (rootPath == NULL || fileName == NULL || header == NULL)
+	{
+		return NULL;
+	}
+
+	int rootPathLength = strlen(rootPath);
+	int fileNameLength = strlen(fileName);
+
+	char path[rootPathLength + fileNameLength + 10];
+	int pathLength = rootPathLength + fileNameLength;
+	strcpy(path, rootPath);
+	strcat(path, fileName);
+
+	FILE *fPtr;
+	char extensions[][10] = {".lem", ".txt", ""};		// changing the order of this list modifies its priority; eg first it checks with .lem, then with .txt, without ext, etc.
+
+	for (int attempt = 0; attempt < 3; attempt++)
+	{
+		strcpy(path + pathLength, extensions[attempt]);
+	 	fPtr = fopen(path, "rb");
+
+	 	if (fPtr != NULL)
+	 	{
+	 		goto File_Loaded;
+	 	}
+	}
+
+	putConsoleError("Could not find file '%s' from path: '%s'", fileName, rootPath);
+	return NULL;
+
+
+	File_Loaded:
+
+	if (strlen(path) > 3 && strcmp(path + strlen(path) - 3, "lem") == 0)
+	{
+		// lem file, decode here
+		//fPtr = decodeLEMFile(fPtr);
+	}
+
+	if (checkFileHeader(fPtr, header) != LEMON_SUCCESS)
+	{
+		closeFile(fPtr);
+		return NULL;
+	}
+
+	return fPtr;
+}
+
+void closeFile(FILE *file)
+{
+    if (file)
+    {
+        fclose(file);
+    }
+
+    return;
+}
+
+
+int loadLevelData(World *GameWorld, FILE *fPtr, bool closeFileOnExit)
+{
+	char buffer[MAX_LEN] = {0};
+	int i = 0;
+	int returnMsg = LEMON_SUCCESS;
+
+	while (i < 2000)
+	{
+		if (endOfFile(fPtr) || returnMsg != LEMON_SUCCESS)
+		{
+			break;
+		}
+
+		returnMsg = getNextArg(fPtr, buffer, MAX_LEN);
+		stringToUpper(buffer);
+
+		if (strcmp(buffer, "{") == 0)
+		{
+			i--;			// i is decremented as this is not an instruction, only a start of another block, so 
+		}
+		else if (strcmp(buffer, "}") == 0)
+		{
+			break;
+		}
+		else if (strcmp(buffer, "OBJREP:") == 0)
+		{
+			loadRepeatingObjectLegacy(GameWorld, fPtr);
+		}
+		else if (strcmp(buffer, "REPEAT:") == 0)
+		{
+			loadObjectRepeated(GameWorld, fPtr);
+		}
+		else if (strcmp(buffer, "OBJECT:") == 0)
+		{
+			loadObject(GameWorld, fPtr, 0, 0);
+		}	
+		else if (strcmp(buffer, "LVFLAG:") == 0)
+		{
+			loadLevelFlag(GameWorld, fPtr);
+		}
+		else if (strcmp(buffer, "IFVARIABLE:") == 0 || strcmp(buffer, "IF") == 0)
+		{
+			loadConditionalStatement(GameWorld, fPtr);
+		}
+		else if (!strcmp(buffer, "PRESET:"))
+		{
+			getNextArg(fPtr, buffer, MAX_LEN);
+			// check if 'level' is contained at position 'buffer'; i.e: check if buffer is in the form 'Level...'
+			if (strstr(buffer, "Level") != buffer)
+			{
+				FILE *preset = openFile(buffer, LEVELDATA_ROOT, "--LEVEL_DATA--");
+				loadLevelData(GameWorld, preset, true);
+			}
+			else
+			{
+				putConsole("Tried to load preset from file: %s", buffer);
+			}
+		}
+		else
+		{
+			int lineCount = getCurrentLineNumber(fPtr);
+			putConsole("\nLevelData load failed. Unrecognised data found at Line: %d", lineCount);
+			if (DEBUG_MODE)
+			{
+				putConsole("\nRead: %s", buffer);
+			}
+
+			//break;
+		}
+		
+		i++;
+	}
+
+	if (closeFileOnExit)
+	{
+		closeFile(fPtr);
+	}
+
+	return returnMsg;
+}
+
+
+int getCurrentLineNumber(FILE *fPtr)
+{
+	long filePosition = ftell(fPtr);
+
+	fseek(fPtr, 0, SEEK_SET);
+
+	int lineCount = 1;
+	char fileCharacter = fgetc(fPtr);
+
+	while (ftell(fPtr) != filePosition && fileCharacter != EOF)
+	{
+		fileCharacter = fgetc(fPtr);
+
+		if (fileCharacter == '\n')
+		{
+			lineCount++;
+		}
+	}
+
+	return lineCount;
+}
+
+
+int skipCommentInFile(FILE *fPtr)
+{
+	if (fPtr == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	char buffer[2] = {0};
+	size_t readData = 0;
+
+	long objectPosition;
+
+	do
+	{
+		objectPosition = ftell(fPtr);
+		readData = fread(buffer, sizeof(char), 1, fPtr);
+
+		if (readData != 1 || feof(fPtr))
+		{
+			return END_OF_FILE;
+		}
+	} while (buffer[0] != '\n');
+
+	fseek(fPtr, objectPosition, SEEK_SET);
+
+	return LEMON_SUCCESS;
+}
+
+int loadConditionalStatement(World *GameWorld, FILE *fPtr)
+{
+	int flagIndex;
+	
+	if (hasNextArgNumber(fPtr))
+	{
+		flagIndex = getNextArgInt(fPtr);
+
+		if (!inRange(flagIndex, 0, GAME_FLAG_COUNT - 1))
+		{
+			// this will result in the level load being aborted
+			putConsole("\nInvalid game flag index! Got: %d \nGame flags can only go from 0 to %d", flagIndex, GAME_FLAG_COUNT - 1);
+			return INVALID_DATA;
+		}
+	}
+	else
+	{
+		char name[MAX_LEN] = {0};
+
+		getNextArg(fPtr, name, MAX_LEN);
+		flagIndex = getGameFlag(name);
+
+		if (flagIndex < 0)
+		{
+			putConsole("\nGameFlag '%s' does not exist", name);
+			return INVALID_DATA;
+		}
+	}
+
+	char buffer[3] = {0};
+
+	getNextArgIfExpression(buffer, fPtr);
+
+	int compareValue = getNextArgInt(fPtr);
+	bool conditionMet = false;
+
+	if (strcmp("=", buffer) == 0)
+	{	
+		conditionMet = (GameFlags[flagIndex].value == compareValue);
+	}
+	else if (strcmp("!=", buffer) == 0)
+	{
+		conditionMet = (GameFlags[flagIndex].value != compareValue);
+	}
+	else if (strcmp(">", buffer) == 0)
+	{
+		conditionMet = (GameFlags[flagIndex].value > compareValue);
+	}
+	else if (strcmp("<", buffer) == 0)
+	{
+		conditionMet = (GameFlags[flagIndex].value < compareValue);
+	}
+	else if (strcmp(">=", buffer) == 0)
+	{
+		conditionMet = (GameFlags[flagIndex].value >= compareValue);
+	}
+	else if (strcmp("<=", buffer) == 0)
+	{
+		conditionMet = (GameFlags[flagIndex].value <= compareValue);
+	}
+	else
+	{
+		return INVALID_DATA;
+	}
+
+	readBranch(GameWorld, fPtr, conditionMet);
+
+	
+
+	return LEMON_SUCCESS;
+}
+
+void getNextArgIfExpression(char dest[3], FILE *fPtr)
+{
+	memset(dest, 0, 3 * sizeof(char));
+	int readData = 1;
+
+	while (dest[0] < 33 && !feof(fPtr) && readData == 1)
+	{
+		readData = fread(dest, sizeof(char), 1, fPtr);
+	}
+
+	readData = fread(dest + 1, sizeof(char), 1, fPtr);
+	if (dest[1] < 33 || readData < 1)
+	{
+		dest[1] = '\0';
+		fseek(fPtr, -1, SEEK_CUR);
+	}
+
+	return;
+}
+
+
+int readBranch(World *GameWorld, FILE *fPtr, bool conditionMet)
+{
+	if (bracketedStatementPresent(fPtr, "THEN"))
+	{
+		consumeStatement(fPtr, '{');
+
+		if (conditionMet)
+		{
+			// execute commands
+			loadLevelData(GameWorld, fPtr, false);
+		}
+		else
+		{
+			consumeStatement(fPtr, '}');
+		}
+	}
+	else 
+	{
+		return INVALID_DATA;
+	}
+
+
+	if (!bracketedStatementPresent(fPtr, "ELSE"))
+	{
+		return LEMON_SUCCESS;
+	}
+
+	consumeStatement(fPtr, '{');
+
+	if (!conditionMet)
+	{
+		loadLevelData(GameWorld, fPtr, false);
+	}
+	else
+	{
+		consumeStatement(fPtr, '}');
+	}
+	
+
+	return LEMON_SUCCESS;
+}
+
+bool bracketedStatementPresent(FILE *fPtr, const char expectedPhrase[])
+{
+	if (fPtr == NULL)
+	{
+		return false;
+	}
+
+	long filePosition = ftell(fPtr);
+
+	char buffer[20] = {0};
+	getNextArg(fPtr, buffer, 20);
+
+	if (expectedPhrase == NULL || expectedPhrase[0] < 33)
+	{
+		fseek(fPtr, filePosition, SEEK_SET);
+		return (buffer[0] == '{');
+	}
+
+	// check phrase before hand
+	if (strcmp(expectedPhrase, buffer) != 0)
+	{
+		fseek(fPtr, filePosition, SEEK_SET);
+		return false;
+	}
+
+	// check next thing
+	filePosition = ftell(fPtr);
+
+	getNextArg(fPtr, buffer, 20);
+
+	fseek(fPtr, filePosition, SEEK_SET);
+
+	if (buffer[0] != '{')
+	{
+		return false;
+	}
+
+	return true;
+}
+
+int consumeStatement(FILE *fPtr, char stopCharacter)
+{
+	char buffer[2] = {0};
+	size_t readData = 0;
+
+	while (!feof(fPtr) && buffer[0] != stopCharacter)
+	{
+		readData = fread(buffer, sizeof(char), 1, fPtr);
+        
+        if (readData < 1)
+        {   
+            return MISSING_DATA;
+        }
+
+		if ((buffer[0] & 0b10000000) > 0)
+		{
+			// unicode! skip until an ascii char is found
+			buffer[0] = 0;
+		}
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int clearLevelData(World *GameWorld)
+{
+	if (GameWorld == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	GameWorld->GameState = LOADING;
+
+	clearTextQueue(GameWorld);
+	EndCutscene(GameWorld);
+
+	deleteLevelObjects(&GameWorld->ObjectList);
+
+	deleteExcessSpriteSets(&GameWorld->ObjectList, EngineSettings.PreservedSpriteSets);
+
+	ResetCamera(&GameWorld->MainCamera);
+
+	GameWorld->GameState = EMPTY_GAME;
+
+	return LEMON_SUCCESS;
+}
+
+
+int loadLevelFlag(World *GameWorld, FILE *fPtr)
+{
+	char buffer[MAX_LEN] = {0};
+
+	getNextArg(fPtr, buffer, MAX_LEN);
+	removeChar(buffer, '_', MAX_LEN);
+	stringToLower(buffer);
+
+	// Flag Decoded
+	if (strcmp(buffer, "setbg") == 0)
+	{
+		int args[3] = {0};
+
+		readIntArgs(fPtr, args, 2);
+	
+		switchBackGroundSprite(args[0], args[1], &GameWorld->WorldBackground);
+	}
+	else if (strcmp(buffer, "setbgtrigger") == 0)
+	{
+		int args[6] = {0};
+
+		readIntArgs(fPtr, args, 6);
+
+		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], SET_BACKGROUND_TRIGGER, args[4], args[5], 0, 0), args[2], args[3]);
+	}
+	else if (strcmp(buffer, "startcutscene") == 0)		// START_LVL_WITH_CUTSCENE
+	{
+		if (hasNextArgNumber(fPtr))
+		{
+			int sceneID = getNextArgInt(fPtr);
+			playCutscene(sceneID, GameWorld);
+		}
+		else
+		{
+			getNextArg(fPtr, buffer, MAX_LEN);
+			playCutsceneFromFile(buffer, GameWorld);
+		}
+		
+	}
+	else if (strcmp(buffer, "cutscenetrigger") == 0)
+	{
+		int args[5] = {0};
+
+		readIntArgs(fPtr, args, 5);
+	
+		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], CUTSCENE_TRIGGER, args[4], 0, 0, 0), args[2], args[3]);
+	}
+	else if (strcmp(buffer, "leveltrigger") == 0)
+	{
+		int args[5] = {0};
+
+		readIntArgs(fPtr, args, 5);
+	
+		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], LEVEL_TRIGGER, args[4], 0, 0, 0), args[2], args[3]);
+	}
+	else if (strcmp(buffer, "leveltriggerseamless") == 0)
+	{
+		int args[5] = {0};
+
+		readIntArgs(fPtr, args, 5);
+	
+		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], LEVEL_TRIGGER_SEAMLESS, args[4], 0, 0, 0), args[2], args[3]);
+	}
+	else if (strcmp(buffer, "triggergameevent") == 0)
+	{
+		int args[4] = {0};
+
+		readIntArgs(fPtr, args, 4);
+
+		bool triggerOnce = !getNextArgBool(fPtr);
+		
+		Object *flag = AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], GAME_EVENT_TRIGGER, 0, 0, 0, 0);
+
+		if (flag == NULL)
+		{
+			return LEMON_ERROR;
+		}
+
+		setSize(flag, args[2], args[3]);
+		GameEvent *objectEvent = addObjectEvent(flag, triggerOnce, GameWorld);
+		
+		if (objectEvent == NULL)
+		{
+			return MISSING_DATA;
+		}
+
+		getNextArgGameEvent(fPtr, objectEvent, GameWorld);
+	}
+	else if (strcmp(buffer, "deleteobjecttrigger") == 0)
+	{
+		int args[5] = {0};
+
+		readIntArgs(fPtr, args, 5);
+	
+		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], DELETE_OBJECT_TRIGGER, args[4], 0, 0, 0), args[2], args[3]);
+	}
+	else if (strcmp(buffer, "deletebodytrigger") == 0)
+	{
+		int args[4] = {0};
+
+		readIntArgs(fPtr, args, 4);
+	
+		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], DELETE_BODY_TRIGGER, 0, 0, 0, 0), args[2], args[3]);
+	}
+	else if (strcmp(buffer, "setcambox") == 0)
+	{
+		int args[4] = {0};
+
+		readIntArgs(fPtr, args, 4);
+
+		GameWorld->MainCamera.minCameraX = args[0];
+		GameWorld->MainCamera.maxCameraX = args[1];
+		GameWorld->MainCamera.minCameraY = args[2];
+		GameWorld->MainCamera.maxCameraY = args[3];
+	}
+	else if (strcmp(buffer, "campos") == 0 || strcmp(buffer, "startcampos") == 0)
+	{
+		int args[2] = {0};
+
+		readIntArgs(fPtr, args, 2);
+
+		GameWorld->MainCamera.CameraX = args[0];
+		GameWorld->MainCamera.CameraY = args[1];
+	}
+	else if (strcmp(buffer, "cammode") == 0  || strcmp(buffer, "startcammode") == 0)
+	{
+		int args[1] = {0};
+
+		readIntArgs(fPtr, args, 1);
+
+		GameWorld->MainCamera.CameraMode = args[0];
+	}
+	else if (strcmp(buffer, "playerposition") == 0)
+	{
+		if (GameWorld->Player.PlayerPtr == NULL)
+		{
+			return MISSING_DATA;
+		}
+
+		PhysicsBox *playerBox = GameWorld->Player.PlayerPtr->ObjectBox;
+
+		float x = getNextArgFloat(fPtr);
+		float y = getNextArgFloat(fPtr);
+		
+		if (playerBox->xPos != playerBox->prevXPos || playerBox->prevYPos != playerBox->yPos)
+		{
+			return ACTION_DISABLED;
+		}
+
+		playerBox->xPos = x;
+		playerBox->yPos = y;
+		GameWorld->MainCamera.CameraX = playerBox->xPos;
+		GameWorld->MainCamera.CameraY = playerBox->yPos;
+	}
+	else if (strcmp(buffer, "playsoundloop") == 0)
+	{
+		char nameBuffer[MAX_LEN] = {0};
+
+		getNextArg(fPtr, nameBuffer, MAX_LEN);
+
+		float volume = getNextArgFloat(fPtr);
+
+		int loops = getNextArgInt(fPtr);
+		if (loops < 1)
+		{
+			loops = -1;
+		}
+
+		if (getSoundInstance(nameBuffer, MUSIC_CHANNEL) == NULL)
+		{
+			PlaySoundRepeat(nameBuffer, MUSIC_CHANNEL, volume, loops);
+		}
+	}
+	else if (strcmp(buffer, "playsound") == 0)
+	{
+		char nameBuffer[MAX_LEN] = {0};
+
+		getNextArg(fPtr, nameBuffer, MAX_LEN);
+
+		float volume = getNextArgFloat(fPtr);
+
+		PlaySound(nameBuffer, MUSIC_CHANNEL, volume);
+	}
+	else if (strcmp(buffer, "playsoundtrigger") == 0)
+	{
+		int pos[4] = {0};
+		readIntArgs(fPtr, pos, 4);
+
+		char pathBuffer[MAX_LEN] = {0};
+		getNextArg(fPtr, pathBuffer, MAX_LEN);
+
+		float volume = getNextArgFloat(fPtr);
+
+		int channel = getNextArgInt(fPtr);
+
+		Object *trigger = AddObject(GameWorld, LEVEL_FLAG_OBJ, pos[0], pos[1], GAME_EVENT_TRIGGER, pos[2], pos[3], 0, 0);
+		GameEvent *event = addObjectEvent(trigger, true, GameWorld);
+
+		if (event == NULL)
+		{
+			MarkObjectForDeletion(trigger);
+			return LEMON_ERROR;
+		}
+
+		event->EventID = EVENT_PLAY_SOUND;
+		addGameEventString(event, "path", pathBuffer);
+		addGameEventFloat(event, "volume", volume);
+		addGameEventInt(event, "channel", channel);
+	}
+	else if (strcmp(buffer, "cachetrigger") == 0)
+	{
+		int args[8] = {0};
+
+		readIntArgs(fPtr, args, 8);
+
+		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], CACHE_TRIGGER, args[4], args[5], args[6], args[7]), args[2], args[3]);
+	}
+	else if (strcmp(buffer, "loadparttrigger") == 0)
+	{
+		int args[5] = {0};
+
+		readIntArgs(fPtr, args, 5);
+
+		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], LOAD_PART_TRIGGER, args[4], 0, 0, 0), args[2], args[3]);
+	}
+	else if (strcmp(buffer, "loadpart") == 0)
+	{
+		int partID = getNextArgInt(fPtr);
+
+		loadPartition(GameWorld, partID);
+	}
+	else if (strcmp(buffer, "cambound") == 0 || strcmp(buffer, "cameraboundary") == 0)
+	{
+		float xPos = getNextArgFloat(fPtr);
+		int xSize = (int)(getNextArgFloat(fPtr) - xPos);
+
+		float yPos = getNextArgFloat(fPtr);
+		int ySize = (int)(getNextArgFloat(fPtr) - yPos);
+
+		AddObject(GameWorld, LEVEL_FLAG_OBJ, xPos, yPos, CAMERA_BOUNDARY, xSize, ySize, 0, 0);
+	}
+	else if (strcmp(buffer, "falsecambound") == 0 || strcmp(buffer, "falsecameraboundary") == 0)
+	{
+		float xPos = getNextArgFloat(fPtr);
+		int xSize = (int)(getNextArgFloat(fPtr) - xPos);
+
+		float yPos = getNextArgFloat(fPtr);
+		int ySize = (int)(getNextArgFloat(fPtr) - yPos);
+
+		AddObject(GameWorld, LEVEL_FLAG_OBJ, xPos, yPos, FALSE_CAMERA_BOUNDARY, xSize, ySize, 0, 0);
+	}
+	else if (strcmp(buffer, "addgameflag") == 0)
+	{
+		char name[MAX_LEN] = {0};
+		getNextArg(fPtr, name, MAX_LEN);
+
+		int startVal = getNextArgInt(fPtr);
+
+		if (getGameFlag(name) >= 0)
+		{
+			putConsole("GameFlag \"%s\" already exists", name);
+			return LEMON_SUCCESS;
+		}
+
+		addGameFlag(name, startVal);
+	}
+	else if (strcmp(buffer, "setgameflag") == 0)
+	{
+		char name[MAX_LEN] = {0};
+		getNextArg(fPtr, name, MAX_LEN);
+
+		int val = getNextArgInt(fPtr);
+
+		setGameFlag(name, val);
+	}
+	else if (strcmp(buffer, "incrementgameflag") == 0 || strcmp(buffer, "incgameflag") == 0)	
+	{
+		char name[MAX_LEN] = {0};
+		getNextArg(fPtr, name, MAX_LEN);
+
+		setGameFlag(name, checkGameFlag(name) + 1);
+	}
+	else if (strcmp(buffer, "decrementgameflag") == 0  || strcmp(buffer, "decgameflag") == 0)
+	{
+		char name[MAX_LEN] = {0};
+		getNextArg(fPtr, name, MAX_LEN);
+
+		setGameFlag(name, checkGameFlag(name) - 1);
+	}
+	else if (strcmp(buffer, "changegameflag") == 0)	
+	{
+		char name[MAX_LEN] = {0};
+		getNextArg(fPtr, name, MAX_LEN);
+
+		int value = getNextArgInt(fPtr);
+
+		setGameFlag(name, checkGameFlag(name) + value);
+	}
+	else
+	{
+		return INVALID_DATA;
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int loadRepeatingObjectLegacy(World *GameWorld, FILE *fPtr)	// legacy method for backwards compatibility
+{
+	int args[5] = {0};
+
+	int returnMsg = readIntArgs(fPtr, args, 4);
+
+	if (returnMsg != LEMON_SUCCESS)
+	{
+		return returnMsg;
+	}
+
+	args[0] = clamp(args[0], 1, 128);
+	args[1] = clamp(args[1], 1, 128);
+
+
+	unsigned long objectPosition = ftell(fPtr);
+			
+	for (int yIter = 0; yIter < args[1]; yIter++)
+	{
+		for (int xIter = 0; xIter < args[0]; xIter++)
+		{		
+			fseek(fPtr, objectPosition, SEEK_SET);
+
+			loadObject(GameWorld, fPtr, args[2] * xIter, args[3] * yIter);
+		}
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+int loadObjectRepeated(World *GameWorld, FILE *fPtr)
+{
+	int args[4] = {1, 0, 1, 0};
+
+	char string[16] = {0};
+
+	for (int i = 0; i < 4; i++)
+	{
+		getNextArg(fPtr, string, 16);
+		if (string[0] == '{')
+		{
+			goto Skip_Repeated_Args;
+		}
+		consumeStatement(fPtr, '=');
+		args[i] = getNextArgInt(fPtr);
+	}
+	
+	consumeStatement(fPtr, '{');
+
+	Skip_Repeated_Args:
+
+	long filePos = ftell(fPtr);
+	
+	int yVal = 0;
+	int xChange = args[1];
+	int yTimes = args[2];
+	int yChange = args[3];
+
+	while (yTimes > 0)
+	{
+		yTimes--;
+		int xTimes = args[0];
+		int xVal = 0;
+
+		while (xTimes > 0)
+		{
+			xTimes--;
+
+			fseek(fPtr, filePos, SEEK_SET);
+
+			if (!hasNextArgNumber(fPtr))
+			{
+				getNextArg(fPtr, string, 16);
+			}
+
+			loadObject(GameWorld, fPtr, xVal, yVal);
+
+			xVal += xChange;
+		}
+
+		yVal += yChange;
+	}
+
+	consumeStatement(fPtr, '}');
+
+	return LEMON_SUCCESS;
+}
+
+int ApplyObjectLoadCommands(FILE *fPtr, Object *inputObject, char command[MAX_LEN], World *GameWorld)
+{
+	if (inputObject == NULL || fPtr == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	stringToUpper(command);
+	command[MAX_LEN - 1] = '\0';
+	PhysicsBox *inputBox = inputObject->ObjectBox;
+
+	if (strcmp(command, "UNSOLID") == 0)
+	{
+		inputBox->solid = UNSOLID;
+	}
+	else if (strcmp(command, "SOLID") == 0)
+	{
+		inputBox->solid = SOLID;
+	}
+	else if (strcmp(command, "TOBACKGROUND") == 0)
+	{
+		setDisplayLayer(inputObject, BACKGROUND);
+	}
+	else if (strcmp(command, "TOMIDDLEGROUND") == 0)
+	{
+		setDisplayLayer(inputObject, MIDDLEGROUND);
+	}
+	else if (strcmp(command, "TOMIDDLEGROUND_2") == 0)
+	{
+		setDisplayLayer(inputObject, MIDDLEGROUND_2);
+	}
+	else if (strcmp(command, "TOFOREGROUND") == 0)
+	{
+		setDisplayLayer(inputObject, FOREGROUND);
+	}
+	else if (strcmp(command, "COLLIDETOFOREGROUND") == 0)
+	{
+		inputBox->collideLayer = FOREGROUND;
+	}
+	else if (strcmp(command, "COLLIDETOMIDDLEGROUND") == 0)
+	{
+		inputBox->collideLayer = MIDDLEGROUND;
+	}
+	else if (strcmp(command, "COLLIDETOBACKGROUND") == 0)
+	{
+		inputBox->collideLayer = BACKGROUND;
+	}
+	else if (strcmp(command, "ALLTOBACKGROUND") == 0)
+	{
+		inputBox->collideLayer = BACKGROUND;
+		setDisplayLayer(inputObject, BACKGROUND);
+	}
+	else if (strcmp(command, "ALLTOMIDDLEGROUND") == 0)
+	{
+		inputBox->collideLayer = MIDDLEGROUND;
+		setDisplayLayer(inputObject, MIDDLEGROUND);
+	}
+	else if (strcmp(command, "ALLTOMIDDLEGROUND2") == 0)
+	{
+		inputBox->collideLayer = MIDDLEGROUND_2;
+		setDisplayLayer(inputObject, MIDDLEGROUND_2);
+	}
+	else if (strcmp(command, "ALLTOFOREGROUND") == 0)
+	{
+		inputBox->collideLayer = FOREGROUND;
+		setDisplayLayer(inputObject, FOREGROUND);
+	}
+	else if (strcmp(command, "SETNAME") == 0)
+	{
+		getNextArg(fPtr, command, MAX_LEN);
+	
+		setObjectName(inputObject, command);
+	}
+	else if (!strcmp(command, "SETPARENT"))
+	{
+		long filePos = ftell(fPtr);
+		getNextArg(fPtr, command, MAX_LEN);
+		fseek(fPtr, filePos, SEEK_SET);
+
+		if (command[0] != '{')
+		{
+			return INVALID_DATA;
+		}
+
+		consumeStatement(fPtr, '{');
+		getNextArg(fPtr, command, MAX_LEN);
+		if (command[0] != '}')
+		{
+			consumeStatement(fPtr, '}');
+		}
+		Object *parent = FindObject(command, &GameWorld->ObjectList);
+
+		if (parent != NULL)
+		{
+			inputObject->Parent = parent;
+		}
+	}
+	else if (!strcmp(command, "HIDE"))
+	{
+		hideObject(inputObject);
+	}
+	else if (!strcmp(command, "SETSTATIC"))
+	{
+		inputObject->State = STATIC;
+	}
+	else if (!strcmp(command, "ALIGNTOGRID"))
+	{
+		snapPositionToTileGrid(inputObject, inputObject->ObjectBox->xPos, inputObject->ObjectBox->yPos);
+	}
+	else if (!strcmp(command, "TRACKOVERNETWORK"))
+	{
+		if (Networking.connectMode == SERVER)
+		{
+			TrackObjectOverNetwork(inputObject);
+		}
+		else if (Networking.connectMode == CLIENT)
+		{
+			// delete as server should already be or soon will be tracking this object
+			MarkObjectForDeletion(inputObject);
+		}
+	}
+	else if (!strcmp(command, "SETASPLAYER") || !strcmp(command, "SETPLAYER"))
+	{
+		GameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;
+		GameWorld->Player.PlayerPtr = inputObject;
+		GameWorld->Player.instance = inputObject->instanceNumber;
+
+		TrackObjectOverNetwork(inputObject);
+	}
+	else
+	{
+		putConsole("Unrecognised object load command. (%s)", command);
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int loadObject(World *GameWorld, FILE *fPtr, int xOffset, int yOffset)
+{
+	char readArgs[MAX_LEN] = {0};
+	int convertedArgs[7] = {0};
+
+	// ID
+	getNextArg(fPtr, readArgs, MAX_LEN);
+
+	int readID = getObjectID(readArgs);
+
+	// X/Y pos & args
+	readIntArgs(fPtr, convertedArgs, 7);
+
+	if (readID == UI_ELEMENT && atEndOfLine(fPtr) == 0)
+	{
+		getNextArg(fPtr, readArgs, MAX_LEN);
+		convertedArgs[2] = convertEntryToUIType(readArgs);
+	}
+
+	if (GameWorld->ObjectList.objectCount >= EngineSettings.MaxObjects - EngineSettings.ReservedObjects)
+	{
+		consumeStatement(fPtr, '\n');
+		return ACTION_DISABLED;
+	}
+
+	Object *addedObject = AddObject(GameWorld, readID, convertedArgs[0] + xOffset, convertedArgs[1] + yOffset, convertedArgs[2], convertedArgs[3], convertedArgs[4], convertedArgs[5], convertedArgs[6]);	
+
+	// Read extra commands
+	if (!bracketedStatementPresent(fPtr, NULL))
+	{
+		return LEMON_SUCCESS;
+	}
+
+	char buffer[MAX_LEN] = {0};
+	int result = getNextArg(fPtr, buffer, MAX_LEN);
+
+	while (result == LEMON_SUCCESS)
+	{
+		result = getNextArg(fPtr, buffer, MAX_LEN);
+
+		if (buffer[0] == '}')
+		{
+			return LEMON_SUCCESS;
+		}
+
+		ApplyObjectLoadCommands(fPtr, addedObject, buffer, GameWorld);
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int atEndOfLine(FILE *fPtr)
+{
+	if (fPtr == NULL)
+	{
+		return -1;
+	}
+
+	unsigned long filePosition = ftell(fPtr);
+
+	char buffer[2] = {0};
+	size_t readData = 1;
+
+	while (buffer[0] != '\n' && buffer[0] < 33 && feof(fPtr) == 0 && readData > 0)
+	{
+		readData = fread(buffer, sizeof(char), 1, fPtr);
+	}
+
+	fseek(fPtr, filePosition, SEEK_SET);
+
+	if (buffer[0] == '\n' || buffer[0] == '/' || buffer[0] == '}')
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+
+bool endOfFile(FILE *fPtr)
+{
+	if (feof(fPtr))
+	{
+		return true;
+	}
+
+	char checkBuffer[MAX_LEN] = {0};
+	long filePos = ftell(fPtr);
+	getNextArg(fPtr, checkBuffer, MAX_LEN);
+	fseek(fPtr, filePos, SEEK_SET);
+
+	if (strcmp(checkBuffer, "ENDFILE") == 0 )
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+
+
+typedef struct FilePositions
+{
+	long positions[FILE_POSITION_HISTORY_LENGTH];
+	FILE *file;
+	int head;
+	int stored;
+} FilePositions;
+
+static FilePositions prevPositions = {0};
+void moveFilePos(FILE *file, int offset)
+{
+	if (!file)
+	{
+		return;
+	}
+
+	long position = ftell(file);
+	fseek(file, offset, SEEK_CUR);
+
+	if (prevPositions.file != file)
+	{
+		prevPositions.file = file;
+		prevPositions.head = 0;
+		prevPositions.stored = 0;
+	}
+
+	prevPositions.positions[prevPositions.head] = position;
+	prevPositions.head = (prevPositions.head + 1) % FILE_POSITION_HISTORY_LENGTH;
+	if (prevPositions.stored < FILE_POSITION_HISTORY_LENGTH)
+	{
+		prevPositions.stored++;
+	}
+}
+
+void setFilePos(FILE *file, int pos)
+{
+	if (!file)
+	{
+		return;
+	}
+
+	long position = ftell(file);
+	fseek(file, pos, SEEK_SET);
+
+	if (prevPositions.file != file)
+	{
+		prevPositions.file = file;
+		prevPositions.head = 0;
+		prevPositions.stored = 0;
+	}
+
+	prevPositions.positions[prevPositions.head] = position;
+	prevPositions.head = (prevPositions.head + 1) % FILE_POSITION_HISTORY_LENGTH;
+	if (prevPositions.stored < FILE_POSITION_HISTORY_LENGTH)
+	{
+		prevPositions.stored++;
+	}
+}
+
+void saveFilePos(FILE *file)
+{
+	if (!file)
+	{
+		return;
+	}
+
+	long position = ftell(file);
+
+	if (prevPositions.file != file)
+	{
+		prevPositions.file = file;
+		prevPositions.head = 0;
+		prevPositions.stored = 0;
+	}
+
+	prevPositions.positions[prevPositions.head] = position;
+	prevPositions.head = (prevPositions.head + 1) % FILE_POSITION_HISTORY_LENGTH;
+	if (prevPositions.stored < FILE_POSITION_HISTORY_LENGTH)
+	{
+		prevPositions.stored++;
+	}
+}
+
+void returnFilePos(FILE *file)
+{
+	if (file != prevPositions.file || prevPositions.stored < 1)
+	{
+		return;
+	}
+
+	prevPositions.head--;
+	if (prevPositions.head < 0)
+	{
+		prevPositions.head = FILE_POSITION_HISTORY_LENGTH - 1;
+	}
+	fseek(file, prevPositions.positions[prevPositions.head], SEEK_SET);
+	prevPositions.stored--;
+}
+
+
+int readIntArgs(FILE *fPtr, int argsDest[], int number)
+{
+	if (fPtr == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	for (int i = 0; i < number; i++)
+	{
+		argsDest[i] = getNextArgInt(fPtr);
+	}
+
+	return LEMON_SUCCESS;
+}
+
+
+int getNextArg(FILE *fPtr, char buffer[], int capacity)
+{
+	if (fPtr == NULL || feof(fPtr) != 0 || capacity < 2)
+	{
+		return MISSING_DATA;
+	}
+
+	memset(buffer, 0, capacity);
+    size_t readData = 0;
+    bool enclosedCommand = false;
+
+	while (buffer[0] < 33 || buffer[0] == '/' || buffer[0] == ',')
+	{
+		readData = fread(buffer, sizeof(char), 1, fPtr);
+        
+        if (readData < 1 || feof(fPtr))
+        {   
+            return MISSING_DATA;
+        }
+
+        if (buffer[0] == '>')
+        {
+        	skipCommentInFile(fPtr);
+        	buffer[0] = 0;
+        }
+	}
+
+	if (buffer[0] == '}' || buffer[0] == '{' || buffer[0] == '=')
+	{
+		return LEMON_SUCCESS;
+	}
+
+
+	int i = 1;
+
+	if (buffer[0] == '"')
+	{
+		enclosedCommand = true;
+		i = 0;
+	}
+
+	while (i < capacity - 1)
+	{
+		readData = fread(buffer + i, sizeof(char), 1, fPtr);
+
+		if (feof(fPtr) || readData < 1)
+		{
+			return MISSING_DATA;
+		}
+
+		if ((buffer[i] & 0b10000000) > 0 && (i + 4) >= capacity)
+		{
+			// unicode! skip if there are less than 4 bytes available
+			buffer[i] = 0;
+		}
+
+		if (enclosedCommand)
+		{
+			if (buffer[i] == '"')
+			{
+				buffer[i] = 0;
+				return LEMON_SUCCESS;
+			}
+
+			i++;
+			continue;
+		}
+
+		if (buffer[i] < 33 || buffer[i] == '}' || buffer[i] == '{' || buffer[i] == '=' || buffer[i] == '>')		// '{' '}' '=' etc. will only be read if it is the first character
+		{
+            // necessary because some commands expect at least one character gap before next argument
+			fseek(fPtr, -1, SEEK_CUR);
+			buffer[i] = 0; 
+			return LEMON_SUCCESS;
+		}
+
+		if (buffer[i] == ',') 
+		{
+			buffer[i] = 0;
+			return LEMON_SUCCESS;
+		}			//  {  }   =  >  "  ,  /
+
+		i++;
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+int getNextArgInt(FILE *fPtr)
+{
+	if (fPtr == NULL)
+	{
+		return 0;
+	}
+
+	long filePos = ftell(fPtr);
+
+	char buffer[40] = {0};
+	getNextArg(fPtr, buffer, 40);
+
+	if (inRange(buffer[0], '0', '9') || (buffer[0] == '-' && inRange(buffer[1], '0', '9')))
+	{
+		return convertStrToInt(buffer, 40);
+	}
+
+	fseek(fPtr, filePos, SEEK_SET);
+	return 0;
+}
+
+bool hasNextArgNumber(FILE *fPtr)
+{
+	if (fPtr == NULL)
+	{
+		return false;
+	}
+
+
+	long filePos = ftell(fPtr);
+
+	char buffer[41] = {0};
+	getNextArg(fPtr, buffer, 41);
+	fseek(fPtr, filePos, SEEK_SET);
+
+	if (inRange(buffer[0], '0', '9') || (buffer[0] == '-' && inRange(buffer[1], '0', '9')))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+
+float getNextArgFloat(FILE *fPtr)
+{
+	if (fPtr == NULL)
+	{
+		return 0.0;
+	}
+
+	long filePos = ftell(fPtr);
+
+	char buffer[40] = {0};
+	getNextArg(fPtr, buffer, 40);
+
+	if (inRange(buffer[0], '0', '9') || buffer[0] == '-')
+	{
+		return ((float)atof(buffer));
+	}
+
+	fseek(fPtr, filePos, SEEK_SET);
+	return 0.0;
+}
+
+bool getNextArgBool(FILE *fPtr)
+{
+	if (fPtr == NULL)
+	{
+		return false;
+	}
+
+	long filePos = ftell(fPtr);
+
+	char buffer[8] = {0};
+	getNextArg(fPtr, buffer, 8);
+	stringToLower(buffer);
+
+	if (!strcmp(buffer, "true") || !strcmp(buffer, "yes"))
+	{
+		return true;
+	}
+
+	if (!strcmp(buffer, "false") || !strcmp(buffer, "no"))
+	{
+		return false;
+	}
+
+	fseek(fPtr, filePos, SEEK_SET);
+
+	return false;
+}
+
+int getNextArgGameFlag(FILE *fPtr)
+{
+	if (fPtr == NULL)
+	{
+		return -1;
+	}
+
+	char name[MAX_LEN] = {0};
+
+	if (hasNextArgNumber(fPtr))
+	{
+		return getNextArgInt(fPtr);
+	}
+	else
+	{
+		getNextArg(fPtr, name, MAX_LEN);
+		return getGameFlag(name);
+	}
+}
+
+
+
+int convertStrToInt(const char str[], int size)
+{
+	int input = 0;
+	int polarity = 1;
+	
+	int i = 0;
+	
+	while (i < size)
+	{
+		if (inRange(str[i], '0', '9'))
+		{
+			input *= 10;
+			input += (str[i] - '0');
+		}
+		else if (str[i] == '-' && input == 0)
+		{
+			polarity = -polarity;
+		}
+		else
+		{
+			i = size;
+		}
+		
+		i++;
+	}
+
+	if (polarity == 1)
+	{
+		return input;
+	}
+	else
+	{
+		return -input;
+	}
+}
+
+
+int convertIntToStr(char str[], int input)
+{
+	if (input == 0)
+	{
+		str[0] = '0';
+		str[1] = '\0';
+		return 1;
+	}
+
+	int i = 0;
+
+	if (input < 0)
+	{
+		i = 1;
+		str[0] = '-';
+		input = abs(input);
+	}
+
+
+	int j = floor( log10(input) );
+
+	while (j > 0)
+	{
+		if (i >= INT_MAX_LEN - 1)
+		{
+			str[INT_MAX_LEN - 1] = '\0';
+			return i;
+		}
+
+		int power = pow(10, j);
+		str[i] = ((input / power) % 10) + '0';
+		j--;
+		i++;
+	}
+
+	str[i] = (input % 10) + '0';
+	i++;
+	str[i] = 0;
+	
+	return i;
+}
+

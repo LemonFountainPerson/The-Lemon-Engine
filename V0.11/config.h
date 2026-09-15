@@ -1,0 +1,212 @@
+#ifndef CONFIG_DEFINED
+#define CONFIG_DEFINED
+
+
+//								Default Engine Settings (Can be modified during runtime via variables)
+//-------------------------------------------------------------------------------------------------
+
+// Most displayed objects are designed to adjust positioning based on resolution; 
+// however the lowest expected resolution is 1280 x 720, lower values may result in unintended behaviour
+#define V_RESOLUTION 720
+#define H_RESOLUTION 1280
+
+#define DEFAULT_TEXTURE "Missing.png"
+#define DEFAULT_FONT "PTSansBold"
+#define DEBUG_FONT "PTSansBold.ttf"
+#define DEFAULT_TEXT_SIZE 44.0
+
+#define MAX_OBJECTS_RENDER 256
+#define MAX_PARTICLES_RENDER 64
+#define MAX_HUD_ELEMENTS_RENDER 128
+
+#define MAX_SOUNDS_PER_CHANNEL 16
+#define MAX_TEXTQUEUE_LENGTH 128			// Number of textBoxess allowed in the TextQueue at once
+#define MAX_SCENEACTIONS 200 				// Number of scene actions allowed in the queue at once
+
+#define RESERVED_OBJECTS 500
+#define PRESERVED_SPRITESETS 2
+
+#define X_WORLD_BOUND 100000.0
+#define Y_WORLD_BOUND 100000.0		
+
+#define TICKS_PER_SECOND 60
+#define RENDERS_PER_SECOND 20000	
+#define INTERPOLATION_ENABLED true 		// with interpolation enabled, motion is interpolated between game ticks (via RenderConfig's timeSlice)
+											// This means even at low tickrates camera and object movement will be smooth although the visuals will
+											// be up to 1 tick behind where the camera and objects actually are; defined as:			[clamped between 0.0 and 1.0]						
+											// current visual pos = previous real pos + (current real pos - previous real pos) * (time since last tick / expected time between ticks)
+
+#define VSYNC_DEFAULT true
+
+//-------------------------------------------------------------------------------------------------
+
+
+//								Engine constants (Cannot be modified during runtime)
+//-------------------------------------------------------------------------------------------------
+
+#define DEBUG_MODE true
+#define LEMON_COLLISION_PHYSICS true 		// turn this to false to disable all physics and collision if you want to implement your own scheme
+#define LEMON_NETWORKING_ENABLED true		// turn this to false to remove all networking functionality; small perfomance/memory gain, but may be desirable for security
+
+#define RANDOM_SEED time(NULL)
+
+#define GAME_FLAG_COUNT 64  
+
+#define MAX_OBJECTS 5000
+#define MAX_COMPONENT_SLOTS 256
+
+#define OBJECT_NAME_LENGTH 24
+#define ANIMATION_NAME_LENGTH 80
+#define COMPONENT_NAME_LENGTH 32
+#define DEFAULT_SCALEMODE SDL_SCALEMODE_NEAREST
+
+#define MAX_QUEUED_GAME_EVENTS 64
+#define EVENT_NAME_MAX_LEN 50
+#define EVENT_ARG_NAME_MAX_LEN 32
+#define EVENT_VAR_COUNT 5
+
+#define CHANNEL_NAME_LENGTH 24
+#define MAX_CACHED_SOUNDS 32
+#define ASYNC_AUDIO_LOADER true
+#define ASYNC_AUDIO_LOADER_PERSIST_MS 8000
+#define ASYNC_AUDIO_SIZE_THRESHOLD 1000000
+
+#define USER_INPUT_MAX_LEN 200
+#define INPUT_HISTORY_LEN 100
+#define MESSAGE_LENGTH 256
+#define CHAT_LOG_COUNT 10
+
+#define CONSOLE_HELP_MAX_LEN 100
+#define MAX_CONSOLE_COMMANDS 53
+#define MAX_CONSOLE_VARIABLES 50
+#define CONVAR_VALUE_LEN 32
+ 
+#define MAX_LEN 80
+#define FILE_POSITION_HISTORY_LENGTH 8
+#define CUTSCENE_FILE_NAME_MAX 50
+#define FONT_FILE_NAME_MAX 50
+
+#define MAX_TEXT_LENGTH 200
+#define MAX_TEXT_OPTIONS 4
+#define OPTION_TEXT_MAX_LEN 50
+
+#define MAX_TEXTS 256 		
+#define MAX_LOADED_FONTS 16
+#define TEXT_NAME_MAX_LEN 40
+
+#define SPACE_BETWEEN_TEXT 5
+#define DEBUG_TEXT_MAX_LENGTH 400
+#define EXPERIMENTAL_TEXT true		// disable to revert text rendering to old method
+
+#define VIEW_COUNT 8
+#define DEFAULT_VIEW_REFRESH_RATE 30
+
+#define MINIMUM_SCREEN_WIDTH 144
+#define MINIMUM_SCREEN_HEIGHT 144
+#define MINIMUM_ZOOM 0.4  		 // Do not set this value to 0.1 or below
+
+// Do not change
+#define FRAMERATE_UPDATE_RATE		3	
+#define NS_PER_SECOND				1000000000	
+#define INTERP_FRAMERATE(x)			(x << (FRAMERATE_UPDATE_RATE - 1))
+#define FRAMERATE_UPDATE_TICK 		(NS_PER_SECOND >> (FRAMERATE_UPDATE_RATE - 1))
+
+
+#define MAX_TRACKED_OBJECTS 512
+#define MAX_CLIENTS 16
+#define MAX_BLOCKED_CLIENTS 32
+#define MAX_PACKETS_READ 64
+
+
+//-------------------------------------------------------------------------------------------------
+
+
+//								Physics values
+//-------------------------------------------------------------------------------------------------
+
+#define COLLISION_CYCLES 5
+#define COLLISION_DEPTH 16
+
+#define FAST_COLLISION_THRESHOLD 999	// If objectCount is over this, it will switch to the faster but slightly less accurate collision detection
+
+//-------------------------------------------------------------------------------------------------
+
+
+//								Useful constants (For convenience)
+//-------------------------------------------------------------------------------------------------
+
+#define RADIAN_15 0.26179938779
+#define RADIAN_45 0.78539816339
+#define RADIAN_90 1.5707963268
+#define RADIAN_180 3.14159265359
+#define RADIAN_360 6.2831853072
+#define DEGREE_TO_RADIAN_PI 0.01745329251 
+#define RADIAN_TO_DEGREE_PI 57.2957795131
+#define DEFAULT_DIRECTION 90.0
+
+#define INT_MAX_LEN 20
+
+#define NO_PORTRAIT ""
+#define USE_CURRENT_SPRITESET 0
+#define SWITCH_TO_MISSING(x) switchSprite(-1, 0, getDisplay(x)); 
+#define BACKGROUND_SETID 1
+#define NO_ACTION NULL
+#define LOOP_SOUND 0
+
+// Tiles Probably wont be re-implemented, but constants are useful for stylisation
+#define Y_TILESCALE 32
+#define X_TILESCALE 32
+
+//-------------------------------------------------------------------------------------------------
+
+
+//									Root Folder locations
+//-------------------------------------------------------------------------------------------------
+
+#define SOUND_ROOT 		"LemonData/Sounds/"
+#define SPRITE_ROOT 	"LemonData/Sprites/"
+#define ANIMATION_ROOT 	"LemonData/AnimationData/"
+#define LEVELDATA_ROOT 	"LemonData/LevelData/"
+#define CUTSCENE_ROOT	"LemonData/CutsceneData/"
+#define SAVEDATA_ROOT	"LemonData/SaveData/"
+#define FONT_ROOT		"LemonData/Fonts/"
+
+//-------------------------------------------------------------------------------------------------
+
+
+#ifdef _WIN32
+#define EXPORT __declspec( dllexport )
+#else
+#define EXPORT
+#endif
+
+#define GAME_TITLE "Lemon Engine"
+#define LEMON_ENGINE_INFO "Lemon Engine - by Liam Fuentes Pessoa"
+
+#define LEMON_SCRIPT_VERSION "LEMONSCRIPT<1>"
+#define LEMON_VERSION "V0.11"
+
+
+/*
+
+List of callbacks when using 
+'#define LEMON_USE_CUSTOM_CALLBACKS'
+
+
+void StartGame(World *GameWorld);	// On game start (After engine boot-up)						
+
+void InitialiseObject(Object *newObject, World *GameWorld);	// Object initialisation
+
+void UpdateObject(Object *input, World *GameWorld);	// Object behaviour
+
+void Tick(World *GameWorld);	// On new GameTick
+
+void Update(World *GameWorld);	// On new frame
+
+void ExecuteCustomGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *ScreenData);  // called when executing a GameEvent that isn't built-in 
+
+void UpdateCustomLevelFlag(Object *inputFlag, World *GameWorld);	// called when updating a LevelFlag that isn't built-in 
+
+*/
+
+#endif

@@ -1,0 +1,12 @@
+FRV<1>--SAVE_DATA--
+VSync: true
+Fullscreen: false
+GameFlags: {
+69
+7
+6 
+4 }
+
+Level: 0
+resolution: 1920 1080
+ENDFILE

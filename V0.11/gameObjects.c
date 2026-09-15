@@ -1,18 +1,14 @@
 #include "LemonEngine.h"
 
 
-static ComponentData *currentComponents = NULL;
-
-
 Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5)
 {
-	if (GameWorld == NULL || GameWorld->ObjectList == NULL)
+	if (GameWorld == NULL)
 	{
 		return NULL;
 	}
 
-	ObjectController *ObjectList = GameWorld->ObjectList;
-	currentComponents = &ObjectList->objectComponents;
+	ObjectController *ObjectList = &GameWorld->ObjectList;
 
 	if (ObjectList->objectCount + ObjectList->cachedCount >= EngineSettings.MaxObjects)
 	{
@@ -57,9 +53,10 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 	switch (objectID)
 	{
 	case PROJECTILE:
-		newObject->ObjectBox->ySize = 16;
+		newObject->ObjectBox->ySize = 12;
+		newObject->ObjectBox->xSize = 12;
 
-		newObject->ObjectBox->forwardVelocity = 16.0;
+		newObject->ObjectBox->forwardVelocity = 20.0;
 
 		setRenderModeOverride(newObject, SINGLE);
 		break;
@@ -102,7 +99,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 		newObject->ObjectBox->xSize = arg1 * X_TILESCALE;
 		newObject->ObjectBox->ySize = arg2 * Y_TILESCALE;
 		newObject->State = STATIC_STATE;
-		addTileMap(newObject, 32, 32, 32);
+		addTileMap(newObject, 32, 32, 32, GameWorld);
 		
 		if (arg3 == 0)		
 		{
@@ -206,7 +203,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 		newObject->Action = IDLE;
 		newObject->ObjectBox->xSize = arg1 * X_TILESCALE;
 		newObject->ObjectBox->ySize = arg2 * Y_TILESCALE;
-		addPhysics(newObject, false);
+		addPhysics(newObject, false, GameWorld);
 		snapPositionToTileGrid(newObject, xPos, yPos);
 		switchSpriteByName("MissingMeasure", USE_CURRENT_SPRITESET, newObject->ObjectDisplay);
 		break;
@@ -234,7 +231,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 
 	case MOVING_PLATFORM_VER:
 	case MOVING_PLATFORM_HOR:
-		InitialiseMovingPlatform(newObject, objectID, xPos, yPos, arg1, arg2, arg3, arg4);
+		InitialiseMovingPlatform(newObject, arg1, arg2, arg3, arg4, GameWorld);
 		break;
 
 
@@ -265,8 +262,8 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 		newObject->ObjectBox->forwardVelocity = 3.0;
 		newObject->ObjectBox->xSize = 40;
 		newObject->ObjectBox->ySize = 60;
-		addHealthComponent(newObject, 1000);
-		addPhysics(newObject, true);
+		addHealthComponent(newObject, 1000, GROUP_HOSTILE, GameWorld);
+		addPhysics(newObject, true, GameWorld);
 		break;
 
 
@@ -274,7 +271,7 @@ Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, 
 		newObject->ObjectBox->solid = PUSHABLE_SOLID;
 		newObject->ObjectBox->xSize = arg1;
 		newObject->ObjectBox->ySize = arg2;
-		addPhysics(newObject, true);
+		addPhysics(newObject, true, GameWorld);
 		break;
 
 
@@ -343,6 +340,11 @@ Object* AddObjectWithParent(World *GameWorld, Object *ParentObject, int objectID
 	}
 
 	return newObject;
+}
+
+Object* AddObjectFromMeta(World *GameWorld, ObjectMeta input)
+{
+	return AddNamedObject(GameWorld, input.name, input.objectID, input.xPos, input.yPos);
 }
 
 
@@ -733,6 +735,7 @@ int resetDisplayData(DisplayData *input)
 	input->pixelYOffset = 0;
 
 	input->currentAnimation = 0;
+	input->currentFrame = 0;
 	input->frameBuffer = NULL;
 	input->animationBuffer = NULL;
 	input->animationTick = 0.0;
@@ -766,7 +769,7 @@ inline Layer getDisplayLayer(Object *input)
 
 bool setDisplayLayer(Object *input, Layer newLayer)
 {
-	if (input == NULL || input->ObjectDisplay == NULL || input->ObjectDisplay == &EngineSettings.DefaultDisplay)
+	if (input == NULL || input->ObjectDisplay == NULL)
 	{
 		return false;
 	}
@@ -804,13 +807,12 @@ RenderMode getRenderMode(Object *input)
 
 bool setRenderModeOverride(Object *input, RenderMode newMode)
 {
-	DisplayData *display = getDisplay(input);
-	if (display == NULL || display == &EngineSettings.DefaultDisplay)
+	if (input == NULL)
 	{
 		return false;
 	}
 
-	display->RenderModeOverride = newMode;
+	input->ObjectDisplay->RenderModeOverride = newMode;
 
 	return true;
 }
@@ -834,26 +836,24 @@ double getDisplayDirection(Object *input)
 
 bool setTransparency(Object *input, float transparency)
 {
-	DisplayData *display = getDisplay(input);
-	if (display == NULL || display == &EngineSettings.DefaultDisplay)
+	if (input == NULL)
 	{
 		return false;
 	}
 
-	display->transparency = fClamp(transparency, 0.0, 1.0);
+	input->ObjectDisplay->transparency = fClamp(transparency, 0.0, 1.0);
 
 	return true;
 }
 
 bool changeTransparency(Object *input, float transparency)
 {
-	DisplayData *display = getDisplay(input);
-	if (display == NULL || display == &EngineSettings.DefaultDisplay)
+	if (input == NULL)
 	{
 		return false;
 	}
 
-	display->transparency = fClamp(display->transparency + transparency, 0.0, 1.0);
+	input->ObjectDisplay->transparency = fClamp(input->ObjectDisplay->transparency + transparency, 0.0, 1.0);
 
 	return true;
 }
@@ -871,38 +871,36 @@ float getTransparency(Object *input)
 
 bool hideObject(Object *input)
 {
-	DisplayData *display = getDisplay(input);
-	if (display == NULL || display == &EngineSettings.DefaultDisplay)
+	if (input == NULL)
 	{
 		return false;
 	}
 
-	display->hidden = true;
+	input->ObjectDisplay->hidden = true;
 
 	return true;
 }
 
 bool showObject(Object *input)
 {
-	DisplayData *display = getDisplay(input);
-	if (display == NULL || display == &EngineSettings.DefaultDisplay)
+	if (input == NULL)
 	{
 		return false;
 	}
 	
-	display->hidden = false;
+	input->ObjectDisplay->hidden = false;
 
 	return true;
 }
 
 bool toggleHidden(Object *input)
 {
-	DisplayData *display = getDisplay(input);
-
-	if (display == NULL || display == &EngineSettings.DefaultDisplay)
+	if (input == NULL)
 	{
 		return false;
 	}
+
+	DisplayData *display = input->ObjectDisplay;
 
 	display->hidden = !display->hidden;
 
@@ -911,14 +909,12 @@ bool toggleHidden(Object *input)
 
 bool setRotateMode(Object *input, RotationMode mode)
 {
-	DisplayData *display = getDisplay(input);
-
-	if (display == NULL || display == &EngineSettings.DefaultDisplay)
+	if (input == NULL)
 	{
 		return false;
 	}
 
-	display->rotateMode = mode;
+	input->ObjectDisplay->rotateMode = mode;
 
 	return true;
 }
@@ -1190,6 +1186,7 @@ void deleteLevelObjects(ObjectController *ObjectList)
 	return;
 }
 
+
 int MarkObjectForDeletion(Object *inputObject)
 {
 	if (inputObject == NULL)
@@ -1197,7 +1194,7 @@ int MarkObjectForDeletion(Object *inputObject)
 		return MISSING_DATA;
 	}
 
-	if (inputObject->State == TO_BE_DELETED)
+	if (inputObject->State == TO_BE_DELETED || inputObject->State == EMPTY_OBJECT)
 	{
 		return INVALID_DATA;
 	}
@@ -1207,6 +1204,22 @@ int MarkObjectForDeletion(Object *inputObject)
 	return LEMON_SUCCESS;
 }
 
+int MarkObjectInstanceForDeletion(Object *inputObject, int instance)
+{
+	if (inputObject == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	if (inputObject->State == TO_BE_DELETED || inputObject->State == EMPTY_OBJECT || inputObject->instanceNumber != instance)
+	{
+		return INVALID_DATA;
+	}
+
+	inputObject->State = TO_BE_DELETED;
+
+	return LEMON_SUCCESS;
+}
 
 int UnmarkObjectForDeletion(Object *inputObject)
 {
@@ -1231,6 +1244,16 @@ int UnmarkObjectForDeletion(Object *inputObject)
 
 
 	return LEMON_SUCCESS;
+}
+
+bool objectDeleted(Object *input, int instance)
+{
+	if (input == NULL)
+	{
+		return true;
+	}
+
+	return (input->State == EMPTY_OBJECT || input->instanceNumber != instance);
 }
 
 
@@ -1796,7 +1819,7 @@ int cacheObjects(ObjectController *ObjectList, PhysicsBox boundingBox)
 // Updates all objects in GameWorld
 FuncResult updateObjects(World *GameWorld)
 {
-	if (GameWorld == NULL || GameWorld->ObjectList == NULL)
+	if (GameWorld == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -1806,15 +1829,14 @@ FuncResult updateObjects(World *GameWorld)
 		return ACTION_DISABLED;
 	}
 
-	ObjectController *ObjectList = GameWorld->ObjectList;
-	currentComponents = &ObjectList->objectComponents;
+	ObjectController *ObjectList = &GameWorld->ObjectList;
 
-	if (ObjectList == NULL || ObjectList->firstObject == NULL)
+	if (ObjectList->firstObject == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	updateComponents(currentComponents, GameWorld);
+	updateComponents(GameWorld);
 
 	Object *currentObject = ObjectList->firstObject;
 	while(currentObject != NULL)
@@ -1831,7 +1853,7 @@ FuncResult updateObjects(World *GameWorld)
 }
 
 
-#define cannotUpdateObject(x) (x->State == STATIC_STATE || x->State < DEFAULT_STATE || (GameWorld->GamePaused != 0 && x->ObjectID != UI_ELEMENT))
+#define cannotUpdateObject(x) (x->State == STATIC_STATE || x->State < DEFAULT_STATE || (GameWorld->GamePaused != 0 && x->ObjectID != UI_ELEMENT && Networking.connectMode == OFFLINE))
 
 int ObjectBehaviour(World *GameWorld, Object *inputObject)
 {
@@ -1859,6 +1881,11 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject)
 	
 
 	#ifndef LEMON_USE_CUSTOM_CALLBACKS
+	if (inputObject == GameWorld->Player.PlayerPtr)
+	{
+		UpdatePlayer(GameWorld);
+	}
+
 	switch (inputObject->ObjectID)
 	{
 		case UI_ELEMENT:
@@ -1882,12 +1909,12 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject)
 
 
 		case MOVING_PLATFORM_HOR:
-			UpdateHorizontalPlatform(inputObject);
+			UpdateHorizontalPlatform(inputObject, GameWorld);
 		 	break;
 
 
 		case MOVING_PLATFORM_VER:
-			UpdateVerticalPlatform(inputObject);
+			UpdateVerticalPlatform(inputObject, GameWorld);
 			break;
 
 
@@ -1937,7 +1964,7 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject)
 		case PUSHABLE_BOX:
 			ApplyFriction(inputObject->ObjectBox, 0.9, 0.9, 1.0);
 
-			PhysicsBox *PlayerBox = GameWorld->Player.PlayerBox;
+			PhysicsBox *PlayerBox = GameWorld->Player.PlayerPtr->ObjectBox;
 
 			if (PlayerInteractingWithBox(inputObject->ObjectBox, GameWorld) && PlayerBox != NULL)
 			{
@@ -1954,10 +1981,6 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject)
 			}
 			break;
 
-
-		case PLAYER_OBJECT:
-			UpdatePlayer(&GameWorld->Player, GameWorld);
-			break;
 
 		default:
 			break;
@@ -1976,7 +1999,7 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject)
 
 int updateObjectDisplays(World *GameWorld)
 {
-	Object *currentObject = GameWorld->ObjectList->firstObject;
+	Object *currentObject = GameWorld->ObjectList.firstObject;
 
 	while(currentObject != NULL)
 	{
@@ -1993,15 +2016,9 @@ int updateObjectDisplays(World *GameWorld)
 
 int UpdateObjectDisplay(Object *inputObject, float deltaTime)
 {
-	DisplayData *inputDisplay = getDisplay(inputObject);
+	if (inputObject == NULL)	{ return MISSING_DATA; }
 
-	if (inputDisplay == NULL)	{ return MISSING_DATA; }
-
-	if (inputObject->State < DEFAULT_STATE)
-	{
-		return ACTION_DISABLED;
-	}
-
+	DisplayData *inputDisplay = inputObject->ObjectDisplay;
 	
 	iterateAnimation(inputDisplay, deltaTime);
 
@@ -2090,7 +2107,7 @@ int updateObjectsState(ObjectController *ObjectList, World *GameWorld)
 		}
 	}
 
-	ResolveAllObjects(ObjectList, GameWorld->PhysicsType);
+	ResolveAllObjects(GameWorld);
 
 
 	return LEMON_SUCCESS;
@@ -2099,17 +2116,17 @@ int updateObjectsState(ObjectController *ObjectList, World *GameWorld)
 
 int UpdatePhysicsState(Object *inputObject, World *GameWorld)
 {
-	if (!LEMON_COLLISION_PHYSICS || inputObject->State == STATIC_STATE || inputObject->State < DEFAULT_STATE || !HasPhysics(inputObject))
+	if (!LEMON_COLLISION_PHYSICS || inputObject->State == STATIC_STATE || inputObject->State < DEFAULT_STATE)
+	{
+		return ACTION_DISABLED;
+	}
+
+	if (!HasPhysics(inputObject, GameWorld))
 	{
 		return EXECUTION_UNNECESSARY;
 	}
 
 	PhysicsBox *inputBox = inputObject->ObjectBox;
-
-	if (inputBox == NULL || GameWorld == NULL || GameWorld->ObjectList == NULL)
-	{
-		return MISSING_DATA;
-	}
 
 	PhysicsBox *GroundBox = inputBox->GroundBox;
 
@@ -2252,7 +2269,6 @@ int UpdateParentChildLink(Object *inputObject)
 		InputDisplay->currentSprite = ParentDisplay->currentSprite;
 	}
 
-
 	if ((inputObject->ParentLink & ANIMATION_LINK) != 0)
 	{
 		InputDisplay->animationBuffer = ParentDisplay->animationBuffer;
@@ -2267,29 +2283,28 @@ int UpdateParentChildLink(Object *inputObject)
 		InputDisplay->transparency = ParentDisplay->transparency;
 	}
 
-	if ( (inputObject->ParentLink & DISPLAYDATA_LINK) != 0)
+	if ( (inputObject->ParentLink & HIDDEN_LINK) != 0)
 	{
-		InputDisplay->RenderModeOverride = ParentDisplay->RenderModeOverride;
 		InputDisplay->hidden = ParentDisplay->hidden;
-		InputDisplay->size = ParentDisplay->size;
-		InputDisplay->layer = ParentDisplay->layer;
 	}
 
 	return LEMON_SUCCESS;
 }
 
 
-int ResolveAllObjects(ObjectController *ObjectList, WorldPhysics pType)
+int ResolveAllObjects(World *GameWorld)
 {
-	if (!LEMON_COLLISION_PHYSICS || ObjectList == NULL)
+	if (!LEMON_COLLISION_PHYSICS || GameWorld == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (pType != PLATFORMER)
+	if (GameWorld->PhysicsType != PLATFORMER)
 	{
 		return ACTION_DISABLED;
 	}
+
+	ObjectController *ObjectList = &GameWorld->ObjectList;
 
 	SparseList *List = &ObjectList->objectComponents.PhysicsComponent;
 	ComponentType *physList = List->dense;
@@ -2316,13 +2331,13 @@ int ResolveAllObjects(ObjectController *ObjectList, WorldPhysics pType)
 		{
 			float savedPos = boxList[boxIndex].yPos;
 			boxList[boxIndex].yPos -= boxList[boxIndex].PhysicsYVelocity;
-			ResolveAllXCollision(&boxList[boxIndex], ObjectList);
+			ResolveAllXCollision(&boxList[boxIndex], GameWorld);
 			boxList[boxIndex].yPos = savedPos;
 		}
 
 		if (fabs(boxList[boxIndex].PhysicsYVelocity) > 0.1)
 		{	
-			ResolveAllYCollision(&boxList[boxIndex], ObjectList);
+			ResolveAllYCollision(&boxList[boxIndex], GameWorld);
 		}
 	}
 
@@ -2337,21 +2352,19 @@ int ResolveAllObjects(ObjectController *ObjectList, WorldPhysics pType)
 // it's recommended to basically just copy and paste as it should copy the functionality of the existing components
 
 // These macros can simplify the process of adding new components
-#define initComponentType(x) 		initialiseSparseList(&currentComponents->x, #x)
-#define removeComponentType(x, y) 	removeComponent(x, &currentComponents->y)
-#define addComponentType(x, y) 		(y *)addComponent(x, &currentComponents->y)
-#define getComponentType(x, y) 		(y *)getComponent(x, &currentComponents->y)
-#define hasComponentType(x, y)		(currentComponents->y.sparse[x->index] >= 0)
+#define initComponentType(x) 		initialiseSparseList(&ObjectList->objectComponents.x, #x)
+#define removeComponentType(x, y) 	removeComponent(x, &GameWorld->ObjectList.objectComponents.y)
+#define addComponentType(x, y) 		(y *)addComponent(x, &GameWorld->ObjectList.objectComponents.y)
+#define getComponentType(x, y) 		(y *)getComponent(x, &GameWorld->ObjectList.objectComponents.y)
+#define hasComponentType(x, y)		(GameWorld->ObjectList.objectComponents.y.sparse[x->index] >= 0)
 
 
-int initialiseComponents(ObjectController *input)
+int initialiseComponents(ObjectController *ObjectList)
 {
-	if (input == NULL)
+	if (ObjectList == NULL)
 	{
 		return MISSING_DATA;
 	}
-
-	currentComponents = &input->objectComponents;
 
 	// initialise new components here
 	initComponentType(HealthComponent);
@@ -2361,27 +2374,27 @@ int initialiseComponents(ObjectController *input)
 	initComponentType(StopWatch);
 	initComponentType(PhysicsComponent);
 	initComponentType(Polygon);
+	initComponentType(ObjectEvent);
 
 	return LEMON_SUCCESS;
 }
 
 int removeComponents(Object *input, ObjectController *ObjectList)
 {
-	if (!ObjectList)
+	if (ObjectList == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	currentComponents = &ObjectList->objectComponents;
-
 	// remove new components here
-	removeComponentType(input, HealthComponent);
-	removeComponentType(input, BulletComponent);
-	removeComponentType(input, TileMap);
-	removeComponentType(input, Timer);
-	removeComponentType(input, StopWatch);
-	removeComponentType(input, PhysicsComponent);
-	removeComponentType(input, Polygon);
+	removeComponent(input, &ObjectList->objectComponents.HealthComponent);
+	removeComponent(input, &ObjectList->objectComponents.BulletComponent);
+	removeComponent(input, &ObjectList->objectComponents.TileMap);
+	removeComponent(input, &ObjectList->objectComponents.Timer);
+	removeComponent(input, &ObjectList->objectComponents.StopWatch);
+	removeComponent(input, &ObjectList->objectComponents.PhysicsComponent);
+	removeComponent(input, &ObjectList->objectComponents.Polygon);
+	removeComponent(input, &ObjectList->objectComponents.ObjectEvent);
 
 	return LEMON_SUCCESS;
 }
@@ -2389,8 +2402,7 @@ int removeComponents(Object *input, ObjectController *ObjectList)
 
 void initialiseSparseList(SparseList *input, const char name[])
 {
-	strcpy(input->componentName, name);
-	putConsole("Initialising %s...", name);
+	strcpy(input->name, name);
 
 	// -1 is tombstone value (empty slot)
 	for (int i = 0; i < EngineSettings.MaxObjects; i++)
@@ -2435,7 +2447,7 @@ ComponentType* addComponent(Object *input, SparseList *List)
 
 int removeComponent(Object *input, SparseList *List)
 {
-	if (input == NULL)
+	if (input == NULL || List == NULL)
 	{
 		return INVALID_DATA;
 	}
@@ -2450,7 +2462,7 @@ int removeComponent(Object *input, SparseList *List)
 	ComponentType *denseList = List->dense;
 	int lastIndex = List->storedComponents - 1;
 
-	if (strcmp(List->componentName, "Polygon") == 0)
+	if (strcmp(List->name, "Polygon") == 0)
 	{
 		Polygon *poly = &denseList[denseIndex].Polygon;
 		
@@ -2465,8 +2477,18 @@ int removeComponent(Object *input, SparseList *List)
 			free(poly->indicies);
 			poly->indicies = NULL;
 		}
-	}
+	} 
+	else if (strcmp(List->name, "ObjectEvent") == 0)
+	{
+		ObjectEvent *event = &denseList[denseIndex].ObjectEvent;
+		if (event->event != NULL)
+		{
+			free(event->event);
+			event->event = NULL;
+		}
+	} 
 
+	
 	// swap last and component to delete
 	if (denseIndex != lastIndex)
 	{
@@ -2502,15 +2524,84 @@ ComponentType* getComponent(Object *input, SparseList *List)
 }
 
 
-int updateComponents(ComponentData *data, World *GameWorld)
+int updateComponents(World *GameWorld)
 {
-	updatePhysicsComponents(data, GameWorld);
+	updatePhysicsComponents(GameWorld);
 
 	return LEMON_SUCCESS;
 }
 
 
-PhysicsComponent* addPhysics(Object *input, bool gravity)
+GameEvent* addObjectEvent(Object *input, bool triggerOnce, World *GameWorld)
+{
+	ObjectEvent *newEvent = getComponentType(input, ObjectEvent);
+
+	if (newEvent != NULL)
+	{
+		newEvent->triggerOnce = triggerOnce;
+		return newEvent->event;
+	}
+
+	newEvent = addComponentType(input, ObjectEvent);
+
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	newEvent->event = malloc(sizeof(GameEvent));
+	if (newEvent->event == NULL)
+	{
+		removeComponentType(input, ObjectEvent);
+		return NULL;
+	}
+
+	memset(newEvent->event, 0, sizeof(GameEvent));
+	newEvent->triggerOnce = triggerOnce;
+
+	return newEvent->event;
+}
+
+GameEvent* getObjectEvent(Object *input, World *GameWorld)
+{
+	ObjectEvent *newEvent = getComponentType(input, ObjectEvent);
+
+	if (newEvent == NULL)
+	{
+		return NULL;
+	}
+
+	return newEvent->event;
+}
+
+bool hasObjectEvent(Object *input, World *GameWorld)
+{
+	return hasComponentType(input, ObjectEvent);
+}
+
+void triggerObjectEvent(Object *input, World *GameWorld)
+{
+	ObjectEvent *event = getComponentType(input, ObjectEvent);
+
+	if (event == NULL || event->event == NULL)
+	{
+		return;
+	}
+
+	// this client has triggered the event, so put your own clientID here
+	event->event->clientID = Networking.clientID;	
+	triggerGameEvent(event->event, GameWorld);
+
+	if (event->triggerOnce)
+	{	
+		removeComponentType(input, ObjectEvent);
+	}
+
+	return;
+}
+
+
+PhysicsComponent* addPhysics(Object *input, bool gravity, World *GameWorld)
 {
 	PhysicsComponent *newPhys = addComponentType(input, PhysicsComponent);
 
@@ -2525,7 +2616,7 @@ PhysicsComponent* addPhysics(Object *input, bool gravity)
 	return newPhys;
 }
 
-PhysicsComponent* addPhysicsDefault(Object *input)
+PhysicsComponent* addPhysicsDefault(Object *input, World *GameWorld)
 {
 	PhysicsComponent *newPhys = addComponentType(input, PhysicsComponent);
 	if (newPhys == NULL)
@@ -2539,12 +2630,12 @@ PhysicsComponent* addPhysicsDefault(Object *input)
 	return newPhys;
 }
 
-PhysicsComponent* getPhysicsComponent(Object *input)
+PhysicsComponent* getPhysicsComponent(Object *input, World *GameWorld)
 {
 	return getComponentType(input, PhysicsComponent);
 }
 
-bool HasPhysics(Object *input)
+bool HasPhysics(Object *input, World *GameWorld)
 {
 	if (input == NULL || (input->reserved & RFLAG_DISABLE_PHYSICS) != 0)
 	{
@@ -2554,7 +2645,7 @@ bool HasPhysics(Object *input)
 	return hasComponentType(input, PhysicsComponent);
 }
 
-bool HasGravity(Object *input)
+bool HasGravity(Object *input, World *GameWorld)
 {
 	PhysicsComponent *myPhys = getComponentType(input, PhysicsComponent);
 
@@ -2566,14 +2657,26 @@ bool HasGravity(Object *input)
 	return false;
 }
 
-void updatePhysicsComponents(ComponentData *data, World *GameWorld)
+void SetPhysicsGravity(Object *input, bool gravity, World *GameWorld)
+{
+	PhysicsComponent *myPhys = getComponentType(input, PhysicsComponent);
+
+	if (myPhys)
+	{
+		myPhys->gravity = gravity;
+	}
+
+	return;
+}
+
+void updatePhysicsComponents(World *GameWorld)
 {
 	if (!LEMON_COLLISION_PHYSICS || GameWorld->PhysicsType != PLATFORMER)
 	{
 		return;
 	}
 
-	SparseList *List = &data->PhysicsComponent;
+	SparseList *List = &GameWorld->ObjectList.objectComponents.PhysicsComponent;
 	ComponentType *denseList = List->dense;
 	PhysicsComponent *phys;
 
@@ -2591,7 +2694,7 @@ void updatePhysicsComponents(ComponentData *data, World *GameWorld)
 }
 
 
-Polygon* addPolygon(Object *input, int numOfVertices, ...)
+Polygon* addPolygon(Object *input, World *GameWorld, int numOfVertices, ...)
 {
 	Polygon *newPolygon = getComponentType(input, Polygon);
 
@@ -2639,12 +2742,12 @@ Polygon* addPolygon(Object *input, int numOfVertices, ...)
 	return newPolygon;
 }
 
-Polygon* addQuad(Object *input)		
+Polygon* addQuad(Object *input, World *GameWorld)		
 {
 	float x = (float)input->ObjectBox->xSize;
 	float y = (float)input->ObjectBox->ySize;
 	// add a polygon that is a box surrounding the sprite, that without modification appears identically to regular sprite rendering, albeit without rotations
-	Polygon *new = addPolygon(input, 4, 
+	Polygon *new = addPolygon(input, GameWorld, 4, 
 		0.0, 0.0, 0.0, 0.0,	
 		0.0, y, 0.0, 1.0,
 		x, 0.0, 1.0, 0.0,
@@ -2672,14 +2775,14 @@ Polygon* addQuad(Object *input)
 }
 
 
-Polygon* getPolygon(Object *input)
+Polygon* getPolygon(Object *input, World *GameWorld)
 {
-	return getComponentType(input, Polygon);
+	return (Polygon *)getComponent(input, &GameWorld->ObjectList.objectComponents.Polygon);
 }
 
-void movePolygonVertex(Object *input, int vertex, float newX, float newY)
+void movePolygonVertex(Object *input, int vertex, float newX, float newY, World *GameWorld)
 {
-	Polygon *poly = getPolygon(input);
+	Polygon *poly = getPolygon(input, GameWorld);
 
 	if (poly == NULL || vertex < 0 || vertex >= poly->vertices)
 	{
@@ -2721,9 +2824,9 @@ void movePolygonVertex(Object *input, int vertex, float newX, float newY)
 	return;
 }
 
-SDL_Vertex* getPolygonVertex(Object *input, int vertex)
+SDL_Vertex* getPolygonVertex(Object *input, int vertex, World *GameWorld)
 {
-	Polygon *poly = getPolygon(input);
+	Polygon *poly = getPolygon(input, GameWorld);
 
 	if (poly == NULL || vertex < 0 || vertex >= poly->vertices)
 	{
@@ -2733,69 +2836,77 @@ SDL_Vertex* getPolygonVertex(Object *input, int vertex)
 	return &poly->vertexList[vertex];
 }
 
-int addHealthComponent(Object *input, int Health)
+HealthComponent* addHealthComponent(Object *input, int Health, GroupType group, World *GameWorld)
 {
 	HealthComponent *newHp = addComponentType(input, HealthComponent);
 
 	if (newHp == NULL)
 	{
-		return MISSING_DATA;
+		return NULL;
 	}
 
 	newHp->health = Health;
 	newHp->maxHealth = Health;
-	newHp->duration = 0;
-	newHp->startTick = 0;
-	newHp->inflictedDamage = 0;
+	newHp->hurtDuration = 0;
+	newHp->hurtTick = 0;
+	newHp->group = group;
 
-	return LEMON_SUCCESS;
+	return newHp;
 }
 
-int removeHealthComponent(Object *input)
-{
-	return removeComponentType(input, HealthComponent);
-}
-
-HealthComponent* getHealthComponent(Object *input)
+HealthComponent* getHealthComponent(Object *input, World *GameWorld)
 {
 	return getComponentType(input, HealthComponent);
 }
 
-int inflictDamage(int damage, Object *input)
+GroupType getGroupAffiliation(Object *input, World *GameWorld)
 {
-	HealthComponent *targetHp = getHealthComponent(input);
+	HealthComponent *health = getComponentType(input, HealthComponent);
 
-	if (targetHp != NULL)
+	if (health == NULL)
 	{
-		targetHp->health -= abs(damage);
-		if (targetHp->health < 1)
-		{
-			MarkObjectForDeletion(input);
-		}
-
-		targetHp->startTick = TickNumber();
-		targetHp->duration = 5;
-		PlayObjectAnimation("Hurt", 1, input);
-		targetHp->inflictedDamage = damage;
+		return NO_GROUP;
 	}
+
+	return health->group;
+}
+
+int inflictDamage(int damage, Object *input, World *GameWorld)
+{
+	HealthComponent *targetHp = getHealthComponent(input, GameWorld);
+
+	if (targetHp == NULL)
+	{
+		return MISSING_DATA;
+	}
+
+	targetHp->health -= damage;
+	if (targetHp->health < 1)
+	{
+		MarkObjectForDeletion(input);
+	}
+
+	targetHp->hurtTick = TickNumber();
+	targetHp->hurtDuration = 5;
+	PlayObjectAnimation("Hurt", 1, input);
 
 	return LEMON_SUCCESS;
 }
 
-bool isHurt(Object *input)
+bool isHurt(Object *input, World *GameWorld)
 {
-	HealthComponent *health = getHealthComponent(input);
+	HealthComponent *health = getHealthComponent(input, GameWorld);
 
 	if (health == NULL)
 	{		
 		return false;
 	}
 
-	return (TickNumber() < health->startTick + health->duration);
+	return (TickNumber() < health->hurtTick + health->hurtDuration);
 }
 
 
-BulletComponent* addBulletComponent(Object *input, Object *owner, int damage, ParticleSubType particleType)
+BulletComponent* addBulletComponent(Object *input, Object *owner, int damage, ParticleSubType particleType, World *GameWorld)
 {
 	centerOnObject(input, owner);
 	input->ObjectBox->shape = CIRCLE;
@@ -2812,30 +2923,16 @@ BulletComponent* addBulletComponent(Object *input, Object *owner, int damage, Pa
 	newBullet->damage = damage;
 	newBullet->owner = owner;
 	newBullet->particleType = particleType;
-	newBullet->particleRepeat = 1;
 	newBullet->particleLifeTime = 0;
-	newBullet->bulletCollide = false;
+	newBullet->bulletCollide = true;
 	newBullet->bulletLifeTime = 200;
+	newBullet->group = getGroupAffiliation(owner, GameWorld);
 	
 	return newBullet;
 }
 
-BulletComponent* addBulletComponentWithCollision(Object *input, Object *owner, int damage, ParticleSubType particleType)
-{
-	BulletComponent *newBullet = addBulletComponent(input, owner, damage, particleType);
 
-	if (newBullet == NULL)
-	{
-		return NULL;
-	}
-
-	newBullet->bulletCollide = true;
-
-	return newBullet;
-}
-
-
-bool isBullet(Object *input)
+bool isBullet(Object *input, World *GameWorld)
 {
 	if (input == NULL)
 	{		
@@ -2862,31 +2959,43 @@ void bulletCollision(Object *bulletObject, World *GameWorld)
 		return;
 	}
 
-	SparseList *healthList = &GameWorld->ObjectList->objectComponents.HealthComponent;
+	// search for collisions with any objects that have health attached first
+	SparseList *healthData = &GameWorld->ObjectList.objectComponents.HealthComponent;
+	HealthComponent *healthList = (HealthComponent *)healthData->dense;
+
+	PhysicsBox *boxes = GameWorld->ObjectList.objectComponents.PhysicsBoxes;
+	Object *objects = GameWorld->ObjectList.objectComponents.Objects;
 	int index = 0;
-	PhysicsBox *boxes = GameWorld->ObjectList->objectComponents.PhysicsBoxes;
-	Object *objects = GameWorld->ObjectList->objectComponents.Objects;
 
-	for (int i = 0; i < healthList->storedComponents; i++)
+	for (int i = 0; i < healthData->storedComponents; i++)
 	{
-		index = healthList->denseID[i];
+		// If the bullet's affiliation differs from the hit object, or if the bullet has no affiliation, it should deal damage
+		if (healthList[i].group == bulletInfo->group && bulletInfo->group != NO_GROUP)
+		{
+			continue;
+		}
 
-		if (CheckBoxOverlapsBox(bulletObject->ObjectBox, &boxes[index]))
+		index = healthData->denseID[i];
+
+		// one last safety check to ensure bullet is not hitting the object who spawned it, although you may remove this if you want that functionality
+		if (&objects[index] != bulletInfo->owner && CheckBoxOverlapsBox(bulletObject->ObjectBox, &boxes[index]))
 		{
 			MarkObjectForDeletion(bulletObject);
 
-			centerOnObject(AddParticle(GameWorld, bulletInfo->particleType, 0, 0, bulletInfo->particleRepeat, bulletInfo->particleLifeTime), bulletObject);
+			centerOnObject(AddParticle(GameWorld, bulletInfo->particleType, 0, 0, 1, bulletInfo->particleLifeTime), bulletObject);
 
-			inflictDamage(bulletInfo->damage, &objects[index]);
+			inflictDamage(bulletInfo->damage, &objects[index], GameWorld);
 		}
 	}
 
-	if (!bulletInfo->bulletCollide)
+	// If bullet is supposed to be destroyed on hitting geometry, check for it here
+	// If bullet object has physics attached, it is assumed you want the physics system to take over
+	if (!bulletInfo->bulletCollide || HasPhysics(bulletObject, GameWorld))
 	{
 		return;
 	}
 
-	Object *hitObject = GetCollidingObject(bulletObject->ObjectBox, GameWorld->ObjectList);
+	Object *hitObject = GetCollidingObject(bulletObject->ObjectBox, &GameWorld->ObjectList);
 
 	if (hitObject == NULL || hitObject == bulletInfo->owner)
 	{
@@ -2895,13 +3004,13 @@ void bulletCollision(Object *bulletObject, World *GameWorld)
 
 	MarkObjectForDeletion(bulletObject);
 
-	centerOnObject(AddParticle(GameWorld, bulletInfo->particleType, 0, 0, bulletInfo->particleRepeat, bulletInfo->particleLifeTime), bulletObject);
+	centerOnObject(AddParticle(GameWorld, bulletInfo->particleType, 0, 0, 1, bulletInfo->particleLifeTime), bulletObject);
 
 	return;
 }
 
 
-int addTileMap(Object *input, unsigned int centerTileX, unsigned int centerTileY, unsigned int tileSize)
+int addTileMap(Object *input, int centerTileX, int centerTileY, int tileSize, World *GameWorld)
 {
 	TileMap *newMap = addComponentType(input, TileMap);
 
@@ -2910,21 +3019,21 @@ int addTileMap(Object *input, unsigned int centerTileX, unsigned int centerTileY
 		return MISSING_DATA;
 	}
 
-	newMap->centerTileX = centerTileX;
-	newMap->centerTileY = centerTileY;
-	newMap->tileSize = clamp(tileSize, 1, tileSize);
+	newMap->centerTileX = (float)clamp(centerTileX, 0, centerTileX);
+	newMap->centerTileY = (float)clamp(centerTileY, 0, centerTileY);
+	newMap->tileSize = (float)clamp(tileSize, 1, tileSize);
 
 	return LEMON_SUCCESS;
 }
 
 
-TileMap* getTileMap(Object *input)
+TileMap* getTileMap(Object *input, World *GameWorld)
 {
-	return getComponentType(input, TileMap);
+	return (TileMap *)getComponent(input, &GameWorld->ObjectList.objectComponents.TileMap);
 }
 
 
-int startTimer(int ticks, Object *input)
+int startTimer(int ticks, Object *input, World *GameWorld)
 {
 	if (ticks < 1)
 	{
@@ -2946,42 +3055,48 @@ int startTimer(int ticks, Object *input)
 	return LEMON_SUCCESS;
 }
 
-int startTimerSeconds(float seconds, Object *input)
+int startTimerSeconds(float seconds, Object *input, World *GameWorld)
 {
-	return startTimer((int)(seconds * EngineSettings.GameTicksPerSecond), input);
+	return startTimer((int)(seconds * EngineSettings.GameTicksPerSecond), input, GameWorld);
 }
 
-bool timerExpired(Object *input)
+bool timerExpired(Object *input, World *GameWorld)
+{
+	return (checkTimer(input, GameWorld) == 0);
+}
+
+// returns time remaining
+Uint64 checkTimer(Object *input, World *GameWorld)
 {
 	const Timer *timer = getComponentType(input, Timer);
 
 	if (timer == NULL)
 	{
-		return true;
+		return 0;
 	}
 
-	Uint64 current = timer->pause ? timer->pauseTick : TickNumber();
+	Uint64 elapsed = (timer->pause ? timer->pauseTick : TickNumber()) - timer->startTick;
 
-	if ((current - timer->startTick) >= timer->timerLength)
+	if (elapsed >= timer->timerLength)
 	{
 		removeComponentType(input, Timer);
-		return true;
+		return 0;
 	}
 
-	return false;
+	return timer->timerLength - elapsed;
 }
 
-Timer* getTimer(Object *input)
+Timer* getTimer(Object *input, World *GameWorld)
 {
 	return getComponentType(input, Timer);
 }
 
-int endTimer(Object *input)
+int endTimer(Object *input, World *GameWorld)
 {
 	return removeComponentType(input, Timer);
 }
 
-void pauseTimer(Object *input)
+void pauseTimer(Object *input, World *GameWorld)
 {
 	Timer *timer = getComponentType(input, Timer);
 
@@ -2997,7 +3112,7 @@ void pauseTimer(Object *input)
 }
 
 #define resumeTimer(x) unpauseTimer(x)
-void unpauseTimer(Object *input)
+void unpauseTimer(Object *input, World *GameWorld)
 {
 	Timer *timer = getComponentType(input, Timer);
 
@@ -3012,30 +3127,7 @@ void unpauseTimer(Object *input)
 	return;
 }
 
-
-// unused
-void pauseTimers(ComponentData *data, World *GameWorld)
-{
-	if (GameWorld->GamePaused == 0)
-	{
-		return;
-	}
-
-	SparseList *List = &data->Timer;
-	Object *objects = data->Objects;
-	ComponentType *denseList = List->dense;
-
-	for (int i = 0; i < List->storedComponents; i++)
-	{
-		if (cannotUpdateObject((&objects[List->denseID[i]])))
-		{
-			denseList[i].Timer.startTick++;
-		}
-	}	
-}
-
-
-int startStopWatch(Object *input)
+int startStopWatch(Object *input, World *GameWorld)
 {
 	StopWatch *newStopWatch = addComponentType(input, StopWatch);
 
@@ -3051,7 +3143,7 @@ int startStopWatch(Object *input)
 	return LEMON_SUCCESS;
 }
 
-float checkStopWatch(Object *input)
+float checkStopWatch(Object *input, World *GameWorld)
 {
 	const StopWatch *watch = getComponentType(input, StopWatch);
 
@@ -3070,7 +3162,7 @@ float checkStopWatch(Object *input)
 	}
 }
 
-void pauseStopWatch(Object *input)
+void pauseStopWatch(Object *input, World *GameWorld)
 {
 	StopWatch *watch = getComponentType(input, StopWatch);
 
@@ -3086,7 +3178,7 @@ void pauseStopWatch(Object *input)
 }
 
 #define resumeStopWatch(x) unpauseStopWatch(x)
-void unpauseStopWatch(Object *input)
+void unpauseStopWatch(Object *input, World *GameWorld)
 {
 	StopWatch *watch = getComponentType(input, StopWatch);
 
@@ -3101,9 +3193,9 @@ void unpauseStopWatch(Object *input)
 	return;
 }
 
-float endStopWatch(Object *input)
+float endStopWatch(Object *input, World *GameWorld)
 {
-	float time = checkStopWatch(input);
+	float time = checkStopWatch(input, GameWorld);
 
 	removeComponentType(input, StopWatch);
 
@@ -3113,7 +3205,7 @@ float endStopWatch(Object *input)
 
 FuncResult updateObjectsFrame(World *GameWorld)  
 {
-	if (GameWorld == NULL || GameWorld->ObjectList == NULL || GameWorld->ObjectList->FrameUpdates == NULL)
+	if (GameWorld == NULL || GameWorld->ObjectList.FrameUpdates == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -3123,7 +3215,7 @@ FuncResult updateObjectsFrame(World *GameWorld)
 		return ACTION_DISABLED;
 	}
 
-	ObjectController *ObjectList = GameWorld->ObjectList;
+	ObjectController *ObjectList = &GameWorld->ObjectList;
 	FrameUpdateFunction *currentFunction = ObjectList->FrameUpdates;
 
 	// Update Behaviour
@@ -3226,12 +3318,12 @@ int UpdateCoin(Object *coin, World *GameWorld)
 	PlayerData *Player = &GameWorld->Player;
 	PhysicsBox *coinBox = coin->ObjectBox;
 
-	if (coinBox == NULL || Player->PlayerBox == NULL)
+	if (coinBox == NULL || Player->PlayerPtr == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (checkBoxOverlapsBoxBroad(Player->PlayerBox, coin->ObjectBox))
+	if (checkBoxOverlapsBoxBroad(Player->PlayerPtr->ObjectBox, coin->ObjectBox))
 	{
 		Player->coinCount++;
 
@@ -3244,7 +3336,7 @@ int UpdateCoin(Object *coin, World *GameWorld)
 		PlaySound("Objects/Coin_Collect", 0.75, OBJECT_SFX);
 	}
 
-/*
+
 	if (buttons[LMN_INTERACT2] || coin->arg1 > 0)
 	{
 		if (DistanceBetween(coin, Player->PlayerPtr) < 25000.0)
@@ -3259,7 +3351,7 @@ int UpdateCoin(Object *coin, World *GameWorld)
 			coinBox->forwardVelocity += 1.5;
 		}
 	}
-*/
+
 
 	return LEMON_SUCCESS;
 }
@@ -3267,12 +3359,12 @@ int UpdateCoin(Object *coin, World *GameWorld)
 
 int UpdateSpring(Object *spring, World *GameWorld)
 {
-	if (spring == NULL || GameWorld == NULL || GameWorld->Player.PlayerBox == NULL)
+	if (spring == NULL || GameWorld == NULL || GameWorld->Player.PlayerPtr == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	PhysicsBox *PlayerBox = GameWorld->Player.PlayerBox;
+	PhysicsBox *PlayerBox = GameWorld->Player.PlayerPtr->ObjectBox;
 
 
 	if (!playingAnimation(getDisplay(spring)) && PlayerBox->yVelocity < -1.0 && checkBoxOverlapsBoxBroad(PlayerBox, spring->ObjectBox))
@@ -3388,7 +3480,7 @@ int CustomParticleBehaviour(World *GameWorld, Object *particle)
 
 int UpdateGateSwitch(Object *gateSwitch, World *GameWorld)
 {
-	if (gateSwitch == NULL || GameWorld->ObjectList == NULL)
+	if (gateSwitch == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -3403,25 +3495,25 @@ int UpdateGateSwitch(Object *gateSwitch, World *GameWorld)
 		gateSwitch->Action = (gateSwitch->Action + 1) % 2;
 
 		// Update any gates
-		toggleGateSwitch(gateSwitch, GameWorld->ObjectList);
+		toggleGateSwitch(gateSwitch, &GameWorld->ObjectList);
 
 		if (gateSwitch->Action == 1 && gateSwitch->ObjectID == GATE_SWITCH_TIMED)
 		{
-			startTimer(gateSwitch->arg3, gateSwitch);
+			startTimer(gateSwitch->arg3, gateSwitch, GameWorld);
 		}
 		else
 		{
-			endTimer(gateSwitch);	
+			endTimer(gateSwitch, GameWorld);	
 			// end timer is somewhat redundant, basically ensures that after this point timerExpired is true, although that is never checked
 		}
 
 		return LEMON_SUCCESS;
 	}
 
-	if (gateSwitch->Action == 1 && gateSwitch->ObjectID == GATE_SWITCH_TIMED && timerExpired(gateSwitch))
+	if (gateSwitch->Action == 1 && gateSwitch->ObjectID == GATE_SWITCH_TIMED && timerExpired(gateSwitch, GameWorld))
 	{
 		gateSwitch->Action = 0;
-		toggleGateSwitch(gateSwitch, GameWorld->ObjectList);
+		toggleGateSwitch(gateSwitch, &GameWorld->ObjectList);
 	}
 
 	return LEMON_SUCCESS;
@@ -3452,7 +3544,7 @@ int UpdateVerticalGate(Object *gate, World *GameWorld)
 	// Action = gate close/open (0/1)
 	// arg3 = closed gate y position
 
-	if (gate == NULL || GameWorld == NULL || GameWorld->ObjectList == NULL)
+	if (gate == NULL || GameWorld == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -3550,7 +3642,7 @@ int UpdateHorizontalGate(Object *gate, World *GameWorld)
 	// Action = gate close/open (0/1)
 	// arg3 = closed gate x position
 	
-	if (gate == NULL || GameWorld == NULL || GameWorld->ObjectList == NULL)
+	if (gate == NULL || GameWorld == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -3696,7 +3788,7 @@ int gateControl(Object *gateSwitch, ObjectController *ObjectList)
 }
 
 
-Object* InitialiseMovingPlatform(Object *inputObject, int objectID, int xPos, int yPos, int bound1, int bound2, int speed, int timer)
+Object* InitialiseMovingPlatform(Object *inputObject, int bound1, int bound2, int speed, int timer, World *GameWorld)
 {
 	if (inputObject == NULL)
 	{
@@ -3711,16 +3803,16 @@ Object* InitialiseMovingPlatform(Object *inputObject, int objectID, int xPos, in
 	inputObject->arg3 = abs(speed);
 	inputObject->arg4 = abs(timer);
 	inputObject->Action = 1;
-	inputObject->ObjectBox->solid = JUMP_THROUGH;
+	inputObject->ObjectBox->solid = SOLID;
 	inputObject->ObjectBox->flag = ONLY_BODIES;
-	addPhysics(inputObject, false);
+	addPhysics(inputObject, false, GameWorld);
 
 
 	return inputObject;
 }
 
 
-int UpdateHorizontalPlatform(Object *platform)
+int UpdateHorizontalPlatform(Object *platform, World *GameWorld)
 {
 	PhysicsBox *platformBox = platform->ObjectBox;
 	int XPos = platformBox->xPos;
@@ -3728,7 +3820,8 @@ int UpdateHorizontalPlatform(Object *platform)
 
 	int leftBound = platform->arg1;
 	int rightBound = platform->arg2;
-	int maxSpeed = platform->arg3;
+	float maxSpeed = platform->arg3;
+
 
 	// Accelerate
 	if (platform->Action == 1 && platformBox->xVelocity < maxSpeed)
@@ -3745,7 +3838,7 @@ int UpdateHorizontalPlatform(Object *platform)
 	if ((XPos2 >= rightBound && platform->Action == 1) || (XPos <= leftBound && platform->Action == 2))
 	{
 		platform->Action = 0;
-		startTimer(platform->arg4, platform);
+		startTimer(platform->arg4, platform, GameWorld);
 	}
 
 	// Wait to change direction
@@ -3753,7 +3846,7 @@ int UpdateHorizontalPlatform(Object *platform)
 	{
 		ApplyFriction(platformBox, 1.0, 0.9, 1.0);
 
-		if (timerExpired(platform) && fabs(platformBox->xVelocity) < 0.01)
+		if (timerExpired(platform, GameWorld) && fabs(platformBox->xVelocity) < 0.01)
 		{
 			platform->Action = (XPos <= leftBound) ? 1 : 2;
 		}
@@ -3764,7 +3857,7 @@ int UpdateHorizontalPlatform(Object *platform)
 
 
 
-int UpdateVerticalPlatform(Object *platform)
+int UpdateVerticalPlatform(Object *platform, World *GameWorld)
 {
 	PhysicsBox *platformBox = platform->ObjectBox;
 	int YPos = platformBox->yPos;
@@ -3789,7 +3882,7 @@ int UpdateVerticalPlatform(Object *platform)
 	if ((YPos2 >= topBound && platform->Action == 1) || (YPos <= bottomBound && platform->Action == 2))
 	{
 		platform->Action = 0;
-		startTimer(platform->arg4, platform);
+		startTimer(platform->arg4, platform, GameWorld);
 	}
 
 	// Wait to change direction
@@ -3797,7 +3890,7 @@ int UpdateVerticalPlatform(Object *platform)
 	{
 		ApplyFriction(platformBox, 1.0, 1.0, 0.9);
 
-		if (timerExpired(platform) && fabs(platformBox->yVelocity) < 0.01)
+		if (timerExpired(platform, GameWorld) && fabs(platformBox->yVelocity) < 0.01)
 		{
 			platform->Action = (YPos <= bottomBound) ? 1 : 2;
 		}
@@ -3824,20 +3917,17 @@ int UpdateDoor(Object *Door, World *GameWorld)
 
 		GoTo(player, Door->arg1, Door->arg2);
 
-		if (GetCollidingObject(player->ObjectBox, GameWorld->ObjectList) != NULL)
+		if (GetCollidingObject(player->ObjectBox, &GameWorld->ObjectList) != NULL)
 		{
-			SayText("The door seems to be blocked on the other side.", NO_PORTRAIT, BASIC_FADE, GameWorld);
-			SayTextOption("", NO_PORTRAIT, BASIC_FADE, GameWorld, 3, 
-				"W-what? What is it?", 			NO_ACTION, 
-				"I SCREAM I SHOUT", 			NO_ACTION,
-				"Actually i'm okay with this",	NO_ACTION);
+			SayText("The door seems to be blocked on the other side.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
 		}
 		else
 		{
 			// Test dialogue, replace with prompt "Go through door?" or something
-			SayText(".\f10.\f10.^10.^10Or is it?^30\nIt just looks like a big pink and black rectangle...", "Test_Face", BASIC_FADE, GameWorld);
+			SayText("<WHT>Watch out for <YLW>Blue stop signs<WHT>.", 
+				NULL, SILENT_TEXT, GameWorld);
 
-			SayTextOption("Enter the Door?", "Test_Face", BASIC_FADE, GameWorld, 3, 
+			SayTextOption("Enter the Door?", "Test_Face", BASIC_FLIP, GameWorld, 3, 
 				"Yes", Event_TeleportPlayerToExitDoor(Door->Parent, GameWorld), 
 				"No", NO_ACTION,
 				"hm... lemme think about it", playCutscene(TEST_SCENE_2, GameWorld));
@@ -3852,14 +3942,13 @@ int UpdateDoor(Object *Door, World *GameWorld)
 
 int TeleportPlayerToExitDoor(Object *Door, World *GameWorld)
 {	
-	if (GameWorld == NULL || Door == NULL || GameWorld->Player.PlayerBox == NULL)
+	if (GameWorld == NULL || Door == NULL || GameWorld->Player.PlayerPtr == NULL)
 	{
 		return MISSING_DATA;
 	}
 
 	PlayerData *Player = &GameWorld->Player;
 
-	//GoTo(Player->PlayerPtr, Door->ObjectBox->xPos, Door->ObjectBox->yPos);
 	centerOnObject(Player->PlayerPtr, Door);
 
 	PlaySound("Objects/DoorOpen", 1.0, OBJECT_SFX);
@@ -3886,15 +3975,14 @@ int UpdateLevelDoor(Object *Door, World *GameWorld)
 	if (Door->arg4 == 0 && PlayerInteractingWithBox(Door->ObjectBox, GameWorld) && player->State == DEFAULT_STATE)
 	{
 		Door->arg4 = 1;
-		SayText("It's a door... \nIt eminates a strange glow.", NO_PORTRAIT, BASIC_FADE, GameWorld);
+		SayText("It's a door... \nIt eminates a strange glow.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
 		char phrase[MAX_TEXT_LENGTH] = {0};
 		snprintf(phrase, MAX_TEXT_LENGTH, "This Door will send you to level %d!", Door->arg1);
-		SayText(phrase, NO_PORTRAIT, BASIC_FADE, GameWorld);
+		SayTextAndTriggerEvent(phrase, NO_PORTRAIT, BASIC_TEXT, GameWorld, switchLevel(Door->arg1, GameWorld));
 	}
 
 	if (Door->arg4 != 0 && GameWorld->TextQueue == NULL)
 	{
-		switchLevel(Door->arg1, GameWorld);
 		Event_MovePlayer(Door->arg2, Door->arg3, GameWorld);
 
 		Door->arg4 = 0;
@@ -3972,8 +4060,6 @@ int ApplyGravity(Object *inputObject, World *GameWorld)
 		inputBox->yVelocity += GameWorld->GlobalGravityY;
 		inputBox->xVelocity += GameWorld->GlobalGravityX;
 
-		AdjustDirection(inputBox, GameWorld);
-
 		CheckForGround(inputObject, GameWorld);
 	}
 	else
@@ -3982,107 +4068,6 @@ int ApplyGravity(Object *inputObject, World *GameWorld)
 	}
 
 	return LEMON_SUCCESS;
-}
-
-
-Object* CheckForGround(Object *input, World *GameWorld)
-{
-	if (input == NULL || input->ObjectBox->solid == UNSOLID)
-	{
-		return NULL;
-	}
-
-	PhysicsBox movingBox = *(input->ObjectBox);  // create copy for testing
-
-	movingBox.xPos += fClamp(GameWorld->GlobalGravityX, -32.0, 32.0);
-	movingBox.yPos += fClamp(GameWorld->GlobalGravityY, -32.0, 32.0);
-
-	if (movingBox.GroundBox != NULL)
-	{
-		// if there was a ground referenced previously, move the distance it has moved to see if reconnection is possible; with a limit on distance
-		PhysicsBox *prevGround = movingBox.GroundBox;
-
-		// dont move if it goes against gravity
-		if (((prevGround->xPos - prevGround->prevXPos) < 0.0) == (GameWorld->GlobalGravityX < 0.0))
-		{
-			movingBox.xPos += fClamp((prevGround->xPos - prevGround->prevXPos), -32.0, 32.0);
-		}
-
-		if (((prevGround->yPos - prevGround->prevYPos) < 0.0) == (GameWorld->GlobalGravityY < 0.0))
-		{
-			movingBox.yPos += fClamp((prevGround->yPos - prevGround->prevYPos), -32.0, 32.0);
-		}
-	}
-
-	Object *GroundObject = GetCollidingObject(&movingBox, GameWorld->ObjectList);
-
-
-	PhysicsBox *actualBox = input->ObjectBox;
-
-	if (GroundObject != NULL)
-	{ 
-		if (actualBox->inAir > 0)
-		{
-			if (fabs(actualBox->PhysicsXVelocity) > 0.1)
-			{
-				actualBox->xVelocity = 0.0;
-			}
-
-			if (fabs(actualBox->PhysicsYVelocity) > 0.1)
-			{
-				actualBox->yVelocity = 0.0;
-			}
-		}
-
-		// GroundBox should only be set once, ideally by the AppyGravity function, so if it has been set, do not override
-		if ((input->reserved & RFLAG_GROUND_SET) == 0)
-		{
-			//putConsoleTS("Updating");
-			input->reserved |= RFLAG_GROUND_SET;
-
-			actualBox->GroundBox = GroundObject->ObjectBox;
-
-			actualBox->inAir = 0;
-		}
-	}
-	else
-	{
-		// If inAir is 0, that means at last check you were on ground
-
-		actualBox->GroundBox = NULL;
-
-		actualBox->inAir++;
-
-		if (actualBox->inAir > 99)
-		{
-			actualBox->inAir = 100;
-
-			// Falling for a long time!
-		}
-	}
-
-	return GroundObject;
-}
-
-
-// Used to update ground object without affecting other values - SHOULD ONLY BE USED IN PHYSICS APPLICATIONS WHEN NECESSARY
-void redoGroundCheck(Object *input, World *GameWorld)
-{
-	if (!LEMON_COLLISION_PHYSICS || GameWorld->PhysicsType != PLATFORMER || !HasGravity(input))
-	{
-		return;
-	}
-
-	PhysicsBox *inputBox = input->ObjectBox;
-	input->reserved &= ~RFLAG_GROUND_SET;
-	CheckForGround(input, GameWorld);
-
-	if (inputBox->inAir > 1)
-	{
-		inputBox->inAir--;
-	}
-	
-	return;
 }
 
 
@@ -4104,7 +4089,7 @@ int GoTo(Object *inputObject, float destX, float destY)
 }
 
 
-int GoToWithCollision(Object *inputObject, float destX, float destY, ObjectController *ObjectList)
+int GoToWithCollision(Object *inputObject, float destX, float destY, World *GameWorld)
 {
 	if (inputObject == NULL || inputObject->ObjectBox == NULL)
 	{
@@ -4115,13 +4100,13 @@ int GoToWithCollision(Object *inputObject, float destX, float destY, ObjectContr
 	GoTo(inputObject, destX, destY);
 
 
-	if (ObjectList == NULL || inputObject->ObjectBox->solid == UNSOLID)
+	if (GameWorld == NULL || inputObject->ObjectBox->solid == UNSOLID)
 	{
 		return MISSING_DATA;
 	}
 
-	ResolveAllXCollisionsByPush(inputObject->ObjectBox, ObjectList);
-	ResolveAllYCollisionsByPush(inputObject->ObjectBox, ObjectList);
+	ResolveAllXCollision(inputObject->ObjectBox, GameWorld);
+	ResolveAllYCollision(inputObject->ObjectBox, GameWorld);
 
 
 	return LEMON_SUCCESS;
@@ -4180,6 +4165,9 @@ int centerOnXY(Object *input, float xPos, float yPos)
 
 	input->ObjectBox->xPos = xPos - (float)(input->ObjectBox->xSize >> 1);
 	input->ObjectBox->yPos = yPos - (float)(input->ObjectBox->ySize >> 1);
+	input->ObjectBox->prevXPos = input->ObjectBox->xPos;
+	input->ObjectBox->prevYPos = input->ObjectBox->yPos;
+	
 
 	return LEMON_SUCCESS;
 }
@@ -4194,7 +4182,9 @@ int centerOnObject(Object *input, Object *dest)
 
 	input->ObjectBox->xPos = dest->ObjectBox->xPos + ((dest->ObjectBox->xSize - input->ObjectBox->xSize) >> 1);
 	input->ObjectBox->yPos = dest->ObjectBox->yPos + ((dest->ObjectBox->ySize - input->ObjectBox->ySize) >> 1);
-
+	input->ObjectBox->prevXPos = input->ObjectBox->xPos;
+	input->ObjectBox->prevYPos = input->ObjectBox->yPos;
+	
 	return LEMON_SUCCESS;
 }
 
@@ -4207,14 +4197,15 @@ int centerOnMouse(Object *input, Camera inputCamera)
 
 	if (getDisplayLayer(input) == HUD)
 	{
-		input->ObjectBox->xPos = MouseInput.xPos - (input->ObjectBox->xSize >> 1);
-		input->ObjectBox->yPos = MouseInput.yPos - (input->ObjectBox->ySize >> 1);
+		input->ObjectBox->xPos = getMouseXHUD() - (input->ObjectBox->xSize >> 1);
+		input->ObjectBox->yPos = getMouseYHUD() - (input->ObjectBox->ySize >> 1);
 	}
 	else
 	{
 		input->ObjectBox->xPos = getMouseXCam(inputCamera) - (input->ObjectBox->xSize >> 1);
 		input->ObjectBox->yPos = getMouseYCam(inputCamera) - (input->ObjectBox->ySize >> 1);
 	}
+	
 	
 	return LEMON_SUCCESS;
 }
@@ -4242,12 +4233,12 @@ int PointObjectToMouse(Object *inputObject, World *GameWorld)
 		return MISSING_DATA;
 	}
 
-	float MouseX = MouseInput.xPos + GameWorld->MainCamera.CameraX;
-	float MouseY = MouseInput.yPos + GameWorld->MainCamera.CameraY;
+	// float MouseX = MouseInput.xPos + GameWorld->MainCamera.CameraX;
+	// float MouseY = MouseInput.yPos + GameWorld->MainCamera.CameraY;
 
 	if (getDisplayLayer(inputObject) == HUD)
 	{
-		PointObjectToXY(inputObject, MouseX, MouseY);
+		PointObjectToXY(inputObject, getMouseXHUD(), getMouseYHUD());
 	}
 	else
 	{
@@ -4348,7 +4339,7 @@ int setSize(Object *input, int xSize, int ySize)
 }
 
 // Method for centering object size increase and handling player collisions
-int ChangeXSizeBy(int change, Object *inputObject, ObjectController *ObjectList)
+int ChangeXSizeBy(int change, Object *inputObject, World *GameWorld)
 {
 	if (inputObject == NULL)
 	{
@@ -4360,18 +4351,18 @@ int ChangeXSizeBy(int change, Object *inputObject, ObjectController *ObjectList)
 	inputObject->ObjectBox->xSize += change;
 	inputObject->ObjectBox->xPos -= changeHalf;
 
-	if (ObjectList == NULL || change == 0 || inputObject->ObjectBox->solid == UNSOLID)
+	if (GameWorld == NULL || change == 0 || inputObject->ObjectBox->solid == UNSOLID)
 	{
 		return EXECUTION_UNNECESSARY;
 	}
 
-	ResolveAllXCollisionsByPush(inputObject->ObjectBox, ObjectList);
+	ResolveAllXCollision(inputObject->ObjectBox, GameWorld);
 	
 	return LEMON_SUCCESS;
 }
 
 
-int ChangeYSizeBy(int change, Object *inputObject, ObjectController *ObjectList)
+int ChangeYSizeBy(int change, Object *inputObject, World *GameWorld)
 {
 	if (inputObject == NULL)
 	{
@@ -4383,13 +4374,13 @@ int ChangeYSizeBy(int change, Object *inputObject, ObjectController *ObjectList)
 	inputObject->ObjectBox->ySize += change;
 	inputObject->ObjectBox->yPos -= changeHalf;
 
-	if (ObjectList == NULL || change == 0 || inputObject->ObjectBox->solid == UNSOLID)
+	if (GameWorld == NULL || change == 0 || inputObject->ObjectBox->solid == UNSOLID)
 	{
 		return EXECUTION_UNNECESSARY;
 	}
 
 
-	ResolveAllYCollisionsByPush(inputObject->ObjectBox, ObjectList);
+	ResolveAllYCollision(inputObject->ObjectBox, GameWorld);
 	
 	return LEMON_SUCCESS;
 }
@@ -4402,12 +4393,7 @@ int setScaleSize(Object *input, float sizePercentage)
 		return INVALID_DATA;
 	}
 
-	DisplayData *inputDisplay = getDisplay(input);
-
-	if (inputDisplay == NULL)
-	{
-		return MISSING_DATA;
-	}
+	DisplayData *inputDisplay = input->ObjectDisplay;
 
 	inputDisplay->size = sizePercentage;
 
@@ -4417,12 +4403,7 @@ int setScaleSize(Object *input, float sizePercentage)
 
 int changeScaleSize(Object *input, float sizePercentage)
 {
-	DisplayData *inputDisplay = getDisplay(input);
-
-	if (inputDisplay == NULL)
-	{
-		return MISSING_DATA;
-	}
+	DisplayData *inputDisplay = input->ObjectDisplay;
 
 	return setScaleSize(input, sizePercentage + inputDisplay->size);
 }
@@ -4430,12 +4411,7 @@ int changeScaleSize(Object *input, float sizePercentage)
 
 int smoothSizeChangeTo(Object *input, float desiredSize, float rate)
 {
-	DisplayData *inputDisplay = getDisplay(input);
-
-	if (inputDisplay == NULL)
-	{
-		return MISSING_DATA;
-	}
+	DisplayData *inputDisplay = input->ObjectDisplay;
 
 	if (rate < 0.1 || desiredSize < 0.0001)
 	{
@@ -4454,12 +4430,7 @@ int smoothSizeChangeTo(Object *input, float desiredSize, float rate)
 
 int matchBoxToDisplayDimensions(Object *input)
 {
-	DisplayData *inputDisplay = getDisplay(input);
-
-	if (inputDisplay == NULL)
-	{
-		return MISSING_DATA;
-	}
+	DisplayData *inputDisplay = input->ObjectDisplay;
 
 	Sprite *sprite = inputDisplay->spriteBuffer;
 
@@ -4540,8 +4511,8 @@ bool MouseOverlappingBox(Object *input, Camera inputCam)
 	}
 	else
 	{
-			mouseBox.xPos = MouseInput.xPos;
-		mouseBox.yPos = MouseInput.yPos;
+		mouseBox.xPos = getMouseXHUD();
+		mouseBox.yPos = getMouseYHUD();
 	}
 	
 	return checkBoxOverlapsBoxBroad(input->ObjectBox, &mouseBox);
@@ -4575,13 +4546,16 @@ bool MouseOverlappingSprite(Object *input, Camera inputCam)
 	PhysicsBox mouseBox = {0};
 	mouseBox.xSize = 1;
 	mouseBox.ySize = 1;
-	mouseBox.xPos = MouseInput.xPos;
-	mouseBox.yPos = MouseInput.yPos;
 
 	if (getDisplayLayer(input) != HUD)
 	{
 		mouseBox.xPos = getMouseXCam(inputCam);
 		mouseBox.yPos = getMouseYCam(inputCam);
+	}
+	else
+	{
+		mouseBox.xPos = getMouseXHUD();
+		mouseBox.yPos = getMouseYHUD();
 	}
 
 	return checkBoxOverlapsBoxBroad(&inputBox, &mouseBox);
@@ -4597,6 +4571,130 @@ bool MouseClickedObject(Object *input, Camera inputCam)
 	return MouseOverlappingBox(input, inputCam) && (MouseInput.LeftButton == 1);
 }
 
+
+static int depthCounter = 0;
+
+int MoveObject(Object *inputObject, World *GameWorld)
+{
+	if (inputObject == NULL || inputObject->ObjectBox == NULL || GameWorld == NULL)	
+	{ 
+		return MISSING_DATA; 
+	}
+
+	if ((inputObject->ParentLink & POSITION_LINK) && inputObject->Parent != NULL)	// If this object must follow its parent, there is no need to perform movement/collision
+	{
+		return ACTION_DISABLED;
+	}
+
+	depthCounter = 0;
+
+	moveObjectX(inputObject, GameWorld);
+	moveObjectY(inputObject, GameWorld);
+	moveObjectForward(inputObject, GameWorld);
+
+	if (isBullet(inputObject, GameWorld))
+	{
+		bulletCollision(inputObject, GameWorld);
+	}
+
+	PhysicsBox *inputBox = inputObject->ObjectBox;
+	inputBox->xPos = fClamp(inputBox->xPos, -EngineSettings.WorldBoundX, EngineSettings.WorldBoundX - inputBox->xSize);
+	inputBox->yPos = fClamp(inputBox->yPos, -EngineSettings.WorldBoundY, EngineSettings.WorldBoundY - inputBox->ySize);
+
+	// this is a hack, but it fixes the case where a platform is moving with gravity (eg. down) and the subject lands on the platform before it has moved for this tick
+	redoGroundCheck(inputObject, GameWorld);
+
+	return LEMON_SUCCESS;
+}
+
+
+int moveObjectX(Object *input, World *GameWorld)
+{
+	PhysicsBox *box = input->ObjectBox;
+	
+	if (fabs(box->xVelocity) < 0.01)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	box->xPos += box->xVelocity;
+
+	if (box->solid != UNSOLID && HasPhysics(input, GameWorld) && LEMON_COLLISION_PHYSICS)	
+	{
+		ResolveAllXCollision(input->ObjectBox, GameWorld);
+	}
+
+	
+	return LEMON_SUCCESS;
+}
+
+
+
+int moveObjectY(Object *input, World *GameWorld)
+{
+	PhysicsBox *box = input->ObjectBox;
+	
+	if (fabs(box->yVelocity) < 0.01)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+
+	box->yPos += box->yVelocity;
+
+	if (box->solid != UNSOLID && HasPhysics(input, GameWorld) && LEMON_COLLISION_PHYSICS)
+	{
+		ResolveAllYCollision(input->ObjectBox, GameWorld);
+	}
+
+
+	return LEMON_SUCCESS;
+}
+
+
+int moveObjectForward(Object *input, World *GameWorld)
+{
+	PhysicsBox *movingBox = input->ObjectBox;
+
+	if (fabs(movingBox->forwardVelocity) < 0.01)
+	{
+		return EXECUTION_UNNECESSARY;
+	}
+
+	// float xComponent = (movingBox->forwardVelocity * sin(movingBox->direction * DEGREE_TO_RADIAN_PI));
+	// float yComponent = (movingBox->forwardVelocity * cos(movingBox->direction * DEGREE_TO_RADIAN_PI));
+
+	// Unsolid objects do not have to do collision detection so it skips the rest of the function by moving all steps instantly
+	if (!LEMON_COLLISION_PHYSICS || movingBox->solid == UNSOLID || !HasPhysics(input, GameWorld))
+	{
+		movingBox->xPos += (movingBox->forwardVelocity * sin(movingBox->direction * DEGREE_TO_RADIAN_PI)) + movingBox->xVelocity;
+		movingBox->yPos += (movingBox->forwardVelocity * cos(movingBox->direction * DEGREE_TO_RADIAN_PI)) + movingBox->yVelocity;
+		
+		return LEMON_SUCCESS;
+	}
+
+
+	// float savedX = movingBox->xVelocity;
+	// float savedY = movingBox->yVelocity;
+
+	// movingBox->xVelocity = xComponent;
+	// movingBox->yVelocity = yComponent;
+	
+	// moveObjectX(input, ObjectList);
+	// moveObjectY(input, ObjectList);
+
+	// if ((fabs(movingBox->xVelocity) < 0.001 && fabs(savedX) > 0.001) || (fabs(movingBox->yVelocity) < 0.001 && fabs(savedY) > 0.001))
+	// {
+	// 	movingBox->forwardVelocity = 0.0;
+	// }
+
+	// movingBox->xVelocity = savedX;
+	// movingBox->yVelocity = savedY;
+
+	// return LEMON_SUCCESS;
+	
+	return resolveForwardCollision(movingBox, GameWorld);
+}
 
 bool checkBoxOverlapsBoxBroad(PhysicsBox *inputBox, PhysicsBox *compareBox)
 {
@@ -4928,7 +5026,7 @@ bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 	{
 		if (compareBox->xFlip == 1)
 		{
-			compareYTop = inputBox->xSize - compareBox->xPos + inputBox->xPos;
+			compareYTop = inputBox->xSize + inputBox->xPos - compareBox->xPos;
 		}
 		else
 		{
@@ -5071,6 +5169,120 @@ bool CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 
 
 	return true;
+}
+
+
+Object* CheckForGround(Object *input, World *GameWorld)
+{
+	if (!LEMON_COLLISION_PHYSICS || input == NULL || input->ObjectBox->solid == UNSOLID)
+	{
+		return NULL;
+	}
+
+	PhysicsBox *box = input->ObjectBox;
+
+	float xPos = box->xPos;
+	float yPos = box->yPos;
+
+	box->xPos += fClamp(GameWorld->GlobalGravityX * 2.0, -32.0, 32.0);
+	box->yPos += fClamp(GameWorld->GlobalGravityY * 2.0, -32.0, 32.0);
+
+	if (box->GroundBox != NULL)
+	{
+		// if there was a ground referenced previously, move the distance it has moved to see if reconnection is possible; with a limit on distance
+		PhysicsBox *prevGround = box->GroundBox;
+
+		// dont move if it goes against gravity
+		if (((prevGround->xPos - prevGround->prevXPos) < 0.0) == (GameWorld->GlobalGravityX < 0.0))
+		{
+			box->xPos += fClamp((prevGround->xPos - prevGround->prevXPos), -32.0, 32.0);
+		}
+
+		if (((prevGround->yPos - prevGround->prevYPos) < 0.0) == (GameWorld->GlobalGravityY < 0.0))
+		{
+			box->yPos += fClamp((prevGround->yPos - prevGround->prevYPos), -32.0, 32.0);
+		}
+	}
+
+	Object *GroundObject = GetCollidingObject(box, &GameWorld->ObjectList);
+
+	box->xPos = xPos;
+	box->yPos = yPos;
+
+
+	if (GroundObject != NULL)
+	{ 
+		if (box->inAir > 0)
+		{
+			if (fabs(box->PhysicsXVelocity) > 0.1)
+			{
+				box->xVelocity = 0.0;
+			}
+
+			if (fabs(box->PhysicsYVelocity) > 0.1)
+			{
+				box->yVelocity = 0.0;
+			}
+		}
+
+		// GroundBox should only be set once, ideally by the AppyGravity function, so if it has been set, do not override
+		if ((input->reserved & RFLAG_GROUND_SET) == 0)
+		{
+			input->reserved |= RFLAG_GROUND_SET;
+
+			box->GroundBox = GroundObject->ObjectBox;
+
+			box->inAir = 0;
+		}
+
+		AssignDirection(box, box->GroundBox);
+	}
+	else
+	{
+		// If inAir is 0, that means at last check you were on ground
+
+		box->GroundBox = NULL;
+
+		box->inAir++;
+
+		if (box->inAir > 99)
+		{
+			box->inAir = 100;
+
+			// Falling for a long time!
+		}
+
+		// glide to correct direction
+		box->direction += (DEFAULT_DIRECTION - box->direction) / 5.0;
+
+		if (fabs(box->direction - DEFAULT_DIRECTION) < 0.01)
+		{
+			box->direction = DEFAULT_DIRECTION;
+		}
+	}
+
+	return GroundObject;
+}
+
+
+// Used to update ground object without affecting other values - SHOULD ONLY BE USED IN PHYSICS APPLICATIONS WHEN NECESSARY
+void redoGroundCheck(Object *input, World *GameWorld)
+{
+	if (!LEMON_COLLISION_PHYSICS || GameWorld->PhysicsType != PLATFORMER || !HasGravity(input, GameWorld))
+	{
+		return;
+	}
+
+	PhysicsBox *inputBox = input->ObjectBox;
+	input->reserved &= ~RFLAG_GROUND_SET;
+	CheckForGround(input, GameWorld);
+
+	if (inputBox->inAir > 1)
+	{
+		inputBox->inAir--;
+	}
+	
+	return;
 }
 
 
@@ -5402,173 +5614,10 @@ bool objectsOverlap(Object *inputObject, Object *otherObject)
 }
 
 
-static int depthCounter = 0;
-
-int MoveObject(Object *inputObject, World *GameWorld)
+int resolveForwardCollision(PhysicsBox *movingBox, World *GameWorld)
 {
-	if (inputObject == NULL || inputObject->ObjectBox == NULL || GameWorld == NULL)	
-	{ 
-		return MISSING_DATA; 
-	}
+	ObjectController *ObjectList = &GameWorld->ObjectList;
 
-	if ((inputObject->ParentLink & POSITION_LINK) && inputObject->Parent != NULL)	// If this object must follow its parent, there is no need to perform movement/collision
-	{
-		return ACTION_DISABLED;
-	}
-
-	ObjectController *ObjectList = GameWorld->ObjectList;
-	depthCounter = 0;
-
-	moveObjectX(inputObject, ObjectList);
-	moveObjectY(inputObject, ObjectList);
-	moveObjectForward(inputObject, ObjectList);
-
-	if (isBullet(inputObject))
-	{
-		bulletCollision(inputObject, GameWorld);
-	}
-
-	PhysicsBox *inputBox = inputObject->ObjectBox;
-	inputBox->xPos = fClamp(inputBox->xPos, -EngineSettings.WorldBoundX, EngineSettings.WorldBoundX - inputBox->xSize);
-	inputBox->yPos = fClamp(inputBox->yPos, -EngineSettings.WorldBoundY, EngineSettings.WorldBoundY - inputBox->ySize);
-
-	// this is a hack, but it fixes the case where a platform is moving with gravity (eg. down) and the subject lands on the platform before it has moved for this tick
-	// a better method should be used in the future (maybe a physics overhaul?)
-	redoGroundCheck(inputObject, GameWorld);
-
-	return LEMON_SUCCESS;
-}
-
-
-int moveObjectX(Object *input, ObjectController *ObjectList)
-{
-	if (fabs(input->ObjectBox->xVelocity) < 0.01)
-	{
-		return EXECUTION_UNNECESSARY;
-	}
-
-	input->ObjectBox->xPos += input->ObjectBox->xVelocity;
-
-	// if object is set as UNSOLID or has no physics attached, it does not perform collision detection
-	// In addition, the LEMON_COLLISION_PHYSICS constant mean that when compiling with this flag disabled, the entire collision system is disabled, usually to be optimised away by the compiler
-	if (input->ObjectBox->solid != UNSOLID && HasPhysics(input) && LEMON_COLLISION_PHYSICS)	
-	{
-		ResolveAllXCollision(input->ObjectBox, ObjectList);
-	}
-	
-	return LEMON_SUCCESS;
-}
-
-
-
-int moveObjectY(Object *input, ObjectController *ObjectList)
-{
-	if (fabs(input->ObjectBox->yVelocity) < 0.01)
-	{
-		return EXECUTION_UNNECESSARY;
-	}
-
-	input->ObjectBox->yPos += input->ObjectBox->yVelocity;
-
-	if (input->ObjectBox->solid != UNSOLID && HasPhysics(input) && LEMON_COLLISION_PHYSICS)
-	{
-		ResolveAllYCollision(input->ObjectBox, ObjectList);
-	}
-
-	return LEMON_SUCCESS;
-}
-
-
-bool evaluateIfCollidePush(PhysicsBox *movingBox, PhysicsBox *collideBox)
-{
-	if (movingBox == NULL || collideBox == NULL)
-	{
-		return false;
-	}
-
-	if (movingBox->flag == IMPACT_COLLISION)
-	{
-		return false;
-	}
-
-
-	int canPush = (movingBox->solid != PUSHABLE_SOLID) || (collideBox->solid != BODY);
-	int collidePushable = collideBox->solid == PUSHABLE_SOLID || collideBox->solid == BODY;
-	
-	
-	return (movingBox->flag == PUSH_COLLISION || (canPush && collidePushable) );
-}
-
-
-int AdjustDirection(PhysicsBox *movingBox, World *GameWorld)
-{	
-	if (GameWorld == NULL || GameWorld->ObjectList == NULL || movingBox == NULL)
-	{
-		return MISSING_DATA;
-	}
-
-	if (movingBox->solid <= UNSOLID)
-	{
-		return EXECUTION_UNNECESSARY;
-	}
-
-	if (GameWorld->PhysicsType == PLATFORMER && movingBox->GroundBox != NULL)
-	{
-		AssignDirection(movingBox, movingBox->GroundBox);
-
-		return LEMON_SUCCESS;
-	}
-
-	double sinVal = 4 * sin(movingBox->direction * DEGREE_TO_RADIAN_PI);
-	double cosVal = 4 * cos(movingBox->direction * DEGREE_TO_RADIAN_PI);
-
-
-	movingBox->yPos -= sinVal;
-	movingBox->xPos += cosVal;
-
-	Object *detectedObject = GetCollidingObject(movingBox, GameWorld->ObjectList);
-
-	movingBox->yPos += sinVal;
-	movingBox->xPos -= cosVal;
-
-
-	if (detectedObject == NULL)
-	{
-		movingBox->direction = DEFAULT_DIRECTION;
-
-		return LEMON_SUCCESS;
-	}
-
-	AssignDirection(movingBox, detectedObject->ObjectBox);
-
-
-	return LEMON_SUCCESS;
-}
-
-
-int moveObjectForward(Object *input, ObjectController *ObjectList)
-{
-	PhysicsBox *movingBox = input->ObjectBox;
-
-	if (fabs(movingBox->forwardVelocity) < 0.01)
-	{
-		return EXECUTION_UNNECESSARY;
-	}
-
-	// Unsolid objects do not have to do collision detection so it skips the rest of the function by moving all steps instantly
-	if (!LEMON_COLLISION_PHYSICS || movingBox->solid == UNSOLID || !HasPhysics(input))
-	{
-		movingBox->xPos += movingBox->forwardVelocity * sin(movingBox->direction * DEGREE_TO_RADIAN_PI);
-		movingBox->yPos += movingBox->forwardVelocity * cos(movingBox->direction * DEGREE_TO_RADIAN_PI);
-		
-		return LEMON_SUCCESS;
-	}
-
-	return resolveForwardCollision(movingBox, ObjectList);
-}
-
-int resolveForwardCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
-{
 	// step and count set-up
 	float orientation = (movingBox->forwardVelocity > 0.0) ? 1.0 : -1.0;
 	double sinVal = sin(movingBox->direction * DEGREE_TO_RADIAN_PI);
@@ -5584,11 +5633,15 @@ int resolveForwardCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 		cosVal = 0.0;
 	}
 
-	float xStep = orientation * sinVal;
-	float yStep = orientation * cosVal;
+	float xStep = (orientation * sinVal);
+	float yStep = (orientation * cosVal);
 	int travelCount = (int)fabs(movingBox->forwardVelocity);
+	float remnant = fabs(movingBox->forwardVelocity) - floor(fabs(movingBox->forwardVelocity));
+	if (remnant > 0.001)
+	{
+		travelCount++;
+	}
 
-	int collideCycle;
 	float lastStepX, lastStepY;
 
 	// regular collision
@@ -5597,19 +5650,22 @@ int resolveForwardCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 
 	while (travelCount > 0)
 	{
-		collideCycle = COLLISION_CYCLES;
 		lastStepX = movingBox->xPos;
 		lastStepY = movingBox->yPos;
+
+		if (travelCount == 1 && remnant > 0.001)
+		{
+			yStep *= remnant;
+			xStep *= remnant;
+		}
 
 		movingBox->yPos += yStep;
 		movingBox->xPos += xStep;
 
 		currentObject = GetCollidingObject(movingBox, ObjectList);
 
-		while (collideCycle > 0 && currentObject != NULL)
+		for (int collideCycle = 0; collideCycle < COLLISION_CYCLES && currentObject != NULL; collideCycle++)
 		{
-			collideCycle--;
-
 			if (evaluateIfCollidePush(movingBox, currentObject->ObjectBox) && depthCounter < COLLISION_DEPTH)
 			{
 				PhysicsBox *collideBox = currentObject->ObjectBox;
@@ -5623,7 +5679,7 @@ int resolveForwardCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 				collideBox->forwardVelocity = orientation * travelCount;
 				collideBox->direction = movingBox->direction;
 
-				moveObjectForward(currentObject, ObjectList);
+				moveObjectForward(currentObject, GameWorld);
 
 				collideBox->direction = tempDirection;
 				collideBox->forwardVelocity = tempVelocity;
@@ -5648,8 +5704,8 @@ int resolveForwardCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 
 				while (slopeClimb > 0 && CheckBoxCollidesBox(movingBox, currentObject->ObjectBox))
 				{
-					movingBox->yPos += sinVal;
-					movingBox->xPos -= cosVal;
+					movingBox->xPos -= GameWorld->GlobalGravityX;
+					movingBox->yPos -= GameWorld->GlobalGravityY;
 					slopeClimb--;
 				}
 
@@ -5717,15 +5773,16 @@ int ApplyForwardPhysics(PhysicsBox *inputBox, PhysicsBox *physicsBox)
 }
 
 
-int ResolveAllXCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
+int ResolveAllXCollision(PhysicsBox *movingBox, World *GameWorld)
 {
-	if (movingBox == NULL || ObjectList == NULL)
+	if (movingBox == NULL || GameWorld == NULL)
 	{
 		return MISSING_DATA;
 	}
 
 
 	int count = 0;
+	ObjectController *ObjectList = &GameWorld->ObjectList;
 
 	Object *currentObject = GetCollidingObject(movingBox, ObjectList);
 
@@ -5740,22 +5797,22 @@ int ResolveAllXCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 
 			SolidType prevSolid = movingBox->solid;
 
-			ResolveXCollision(collideBox, movingBox, ObjectList);
+			ResolveXCollision(collideBox, movingBox, GameWorld);
 
 			movingBox->solid = UNSOLID;
-			ResolveAllXCollision(collideBox, ObjectList);
+			ResolveAllXCollision(collideBox, GameWorld);
 			movingBox->solid = prevSolid;
 
 			if (GetCollidingObject(collideBox, ObjectList) != NULL)
 			{
 				collideBox->xPos = prevXPos;
 				collideBox->yPos = prevYPos;
-				ResolveXCollision(movingBox, collideBox, ObjectList);
+				ResolveXCollision(movingBox, collideBox, GameWorld);
 			}
 		}
 		else
 		{
-			ResolveXCollision(movingBox, currentObject->ObjectBox, ObjectList);
+			ResolveXCollision(movingBox, currentObject->ObjectBox, GameWorld);
 		}
 		
 
@@ -5769,7 +5826,7 @@ int ResolveAllXCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 }
 
 
-int ResolveXCollision(PhysicsBox *movingBox, PhysicsBox *compareBox, ObjectController *ObjectList)
+int ResolveXCollision(PhysicsBox *movingBox, PhysicsBox *compareBox, World *GameWorld)
 {
 	if (movingBox == NULL || compareBox == NULL || compareBox == movingBox)
 	{
@@ -5806,11 +5863,17 @@ int ResolveXCollision(PhysicsBox *movingBox, PhysicsBox *compareBox, ObjectContr
 				float direction = atan2(prevDistX, prevDistY);
 
 				movingBox->xPos = compareBox->xPos + ((radius + compareRadius) * sin(direction));
-				movingBox->yPos = compareBox->yPos + ((radius + compareRadius) * cos(direction));
-
-				ApplyXPhysics(movingBox, compareBox);
-
-				return LEMON_SUCCESS;
+			}
+			else
+			{
+				if (prevXPosInt < ObjXCenter)
+				{
+					movingBox->xPos = compareBox->xPos - movingBox->xSize;
+				}
+				else
+				{
+					movingBox->xPos = compareBox->xPos + compareBox->xSize;
+				}
 			}
 		} break;
 
@@ -5822,8 +5885,7 @@ int ResolveXCollision(PhysicsBox *movingBox, PhysicsBox *compareBox, ObjectContr
 				if (prevXPosInt >= objXRight)
 				{
 					movingBox->xPos = compareBox->xPos + compareBox->xSize;
-					ApplyXPhysics(movingBox, compareBox);
-					return LEMON_SUCCESS;
+					break;
 				}
 			}
 			else
@@ -5831,8 +5893,7 @@ int ResolveXCollision(PhysicsBox *movingBox, PhysicsBox *compareBox, ObjectContr
 				if (prevXPosInt + movingBox->xSize <= compareBox->xPos)
 				{
 					movingBox->xPos = compareBox->xPos - movingBox->xSize;
-					ApplyXPhysics(movingBox, compareBox);
-					return LEMON_SUCCESS;
+					break;
 				}
 			}
 
@@ -5858,10 +5919,12 @@ int ResolveXCollision(PhysicsBox *movingBox, PhysicsBox *compareBox, ObjectContr
 			movingBox->yPos = slopeFloor + compareBox->yPos; 
 
 
-			if (GetCollidingObject(movingBox, ObjectList) != NULL)
+			if (GetCollidingObject(movingBox, &GameWorld->ObjectList) != NULL)
 			{
-				ClimbSlope(movingBox, ObjectList);
+				ClimbSlope(movingBox, GameWorld);
 			}
+
+			return LEMON_SUCCESS;
 		} break;
 
 		default:
@@ -5874,11 +5937,10 @@ int ResolveXCollision(PhysicsBox *movingBox, PhysicsBox *compareBox, ObjectContr
 			{
 				movingBox->xPos = compareBox->xPos + compareBox->xSize;
 			}
-			
-			ApplyXPhysics(movingBox, compareBox);
-		
 		} break;
 	}
+
+	ApplyXPhysics(movingBox, compareBox);
 
 
 	return LEMON_SUCCESS;
@@ -5908,13 +5970,14 @@ int ApplyXPhysics(PhysicsBox *inputBox, PhysicsBox *physicsBox)
 }
 
 
-int ResolveAllYCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
+int ResolveAllYCollision(PhysicsBox *movingBox, World *GameWorld)
 {
-	if (movingBox == NULL || ObjectList == NULL)
+	if (movingBox == NULL || GameWorld == NULL)
 	{
 		return MISSING_DATA;
 	}
 	
+	ObjectController *ObjectList = &GameWorld->ObjectList;
 
 	int count = 0;
 	Object *currentObject = GetCollidingObject(movingBox, ObjectList);
@@ -5932,7 +5995,7 @@ int ResolveAllYCollision(PhysicsBox *movingBox, ObjectController *ObjectList)
 			ResolveYCollision(collideBox, movingBox);
 
 			movingBox->solid = UNSOLID;
-			ResolveAllYCollision(collideBox, ObjectList);
+			ResolveAllYCollision(collideBox, GameWorld);
 			movingBox->solid = prevSolid;
 
 			if (GetCollidingObject(collideBox, ObjectList) != NULL)
@@ -5973,11 +6036,10 @@ int ResolveYCollision(PhysicsBox *movingBox, PhysicsBox *compareBox)
 	{
 		case JUMP_THROUGH:
 		{
-			if (movingBox->yVelocity < compareBox->yVelocity + 0.001 && movingBox->crouch == false)
+			if (movingBox->yVelocity > compareBox->yVelocity || movingBox->crouch == true)
 			{
-				movingBox->yPos = compareBox->yPos + compareBox->ySize;
+				return EXECUTION_UNNECESSARY;
 			}
-
 		} break;
 
 		case UNSOLID:
@@ -6001,12 +6063,18 @@ int ResolveYCollision(PhysicsBox *movingBox, PhysicsBox *compareBox)
 				float prevDistY = (movingBox->prevYPos + (movingBox->ySize >> 1)) - (compareBox->yPos + (compareBox->ySize >> 1));
 				float direction = atan2(prevDistX, prevDistY);
 
-				movingBox->xPos = compareBox->xPos + ((radius + compareRadius) * sin(direction));
 				movingBox->yPos = compareBox->yPos + ((radius + compareRadius) * cos(direction));
-
-				ApplyYPhysics(movingBox, compareBox);
-
-				return LEMON_SUCCESS;
+			}
+			else
+			{
+				if (prevYPosInt < ObjYCenter)
+				{
+					movingBox->yPos = compareBox->yPos - movingBox->ySize;
+				}
+				else
+				{
+					movingBox->yPos = compareBox->yPos + compareBox->ySize;
+				}
 			}
 		} break;
 
@@ -6039,14 +6107,14 @@ int ResolveYCollision(PhysicsBox *movingBox, PhysicsBox *compareBox)
 				slopeFloor = (compareBox->xSize - movingBox->xPos + compareBox->xPos) * slope;
 			}
 
-			slopeFloor = clamp(slopeFloor, 0, compareBox->ySize);
+			slopeFloor = clamp(slopeFloor, 0, compareBox->ySize - 1);
 
 			if (compareBox->yFlip == -1)
 			{
 				slopeFloor = compareBox->ySize - slopeFloor - movingBox->ySize;
 			}
 
-			movingBox->yPos = slopeFloor + compareBox->yPos; 		
+			movingBox->yPos = slopeFloor + compareBox->yPos; 	
 		} break;
 
 		default:
@@ -6093,20 +6161,20 @@ int ApplyYPhysics(PhysicsBox *inputBox, PhysicsBox *physicsBox)
 }
 
 
-int ResolveAllXCollisionsByPush(PhysicsBox *movingBox, ObjectController *ObjectList)
+int ResolveAllXCollisionsByPush(PhysicsBox *movingBox, World *GameWorld)
 {
-	if (movingBox == NULL || ObjectList == NULL)
+	if (movingBox == NULL || GameWorld == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-
+	ObjectController *ObjectList = &GameWorld->ObjectList;
 	Object *collideObject = GetCollidingObject(movingBox, ObjectList);
 	int i = 0;
 
 	while (collideObject != NULL && i < 16)
 	{
-		ResolveXCollision(collideObject->ObjectBox, movingBox, ObjectList);
+		ResolveXCollision(collideObject->ObjectBox, movingBox, GameWorld);
 
 		collideObject = GetCollidingObject(movingBox, ObjectList);	
 		i++;
@@ -6141,9 +6209,30 @@ int ResolveAllYCollisionsByPush(PhysicsBox *movingBox, ObjectController *ObjectL
 }
 
 
-int ClimbSlope(PhysicsBox *inputBox, ObjectController *ObjectList)
+bool evaluateIfCollidePush(PhysicsBox *movingBox, PhysicsBox *collideBox)
+{
+	if (movingBox == NULL || collideBox == NULL)
+	{
+		return false;
+	}
+
+	if (movingBox->flag == IMPACT_COLLISION)
+	{
+		return false;
+	}
+
+
+	int canPush = (movingBox->solid != PUSHABLE_SOLID) || (collideBox->solid != BODY);
+	int collidePushable = collideBox->solid == PUSHABLE_SOLID || collideBox->solid == BODY;
+	
+	
+	return (movingBox->flag == PUSH_COLLISION || (canPush && collidePushable) );
+}
+
+
+int ClimbSlope(PhysicsBox *inputBox, World *GameWorld)
 {		
-	if (inputBox == NULL || ObjectList == NULL)
+	if (inputBox == NULL || GameWorld == NULL)
 	{
 		return MISSING_DATA;
 	}
@@ -6158,10 +6247,12 @@ int ClimbSlope(PhysicsBox *inputBox, ObjectController *ObjectList)
 		return EXECUTION_UNNECESSARY;
 	}
 
+	inputBox->xPos = inputBox->prevXPos;
+	inputBox->yPos = inputBox->prevYPos;
 	inputBox->direction = DEFAULT_DIRECTION;
 	inputBox->forwardVelocity = velocity;
 
-	resolveForwardCollision(inputBox, ObjectList);
+	resolveForwardCollision(inputBox, GameWorld);
 
 	inputBox->forwardVelocity = savedForwardVelocity;
 	inputBox->direction = savedDirection;

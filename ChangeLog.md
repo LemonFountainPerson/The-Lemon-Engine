@@ -1,3 +1,56 @@
+# v0.11
+05/09/26
+
+## New Features:
+
+-> Added basic networking: One instance can host a server while other players can join as clients. 
+   -  Certain game events and objects can be transmitted from clients to servers and vice-versa.
+   -  Includes a basic chat mechanic, currently only visible through the console that has modifiable usernames for each player.
+   -  Console commands with the 'CONFLAG_SERVER_SIDE' flag can be communicated via the network.
+   -  Game flags on a client's instance can also be controlled via the server.
+   -  All networking functionality can be disabled by setting the 'LEMON_NETWORKING_ENABLED' macro to false in the config file.
+
+-> Added the 'ObjectEvent' component type. Objects can now store a game event to execute when desired; especially useful for level flag objects.
+
+-> Added interpolation that can be optionally enabled at compile-time. This smooths out motion based on the positions of objects and cameras one tick ago. This allows for smooth 
+motion with high refresh-rate monitors, even at low tickrates.
+
+-> Added multi-colour rendering to TextBoxes, allowing for text to change colour mid-typing. Example: ```"Watch out for <Blue>Stop signs<White>."```
+(This will display white text with the 'stop signs' phrase coloured in blue.)
+New colours can be added via the 'setTextBoxColor' function in the 'TextHandler' file.
+
+-> Added the 'EVENT_CONSOLE_COMMAND' event, which allows any command to be entered into the console via a GameEvent or LevelFlag. 
+
+
+## Structure Changes
+
+-> Animations are now always contiguously allocated, you no longer have the option of loading them as a linked list. (This results in a slight reduction in memory use and likely
+better performance.)
+
+-> The HUD layer will now render based on the ScreenData's HUDWidth and HUDHeight variables, allowing the dimensions of the HUD to remain constant relative to the screen dimensions.
+Graphics are stretched but text is automatically re-sized and re-positioned to render at the highest possible resolution.
+
+
+## Bug fixes/Improvements
+
+-> Commands now have restrictions based on the 'cheats' variable in EngineSettings. Connecting to a server will enforce the server's cheats value on the client, but otherwise it
+can be modified by the 'cheats' command. The default value is 0, with a higher value equating to a higher restriction.
+
+-> The HealthComponent now also tracks an objects 'GroupType' to control what objects it can be damaged by and can in turn inflict damage onto. (In other words, its affiliation.)
+
+-> Animation playback can now skip frames (if enough time has passed) instead of always only advancing by one at a time.
+
+
+# Thanks
+
+- Thanks to the SDL3 team for the all the hardware back-end code (SDL3).
+   https://github.com/libsdl-org/SDL
+- Thanks to Bob Jenkins for the Cryptographically secure random number generator code (ISAAC).
+   https://www.burtleburtle.net/bob/rand/isaacafa.html
+- Thanks to JSON.org for the utf8 decoder code (utf8Decoder.h).
+
+
+
 # v0.10
 12/04/26
 
@@ -156,8 +209,6 @@ process for a noticable amount of time.
   
 
 # UPCOMING FEATURES IN V0.11:
-
--> A textBox addition that will allow dialogue to be read from files, instead of having to hardcode text. (This will make text editing and translations easier.)
 
 -> Basic networking; a certain amount of desired Objects, Texts, TextBoxes, SceneActions and GameEvents will be synced across clients. 
 (Possibly in the form of a server-client interface.)

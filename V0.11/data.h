@@ -1,0 +1,1760 @@
+#ifndef DATA_DEFINED
+#define DATA_DEFINED
+
+
+typedef enum FunctionResult 
+{
+	LEMON_ERROR = -1,
+	MISSING_DATA = -2,
+	INVALID_DATA = -3,
+	TASK_FAILED = -4,
+	LEMON_SUCCESS = 0,
+	ACTION_DISABLED = 1,
+	EXECUTION_UNNECESSARY = 2,
+	AT_FULL_CAPACITY = 3,
+	FILE_NOT_FOUND = 4,
+	END_OF_FILE = 5,
+	DATA_CLEARED = 6
+} FuncResult;
+
+typedef enum LemonKeys 
+{
+	// 0 - 31 are control charcacters and should not be used
+	// 32 - 127 are reserved for ASCII keys
+	ACKNOWLEDGE_INPUT = 0,
+	LMN_ESCAPE = 128,
+	LMN_GRAVE,
+	LMN_ENTER,
+	LMN_SPACE,
+	LMN_TAB,
+	LMN_LSHIFT,
+	LMN_RSHIFT,
+	LMN_BACKSPACE,
+	LMN_COMMA,
+	LMN_PERIOD,
+	LMN_SLASH,
+	LMN_UPARROW,
+	LMN_DOWNARROW,
+	LMN_LEFTARROW,
+	LMN_RIGHTARROW,
+	LMN_UP = 150,
+	LMN_DOWN = 151,
+	LMN_LEFT = 152,
+	LMN_RIGHT = 153,
+	LMN_JUMP = 154,
+	LMN_INTERACT = 155,
+	LMN_INTERACT2 = 156,
+	LMN_INTERACT3 = 157,
+	LMN_TEXT_CONFIRM = 158,
+	LMN_TEXT_SKIP = 159,
+	LMN_MENU_CONFIRM = 160,
+	LMN_MENU_OPEN,
+	LMN_TYPING_END,
+	LMN_CONSOLE_OPEN,
+
+	MOUSE_LEFT,
+	MOUSE_RIGHT,
+	MOUSE_MIDDLE,
+	MOUSE_SIDE1,
+	MOUSE_SIDE2,
+
+	GAMEPAD_WEST,
+	GAMEPAD_SOUTH,
+	GAMEPAD_EAST,
+	GAMEPAD_NORTH,
+	GAMEPAD_DPAD_LEFT,
+	GAMEPAD_DPAD_DOWN,
+	GAMEPAD_DPAD_RIGHT,
+	GAMEPAD_DPAD_UP,
+	GAMEPAD_START,
+	GAMEPAD_BACK,
+	GAMEPAD_GUIDE,
+	GAMEPAD_LEFT_SHOULDER,
+	GAMEPAD_RIGHT_SHOULDER,
+	GAMEPAD_LEFT_STICK,
+	GAMEPAD_RIGHT_STICK,
+
+	INPUT_COUNT
+} LemonKeys;
+
+typedef enum ButtonState
+{
+	BUTTON_RELEASED = 0,
+	BUTTON_PRESSED = 1,
+	BUTTON_HELD = 2
+} ButtonState;
+
+
+typedef enum ConsoleTextSetting 
+{
+	CONSOLE_TEXT_DISABLED = 0,
+	CONSOLE_ONLY_ERRORS = 1,
+	CONSOLE_ALL_EVENTS = 2,
+	CONSOLE_TEXT_SETTING_COUNT
+} ConsoleTextSetting;
+
+
+typedef enum ChannelName 
+{
+	MUSIC_CHANNEL = 0,
+	SPEECH = 1,
+	PLAYER_SFX = 2,
+	OBJECT_SFX = 3,
+	CHANNEL_COUNT 	// Simultaniously used as 'last', undefined channel and channel count
+} ChannelName;
+
+typedef enum SoundState
+{
+	SOUND_INACTIVE,
+	SOUND_LOADING,
+	SOUND_PLAYING
+} SoundState;
+
+
+typedef enum VoiceMode 
+{
+	VOICE_EACH_CHARACTER = 0,
+	VOICE_ONCE
+} VoiceMode;
+
+
+typedef enum PortraitPos 
+{
+	PORTRAIT_INSIDE_BOX_LEFT,
+	PORTRAIT_INSIDE_BOX_RIGHT,
+	PORTRAIT_ON_TOP_BOX_LEFT,
+	PORTRAIT_ON_TOP_BOX_RIGHT
+} PortraitPos;
+
+
+typedef enum TextPreset 
+{
+	BASIC_TEXT = 0,
+	BASIC_TOP,
+	BASIC_FAST,
+	BASIC_FLIP,
+	BASIC_TOP_FLIP,
+	BLACK_TEXT,
+	BLACK_TOP,
+	BLUE_FADE,
+	SILENT_TEXT,
+	SILENT_TOP,
+	PLAINTEXT_BOTTOM,
+	PLAINTEXT_TOP,
+	COMIC_TEXT,
+	COMIC_TOP,
+	UNDEFINED_PRESET
+} TextPreset;
+
+
+typedef enum TextType 
+{
+	TEXTBOX_REGULAR_TEXT,
+	TEXTBOX_OPTION_PROMPT,
+	TEXTBOX_TRIGGER_EVENT
+} TextType;
+
+
+// If the Object's render mode is less than 0 (the default) the sprite is rendered according to the sprite's individual render mode
+// Otherwise, it is overridden to be the rendermode of the Object
+// Objects essentially can either have the sprites render how they would like to be rendered, or can override it with a single rendermode
+
+typedef enum RenderMode 
+{
+	DO_NOT_RENDER = -2,
+	DEFAULT_TO_SPRITE = -1,
+	SINGLE,
+	TILE,
+	TILE_FAST,
+	SCALE,
+	STATIC_BACKGROUND,
+	SINGLE_BACKGROUND,
+	TILEPLANE_BACKGROUND,
+	TILE_BACKGROUND,
+	UNDEFINED_RENDERMODE
+} RenderMode;
+
+RenderMode convertStringToRenderMode(char string[]);
+const char* getRenderModeName(RenderMode input);
+
+
+//  Order of Object list determines layering of individual Objects within layers
+typedef enum Layer 
+{
+	BACKGROUND = 0,
+	MIDDLEGROUND,
+	MIDDLEGROUND_2,
+	FOREGROUND,
+	PARTICLES,
+	HUD,
+	FRONT_LAYER,
+	LAYER_COUNT,
+	UNDEFINED_LAYER
+} Layer;
+
+const char* getLayerName(Layer input);
+
+
+typedef enum LemonGameState 
+{
+    ENCOUNTERED_FATAL_ERROR,
+    RESTART_GAME,
+	CLOSE_GAME = -1,
+	EMPTY_GAME = 0,
+	LOADING = 1,
+	GAMEPLAY = 2,
+	CUTSCENE = 3,
+	IN_MENU = 4,
+	UNDEFINED_GAME_STATE
+} LemonGameState;
+
+
+typedef enum WorldPhysics 
+{
+	TOP_DOWN,
+	PLATFORMER,
+	POINT_AND_CLICK,
+	UNDEFINED_PHYSICS
+} WorldPhysics;
+
+
+typedef enum CutsceneID 
+{
+	END_CUTSCENE = -1,
+	NO_CUTSCENE = 0,
+	TEST_SCENE = 1,
+	TEST_SCENE_2 = 2,
+	TEST_SCENE_2_AGAIN = 3,
+	TEST_SCENE_2_CORRECT,
+	TEST_SCENE_2_WRONG,
+	FILE_TEST = 9,
+	UNDEFINED_CUTSCENE,
+	CUTSCENE_FROM_FILE,
+	NON_STATIC_SCENE
+} CutsceneID;
+
+
+typedef enum CameraState 
+{
+	FOLLOW_PLAYER = 0,
+	FREE_ROAM = 1,
+	FREE_ROAM_RESTRICTED = 2,
+	MENU_CAMERA = 3,
+	UNDEFINED_CAMERA_STATE
+} CameraState;
+
+
+typedef enum ReservedFlags
+{
+	RFLAG_DEFAULT 			= 0x00000000,	// 0000
+	RFLAG_DISABLE_PHYSICS 	= 0x00000001,	// 0001
+	RFLAG_PRESERVE_OBJECT	= 0x00000002,	// 0010
+	RFLAG_PRESERVE_ONCE		= 0x00000006, 	// 0110 - activates PRESERVE_OBJECT as well
+	RFLAG_CUTSCENE_IMMUNITY	= 0x00000008,	// 1000
+	RFLAG_GROUND_SET		= 0x00000010	// 0001_0000
+} ReservedFlags;
+
+
+typedef enum ObjectState 
+{
+	EMPTY_OBJECT = -2,
+	TO_BE_DELETED = -1,
+	DEFAULT_STATE = 0,
+	STATIC_STATE,
+	PAUSE_STATE,
+	ACTOR_STATE,
+	BEING_CARRIED_STATE,
+	UNDEFINED_STATE
+} ObjectState;
+
+const char* getObjectStateName(ObjectState input);
+
+ 
+typedef enum CurrentAction 
+{
+	IDLE = 0,
+	DEFEATED,
+	CHASING,
+	ATTACKING,
+	FLEEING,
+	INTERACTION_INTERRUPT,
+	MOUSECLICK_INTERRUPT,
+	UNDEFINED_ACTION
+} CurrentAction;
+
+
+typedef enum ParentType 
+{
+	DEFAULT_LINK 		= 	0x00000000,
+	FINAL_LINK			= 	0x00000001,
+	MOTION_LINK 		= 	0x00000002,
+	POSITION_LINK 		= 	0x00000004,
+	PHYSICSBOX_LINK		= 	0x00000008,
+	SPRITE_LINK 		= 	0x00000010,
+	ANIMATION_LINK		= 	0x00000020,
+	TRANSPARENCY_LINK	= 	0x00000040,
+	HIDDEN_LINK			=	0x00000080,
+	PARENTLINK_CONFIRM	=	0x80000000,
+	PARENTLINK_MASK		=	0x7FFFFFFF
+} ParentType;
+
+
+typedef enum SolidShape
+{
+	RECTANGLE,
+	CIRCLE = 2,
+	FLAT_SLOPE = 3,
+	UNDEFINED_SHAPE
+} SolidShape;
+
+const char* getSolidShapeName(SolidShape input);
+
+
+typedef enum SolidType 
+{
+	UNSOLID = 0,
+	SOLID,
+	JUMP_THROUGH,
+	BODY,
+	PUSHABLE_SOLID,
+	UNDEFINED_SOLID
+} SolidType;
+
+const char* getSolidTypeName(SolidType input);
+
+
+typedef enum SolidFlag
+{
+	DEFAULT_SOLIDFLAG,
+	IMPACT_COLLISION,
+	PUSH_COLLISION,
+	IGNORE_SOLID,
+	IGNORE_SELF,
+	ONLY_BODIES,
+	GET_IGNORED,
+	UNDEFINED_SOLIDFLAG
+} SolidFlag;
+
+const char* getSolidFlagName(SolidFlag input);
+
+
+typedef enum ObjectType 
+{
+	LEVEL_FLAG_OBJ = 0,
+	SOLID_BLOCK,	
+	FLAT_SLOPE_FLOOR,
+	JUMP_THRU_BLOCK,
+	PLAYER_OBJECT,
+	UI_ELEMENT,
+	UI_TEXT,
+	PARTICLE,
+	COIN,
+	SPRING,
+	MOVING_PLATFORM_HOR,
+	MOVING_PLATFORM_VER,
+	GATE_SWITCH,
+	GATE_SWITCH_TIMED,
+	VERTICAL_GATE,
+	HORIZONTAL_GATE,
+	DOOR,
+	LEVEL_DOOR,
+	PUSHABLE_BOX,
+	PROJECTILE,
+	BASIC_ENEMY,
+	OBJECT_TYPE_COUNT,
+	UNDEFINED_OBJECT
+} ObjectType;
+
+int getObjectID(const char entry[]);
+const char* getObjectIDName(ObjectType input);
+
+typedef enum Orientation
+{
+	ROW,
+	COLUMN
+} Orientation;
+
+typedef enum Flags 
+{
+	SET_BACKGROUND_TRIGGER,
+	CUTSCENE_TRIGGER,
+	DELETE_OBJECT_TRIGGER,
+	DELETE_BODY_TRIGGER,
+	SET_CAMBOX,
+	CAMERA_BOUNDARY,
+	FALSE_CAMERA_BOUNDARY,
+	LEVEL_TRIGGER,
+	LEVEL_TRIGGER_SEAMLESS,
+	SET_PLAYER_LAYER,
+	CACHE_TRIGGER,
+	LOAD_PART_TRIGGER,
+	GAME_EVENT_TRIGGER,
+	UNDEFINED_FLAG
+} Flags;
+
+
+typedef enum ParticleSubType 
+{
+	EMPTY_PARTICLE = 0,
+	SPARKLE,
+	STATIC,
+	UNDEFINED_PARTICLE
+} ParticleSubType;
+
+
+typedef enum UISubType 
+{
+	BASIC_GRAPHIC = 0,
+	LEVEL_FADE,
+	OPTION_BUTTON,
+	PAUSE_MENU_CONTROLLER,
+	PAUSE_HEADER,
+	PAUSE_BACKGROUND,
+	SETTINGS_MENU_CONTROLLER,
+	SETTINGS_HEADER,
+	VIDEO_SETTINGS_CONTROLLER,
+	SOUND_SETTINGS_CONTROLLER,
+	SAVE_OPTIONS_CONTROLLER,
+	PLAYER_HUD_CONTROLLER,
+	MOUSE_CURSOR,
+	UNDEFINED_UI_ELEMENT
+} UISubType;
+
+typedef enum TextUISubType 
+{
+	TEXT_GRAPHIC = 0,
+	TEXT_BOX,
+	TEXT_CHARACTER,
+	TEXT_PORTRAIT,
+	TEXT_OPTION_CURSOR,
+	UNDEFINED_TEXT_UI_ELEMENT
+} TextUISubType;
+
+
+typedef enum GateSwitch 
+{
+	SINGLE_SWITCH = 0,
+	CHAIN_SWITCH = 1
+} GateSwitch;
+
+
+typedef enum RotationMode 
+{
+	NORMAL_ROTATION = 0,
+	LEFT_RIGHT_ROTATION,
+	DONT_ROTATE
+} RotationMode;
+
+
+typedef enum AnimationLoopState
+{
+	LOOP_INDEFINITELY = -1
+} AnimationLoopState;
+
+
+typedef enum DebugTextRenderMode
+{
+	DEBUG_TEXT_DISABLED = 0,
+	DEBUG_TEXT_ENABLED,
+	ONLY_NONSTATIC_OBJECT_INFO,
+	ALL_OBJECT_INFO,
+	DEBUG_TEXT_MODE_COUNT
+} DebugTextMode;
+
+
+typedef enum DebugTextFormatting
+{
+	DTFORMAT_SCREEN_RELATIVE,
+	DTFORMAT_CAMERA_RELATIVE,
+	DTFORMAT_JUSTIFY_TOP,
+	DTFORMAT_LIST_SOUND
+} DebugTextFormatting;
+
+
+typedef enum EnginePauseStatus
+{
+	ENGINE_UNPAUSED,
+	ENGINE_PAUSED,
+	ENGINE_SINGLE_TICK
+} EnginePauseStatus;
+
+
+
+// Memory allocated structs of data
+typedef struct soundInstance
+{
+	SoundState state;
+	MIX_Track *audio;
+
+	bool positional;
+	float xPos;
+	float yPos;
+
+	ChannelName channel;
+	char name[MAX_LEN];
+	float volume;
+	int repeats;
+	MIX_StereoGains panLevels;
+
+	struct soundInstance *nextSound;
+	struct soundInstance *prevSound;
+} SoundInstance;
+
+typedef struct CachedSound
+{
+	char name[MAX_LEN];
+	MIX_Audio *data;
+} CachedSound;
+
+typedef struct CachedSoundList
+{
+	int head;
+	CachedSound list[MAX_CACHED_SOUNDS];
+} CachedSoundList;
+
+
+typedef struct soundChannel
+{
+	int soundCount;
+	int Pause;
+	float channelVolume;
+
+	float fadeVal;
+
+	struct soundInstance *firstSound;
+} SoundChannel;
+
+typedef struct SoundMeta
+{
+	char soundName[MAX_LEN];
+	float volume;
+	ChannelName channel;
+} SoundMeta;
+
+
+// Regular Sprites (Objects, player, particles, etc.)
+typedef struct sprite
+{
+	struct sprite *nextSprite;
+	struct sprite *prevSprite;
+
+	SDL_Texture *texture;
+	unsigned int height;
+	unsigned int width;
+	RenderMode RenderMode;
+
+	int spriteID;
+	char name[MAX_LEN];
+} Sprite;
+
+
+typedef struct AnimationFrame 
+{
+	Sprite *frameSprite;
+	float SpriteXOffset;
+	float SpriteYOffset;
+	float rotation;
+
+	int soundIndex; // Which sound from animation's soundlist to play - '-1' means no sound
+} AnimationFrame;
+
+// Starts counting animation IDs from 1
+typedef struct Animation 
+{
+	struct Animation *nextAnimation;
+
+	AnimationFrame *animationData;
+	int frameCount;
+
+	SoundMeta *animationSounds;
+	int soundCount;
+
+	char name[ANIMATION_NAME_LENGTH]; 
+	int animationID;
+	float frameRate;
+} Animation;
+
+
+// Sprite sets that lead to linked lists of sprites corresponding to an Object type;
+// only needs to be initialised once per Object type
+// Starts counting sprite IDs from 1
+typedef struct spriteSet
+{
+	Sprite *firstSprite;
+	Sprite *lastSprite;
+
+	struct spriteSet *nextSet;
+	struct spriteSet *prevSet;
+
+	Animation *Animations;
+
+	int setID;
+	int spriteCount;
+
+	int copyCount;
+	int *copies;
+} SpriteSet;
+
+typedef struct SpriteSetList
+{
+	SpriteSet *start;
+} SpriteSetList;
+
+typedef struct displayData
+{
+	int currentSprite;
+	Sprite *spriteBuffer;
+
+	int currentAnimation;
+	int currentFrame;
+	float animationTick;
+	int animationLoopCount;
+	float animationSpeed;
+	AnimationFrame *frameBuffer;
+	Animation *animationBuffer;
+
+	SpriteSet *spriteSetSource;
+
+	Layer layer;
+	RenderMode RenderModeOverride;
+	float size;
+	RotationMode rotateMode;
+	float spriteXOffset;
+	float spriteYOffset;
+	unsigned int pixelXOffset;
+	unsigned int pixelYOffset;
+
+	float transparency;		// 0.0 is no transparency - 1.0 is full transparency (invisible) -- SDL uses 0-255 where 255 is no transparency and 0 is fully transparent
+	bool hidden;
+} DisplayData;
+
+
+typedef struct PhysicsBox
+{
+	float xPos;
+	float yPos;
+	float prevXPos;
+	float prevYPos;
+
+	int xSize;
+	int ySize;
+
+	float forwardVelocity;
+	float yVelocity;
+	float xVelocity;
+
+	int inAir;
+	float PhysicsXVelocity;
+	float PhysicsYVelocity;
+	struct PhysicsBox *GroundBox;
+
+	SolidShape shape;
+	SolidType solid;
+	SolidFlag flag;
+	Layer collideLayer;
+
+	double direction;
+	short xFlip;
+	short yFlip;
+	bool crouch;
+} PhysicsBox;
+
+
+typedef struct Object
+{
+	char name[OBJECT_NAME_LENGTH];	// unique identifier for Object 		
+	int ObjectID;
+	ObjectState State;
+	CurrentAction Action;
+
+	struct Object *Parent;
+	ParentType ParentLink;
+
+	PhysicsBox * const ObjectBox;
+	DisplayData * const ObjectDisplay;
+
+	struct Object *nextObject;
+	struct Object *prevObject;	
+
+	ReservedFlags reserved;
+	int instanceNumber;
+	const int index;
+
+	// Multi-purpose args
+	int arg1;
+	int arg2;
+	int arg3;
+	int arg4;
+} Object;
+
+typedef struct World World;
+typedef int (*TriggerableFunction)(Object*, struct World*);
+
+typedef enum GameEventID
+{
+	NO_EVENT = 0,
+	EVENT_SWITCH_LEVEL,
+	EVENT_PLAY_CUTSCENE,
+	EVENT_PLAY_CUTSCENE_FROM_FILE,
+	EVENT_SET_GAME_FLAG,
+	EVENT_CHANGE_GAME_FLAG,
+	EVENT_PLAY_SOUND,
+	EVENT_CHAT_MESSAGE,
+	EVENT_MOVE_PLAYER,
+	EVENT_TELEPORT_PLAYER_TO_EXIT_DOOR,
+	EVENT_LOAD_LEVEL_PARTITION,
+	EVENT_CONSOLE_COMMAND,
+	EVENT_SET_TICKRATE,
+	EVENT_SET_BRIGHTNESS,
+	EVENT_CHANGE_SCREEN_SIZE,
+	EVENT_CHANGE_SCREEN_SIZE_SCALE,
+	EVENT_ENABLE_FULLSCREEN,
+	EVENT_DISABLE_FULLSCREEN,
+	EVENT_ENABLE_FULLSCREEN_SCALE,
+	EVENT_COUNT,
+	UNDEFINED_EVENT
+} GameEventID;
+
+const char* getEventName(GameEventID input);
+GameEventID getEventID(const char input[]);
+
+
+typedef enum ArgType
+{
+	ARG_UNUSED,
+	ARG_STRING,
+	ARG_FLOAT,
+	ARG_INTEGER,
+	ARG_TICK
+} ArgType;
+
+typedef union ArgData
+{
+	char string[MESSAGE_LENGTH];
+	float fNumber;
+	int iNumber;
+	Uint64 tickValue;
+} ArgData;
+
+typedef struct GameEventArg
+{
+	char name[EVENT_ARG_NAME_MAX_LEN];
+	ArgType type;	
+	ArgData data;
+} GameEventArg;
+
+typedef struct GameEvent
+{
+	GameEventID EventID;
+	GameEventArg args[EVENT_VAR_COUNT];
+
+	int clientID;
+} GameEvent;
+
+typedef struct GameEventManager
+{
+	GameEvent Events[MAX_QUEUED_GAME_EVENTS];
+	int nextAvailable;
+	int eventsPending;
+} GameEventManager;
+
+
+
+typedef struct FrameUpdateFunction
+{
+	struct FrameUpdateFunction *nextFunction;
+
+	Object *inputObject;
+	TriggerableFunction FunctionPointer;
+} FrameUpdateFunction;
+
+
+typedef enum GroupType
+{
+	NO_GROUP,
+	GROUP_FRIENDLY,
+	GROUP_HOSTILE,
+	GROUP_MONSTERS
+} GroupType;
+
+typedef struct HealthComponent
+{
+	int health;
+	int maxHealth;
+	GroupType group;
+
+	int hurtDuration;
+	Uint64 hurtTick;
+} HealthComponent;
+
+
+typedef struct BulletComponent
+{
+	Object *owner;
+
+	int damage;
+	GroupType group;
+
+	ParticleSubType particleType;
+	int particleLifeTime;
+
+	bool bulletCollide;
+	int bulletLifeTime;
+} BulletComponent;
+
+
+typedef struct TileMap
+{
+	float centerTileX;	
+	float centerTileY;
+	float tileSize;
+} TileMap;
+
+typedef struct Polygon
+{
+	SDL_Vertex *vertexList;
+	int vertices;
+	bool quad;
+	int *indicies;
+} Polygon;
+
+typedef union RenderMethod
+{
+	TileMap TileMap;
+	Polygon Polygon;
+} RenderMethod;
+
+typedef enum RenderMethodType
+{
+	RENDERMETHOD_POLYGON,
+	RENDERMETHOD_TILEMAP
+} RenderMethodType;
+
+typedef struct CustomDisplay
+{
+	RenderMethodType type;
+	RenderMethod RenderMethod;
+} CustomDisplay;
+
+
+typedef struct Timer
+{
+	Uint64 startTick;
+	Uint64 timerLength;
+
+	bool pause;
+	Uint64 pauseTick; 
+} Timer;
+
+typedef struct StopWatch
+{
+	Uint64 startTimeStamp;
+	bool pause;
+	Uint64 pauseTimeStamp; // when paused, the time value is (pauseTimeStamp - startTimeStamp) 
+	// when unpausing increment startTimeStamp by (currentTimeStamp - pauseTimeStamp)
+} StopWatch;
+
+
+typedef struct PhysicsComponent
+{
+	Object *object;
+	bool gravity;
+} PhysicsComponent;
+
+typedef struct ObjectEvent
+{
+	bool triggerOnce;
+	GameEvent *event;
+} ObjectEvent;
+
+
+// downside of union approach: bad with memory use, as if any large component exists, ALL component lists will increase
+// upside of union approach: much easier to work with as existing functions do not need to be copied/rewritten
+typedef union ComponentType
+{
+	HealthComponent HealthComponent;
+	BulletComponent BulletComponent;
+	TileMap TileMap;
+	Polygon Polygon;
+	Timer Timer;
+	StopWatch StopWatch;
+	PhysicsComponent PhysicsComponent;
+	ObjectEvent ObjectEvent;
+} ComponentType;
+
+typedef struct SparseList
+{
+	char name[COMPONENT_NAME_LENGTH];
+	int storedComponents;
+	
+	short sparse[MAX_OBJECTS];
+	int denseID[MAX_COMPONENT_SLOTS];
+	ComponentType dense[MAX_COMPONENT_SLOTS];
+} SparseList;
+
+
+typedef struct ComponentData
+{
+	Object Objects[MAX_OBJECTS];
+	PhysicsBox PhysicsBoxes[MAX_OBJECTS];
+	DisplayData Displays[MAX_OBJECTS];
+
+	SparseList HealthComponent;
+	SparseList BulletComponent;
+	SparseList TileMap;
+	SparseList Polygon;
+	SparseList Timer;
+	SparseList StopWatch;
+	SparseList PhysicsComponent;
+	SparseList ObjectEvent;
+} ComponentData;
+
+typedef struct IntSparseList
+{
+	int storedElements;
+	
+	int sparse[MAX_OBJECTS];
+	int dense[MAX_OBJECTS];
+} IntSparseList;
+
+
+#define STACKARRAY_LENGTH MAX_OBJECTS
+typedef struct StackArray
+{
+	int storedElements;
+	int list[STACKARRAY_LENGTH];
+} StackArray;
+
+typedef struct ObjectController
+{
+	int objectCount;
+	Object *firstObject;
+	Object *lastObject;
+
+	Object *availableSlots;
+
+	int cachedCount;
+	Object *cachedFirstObject;
+	Object *cachedLastObject;
+
+	SpriteSetList spriteSets;
+
+	FrameUpdateFunction *FrameUpdates;
+
+	ComponentData objectComponents;
+
+	StackArray solidList;
+} ObjectController;
+
+
+// Controls the player character
+typedef struct playerData
+{
+	Object *PlayerPtr;
+	int instance;
+
+	PhysicsBox InteractBox;
+
+	// These variables can be freely modified according to your modified player controller
+	int jumpProgress;
+	bool jumpHeld;
+	float jumpForce;
+	int coyoteFrames;
+	int jumpRange;
+	int cancelRange;
+
+	int coinCount;
+} PlayerData;
+
+
+typedef struct GameFlag
+{
+	char name[MAX_LEN];
+	int nameLength;
+	int value;
+} GameFlag;
+
+
+
+typedef struct TextOptionPrompt
+{
+	int numberOfOptions;
+	int SelectedOption;
+	int optionBeingPrinted;
+
+	float OptionYPositions[MAX_TEXT_OPTIONS];
+
+	char optionNames[MAX_TEXT_OPTIONS][OPTION_TEXT_MAX_LEN];
+
+	GameEvent optionTriggers[MAX_TEXT_OPTIONS];
+} TextOptionPrompt;
+
+
+union TextTypeData
+{
+	GameEvent TriggerEvent;
+	TextOptionPrompt OptionPrompt; 
+};
+
+
+typedef struct Text
+{
+	float xPos;
+	float yPos;
+
+	bool CameraRelative;
+
+	TTF_Text *text;
+
+	Object *attachedObj;
+	int recordedInstance;
+
+	char name[TEXT_NAME_MAX_LEN];
+} Text;
+
+typedef struct TextList
+{
+	Text texts[MAX_TEXTS];
+	int count;
+} TextList;
+
+typedef struct FontList
+{
+	int head;
+	char names[MAX_LOADED_FONTS][FONT_FILE_NAME_MAX];
+	TTF_Font *fonts[MAX_LOADED_FONTS];
+} FontList;
+
+typedef struct TextBox 
+{
+	struct TextBox *nextText;
+
+	Object *boxPtr;
+
+	char textPhrase[MAX_TEXT_LENGTH];
+	char font[FONT_FILE_NAME_MAX];
+	
+	char voice[MAX_LEN];
+	VoiceMode voiceMode;
+
+	char Portrait[MAX_LEN];
+	PortraitPos PortraitPosition;
+
+	TextType textTypeSetting;
+	union TextTypeData textTypeData;
+
+	TextPreset preset;
+
+	int textDelayFrames;
+	bool Skippable;
+
+	int boxOffsetX;		// x position within the text box
+	int boxOffsetY;		// y position within the text box
+	int textLengthSize;	// Maximum amount of pixels from left to right to render text within before going to next line
+
+	int currentIndex;
+	int Counter;
+	int currentXPos;
+	int currentYPos;
+
+	int LineSpacing;	// space between lines 
+	float TextSize;    	// width and height of text characters
+
+	SDL_Color defaultColor;
+	SDL_Color color;
+} TextBox;
+
+
+typedef struct Camera 
+{
+	float CameraX;
+	float CameraY;
+	float prevCameraX;
+	float prevCameraY;
+
+	float minCameraX;
+	float maxCameraX;
+	float minCameraY;
+	float maxCameraY;
+
+	float zoomX;
+	float zoomY;
+	int width;
+	int height;
+	int zoomedWidth;
+	int zoomedHeight;
+
+	float CameraXBuffer;
+	float CameraYBuffer;
+	bool CameraLatch;
+	CameraState CameraMode;
+} Camera;
+
+typedef struct CameraView
+{
+	Camera cam;
+	bool useMainCam;
+
+	float viewXPos;
+	float viewYPos;
+	float viewWidth;
+	float viewHeight;
+	double direction;
+	Layer layer;
+
+	Object *attachedObj;
+	int recordedInstance;
+	
+	SDL_Texture *target;
+
+	Uint64 nextRender;
+	Uint64 ticksUntilRefresh;
+
+	bool active;
+} CameraView;
+
+typedef struct RenderFrame 
+{
+	SDL_Window *Window;
+	int screenWidth;
+	int screenHeight;
+	SDL_Renderer *Renderer;
+	TTF_TextEngine *textEngine;
+
+	bool Fullscreen;
+	bool Scaled;
+	int HUDWidth;
+	int HUDHeight;
+
+	int FramesElapsed;
+	Uint64 FrameTimer;
+} RenderFrame;
+
+
+typedef struct TilePlane
+{
+	Uint8 *tiles;
+	int GridWidth;
+	int GridHeight;
+	int tileWidth;
+	int tileHeight;
+	float xPos;
+	float yPos;
+} TilePlane;
+
+typedef struct BackgroundData
+{
+	SpriteSetList bgSpriteSets;
+	Sprite *BackgroundSpriteBuffer;
+
+	float bgParallax;
+
+	RenderMode BackgroundRenderMode;
+
+	TilePlane tileBG;
+} BackgroundData;
+
+
+typedef struct ObjectMeta
+{
+	char name[OBJECT_NAME_LENGTH];
+	ObjectType objectID;
+	int xPos;
+	int yPos;
+} ObjectMeta;
+
+
+typedef struct IfStatementData
+{
+	int variableIndex;
+	int comparisonValue;
+	char expression[3];
+
+	bool elseBranchPresent;
+	int branchDistanceIfFalse;	// amount of instructions to skip if false
+} IfStatementData;
+
+typedef struct LoopData
+{
+	int repeatTimes;
+	int currentLoop;
+	int instructionCount;
+} LoopData;
+
+union SceneActionArguments
+{
+	char objectName[OBJECT_NAME_LENGTH];
+	LoopData sceneLoop;
+	int instructionsToSkip;
+	int SceneID;
+	GameEvent TriggerEvent;
+	int WaitTicks[2];
+	int variableArgs[2];
+	IfStatementData sceneIfStatement;
+	struct TextBox *sceneText;
+	int animationDetails[2];
+	float positions[2];
+	ObjectMeta sceneObjectInfo;
+	bool hidden;
+	Layer layer;
+	int invisWall[4];
+	SoundMeta soundData;
+	float CameraData[3];
+	float zoomScales[3];
+	int cameraMode;
+};
+
+typedef enum SceneActionID
+{
+	SCENE_END,
+	SCENE_LOOP_POINT,
+	SCENE_SKIP_INSTRUCTIONS,
+	SCENE_SWITCH_CUTSCENE,
+	SCENE_TRIGGER_GAME_EVENT,
+	SCENE_DISABLE_PLAYER,
+	SCENE_ENABLE_PLAYER,
+	SCENE_WAIT,
+	SCENE_CHANGE_VARIABLE_BY,
+	SCENE_SET_VARIABLE_TO,
+	SCENE_IF_STATEMENT,
+	SCENE_SAY_TEXT,
+	SCENE_ANIMATE_ACTOR,
+	SCENE_SET_ACTOR_SPRITE,
+	SCENE_SET_ACTOR_POS,
+	SCENE_MOVE_ACTOR,
+	SCENE_MOVE_ACTOR_X,
+	SCENE_MOVE_ACTOR_Y,
+	SCENE_MOVE_ACTOR_TO,
+	SCENE_ROTATE_ACTOR,
+	SCENE_SET_ACTOR_DIRECTION,
+	SCENE_HIDE_ACTOR,
+	SCENE_SHOW_ACTOR,
+	SCENE_SET_ACTOR_LAYER,
+	SCENE_CREATE_ACTOR,
+	SCENE_RELEASE_ACTOR,
+	SCENE_PLACE_INVISIBLE_WALL,
+	SCENE_PLAY_SOUND,
+	SCENE_SET_CHANNEL_VOL,
+	SCENE_CHANGE_CHANNEL_VOL,
+	SCENE_SET_CAMERA_POS,
+	SCENE_SET_CAMERA_MODE,
+	SCENE_MOVE_CAMERA,
+	SCENE_MOVE_CAMERA_TO,
+	SCENE_MOVE_CAMERA_TO_OBJECT,
+	SCENE_SET_CAMERA_ZOOM,
+	SCENE_CHANGE_CAMERA_ZOOM,
+	SCENE_CHANGE_CAMERA_ZOOM_TO,
+	UNDEFINED_SCENE_ACTION
+} SceneActionID;
+
+typedef struct SceneAction
+{
+	SceneActionID ActionID;
+	bool parallelAction;
+
+	Object *ActorObject;
+	union SceneActionArguments ActionData;
+
+	struct SceneAction *nextSceneAction;
+	struct SceneAction *prevSceneAction;
+} SceneAction;
+
+
+typedef enum ConsoleCommandFlag
+{
+	CONFLAG_NONE		= 0x0000,
+	CONFLAG_CHEAT 		= 0x0001,
+	CONFLAG_SERVER_SIDE = 0x0002,
+	CONFLAG_NOTIFY		= 0x0004,
+	CONFLAG_PROTECTED 	= 0x0008,
+	CONFLAG_SVR_AND_PRO	= CONFLAG_PROTECTED | CONFLAG_SERVER_SIDE
+} ConsoleCommandFlag;
+
+typedef int (*ConsoleCommandFunction)(char *, World *);
+
+typedef struct ConsoleCommand
+{
+	char name[MAX_LEN];
+	char helpString[CONSOLE_HELP_MAX_LEN];
+	ConsoleCommandFlag flags;
+
+	char formatString[MAX_LEN];
+	ConsoleCommandFunction function;
+} ConsoleCommand;
+
+typedef enum ConsoleVariableType
+{
+	CONVAR_INT,
+	CONVAR_FLOAT,
+	CONVAR_BOOL,
+	CONVAR_STRING
+} ConsoleVariableType;
+
+typedef union ConsoleVariableData
+{
+	char string[CONVAR_VALUE_LEN];
+	float fValue;
+	int iValue;
+	bool bValue;
+} ConsoleVariableData;
+
+typedef struct ConsoleVariable
+{
+	char name[MAX_LEN];
+	char helpString[CONSOLE_HELP_MAX_LEN];
+	ConsoleCommandFlag flags;
+
+	ConsoleVariableData value;
+	ConsoleVariableType valueType;
+} ConsoleVariable;
+
+typedef struct MessageHistory
+{
+	int head;
+	int searchIndex;
+	Uint64 inputCount;
+	char inputs[INPUT_HISTORY_LEN][MESSAGE_LENGTH];
+} MessageHistory;
+
+typedef struct ChatMessage
+{
+	Uint64 tickSent;
+	int speakerID;
+	char message[MESSAGE_LENGTH];
+} ChatMessage;
+
+typedef struct ChatLog
+{
+	ChatMessage Log[CHAT_LOG_COUNT];
+	int current;
+	Uint64 chatCount;
+} ChatLog;
+
+typedef struct World
+{
+	Camera MainCamera;
+	CameraView views[VIEW_COUNT];
+
+	PlayerData Player;
+	ObjectController ObjectList;
+
+	BackgroundData WorldBackground;
+
+	TextList TextList;
+	FontList FontList;
+
+	int GamePaused;
+	int level;
+	LemonGameState GameState;
+	GameEventManager GameEvents;
+
+	TextBox *TextQueue;
+	
+	CutsceneID CurrentCutscene;
+	SceneAction *SceneActionQueue;
+	SceneAction *nextSceneAction;
+	int SceneActionCount;
+
+	WorldPhysics PhysicsType;
+	float GlobalGravityY;
+	float GlobalGravityX;
+} World;
+
+
+/*
+	required data to be sent across networking
+
+	- Game Events (Triggering level transitions, cutscenes, sounds, etc.)
+	- Chat messages (part of game event system or separate?)
+	- State of specifically tracked objects (probably can't be game events, modular components to only signify changed data points?)
+
+
+*/
+
+typedef enum PacketType
+{
+	PACKET_SERVER_SETUP,
+	PACKET_CLIENT_ENTRANCE,
+	PACKET_CLIENT_WELCOME,
+	PACKET_CONSOLE_VARIABLE,
+	PACKET_CONSOLE_COMMAND,
+	PACKET_CLIENT_JOINED,
+	PACKET_CLIENT_DISCONNECTED,
+	PACKET_CLIENT_NAME,
+	PACKET_GAME_EVENT,
+	PACKET_GAME_FLAG,
+	PACKET_OBJECT_REQUEST_ADD,
+	PACKET_OBJECT_RESPONSE_ADD,
+	PACKET_OBJECT_ADDED,		
+	PACKET_OBJECT_REQUEST_DELETE,
+	PACKET_OBJECT_REJECT_DELETE,
+	PACKET_OBJECT_DELETED,
+	PACKET_OBJECT_UPDATE,
+	PACKET_HEALTH_UPDATE,
+	PACKET_PLAYER_UPDATE
+} PacketType;
+
+
+typedef struct TrackedObjectData
+{
+	Object object;
+	PhysicsBox box;
+	DisplayData display;
+
+	int trackedID;	
+	int ownerClientID;
+} TrackedObjectData;
+
+typedef struct TrackedComponentData
+{
+	ComponentType data;
+
+	int trackedID;	
+	int ownerClientID;
+} TrackedComponentData;
+
+typedef struct TrackedObjectResponse
+{
+	int clientTrackedID;
+
+	int serverTrackedID;	// if this is < 0, it means the object was rejected
+							// if >= 0, it was accepted and the value is its trackedID in the server
+} TrackedObjectResponse;
+
+typedef struct TrackedObjectDeletion
+{
+	int deletedID;
+} TrackedObjectDeletion;
+
+typedef struct ClientData
+{
+	int clientID;
+	char clientUsername[MAX_LEN];
+
+	char password[MAX_LEN];
+} ClientData;
+
+typedef struct DisconnectData
+{
+	int clientID;
+	char reason[MAX_LEN];
+} DisconnectData;
+
+typedef struct ServerSettings
+{
+	int trackedObjectCapacity;
+	int tickRate;
+	float WorldBoundX;
+	float WorldBoundY;
+} ServerSettings;
+
+typedef struct ServerSetup
+{
+	char setupString[MAX_LEN];
+	bool passwordRequired;
+	int assignedClientID;
+
+	ServerSettings settings;
+} ServerSetup;
+
+// sent to client when connection is accepted
+typedef struct ClientWelcome
+{
+	int level;
+} ClientWelcome;
+
+typedef union PacketData
+{
+	ServerSetup setup;
+	ClientData clientInfo;
+	ClientWelcome welcome;
+	ConsoleVariable convar;
+	ConsoleCommand command;
+	ServerSettings settings;
+	DisconnectData disconnect;
+	char string[MESSAGE_LENGTH];
+	GameFlag flag;
+	TrackedObjectData objectData;
+	TrackedComponentData componentData;
+	TrackedObjectResponse response;
+	TrackedObjectDeletion deletion;
+	PlayerData playerData;
+} PacketData;
+
+typedef struct NetworkPacket	// space inefficient (always 1.5 kb)
+{
+	PacketType type;
+	PacketData data;
+	Uint64 tickSent;
+} NetworkPacket;
+
+typedef struct TrackedObject
+{
+	int clientID;	// indicates who 'owns' this object
+	int trackedID;	// location of object within the server (client only)
+	bool clientDeleted;
+
+	Object *object;
+	int instance;	// used to check whether the object in the slot this points to has been replaced with a new object; i.e: if it has been deleted
+} TrackedObject;
+
+typedef enum ConnectionType
+{
+	OFFLINE,
+	SERVER,
+	CLIENT
+} ConnectionType;
+
+typedef enum ConnectionState
+{
+	CONNECT_STATE_DISCONNECTED,
+	CONNECT_STATE_RESOLVING_ADDRESS,
+	CONNECT_STATE_CREATING_SOCKET,
+	CONNECT_STATE_CONNECTED,
+	CONNECT_STATE_ERROR
+} ConnectionState;
+
+
+typedef enum ClientID
+{
+	NO_CLIENT_ID = -4,
+	AWAITING_CLIENT_ID = -3, 
+	LOCAL_CLIENT_ID = -2, 
+	SERVER_CLIENT_ID = -1
+} ClientID;
+
+typedef enum ClientState
+{
+	CLIENT_STATE_DISCONNECTED,
+	CLIENT_STATE_PENDING,
+	CLIENT_STATE_JOINED,
+	CLIENT_STATE_LEAVING
+} ClientState;
+
+typedef struct NetworkData
+{
+	char myUsername[MAX_LEN];
+
+	ConnectionType connectMode;
+	ConnectionState connectionStatus;
+
+	float timeElapsed;
+	ConsoleVariable *updateRate;
+	ConsoleVariable *connectionTimeout;
+	
+	char setUpString[MESSAGE_LENGTH];
+
+	Uint16 serverPort;
+	NET_Address *serverAddress;
+	ClientID clientID;
+	char clientUsernames[MAX_CLIENTS][MAX_LEN];
+	char serverUsername[MAX_LEN];
+	
+	GameEventManager NetworkEvents;
+
+	TrackedObject TrackedObjects[MAX_TRACKED_OBJECTS];
+	short TrackedIDs[MAX_TRACKED_OBJECTS];
+	int TrackedObjectCount;
+
+	// data if app is server
+	NET_Server *Server;
+	NET_StreamSocket *connectedClients[MAX_CLIENTS];
+	ClientState clientStates[MAX_CLIENTS];
+	float clientTimers[MAX_CLIENTS];
+	int clientCount;
+	NET_Address *blockedIPs[MAX_BLOCKED_CLIENTS];
+	int blockedIndex;
+	char serverPassword[MAX_LEN];
+	
+	// data if app is client
+	NET_StreamSocket *myClient;
+} NetworkData;
+
+
+typedef struct MouseData
+{
+	int LeftButton;
+	int RightButton;
+	int MiddleButton;
+	int SideButton1;
+	int SideButton2;
+
+	float xPos;
+	float yPos;
+
+	float wheelY;
+	float wheelX;
+	int wheelYDir;
+	int wheelXDir;
+} MouseData;
+
+typedef struct GamePadData
+{
+	SDL_JoystickID ID;
+	SDL_Gamepad *gamepad;
+
+	int dPadUp;
+	int dPadDown;
+	int dPadLeft;
+	int dPadRight;
+
+	int northButton;
+	int southButton;
+	int westButton;
+	int eastButton;
+
+	int leftShoulder;
+	int rightShoulder;
+	float leftTrigger;
+	float rightTrigger;
+
+	int start;
+	int back;
+	int guide;
+
+	int leftStick;
+	int rightStick;
+	float leftStickX;
+	float leftStickY;
+	float rightStickX;
+	float rightStickY;
+} GamePadData;
+
+
+typedef struct EngineConfig
+{
+	const int MaxGameEvents;
+	int MaxSoundsPerChannel;
+	int MaxTextQueueLength;
+	int MaxSceneActions;
+
+	const int MaxObjects;
+	int MaxParticles;
+	int ReservedObjects;
+	int PreservedSpriteSets;
+
+	float WorldBoundX;
+	float WorldBoundY;
+
+	ConsoleVariable *cheats;
+
+	int GameTicksPerSecond;
+	Uint64 TickDelta;
+
+	Sprite *DefaultTexture;
+} EngineConfig;
+
+
+typedef struct RenderConfig
+{
+	bool drawSprites;
+	bool drawBackGround;
+	bool drawHUD;
+	bool drawParticles;
+	bool drawCamViews;
+
+	int drawHitboxes;
+	int HitboxThickness;
+
+	int maxObjects;
+	int maxParticles;
+	int maxUIElements;
+
+	int drawnObjects;
+
+	int RendersPerSecond;
+	Uint64 RenderDelta;
+	float timeSlice;
+
+	bool vSync;
+} RenderConfig;
+
+
+typedef struct TextConfig
+{
+	int portraitSize;
+	float defaultTextPointSize;
+	char defaultFont[FONT_FILE_NAME_MAX];
+
+	SDL_Color DebugTextColour;
+	float DebugTextPointSize;
+	TTF_Font *DebugFont;
+	TextList DebugTextList;
+
+	bool Typing;
+	char userInputString[USER_INPUT_MAX_LEN];
+	int userInputIndex;
+	float cursorXPos;
+	float cursorYPos;
+	Text *typingText;
+} TextConfig;
+
+
+typedef struct DebugConfig
+{
+	bool consoleOpen;
+	ConsoleTextSetting ConsoleTextEnabled;
+	MessageHistory consoleHistory;
+	float consoleXPos;
+	float consoleYPos;
+	int scrollVal;
+	bool consoleFocus;
+	ConsoleCommand commands[MAX_CONSOLE_COMMANDS];
+	ConsoleVariable consoleVariables[MAX_CONSOLE_VARIABLES];
+	
+	MessageHistory userInputHistory;
+	int argIndex;
+
+	int PauseEngine;
+
+	int DebugTextDisplayMode;
+	int DebugTextInfoPreset;
+	int DebugOverlay;
+	int FPSCounter;
+	int CameraInfo;
+	int SoundInfo;
+	bool showEvents;
+	bool showSceneActions;
+	bool showSpriteset;
+	bool showErrors;
+
+	bool noclip;
+} DebugConfig;
+
+
+typedef struct String
+{
+	char *stringChars;
+	int length;
+} String;
+
+#endif
+
+
+//Global variables/data
+EXPORT extern RenderFrame ScreenData;
+
+EXPORT extern float deltaTime;
+
+EXPORT extern MouseData MouseInput;
+
+EXPORT extern GamePadData GamePadInput;
+
+EXPORT extern ButtonState buttons[INPUT_COUNT];
+
+EXPORT extern GameFlag GameFlags[GAME_FLAG_COUNT];
+
+EXPORT extern ChatLog Chat;
+
+EXPORT extern NetworkData Networking;
+
+EXPORT extern EngineConfig EngineSettings;
+
+EXPORT extern RenderConfig RenderSettings;
+
+EXPORT extern TextConfig TextSettings;
+
+EXPORT extern DebugConfig DebugSettings;
+
+
+//#define getConVar(conVar) *(conVar->variableType ? CONVAR_FLOAT : (float *)getConVarValue(conVar))

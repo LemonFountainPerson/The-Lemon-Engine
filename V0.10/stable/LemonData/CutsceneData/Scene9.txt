@@ -1,5 +1,5 @@
-FRV<1>--CUTSCENE_DATA--
-StaticScene: false  > decides whether the game pauses for the cutscene
+LEMONSCRIPT<1>--CUTSCENE_DATA--
+StaticScene: false  > decides whether the game pauses for the cutscene (default is true) 
 SetCameraMode: 2    > Sets camera mode to free roam so that it is not tied to player
 PlaceInvisibleWall: 1000, 64, 2, 10  > places an invisible wall at coords specified with size specified
 
@@ -40,9 +40,9 @@ TriggerGameEvent: "Play Sound"		{ string: "Player/Jump.wav"
 TriggerGameEvent: "Chat Message"             { string: "This is my first message. Hello World!"
 						vars: 0.0, 0.0, 0.0, 0.0 }
 
-SayTextOption: "A Test cutscene from a FILE? HUH!?"	NO_PORTRAIT  2    3
+SayTextOption: "A Test cutscene from a FILE?"	NO_PORTRAIT  2    3
 		"Play cutscene 2"	    "Play Cutscene"             { vars: 2.0 }
-		"play cutscene 9"	    "Play Cutscene from file"   { string: "Scene9" }
+		"Play cutscene 9"	    "Play Cutscene from file"   { string: "Scene9" }
 		"Do nothing"  
 
 ENDFILE

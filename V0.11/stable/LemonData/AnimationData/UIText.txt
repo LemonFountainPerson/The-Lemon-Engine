@@ -1,0 +1,12 @@
+LEMONSCRIPT<1>--ANIMATION--
+AddSprite:	"TextCursor"		TextDisplay	SCALE
+AddSprite: 	Test_Face 		TextDisplay	SCALE
+
+AddSprite: 	TextBox_Basic 		TextDisplay	SCALE
+AddSprite: 	TextBox_White 		TextDisplay	SCALE
+AddSprite: 	TextBox_BasicFade 	TextDisplay	SCALE
+AddSprite: 	TextBox_WhiteFade 	TextDisplay	SCALE
+
+AddSprite: 	Pixel_Black		TextDisplay	TILE
+AddSprite: 	Pixel_White	 	TextDisplay	TILE
+
