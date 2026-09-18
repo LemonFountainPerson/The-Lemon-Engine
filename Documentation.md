@@ -3,12 +3,9 @@
 _________________________________________________
 
 
-Current Version: 0.09
+Current Version: 0.11
 
-This is a project that serves more as a proof-of-concept or exercise as opposed to a real useful tool, especially because this project is being made from almost 
-the ground up. That said, if you like what you see go ahead and download the source code to try it out! 
-
-This engine uses the C standard library and SDL3. 
+This engine uses the C standard library and SDL3, and is compiled using GCC (Although any good C compiler should work).
 Everything is subject to change.
 
 # Getting Started
@@ -25,7 +22,10 @@ debugging purposes. For compatibility, 0 is still success (LEMON_SUCCESS) and -1
 return value.
 
 -> The playerController can have its functionality completely swapped out or removed. If you are planning to have multiple physics formats in your game (for 
-example, switching between top-down and platforming), you should include multiple controllers than can be switched dependent on the state of the game.
+example, switching between top-down and platforming), you should include multiple controllers than can be switched to dependent on the state of the game.
+
+
+
 
 
 
@@ -63,68 +63,7 @@ Likewise, 'inAir' and 'GroundBox' are also paramters used to controlphysics; ina
 is in the air, up to 100. 
 The 'shape' variable defines what shape the hitbox is, while the 'solid' variable describes its behaviour.
 
-```
-typedef struct PhysicsBox
-{
-	float xPos;
-	float yPos;
-	float prevXPos;
-	float prevYPos;
-
-	int xSize;
-	int ySize;
-
-	float forwardVelocity;
-	float yVelocity;
-	float xVelocity;
-
-	int inAir;
-	float PhysicsXVelocity;
-	float PhysicsYVelocity;
-	struct PhysicsBox *GroundBox;
-
-	SolidType solid;
-	SolidShape shape;
-	Layer collideLayer;
-
-	double direction;
-	short xFlip;
-	short yFlip;
-	bool crouch;
-} PhysicsBox;
-```
-
-
-```
-typedef struct displayData
-{
-	int currentSprite;
-	struct sprite *spriteBuffer;
-
-	int currentAnimation;
-	float animationTick;
-	int animationLoopCount;
-	float animationSpeed;
-	struct animationFrame *frameBuffer;
-	struct animation *animationBuffer;
-
-	struct spriteSet *spriteSetSource;
-
-	Layer layer;
-	RenderMode RenderModeOverride;
-	float size;
-	RotationMode rotateMode;
-	float spriteXOffset;
-	float spriteYOffset;
-	unsigned int pixelXOffset;
-	unsigned int pixelYOffset;
-
-	float transparency;		// 0.0 is no transparency - 1.0 is full transparency (invisible) -- SDL uses 0-255 where 255 is no transparency and 0 is fully transparent
-	bool hidden;
-} DisplayData;
-```
-
-
+DisplayDatas are used to control the sprites rendered and animations playing on the object, if it has any. For more info on Animations, check out the Animations section.
 
 In addition to these 3 base components, additional components can be created and added via the ObjectComponent system. Each type of component has a SparseList to store
 them, allowing for fast and space efficient structs of data that can 'attached' to specific instances of objects to expand their functionality. Examples include TileMaps and 
@@ -167,20 +106,17 @@ struct animation
 };
 ```
 
-The currently playing animation is referenced by the DisplayData in the animationBuffer pointer, although it is not updated when no animation is 
-playing. The currentAnimation integer is set to the ID value of the currently playing animation and is set to 0 when no animation is playing. The
-currentAnimation variable being 0 is how to check if the displayData isn't playing an animation.
-The frameBuffer pointer contains the reference to the currently frame of the Animation that the object is displaying. Due to each frame being
-contained in a linked list that makes up the animation, in order to progress the animation the program simply sets the frameBuffer to [frameBuffer->nextFrame].
-
+The currently playing animation is referenced by the DisplayData in the 'animationBuffer' pointer, and by the 'currentAnimation' variable which refers to the animation's ID. 
+'CurrentAnimation' is set to the ID value of the currently playing animation and is set to 0 when no animation is playing. The 'currentFrame' and 'frameBuffer' variables
+store the frame number and a reference to that frame respectively. 
 To play an animation, the PlayAnimation function is called, with the number of repititions being the second arguement. (0 for repeating infinitely.)
 
 ```
 int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputData);
 ```
 
+The 'animationBuffer' and 'frameBuffer' pointers should not and don't ever have to be modified other than by the engine itself. If you want to manually control which animation
+or which frame is playing, you can simply set the 'currentAnimation' and 'currentFrame' variables, and it will assign the correct data automatically.
 
 
-
-# LemonData
 
