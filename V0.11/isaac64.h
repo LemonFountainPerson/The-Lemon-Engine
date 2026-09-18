@@ -4,17 +4,7 @@ isaac64.h: definitions for a random number generator
 Bob Jenkins, 1996, Public Domain
 ------------------------------------------------------------------------------
 */
-#ifndef STANDARD
-#include "isaacStandard.h"
-#endif
 
-#ifndef ISAAC64
-#define ISAAC64
-
-#define RANDSIZL   (8)
-#define RANDSIZ    (1<<RANDSIZL)
-
-ub8 randrsl[RANDSIZ], randcnt;
 
 /*
 ------------------------------------------------------------------------------
@@ -35,5 +25,4 @@ void isaac64();
    (!randcnt-- ? (isaac64(), randcnt=RANDSIZ-1, randrsl[randcnt]) : \
                  randrsl[randcnt])
 
-#endif  /* RAND */
 

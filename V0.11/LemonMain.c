@@ -340,9 +340,10 @@ World* initialiseWorld(void)
     initialiseFontList(&GameWorld->FontList);
 
 	GameWorld->GameState = EMPTY_GAME;
-	GameWorld->TextQueue = NULL;
 	GameWorld->CurrentCutscene = NO_CUTSCENE;
+	GameWorld->TextBox = false;
 	GameWorld->SceneActionQueue = NULL;
+	GameWorld->nextSceneAction = NULL;
 	
 	// Object controller creation
 	initialiseObjectController(&GameWorld->ObjectList);
@@ -438,7 +439,6 @@ void destroyWorld(World *GameWorld)	// honestly picked this name because its fun
 
 	cleanUpNetworkData();
 	
-	clearTextQueue(GameWorld);
 	deleteAllSceneActions(GameWorld);
 
 	deleteAllGameEvents(&GameWorld->GameEvents);
@@ -484,8 +484,6 @@ int GameTick(World *GameWorld)
 	updateCutscene(GameWorld);
 
 	updateObjects(GameWorld);
-
-	updateTextBoxes(GameWorld);
 
 	#ifdef LEMON_USE_CUSTOM_CALLBACKS
 	Tick(GameWorld);
@@ -2233,7 +2231,6 @@ void SetEngineSettingsToDefault(void)
 	EngineSettings.WorldBoundY = Y_WORLD_BOUND;
 
 	EngineSettings.MaxSoundsPerChannel = MAX_SOUNDS_PER_CHANNEL;
-	EngineSettings.MaxTextQueueLength = MAX_TEXTQUEUE_LENGTH;
 	EngineSettings.MaxSceneActions = MAX_SCENEACTIONS;
 
 	EngineSettings.GameTicksPerSecond = 0;
@@ -2551,6 +2548,17 @@ void removeChar(char string[], char remove, int capacity)
 			i++;
 		}
 	}
+
+	return;
+}
+
+void swapStrings(char *first, char *second, int capacity)
+{
+	putConsole("Swapping %s and %s", first, second);
+	char buffer[capacity];
+	memcpy(buffer, second, capacity);
+	memcpy(second, first, capacity);
+	memcpy(first, buffer, capacity);
 
 	return;
 }

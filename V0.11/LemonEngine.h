@@ -32,4 +32,5 @@
 #include "fileLoader.h"
 #include "cutsceneManager.h"
 #include "console.h"
+#include "isaac64.h"
 #include "Networking.h"

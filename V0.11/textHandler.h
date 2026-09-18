@@ -1,5 +1,3 @@
-bool playingText(World *GameWorld);
-
 int UpdateUIText(World *GameWorld, Object *UIText);
 
 TextBox* SayText(const char inputPhrase[], const char Portrait[], TextPreset inputPreset, World *GameWorld);				// Equivalent to calling createText and then applyTextPresets
@@ -82,6 +80,8 @@ void RemoveAllTexts(World *GameWorld);
 
 void RemoveObjectDebugTexts(void);
 
+void removeAttachedTexts(Object *input, World *GameWorld);
+
 
 void initialiseFontList(FontList *input);
 
@@ -116,13 +116,11 @@ int mapTextToCharacter(Object *inputText, int characterValue);
 int getCharacterSpacing(char input);
 
 
-int endTextBox(World *GameWorld);
+int endTextBox(TextBox *text, World *GameWorld);
 
 int deleteTextBox(TextBox *input, World *GameWorld);
 
 int clearTextQueue(World *GameWorld);
 
 
-bool textSceneActionPresent(TextBox *inputText, World *GameWorld);
-
-void DeleteTextSceneAction(TextBox *inputText, World *GameWorld);
+TextBox* getCurrentTextBox(World *GameWorld);

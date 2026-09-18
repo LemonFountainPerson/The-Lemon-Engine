@@ -90,10 +90,6 @@ FuncResult UpdatePlayer(World *GameWorld)
 	if (objectDeleted(Player->PlayerPtr, Player->instance))
 	{
 		Player->PlayerPtr = NULL;
-	}
-
-	if (Player->PlayerPtr == NULL)
-	{
 		return MISSING_DATA;
 	}
 
@@ -174,7 +170,7 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 	bool jump = false;
 
 	// Player input
-	if (!playingText(GameWorld) && PlayerObject->State != PAUSE_STATE)
+	if (PlayerObject->State != PAUSE_STATE && !GameWorld->TextBox)
 	{
 		if (fabs(GamePadInput.leftStickX) > 0.001)
 		{
@@ -231,19 +227,24 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 		}
 	}
 
+	if (PlayerBox->crouch != 0 && PlayerBox->inAir < 1)
+	{
+		forwardFriction *= 0.9;
+	}
+
 	ApplyFriction(PlayerBox, forwardFriction, forwardFriction, 1.0);
 
 
-	PlayerBox->yPos += 4.0;
+	PlayerBox->yPos += 8.0;
 	bool spaceAboveHead = (GetCollidingObject(PlayerBox, &GameWorld->ObjectList) == NULL);
-	PlayerBox->yPos -= 4.0;
+	PlayerBox->yPos -= 8.0;
 
 	if (PlayerBox->inAir < 1)
 	{
 		Player->jumpProgress = 0;	
 	}
 
-	if (vAxis < -0.75 && PlayerBox->inAir < 20)
+	if (vAxis < -0.75)
 	{
 		PlayerBox->crouch = 1;
 		PlayerBox->ySize = 32;
@@ -287,7 +288,7 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld)
 
 
 	// Player input
-	if (!playingText(GameWorld) && PlayerObject->State != PAUSE_STATE)
+	if (PlayerObject->State != PAUSE_STATE && !GameWorld->TextBox)
 	{
 		hAxis = (buttons[LMN_RIGHT] != 0) - (buttons[LMN_LEFT] != 0);
 

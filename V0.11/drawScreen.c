@@ -996,11 +996,21 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 
 	switch(DebugSettings.DebugTextDisplayMode)
 	{
-		case DEBUG_TEXT_DISABLED:
+		case DEBUG_TEXT_ALL_OBJECTS:
+			while (currentObject != NULL && objCount > 0)
+			{	
+				if (onScreen(currentObject, GameWorld))
+				{
+					DisplayObjectDebugInfo(currentObject, objCount, false, renderCamera);
+				}
+
+				currentObject = currentObject->prevObject;
+				objCount--;
+			}
 			break;
 
 
-		case DEBUG_TEXT_ENABLED:
+		case DEBUG_TEXT_SINGLE_OBJECT:
 			while(currentObject != NULL && objCount > 0 && !MouseOverlappingBox(currentObject, GameWorld->MainCamera))
 			{
 				currentObject = currentObject->prevObject;
@@ -1048,33 +1058,8 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 			}
 			break;
 
-		case ONLY_NONSTATIC_OBJECT_INFO:
-		{
-			while (currentObject != NULL && objCount > 0)
-			{	
-				if (currentObject->State != STATIC_STATE && onScreen(currentObject, GameWorld))
-				{
-					DisplayObjectDebugInfo(currentObject, objCount, false, renderCamera);
-				}
-				
-				currentObject = currentObject->prevObject;
-				objCount--;
-			}
-		} break;
-
 		default:
-		{
-			while (currentObject != NULL && objCount > 0)
-			{	
-				if (onScreen(currentObject, GameWorld))
-				{
-					DisplayObjectDebugInfo(currentObject, objCount, false, renderCamera);
-				}
-
-				currentObject = currentObject->prevObject;
-				objCount--;
-			}
-		} break;
+			break;
 	}
 
 	snprintf(text, DEBUG_TEXT_MAX_LENGTH, "%s \nTick: %llu", LEMON_VERSION, (long long unsigned int)TickNumber());

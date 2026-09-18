@@ -1,6 +1,18 @@
 LEMONSCRIPT<1>--CUTSCENE_DATA--
-StaticScene: false  > decides whether the game pauses for the cutscene
+StaticScene: true  > decides whether the game pauses for the cutscene
 SetCameraMode: 2    > Sets camera mode to free roam so that it is not tied to player
+
+Repeat: 2
+{
+	SayTextOption: "A Test cutscene from a FILE? HUH!?"	NO_PORTRAIT  2    3
+		"Play cutscene 2"	    "Play Cutscene"             { int "cutsceneID" = 2 }
+		"play cutscene 9"	    "Play Cutscene from file"   { "cutsceneName" = "Scene9" }
+		"Do nothing"  
+
+}
+
+ENDFILE
+
 PlaceInvisibleWall: 1000, 64, 2, 10  > places an invisible wall at coords specified with size specified
 
 SetChannelVolume: 1 1.0
@@ -18,11 +30,6 @@ Repeat: 25
 	moveActorY: "Mysterious block" 3
 }
 
-Repeat: 25
-{
-	moveActorX: "Mysterious block" -3
-	moveActorY: "Mysterious block" -3
-}
 
 TriggerGameEvent: "Chat Message"             { string "message" = "This is my first message. Hello World!"
 						int "speaker" = 0 }

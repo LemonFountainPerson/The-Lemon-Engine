@@ -1139,6 +1139,7 @@ int loadLevelData(World *GameWorld, FILE *fPtr, bool closeFileOnExit)
 		}
 
 		returnMsg = getNextArg(fPtr, buffer, MAX_LEN);
+
 		stringToUpper(buffer);
 
 		if (strcmp(buffer, "{") == 0)
@@ -1467,7 +1468,6 @@ int clearLevelData(World *GameWorld)
 
 	GameWorld->GameState = LOADING;
 
-	clearTextQueue(GameWorld);
 	EndCutscene(GameWorld);
 
 	deleteLevelObjects(&GameWorld->ObjectList);

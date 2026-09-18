@@ -4,14 +4,10 @@ isaac64.c: My random number generator for 64-bit machines.
 By Bob Jenkins, 1996.  Public Domain.
 ------------------------------------------------------------------------------
 */
-#ifndef STANDARD
-#include "isaacStandard.h"
-#endif
-#ifndef ISAAC64
-#include "isaac64.h"
-#endif
+#include "LemonEngine.h"
 
-extern    ub8 randrsl[RANDSIZ], randcnt;
+
+ub8 randrsl[RANDSIZ], randcnt;
 static    ub8 mm[RANDSIZ];
 static    ub8 aa=0, bb=0, cc=0;
 

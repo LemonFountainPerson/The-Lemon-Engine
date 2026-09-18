@@ -10,9 +10,14 @@ void prepareCutsceneEnvironment(World *GameWorld)
 	// Ideally this shouldn't matter, but if for some reason theres a text box you want to persist across a cutscene 
 	// you cannot because it gets deleted here
 	deleteAllSceneActions(GameWorld);
-	clearTextQueue(GameWorld);		
 
 	GameWorld->GameState = CUTSCENE;
+
+	// by default, player is disabled during cutscenes
+	if (GameWorld->Player.PlayerPtr != NULL)
+	{
+		GameWorld->Player.PlayerPtr->reserved &= ~RFLAG_CUTSCENE_IMMUNITY;
+	}
 
 	return;
 }
@@ -82,14 +87,6 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 		break;
 	}
 
-	if (GameWorld->GameState == CUTSCENE)
-	{
-		if (GameWorld->Player.PlayerPtr != NULL)
-		{
-			GameWorld->Player.PlayerPtr->State = ACTOR_STATE;
-		}
-	}
-
 	GameWorld->CurrentCutscene = inputID;
 
 
@@ -131,14 +128,6 @@ int LoadCutsceneFromFile(const char sceneName[], World *GameWorld)
 	}
 
 	closeFile(fPtr);
-
-	if (GameWorld->GameState == CUTSCENE)
-	{
-		if (GameWorld->Player.PlayerPtr != NULL)
-		{
-			GameWorld->Player.PlayerPtr->State = ACTOR_STATE;
-		}
-	}
 
 	GameWorld->CurrentCutscene = CUTSCENE_FROM_FILE;
 
@@ -285,8 +274,7 @@ SceneAction* skipSceneActions(int skipCount, SceneAction *startPoint, World *Gam
 	{
 		if (current->ActionID == SCENE_SAY_TEXT)
 		{
-			deleteTextBox(current->ActionData.sceneText, GameWorld);
-			current->ActionData.sceneText = NULL;
+			deleteTextBox(&current->ActionData.sceneText, GameWorld);
 		}
 
 		current = current->nextSceneAction;
@@ -341,17 +329,34 @@ FuncResult RunSceneAction(SceneAction *inputAction, World *GameWorld)
 			triggerGameEvent(&inputAction->ActionData.TriggerEvent, GameWorld);
 		} break;
 
+	case SCENE_SAY_TEXT:
+		{
+			TextBox *box = &inputAction->ActionData.sceneText;
+			if (box->currentIndex < 0)
+			{
+				TextInteraction(box, GameWorld);
+			}
+			else
+			{
+				displayText(box, GameWorld);
+			}
+			if (box->boxPtr == NULL)
+			{
+				return ACTION_DISABLED;
+			}
+		} break;
+
 	case SCENE_DISABLE_PLAYER:
 		if (GameWorld->Player.PlayerPtr != NULL)
 		{
-			GameWorld->Player.PlayerPtr->State = ACTOR_STATE;
+			GameWorld->Player.PlayerPtr->reserved &= ~RFLAG_CUTSCENE_IMMUNITY;
 		}
 		break;
 
 	case SCENE_ENABLE_PLAYER:
 		if (GameWorld->Player.PlayerPtr != NULL)
 		{
-			GameWorld->Player.PlayerPtr->State = DEFAULT_STATE;
+			GameWorld->Player.PlayerPtr->reserved |= RFLAG_CUTSCENE_IMMUNITY;
 		}
 		break;
 
@@ -641,6 +646,31 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 		getNextArg(fPtr, inputString, MAX_LEN);
 		SayText(textBoxString, inputString, getNextArgInt(fPtr), GameWorld);
 	}
+	else if (strcmp(inputString, "SAYTEXTEVENT:") == 0)
+	{
+		char textBoxString[MAX_TEXT_LENGTH] = {0};
+		getNextArg(fPtr, textBoxString, MAX_TEXT_LENGTH);
+		getNextArg(fPtr, inputString, MAX_LEN);
+		TextBox *textEvent = SayText(textBoxString, inputString, getNextArgInt(fPtr), GameWorld);
+
+		if (textEvent == NULL)
+		{
+			return NULL;
+		}
+
+		GameEvent *newEvent = malloc(sizeof(GameEvent));
+
+		if (newEvent == NULL)
+		{
+			return NULL;
+		}
+
+		memset(newEvent, 0, sizeof(GameEvent));
+		getNextArgGameEvent(fPtr, newEvent, GameWorld);
+
+		textEvent->textTypeSetting = TEXTBOX_TRIGGER_EVENT;
+		textEvent->textTypeData.TriggerEvent = newEvent;
+	}
 	else if (strcmp(inputString, "SAYTEXTOPTION:") == 0)
 	{
 		char textBoxString[MAX_TEXT_LENGTH] = {0};
@@ -660,13 +690,27 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 		TextOptionPrompt *data = &textOption->textTypeData.OptionPrompt;
 		data->numberOfOptions = numberOfOptions;
 		data->SelectedOption = 0;
-		data->optionBeingPrinted = 0;
+		data->setUpComplete = false;
+		data->optionTriggers = malloc(numberOfOptions * sizeof(GameEvent));
+
+		if (data->optionTriggers == NULL)
+		{
+
+			return NULL;
+		}
+
+		memset(data->optionTriggers, 0, numberOfOptions * sizeof(GameEvent));
+
+		GameEvent newEvent; 
 
 		for (int i = 0; i < numberOfOptions && i < MAX_TEXT_OPTIONS; i++)
 		{
 			getNextArg(fPtr, data->optionNames[i], OPTION_TEXT_MAX_LEN);
 
-			getNextArgGameEvent(fPtr, &data->optionTriggers[i], GameWorld);
+			memset(&newEvent, 0, sizeof(GameEvent));
+			getNextArgGameEvent(fPtr, &newEvent, GameWorld);
+			
+			memcpy(&data->optionTriggers[i], &newEvent, sizeof(GameEvent));
 		}
 	}
 	else if (strcmp(inputString, "WAIT:") == 0)
@@ -685,7 +729,7 @@ SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *
 	}
 	else if (strcmp(inputString, "TRIGGEREVENT:") == 0 || strcmp(inputString, "TRIGGERGAMEEVENT:") == 0)
 	{
-		GameEvent newEvent; 
+		GameEvent newEvent = {0}; 
 		getNextArgGameEvent(fPtr, &newEvent, GameWorld);
 		SceneAction *newAction = createSceneAction(SCENE_TRIGGER_GAME_EVENT, GameWorld);
 
@@ -1202,6 +1246,8 @@ int EndCutscene(World *GameWorld)
 		return MISSING_DATA;
 	}
 
+	deleteAllSceneActions(GameWorld);
+
 	if (GameWorld->CurrentCutscene == NO_CUTSCENE)
 	{
 		return EXECUTION_UNNECESSARY;
@@ -1210,8 +1256,7 @@ int EndCutscene(World *GameWorld)
 	putConsoleTS("Ending cutscene, returning to gameplay.");
 
 	GameWorld->CurrentCutscene = NO_CUTSCENE;
-	deleteAllSceneActions(GameWorld);
-
+	
 	if (GameWorld->GameState == CUTSCENE)
 	{
 		GameWorld->GameState = GAMEPLAY;
@@ -1222,9 +1267,14 @@ int EndCutscene(World *GameWorld)
 
 	Object *PlayerObject = GameWorld->Player.PlayerPtr;
 
-	if (PlayerObject != NULL && PlayerObject->State == ACTOR_STATE)
+	if (PlayerObject != NULL)
 	{
-		PlayerObject->State = DEFAULT_STATE;
+		PlayerObject->reserved &= ~RFLAG_CUTSCENE_IMMUNITY;
+	
+		if (PlayerObject->State == ACTOR_STATE)
+		{
+			PlayerObject->State = DEFAULT_STATE;
+		}
 	}
 
 	// By default, any objects that were not manually restored from Actor state will be deleted
@@ -1250,8 +1300,11 @@ int WaitUntil(SceneAction *inputAction)
 		return MISSING_DATA;
 	}
 
-	inputAction->parallelAction = false;
-
+	if (inputAction->ActionID == SCENE_ANIMATE_ACTOR)
+	{
+		inputAction->parallelAction = false;
+	}
+	
 	return LEMON_SUCCESS;
 }
 
@@ -1399,28 +1452,6 @@ SceneAction* changeVariableBy(int variableIndex, int value, World *GameWorld)
 
 	return newAction;
 }
-
-
-SceneAction* SceneAction_SayText(TextBox *text, World *GameWorld)
-{
-	if (GameWorld == NULL || text == NULL)
-	{
-		return NULL;
-	}
-
-	SceneAction *newAction = createSceneAction(SCENE_SAY_TEXT, GameWorld);
-
-	if (newAction == NULL)
-	{
-		return NULL;
-	}
-
-	newAction->ActionData.sceneText = text;
-	newAction->parallelAction = false;
-
-	return newAction;
-}
-
 
 SceneAction* AnimateActor(char objName[], const char animName[], int loopCount, World *GameWorld)
 {
@@ -2177,6 +2208,31 @@ SceneAction* deleteSceneAction(SceneAction *deleteAction, World *GameWorld)
 	if (deleteAction == NULL || GameWorld == NULL)
 	{
 		return NULL;
+	}
+
+	if (deleteAction->ActionID == SCENE_SAY_TEXT)
+	{
+		TextBox *text = &deleteAction->ActionData.sceneText;
+
+		if (text->textTypeSetting == TEXTBOX_OPTION_PROMPT)
+		{
+			TextOptionPrompt *optionData = &text->textTypeData.OptionPrompt;
+			if (optionData->optionTriggers != NULL)
+			{
+				free(optionData->optionTriggers);
+				optionData->optionTriggers = NULL;
+			}
+		}
+		else if (text->textTypeSetting == TEXTBOX_TRIGGER_EVENT)
+		{
+			if (text->textTypeData.TriggerEvent != NULL)
+			{
+				free(text->textTypeData.TriggerEvent);
+				text->textTypeData.TriggerEvent = NULL;
+			}
+		}
+
+		deleteTextBox(text, GameWorld);
 	}
 
 	SceneAction *prevAction = deleteAction->prevSceneAction;

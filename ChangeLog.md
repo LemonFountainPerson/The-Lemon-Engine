@@ -15,11 +15,15 @@
 -> Added interpolation that can be optionally enabled at compile-time. This smooths out motion based on the positions of objects and cameras one tick ago. This allows for smooth 
 motion with high refresh-rate monitors, even at low tickrates.
 
--> Added multi-colour rendering to TextBoxes, allowing for text to change colour mid-typing. Example: ```"Watch out for <Blue>Stop signs<White>."```
+-> Added multi-colour rendering to TextBoxes, allowing for text to change colour mid-typing. For example: ```"Watch out for <BLUE>Stop signs<DEFAULT>."```
 (This will display white text with the 'stop signs' phrase coloured in blue.)
 New colours can be added via the 'setTextBoxColor' function in the 'TextHandler' file.
 
 -> Added the 'EVENT_CONSOLE_COMMAND' event, which allows any command to be entered into the console via a GameEvent or LevelFlag. 
+
+-> PROVISIONAL: Added Console Variables, a standardised variable that can be accessed/modified by the console. Console Variables are stored as a list, so you must either save a
+reference to one or search for it via [getConsoleVariable]. A default value can be set, as well as flags that indicate special behaviour (For example CONFLAG_CHEAT means the 
+variable can only be changed when cheats are active, CONFLAG_SERVER_SIDE means the variable is synced with the server if connected to one and cannot be modified by clients, etc.)
 
 
 ## Structure Changes
@@ -30,15 +34,22 @@ better performance.)
 -> The HUD layer will now render based on the ScreenData's HUDWidth and HUDHeight variables, allowing the dimensions of the HUD to remain constant relative to the screen dimensions.
 Graphics are stretched but text is automatically re-sized and re-positioned to render at the highest possible resolution.
 
+-> TextBoxes are now a type of SceneAction, instead of using a sceneaction to coordinate themselves during cutscenes. As part of this, the TextQueue in the World struct has been 
+removed and TextBox behaviour is more consistent. (TextBoxes can also be repeated when placed in loops.)
+
 
 ## Bug fixes/Improvements
 
 -> Commands now have restrictions based on the 'cheats' variable in EngineSettings. Connecting to a server will enforce the server's cheats value on the client, but otherwise it
-can be modified by the 'cheats' command. The default value is 0, with a higher value equating to a higher restriction.
+can be modified by the 'cheats' command. 
 
 -> The HealthComponent now also tracks an objects 'GroupType' to control what objects it can be damaged by and can in turn inflict damage onto. (In other words, its affiliation.)
 
 -> Animation playback can now skip frames (if enough time has passed) instead of always only advancing by one at a time.
+
+-> PROVISIONAL: TextBoxes now store their GameEvents as data allocated on the heap, meaning the memory use of the data structure has been reduced significantly by default.
+
+-> Fixed a small physics bug where momentum on an Object did not properly decay.
 
 
 # Thanks
@@ -48,6 +59,8 @@ can be modified by the 'cheats' command. The default value is 0, with a higher v
 - Thanks to Bob Jenkins for the Cryptographically secure random number generator code (ISAAC).
    https://www.burtleburtle.net/bob/rand/isaacafa.html
 - Thanks to JSON.org for the utf8 decoder code (utf8Decoder.h).
+
+NOTE: Changes marked with 'PROVISIONAL' are changes that are not necessarily a direct improvement and as such may be reverted.
 
 
 

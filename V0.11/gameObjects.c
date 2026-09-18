@@ -1869,7 +1869,7 @@ int ObjectBehaviour(World *GameWorld, Object *inputObject)
 		return EXECUTION_UNNECESSARY;
 	}
 
-	bool gameStateDisable = inputObject->State == ACTOR_STATE || (GameWorld->GameState == CUTSCENE && inputObject != GameWorld->Player.PlayerPtr); 
+	bool gameStateDisable = inputObject->State == ACTOR_STATE || (GameWorld->GameState == CUTSCENE); 
 	bool immuneObject = (inputObject->reserved & RFLAG_CUTSCENE_IMMUNITY) != 0;
 
 	if ((!immuneObject && gameStateDisable) || inputObject->State == PAUSE_STATE)
@@ -3365,9 +3365,9 @@ int UpdateSpring(Object *spring, World *GameWorld)
 	}
 
 	PhysicsBox *PlayerBox = GameWorld->Player.PlayerPtr->ObjectBox;
-
-
-	if (!playingAnimation(getDisplay(spring)) && PlayerBox->yVelocity < -1.0 && checkBoxOverlapsBoxBroad(PlayerBox, spring->ObjectBox))
+	PhysicsBox *springBox = spring->ObjectBox;
+	
+	if (checkBoxOverlapsBoxBroad(PlayerBox, springBox) && PlayerBox->prevYPos > springBox->yPos + springBox->ySize)
 	{
 		float xForce = -cos(spring->ObjectBox->direction * DEGREE_TO_RADIAN_PI) * spring->arg1;
 		float yForce = sin(spring->ObjectBox->direction * DEGREE_TO_RADIAN_PI) * spring->arg1;
@@ -3981,7 +3981,7 @@ int UpdateLevelDoor(Object *Door, World *GameWorld)
 		SayTextAndTriggerEvent(phrase, NO_PORTRAIT, BASIC_TEXT, GameWorld, switchLevel(Door->arg1, GameWorld));
 	}
 
-	if (Door->arg4 != 0 && GameWorld->TextQueue == NULL)
+	if (Door->arg4 != 0 && GameWorld->SceneActionQueue == NULL)
 	{
 		Event_MovePlayer(Door->arg2, Door->arg3, GameWorld);
 

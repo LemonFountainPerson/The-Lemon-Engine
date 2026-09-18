@@ -455,9 +455,8 @@ typedef enum AnimationLoopState
 typedef enum DebugTextRenderMode
 {
 	DEBUG_TEXT_DISABLED = 0,
-	DEBUG_TEXT_ENABLED,
-	ONLY_NONSTATIC_OBJECT_INFO,
-	ALL_OBJECT_INFO,
+	DEBUG_TEXT_SINGLE_OBJECT,
+	DEBUG_TEXT_ALL_OBJECTS,
 	DEBUG_TEXT_MODE_COUNT
 } DebugTextMode;
 
@@ -978,23 +977,22 @@ typedef struct GameFlag
 
 typedef struct TextOptionPrompt
 {
-	int numberOfOptions;
 	int SelectedOption;
-	int optionBeingPrinted;
+	bool setUpComplete;
 
 	float OptionYPositions[MAX_TEXT_OPTIONS];
-
 	char optionNames[MAX_TEXT_OPTIONS][OPTION_TEXT_MAX_LEN];
 
-	GameEvent optionTriggers[MAX_TEXT_OPTIONS];
+	GameEvent *optionTriggers;
+	int numberOfOptions;
 } TextOptionPrompt;
 
 
-union TextTypeData
+typedef union TextTypeData
 {
-	GameEvent TriggerEvent;
+	GameEvent *TriggerEvent;
 	TextOptionPrompt OptionPrompt; 
-};
+} TextTypeData;
 
 
 typedef struct Text
@@ -1027,8 +1025,6 @@ typedef struct FontList
 
 typedef struct TextBox 
 {
-	struct TextBox *nextText;
-
 	Object *boxPtr;
 
 	char textPhrase[MAX_TEXT_LENGTH];
@@ -1041,13 +1037,15 @@ typedef struct TextBox
 	PortraitPos PortraitPosition;
 
 	TextType textTypeSetting;
-	union TextTypeData textTypeData;
+	TextTypeData textTypeData;
 
 	TextPreset preset;
 
 	int textDelayFrames;
 	bool Skippable;
 
+	int boxStartPosX;
+	int boxStartPosY;
 	int boxOffsetX;		// x position within the text box
 	int boxOffsetY;		// y position within the text box
 	int textLengthSize;	// Maximum amount of pixels from left to right to render text within before going to next line
@@ -1191,7 +1189,7 @@ union SceneActionArguments
 	int WaitTicks[2];
 	int variableArgs[2];
 	IfStatementData sceneIfStatement;
-	struct TextBox *sceneText;
+	TextBox sceneText;
 	int animationDetails[2];
 	float positions[2];
 	ObjectMeta sceneObjectInfo;
@@ -1347,10 +1345,9 @@ typedef struct World
 	int level;
 	LemonGameState GameState;
 	GameEventManager GameEvents;
-
-	TextBox *TextQueue;
 	
 	CutsceneID CurrentCutscene;
+	bool TextBox;
 	SceneAction *SceneActionQueue;
 	SceneAction *nextSceneAction;
 	int SceneActionCount;
@@ -1757,4 +1754,49 @@ EXPORT extern TextConfig TextSettings;
 EXPORT extern DebugConfig DebugSettings;
 
 
-//#define getConVar(conVar) *(conVar->variableType ? CONVAR_FLOAT : (float *)getConVarValue(conVar))
+
+typedef  uint64_t  ub8;
+#define UB8MAXVAL 0xffffffffffffffffLL
+#define UB8BITS 64
+typedef  int64_t   sb8;
+#define SB8MAXVAL 0x7fffffffffffffffLL
+typedef  uint32_t  ub4;   /* unsigned 4-byte quantities */
+#define UB4MAXVAL 0xffffffff
+typedef  int32_t   sb4;
+#define UB4BITS 32
+#define SB4MAXVAL 0x7fffffff
+typedef  uint16_t  ub2;
+#define UB2MAXVAL 0xffff
+#define UB2BITS 16
+typedef  int16_t  sb2;
+#define SB2MAXVAL 0x7fff
+typedef  uint8_t   ub1;
+#define UB1MAXVAL 0xff
+#define UB1BITS 8
+typedef  int8_t    sb1;   /* signed 1-byte quantities */
+#define SB1MAXVAL 0x7f
+typedef  int  word;  /* fastest type available */
+
+#define bis(target,mask)  ((target) |=  (mask))
+#define bic(target,mask)  ((target) &= ~(mask))
+#define bit(target,mask)  ((target) &   (mask))
+#ifndef isaacMin
+# define isaacMin(a,b) (((a)<(b)) ? (a) : (b))
+#endif /* min */
+#ifndef isaacMax
+# define isaacMax(a,b) (((a)<(b)) ? (b) : (a))
+#endif /* max */
+#ifndef align
+# define align(a) (((ub4)a+(sizeof(void *)-1))&(~(sizeof(void *)-1)))
+#endif /* align */
+#ifndef abs
+# define isaacAbs(a)   (((a)>0) ? (a) : -(a))
+#endif
+#define TRUE  1
+#define FALSE 0
+#define SUCCESS 0  /* 1 on VAX */
+
+#define RANDSIZL   (8)
+#define RANDSIZ    (1<<RANDSIZL)
+
+extern ub8 randrsl[RANDSIZ], randcnt;

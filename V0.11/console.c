@@ -165,6 +165,11 @@ ConsoleVariable* getConsoleVariable(const char name[])
 
 	for (int i = 0; i < MAX_CONSOLE_VARIABLES; i++)
 	{
+		if (varList[index].name[0] == '\0')
+		{
+			return NULL;
+		}
+
 		if (strcmp(varList[index].name, name) == 0)
 		{
 			return &varList[index];	
@@ -183,6 +188,7 @@ ConsoleVariable* NewConsoleVariable(const char name[], const char helpString[], 
 {
 	if (name == NULL || name[0] < 32)
 	{
+		putConsole("bad name");
 		return NULL;
 	}
 
@@ -210,6 +216,7 @@ ConsoleVariable* NewConsoleVariable(const char name[], const char helpString[], 
 		putConsole("Hash collision %d", i);
 	}
 
+	putConsole("No space?");
 	return NULL;
 }
 
@@ -1171,7 +1178,8 @@ int ConsoleCommand_UsedMemory(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	else if (strcmp(arg, "textboxes") == 0)
 	{
-		putConsole("TextBox data size: %d", sizeof(TextBox));
+		putConsole("TextBox size: %d", sizeof(TextBox));
+		putConsole("TextBox data size: %d", sizeof(union TextTypeData));
 		return LEMON_SUCCESS;
 	}
 	else if (strcmp(arg, "debug") == 0)
@@ -1694,10 +1702,6 @@ int ConsoleCommand_Cutscene(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 		{
 			GameWorld->CurrentCutscene = END_CUTSCENE;
 			GameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;
-			if (GameWorld->TextQueue != NULL)
-			{
-				clearTextQueue(GameWorld);
-			}
 		}
 	}
 	else

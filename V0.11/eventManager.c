@@ -837,12 +837,15 @@ GameEventID getEventID(const char input[])
 
 bool getNextArgGameEvent(FILE *file, GameEvent *newEvent, World *GameWorld)
 {
-	if (file == NULL || GameWorld == NULL || newEvent == NULL)
+	if (file == NULL)
 	{
 		return false;
 	}
 
-	memset(newEvent, 0, sizeof(GameEvent));
+	if (GameWorld == NULL || newEvent == NULL)
+	{
+		return false;
+	}
 
 	long filePos = ftell(file);
 	char buffer[MAX_LEN] = {0};
@@ -857,6 +860,7 @@ bool getNextArgGameEvent(FILE *file, GameEvent *newEvent, World *GameWorld)
 		return false;
 	}
 
+	memset(newEvent, 0, sizeof(GameEvent));
 	newEvent->EventID = inputEvent;			// if succesful, set ID of empty slot
 
 	filePos = ftell(file);

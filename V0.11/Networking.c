@@ -1,5 +1,4 @@
 #include "LemonEngine.h"
-#include "isaac64.h"
 
 #define AWAITING_TRACKED_ID -1
 
@@ -9,13 +8,6 @@ void initialiseNetworkData(void)
 {
 	Networking.connectMode = OFFLINE;
 	Networking.connectionStatus = CONNECT_STATE_DISCONNECTED;
-
-	if (LEMON_NETWORKING_ENABLED)
-	{
-		return;
-	}
-
-	randinit();
 
 	strcpy(Networking.myUsername, "Unnamed");
 
@@ -56,6 +48,11 @@ void initialiseNetworkData(void)
 	if (DEBUG_MODE)
 	{
 		strcat(Networking.setUpString, "_DebugMode");
+	}
+
+	if (LEMON_NETWORKING_ENABLED)
+	{
+		randinit();
 	}
 
 	return;
@@ -869,6 +866,8 @@ void sendAllTrackedObjects(NET_StreamSocket *socket)
 			copyObjectToPacketData(object, &packet);
 		}
 
+		putConsole("Sending %d", index);
+
 		packet.data.objectData.trackedID = index;
 		packet.data.objectData.ownerClientID = TrackedObjects[index].clientID;
 		NET_WriteToStreamSocket(socket, &packet, sizeof(NetworkPacket));
@@ -1570,7 +1569,7 @@ int RespondToTrackObjectRequest(NetworkPacket *packet, int clientIndex, World *G
 
 int addNewTrackedObject(Object *input, int owner)
 {
-	if (Networking.clientID == AWAITING_CLIENT_ID || Networking.clientID == NO_CLIENT_ID)
+	if (Networking.clientID == AWAITING_CLIENT_ID || Networking.clientID == NO_CLIENT_ID || input == NULL)
 	{
 		return -1;
 	}
@@ -1578,7 +1577,7 @@ int addNewTrackedObject(Object *input, int owner)
 	TrackedObject *TrackedObjects = Networking.TrackedObjects;
 
 	int index = 0;
-	while (TrackedObjects[index].clientID != NO_CLIENT_ID)
+	while (TrackedObjects[index].clientID != NO_CLIENT_ID && index < 1)
 	{
 		if (TrackedObjects[index].object == input && TrackedObjects[index].instance == input->instanceNumber)
 		{
@@ -1588,12 +1587,12 @@ int addNewTrackedObject(Object *input, int owner)
 
 		index++;
 	}
-
+		
 	if (index >= MAX_TRACKED_OBJECTS)
 	{
 		return -1;
 	}
-
+			
 	TrackedObjects[index].clientID = owner;
 	TrackedObjects[index].clientDeleted = false;
 
@@ -1605,13 +1604,10 @@ int addNewTrackedObject(Object *input, int owner)
 	{
 		TrackedObjects[index].trackedID = AWAITING_TRACKED_ID;
 	}
-	
-	TrackedObjects[index].object = input;
 
-	if (input != NULL)
-	{
-		TrackedObjects[index].instance = input->instanceNumber;
-	}
+	TrackedObjects[index].object = input;
+	
+	TrackedObjects[index].instance = input->instanceNumber;
 
 	Networking.TrackedObjectCount++;
 
