@@ -58,6 +58,7 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 			addMessageHistory(TextSettings.userInputString, &DebugSettings.userInputHistory);
 		}
 		DebugSettings.userInputHistory.searchIndex = DebugSettings.userInputHistory.head;
+		DebugSettings.scrollVal = 0;
 		
 		consoleInput(TextSettings.userInputString, GameWorld);
 		startTyping(window, getDebugTextWithName("ConsoleUserInput"));
@@ -188,7 +189,6 @@ ConsoleVariable* NewConsoleVariable(const char name[], const char helpString[], 
 {
 	if (name == NULL || name[0] < 32)
 	{
-		putConsole("bad name");
 		return NULL;
 	}
 
@@ -216,7 +216,6 @@ ConsoleVariable* NewConsoleVariable(const char name[], const char helpString[], 
 		putConsole("Hash collision %d", i);
 	}
 
-	putConsole("No space?");
 	return NULL;
 }
 
@@ -288,7 +287,7 @@ void setConsoleVariable(ConsoleVariable *variable, const char value[], World *Ga
 	}
 
 
-	if ((variable->flags & CONFLAG_NOTIFY) != 0)
+	if ((variable->flags & CONFLAG_NOTIFY) != 0 && (variable->flags & CONFLAG_PROTECTED) == 0)
 	{
 		char msg[MESSAGE_LENGTH] = {0};
 		snprintf(msg, MESSAGE_LENGTH, "'%s' has been set to %s", variable->name, value);
@@ -383,25 +382,24 @@ void consoleInput(const char inputSource[USER_INPUT_MAX_LEN], World *GameWorld)
 		return;
 	}
 
-	char input[USER_INPUT_MAX_LEN] = {0};
-	strcpy(input, inputSource);
-	DebugSettings.scrollVal = 0;
-
 	if (GameWorld == NULL)
 	{
 		return;
 	}
 
-	DebugSettings.argIndex = 0;
+	char command[USER_INPUT_MAX_LEN] = {0};
+	int inputIndex = 0;
 
 	do {
-		if (input[DebugSettings.argIndex] == ';')
+		if (inputSource[inputIndex] == ';')
 		{
-			DebugSettings.argIndex++;
+			inputIndex++;
 		}
 
-		executeCommand(input, GameWorld);
-	} while (input[DebugSettings.argIndex] == ';');
+		inputIndex += copyStringUntil(inputSource + inputIndex, command, ';', USER_INPUT_MAX_LEN);
+
+		executeCommand(command, GameWorld);
+	} while (inputSource[inputIndex] == ';' && inputIndex < USER_INPUT_MAX_LEN);
 
 
 	return;
@@ -409,12 +407,13 @@ void consoleInput(const char inputSource[USER_INPUT_MAX_LEN], World *GameWorld)
 
 void executeCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
-	char arg[USER_INPUT_MAX_LEN] = {0};
+	DebugSettings.argIndex = 0;
+	char commandName[USER_INPUT_MAX_LEN] = {0};
 
-	getNextConsoleArg(input, arg);
-	stringToLower(arg);
+	getNextConsoleArg(input, commandName);
+	stringToLower(commandName);
 
-	ConsoleCommand *command = getConsoleCommand(arg);
+	ConsoleCommand *command = getConsoleCommand(commandName);
 
 	if (command != NULL)
 	{
@@ -424,7 +423,7 @@ void executeCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 			return; 
 		}
 
-		sendServerCommand(command, input, DebugSettings.argIndex);
+		sendServerCommand(command, input);
 
 		if (command->function(input, GameWorld) != LEMON_SUCCESS)
 		{
@@ -435,7 +434,7 @@ void executeCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	
 
-	ConsoleVariable *variable = getConsoleVariable(arg);
+	ConsoleVariable *variable = getConsoleVariable(commandName);
 
 	if (variable == NULL)
 	{
@@ -443,6 +442,7 @@ void executeCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 		return;
 	}
 
+	char arg[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, arg);
 	if (arg[0] > 32)
 	{
@@ -460,8 +460,7 @@ void executeCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 bool commandIsAllowed(ConsoleCommandFlag input)
 {
-	ConsoleCommandFlag securityCheck = CONFLAG_PROTECTED | CONFLAG_SERVER_SIDE;
-	if ((input & securityCheck) != 0 && Networking.connectMode == CLIENT)
+	if ((input & CONFLAG_SERVER_SIDE) != 0 && Networking.connectMode == CLIENT)
 	{
 		putConsole("This command can only be run by the server!");
 		return false;

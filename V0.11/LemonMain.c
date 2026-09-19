@@ -2552,9 +2552,27 @@ void removeChar(char string[], char remove, int capacity)
 	return;
 }
 
+int copyStringUntil(const char source[], char dest[], char stopPoint, int capacity)
+{
+	if (source == NULL || dest == NULL)
+	{
+		return -1;
+	}
+
+	int i = 0;
+	while (source[i] != '\0' && source[i] != stopPoint && i < capacity - 1)
+	{
+		dest[i] = source[i];
+		i++;
+	}
+
+	dest[i] = '\0';
+
+	return i;
+}
+
 void swapStrings(char *first, char *second, int capacity)
 {
-	putConsole("Swapping %s and %s", first, second);
 	char buffer[capacity];
 	memcpy(buffer, second, capacity);
 	memcpy(second, first, capacity);

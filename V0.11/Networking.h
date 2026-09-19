@@ -80,7 +80,7 @@ void updateServerSettings(void);
 
 void updateServerConVar(ConsoleVariable *input);
 
-void sendServerCommand(ConsoleCommand *input, char consoleInput[USER_INPUT_MAX_LEN], int argStartIndex);
+void sendServerCommand(ConsoleCommand *input, const char consoleInput[USER_INPUT_MAX_LEN]);
 
 void updateServerFlag(GameFlag *input);
 

@@ -189,6 +189,8 @@ EXPORT int LemonStrncpy(char dest[], const char source[], int capacity);
 
 EXPORT void removeChar(char string[], char remove, int capacity);
 
+EXPORT int copyStringUntil(const char source[], char dest[], char stopPoint, int capacity);
+
 EXPORT void swapStrings(char *first, char *second, int capacity);
 
 

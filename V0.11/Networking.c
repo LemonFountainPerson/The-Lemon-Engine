@@ -1109,7 +1109,7 @@ bool receiveServerData(World *GameWorld)
 			{
 				ConsoleVariable *received = &buffer.data.convar;
 				ConsoleVariable *found = getConsoleVariable(received->name);
-				if (found == NULL || (found->flags & CONFLAG_SERVER_SIDE) == 0)
+				if (found == NULL || (found->flags & CONFLAG_SVR_AND_PRO) != CONFLAG_SERVER_SIDE)
 				{
 					break;
 				}
@@ -1124,7 +1124,7 @@ bool receiveServerData(World *GameWorld)
 				ConsoleCommand *received = &buffer.data.command;
 				ConsoleCommand *found = getConsoleCommand(received->name);
 
-				if (found == NULL || (found->flags & CONFLAG_SERVER_SIDE) == 0)
+				if (found == NULL ||  (found->flags & CONFLAG_SVR_AND_PRO) != CONFLAG_SERVER_SIDE)
 				{
 					break;
 				}
@@ -1392,7 +1392,7 @@ void updateServerConVar(ConsoleVariable *input)
 	return;
 }
 
-void sendServerCommand(ConsoleCommand *input, char consoleInput[USER_INPUT_MAX_LEN], int argStartIndex)
+void sendServerCommand(ConsoleCommand *input, const char consoleInput[USER_INPUT_MAX_LEN])
 {
 	if (Networking.connectMode != SERVER || input == NULL)
 	{
@@ -1401,19 +1401,17 @@ void sendServerCommand(ConsoleCommand *input, char consoleInput[USER_INPUT_MAX_L
 
 	// Server-Side commands can be run by the server but clients must be told by the server to run them
 	// protected commands can be run by the server but should NOT be broadcasted to client machines (its info is sensitive)
-	if ((input->flags & CONFLAG_PROTECTED) != 0) 
+	if ((input->flags & CONFLAG_PROTECTED) != 0 || (input->flags & CONFLAG_SERVER_SIDE) == 0) 
 	{
 		return;
 	}
 
-	consoleInput[USER_INPUT_MAX_LEN - 1] = '\0';
 	NetworkPacket Packet = {0};
 	Packet.type = PACKET_CONSOLE_COMMAND;
 	Packet.tickSent = TickNumber();
 
 	memcpy(&Packet.data.command, input, sizeof(ConsoleVariable));
-
-	LemonStrncpy(Packet.data.command.helpString, consoleInput + argStartIndex, CONSOLE_HELP_MAX_LEN);
+	LemonStrncpy(Packet.data.command.helpString, consoleInput + DebugSettings.argIndex, CONSOLE_HELP_MAX_LEN);
 
 	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
