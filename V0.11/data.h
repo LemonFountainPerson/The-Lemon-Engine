@@ -1571,6 +1571,8 @@ typedef struct NetworkData
 	NET_Address *blockedIPs[MAX_BLOCKED_CLIENTS];
 	int blockedIndex;
 	char serverPassword[MAX_LEN];
+	Uint64 privateKey;
+	Uint64 publicKey;
 	
 	// data if app is client
 	NET_StreamSocket *myClient;

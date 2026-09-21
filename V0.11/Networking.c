@@ -35,6 +35,9 @@ void initialiseNetworkData(void)
 	Networking.blockedIndex = 0;
 
 	memset(Networking.serverPassword, 0, MAX_LEN);
+	// example
+	Networking.privateKey = 3591059113;
+	Networking.publicKey = 92514975149715;
 
 	Networking.myClient = NULL;
 
@@ -754,11 +757,48 @@ void handlePendingClient(int clientID, World *GameWorld)
 	return;
 }
 
+// incredibly basic encryption... DO NOT USE
+void encrypt(char *input, int bytes)
+{
+	Uint64 privateKey = Networking.privateKey;
+	Uint64 publicKey = Networking.publicKey;
+
+	for (int i = 0; i < bytes; i++)
+	{
+		input[i] += privateKey;
+		privateKey += privateKey * publicKey;
+		publicKey++;
+	}
+
+	return;
+}
+
+void decrypt(char *input, int bytes)
+{
+	Uint64 privateKey = Networking.privateKey;
+	Uint64 publicKey = Networking.publicKey;
+
+	for (int i = 0; i < bytes; i++)
+	{
+		input[i] -= privateKey;
+		privateKey += privateKey * publicKey;
+		publicKey++;
+	}
+
+	return;
+}
+
 void processClientEntrancePacket(NetworkPacket *packet, int clientID, World *GameWorld)
 {
 	NET_StreamSocket *socket = Networking.connectedClients[clientID];
 
-	if (Networking.serverPassword[0] != '\0' && strcmp(Networking.serverPassword, packet->data.clientInfo.password))
+	char receivedPass[MAX_LEN];
+	memcpy(receivedPass, packet->data.clientInfo.password, MAX_LEN);
+	// putConsole("received: %d %d %d %d %d %d", receivedPass[0], receivedPass[1], receivedPass[2], receivedPass[3], receivedPass[4], receivedPass[5]);
+	decrypt(receivedPass, MAX_LEN);
+	// putConsole("Deciphered: %d %d %d %d %d %d", receivedPass[0], receivedPass[1], receivedPass[2], receivedPass[3], receivedPass[4], receivedPass[5]);
+
+	if (Networking.serverPassword[0] != '\0' && strcmp(Networking.serverPassword, receivedPass))
 	{
 		removeDisconnectedClient(clientID, "Incorrect password");
 	}
@@ -866,8 +906,6 @@ void sendAllTrackedObjects(NET_StreamSocket *socket)
 			copyObjectToPacketData(object, &packet);
 		}
 
-		putConsole("Sending %d", index);
-
 		packet.data.objectData.trackedID = index;
 		packet.data.objectData.ownerClientID = TrackedObjects[index].clientID;
 		NET_WriteToStreamSocket(socket, &packet, sizeof(NetworkPacket));
@@ -902,15 +940,6 @@ void sendAllServerConVars(NET_StreamSocket *socket)
 	}
 	
 	return;
-}
-
-Uint64 getRandom64Bits()
-{
-	static Uint64 seed = 8291474;
-
-	seed = (((seed + 841837) % 1343116) << 7) + (seed / 17);
-
-	return seed;
 }
 
 bool receiveClientData(int index, World *GameWorld)
@@ -1288,6 +1317,8 @@ bool processSetupPacket(NetworkPacket *packet, World *GameWorld)
 	clientEntrance.tickSent = TickNumber();
 	strcpy(clientEntrance.data.clientInfo.clientUsername, getClientUsername(Networking.clientID));
 	LemonStrncpy(clientEntrance.data.clientInfo.password, Networking.serverPassword, MAX_LEN);
+
+	encrypt(clientEntrance.data.clientInfo.password, MAX_LEN);
 
 	NET_WriteToStreamSocket(Networking.myClient, &clientEntrance, sizeof(NetworkPacket));
 	outgoing += sizeof(NetworkPacket);

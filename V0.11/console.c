@@ -971,21 +971,6 @@ int ConsoleCommand_SetServerPassword(char input[USER_INPUT_MAX_LEN], World *Game
 	getNextConsoleArg(input, arg);
 	setServerPassword(arg);
 
-	// test
-	Uint64 val = getRandom64Bits();
-
-	Uint64 i = 0;
-	while (i < 100000000)
-	{
-		Uint64 new = getRandom64Bits();
-		if (val == new)
-		{
-			putConsole("Took %d loops, got %llu", i, new);
-			return LEMON_SUCCESS;
-		}
-		i++;
-	}
-
 	return LEMON_SUCCESS;
 }
 

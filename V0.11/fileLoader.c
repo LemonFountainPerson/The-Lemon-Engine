@@ -546,10 +546,7 @@ int saveGameState(World *GameWorld)
 	{
 		fwrite(&GameWorld->Player.PlayerPtr->index, 4, 1, file);
 	}
-
-	// write object controller data
-	fwrite(&GameWorld->ObjectList, sizeof(ObjectController), 1, file);
-
+	
 	// write object controller indices to replace pointers
 	Object *list = GameWorld->ObjectList.objectComponents.Objects;
 	int i = 0;
