@@ -705,8 +705,8 @@ typedef enum GameEventID
 	EVENT_CONSOLE_COMMAND,
 	EVENT_SET_TICKRATE,
 	EVENT_SET_BRIGHTNESS,
-	EVENT_CHANGE_SCREEN_SIZE,
-	EVENT_CHANGE_SCREEN_SIZE_SCALE,
+	EVENT_SET_SCREEN_SIZE,
+	EVENT_SET_SCREEN_SIZE_SCALE,
 	EVENT_ENABLE_FULLSCREEN,
 	EVENT_DISABLE_FULLSCREEN,
 	EVENT_ENABLE_FULLSCREEN_SCALE,
@@ -995,6 +995,20 @@ typedef union TextTypeData
 } TextTypeData;
 
 
+typedef struct Font
+{
+	TTF_Font *font;
+	char name[FONT_FILE_NAME_MAX];
+	int textCount;
+	bool deleteWhenUnused;
+} Font;
+
+typedef struct FontList
+{
+	Font fonts[MAX_LOADED_FONTS];
+	int count;
+} FontList;
+
 typedef struct Text
 {
 	float xPos;
@@ -1003,6 +1017,7 @@ typedef struct Text
 	bool CameraRelative;
 
 	TTF_Text *text;
+	Font *usedFont;
 
 	Object *attachedObj;
 	int recordedInstance;
@@ -1016,12 +1031,6 @@ typedef struct TextList
 	int count;
 } TextList;
 
-typedef struct FontList
-{
-	int head;
-	char names[MAX_LOADED_FONTS][FONT_FILE_NAME_MAX];
-	TTF_Font *fonts[MAX_LOADED_FONTS];
-} FontList;
 
 typedef struct TextBox 
 {
@@ -1675,7 +1684,7 @@ typedef struct TextConfig
 
 	SDL_Color DebugTextColour;
 	float DebugTextPointSize;
-	TTF_Font *DebugFont;
+	Font DebugFont;
 	TextList DebugTextList;
 
 	bool Typing;

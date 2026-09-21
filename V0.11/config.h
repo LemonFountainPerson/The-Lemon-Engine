@@ -1,6 +1,18 @@
 #ifndef CONFIG_DEFINED
 #define CONFIG_DEFINED
 
+//									Root Folder locations
+//-------------------------------------------------------------------------------------------------
+
+#define SOUND_ROOT 		"LemonData/Sounds/"
+#define SPRITE_ROOT 	"LemonData/Sprites/"
+#define ANIMATION_ROOT 	"LemonData/AnimationData/"
+#define LEVELDATA_ROOT 	"LemonData/LevelData/"
+#define CUTSCENE_ROOT	"LemonData/CutsceneData/"
+#define SAVEDATA_ROOT	"LemonData/SaveData/"
+#define FONT_ROOT		"LemonData/Fonts/"
+
+//-------------------------------------------------------------------------------------------------
 
 //								Default Engine Settings (Can be modified during runtime via variables)
 //-------------------------------------------------------------------------------------------------
@@ -12,7 +24,7 @@
 
 #define DEFAULT_TEXTURE "Missing.png"
 #define DEFAULT_FONT "PTSansBold"
-#define DEBUG_FONT "PTSansBold.ttf"
+#define DEBUG_FONT "LemonData/Fonts/PTSansBold.ttf"
 #define DEFAULT_TEXT_SIZE 44.0
 
 #define MAX_OBJECTS_RENDER 256
@@ -90,7 +102,7 @@
 #define MAX_TEXT_OPTIONS 4
 #define OPTION_TEXT_MAX_LEN 50
 
-#define MAX_TEXTS 256 		
+#define MAX_TEXTS MAX_TEXT_LENGTH + 50 		
 #define MAX_LOADED_FONTS 16
 #define TEXT_NAME_MAX_LEN 40
 
@@ -156,20 +168,6 @@
 // Tiles Probably wont be re-implemented, but constants are useful for stylisation
 #define Y_TILESCALE 32
 #define X_TILESCALE 32
-
-//-------------------------------------------------------------------------------------------------
-
-
-//									Root Folder locations
-//-------------------------------------------------------------------------------------------------
-
-#define SOUND_ROOT 		"LemonData/Sounds/"
-#define SPRITE_ROOT 	"LemonData/Sprites/"
-#define ANIMATION_ROOT 	"LemonData/AnimationData/"
-#define LEVELDATA_ROOT 	"LemonData/LevelData/"
-#define CUTSCENE_ROOT	"LemonData/CutsceneData/"
-#define SAVEDATA_ROOT	"LemonData/SaveData/"
-#define FONT_ROOT		"LemonData/Fonts/"
 
 //-------------------------------------------------------------------------------------------------
 

@@ -189,10 +189,11 @@ int StartUpLemonEngine(void)
 	GamePadInput.ID = 0;
     ClearInput();
 	 
-    char debugFontPath[MAX_LEN * 2] = {0};
-    strcpy(debugFontPath, FONT_ROOT);
-    strcat(debugFontPath, DEBUG_FONT);
-    TextSettings.DebugFont = TTF_OpenFont(debugFontPath, TextSettings.DebugTextPointSize);
+    char debugFontPath[MAX_LEN] = DEBUG_FONT;
+    TextSettings.DebugFont.font = TTF_OpenFont(debugFontPath, TextSettings.DebugTextPointSize);
+    TextSettings.DebugFont.textCount = 0;
+    TextSettings.DebugFont.name[0] = '\0';
+    TextSettings.DebugFont.deleteWhenUnused = false;
     initialiseTextList(&TextSettings.DebugTextList);
 
     initialiseChatLog(&Chat);
@@ -2529,13 +2530,13 @@ void removeChar(char string[], char remove, int capacity)
 		return;
 	}
 
-	int i = 0;
+	int search = 0;
 
-	while (i < capacity - 1)
+	while (search < capacity - 1 && string[search] != '\0')
 	{
-		if (string[i] == remove)
+		if (string[search] == remove)
 		{
-			int index = i;
+			int index = search;
 
 			while (index < capacity - 1 && string[index] != '\0')
 			{
@@ -2545,7 +2546,7 @@ void removeChar(char string[], char remove, int capacity)
 		}
 		else
 		{
-			i++;
+			search++;
 		}
 	}
 

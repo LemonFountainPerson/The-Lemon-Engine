@@ -85,13 +85,13 @@ void removeAttachedTexts(Object *input, World *GameWorld);
 
 void initialiseFontList(FontList *input);
 
-void closeFont(TTF_Font *font, World *GameWorld);
+void closeFont(Font *input);
 
-TTF_Font* loadFont(const char *desiredFont, const char *newName, World *GameWorld);
+Font* loadFont(const char *desiredFont, const char *newName, World *GameWorld);
 
-TTF_Font* loadFontWithSize(const char *desiredFont, const char *newName, float pointSize, World *GameWorld);
+Font* loadFontWithSize(const char *desiredFont, const char *newName, float pointSize, World *GameWorld);
 
-TTF_Font* getFont(const char *name, World *GameWorld);
+Font* getFont(const char *name, World *GameWorld);
 
 void setFontSize(const char *name, int size, World *GameWorld);
 

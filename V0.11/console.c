@@ -1426,60 +1426,44 @@ int ConsoleCommand_Event(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 	GameEventID eventID = getEventID(arg);
 
-	switch(eventID)
+	if (eventID == NO_EVENT)
 	{
-	case EVENT_SWITCH_LEVEL:
-		{
-			int level = getNextConsoleInt(input);
-			switchLevel(level, GameWorld);
-		} break;
+		return INVALID_DATA;
+	}
 
-	case EVENT_PLAY_CUTSCENE:
-		{
-			int scene = getNextConsoleInt(input);
-			playCutscene(scene, GameWorld);
-		} break;
+	GameEvent *newEvent = addNewGameEvent(eventID, GameWorld);
 
-	case EVENT_PLAY_CUTSCENE_FROM_FILE:
+	if (newEvent == NULL)
+	{
+		return LEMON_ERROR;
+	}
+
+	char name[USER_INPUT_MAX_LEN] = {0};
+
+	removeChar(input, '=', USER_INPUT_MAX_LEN);
+
+	while (hasNextConsoleArg(input))
+	{
+		getNextConsoleArg(input, arg);
+		stringToLower(arg);
+
+		getNextConsoleArg(input, name);
+
+		if (strcmp(arg, "int") == 0 || strcmp(arg, "tick") == 0)
+		{
+			int val = getNextConsoleInt(input);
+			putConsole("adding %d", val);
+			addGameEventInt(newEvent, name, val);
+		}
+		else if (strcmp(arg, "float") == 0)
+		{
+			addGameEventFloat(newEvent, name, getNextConsoleFloat(input));
+		}
+		else
 		{
 			getNextConsoleArg(input, arg);
-			playCutsceneFromFile(arg, GameWorld);
-		} break;
-
-	case EVENT_ENABLE_FULLSCREEN:
-		enableFullscreen(GameWorld);
-		break;
-
-	case EVENT_ENABLE_FULLSCREEN_SCALE:
-		enableFullscreenScaled(GameWorld);
-		break;
-
-	case EVENT_DISABLE_FULLSCREEN:
-		disableFullscreen(GameWorld);
-		break;
-
-	case EVENT_CHANGE_SCREEN_SIZE:
-		{
-			int width = getNextConsoleInt(input);
-			int height = getNextConsoleInt(input);
-			changeScreenSize(width, height, GameWorld);
-		} break;
-
-	case EVENT_CHANGE_SCREEN_SIZE_SCALE:
-		{
-			int width = getNextConsoleInt(input);
-			int height = getNextConsoleInt(input);
-			changeScreenSizeScaled(width, height, GameWorld);
-		} break;
-
-	case EVENT_LOAD_LEVEL_PARTITION:
-	{
-		int partID = getNextConsoleInt(input);
-		streamPartition(partID, GameWorld);
-	} break;
-
-	default:
-		return INVALID_DATA;
+			addGameEventString(newEvent, name, arg);
+		}
 	}
 
 	return LEMON_SUCCESS;
@@ -1509,13 +1493,13 @@ int ConsoleCommand_List(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	else if (strcmp(arg, "fonts") == 0)
 	{
-		FontList *list = &GameWorld->FontList;
+		Font *list = GameWorld->FontList.fonts;
 
 		for (int i = 0; i < MAX_LOADED_FONTS; i++)
 		{
-			if (list->fonts[i] != NULL)
+			if (list[i].font != NULL)
 			{
-				putConsole("Slot %d '%s'  ", i, list->names[i]);
+				putConsole("Slot %d '%s'  ", i, list[i].name);
 			}
 			else
 			{

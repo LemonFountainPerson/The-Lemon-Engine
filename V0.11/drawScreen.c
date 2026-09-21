@@ -1340,12 +1340,15 @@ Text* addDebugText(const char inputPhrase[], float x, float y, int wrapwidth, De
 	
 	if (TextsArray[index].text == NULL)
     {
-    	if (TextSettings.DebugFont == NULL)
+    	TTF_Font *DebugFont = TextSettings.DebugFont.font;
+    	if (DebugFont == NULL)
     	{
     		return NULL;
     	}
 
-    	TextsArray[index].text = TTF_CreateText(ScreenData.textEngine, TextSettings.DebugFont, inputPhrase, wrapwidth);
+    	TextsArray[index].usedFont = &TextSettings.DebugFont;
+    	TextsArray[index].text = TTF_CreateText(ScreenData.textEngine, DebugFont, inputPhrase, wrapwidth);
+    	TextSettings.DebugFont.textCount++;
     }
     else
     {
@@ -1435,10 +1438,7 @@ int removeDebugTextWithName(const char name[])
 		return MISSING_DATA;
 	}
 
-	TTF_DestroyText(input->text);
-	input->text = NULL;
-	input->attachedObj = NULL;
-	TextSettings.DebugTextList.count--;
+	RemoveTextFromList(input, &TextSettings.DebugTextList);
 
 	return LEMON_SUCCESS;
 }

@@ -150,11 +150,11 @@ void setCursorPos(void)
 
 	if (typingText == NULL)
 	{
-		font = TextSettings.DebugFont;
+		font = TextSettings.DebugFont.font;
 	}
 	else
 	{
-		font = TTF_GetTextFont(typingText->text);
+		font = typingText->usedFont->font;
 
 		TTF_GetTextWrapWidth(typingText->text, &wrapWidth);
 	}
@@ -1099,13 +1099,11 @@ Text* addTextWithName(const char textPhrase[], const char name[], float xPos, fl
 		return NULL;
 	}
 
+	// If this name has already been used, do not allow it to be used again
 	Text* text = getTextWithName(name, GameWorld);
-	if (text != NULL)
+	if (text != NULL)	
 	{
-		TTF_SetTextString(text->text, textPhrase, 0);
-		text->xPos = xPos;
-		text->yPos = yPos;
-		return text;
+		return NULL;
 	}
 
 	text = addTextWithFont(textPhrase, xPos, yPos, NULL, GameWorld);
@@ -1117,7 +1115,7 @@ Text* addTextWithName(const char textPhrase[], const char name[], float xPos, fl
 
 Text* getTextWithName(const char name[], World *GameWorld)
 {
-	if (GameWorld == NULL)
+	if (GameWorld == NULL || name[0] == '\0')
 	{
 		return NULL;
 	}
@@ -1126,7 +1124,7 @@ Text* getTextWithName(const char name[], World *GameWorld)
 
 	for (int i = 0; i < MAX_TEXTS; i++)
 	{
-		if (list[i].text != NULL && strcmp(name, list[i].name) == 0)
+		if (list[i].text != NULL && list[i].name[0] != '\0' && strcmp(name, list[i].name) == 0)
 		{
 			return &list[i];
 		}
@@ -1147,13 +1145,15 @@ Text* addTextWithFont(const char textPhrase[], float xPos, float yPos, const cha
 	Text *newText = NULL;
 
 	//  find an available slot
-	for (int index = 0; index < MAX_TEXTS && newText == NULL; index++)
+	int index = 0;
+	while (index < MAX_TEXTS && newText == NULL)
 	{
 		if (TextArray[index].text == NULL)
 		{
 			newText = &TextArray[index];
-			break;
 		}
+
+		index++;
 	}
 
 	if (newText == NULL)
@@ -1163,11 +1163,15 @@ Text* addTextWithFont(const char textPhrase[], float xPos, float yPos, const cha
 	
 
 	// get or create new font
-	TTF_Font *renderFont;
+	Font *renderFont;
 
-	if (desiredFont == NULL || strlen(desiredFont) < 1)
+	if (desiredFont == NULL || desiredFont[0] == '\0')
 	{
 		renderFont = loadFont(TextSettings.defaultFont, "DefaultFont", GameWorld);
+		if (renderFont != NULL)
+		{
+			renderFont->deleteWhenUnused = false;
+		}
 	}
 	else
 	{
@@ -1179,20 +1183,13 @@ Text* addTextWithFont(const char textPhrase[], float xPos, float yPos, const cha
 		return NULL;
 	}
 
-	newText->xPos = xPos;
-    newText->yPos = yPos;
-
-    newText->CameraRelative = false;
-    newText->attachedObj = NULL;
-    memset(newText->name, 0, MAX_LEN);
-
     if (newText->text == NULL)
     {
-    	newText->text = TTF_CreateText(ScreenData.textEngine, renderFont, textPhrase, 0);
+    	newText->text = TTF_CreateText(ScreenData.textEngine, renderFont->font, textPhrase, 0);
     }
 	else // text object already present, no need to delete, just reset font and text
 	{
-    	TTF_SetTextFont(newText->text, renderFont);
+    	TTF_SetTextFont(newText->text, renderFont->font);
     	TTF_SetTextString(newText->text, textPhrase, 0);
     	TTF_SetTextColor(newText->text, 255, 255, 255, 255);	// default colour is white
     	TTF_SetTextWrapWidth(newText->text, 0);
@@ -1202,6 +1199,14 @@ Text* addTextWithFont(const char textPhrase[], float xPos, float yPos, const cha
     {
     	return NULL;
     }
+
+    newText->xPos = xPos;
+    newText->yPos = yPos;
+
+    newText->CameraRelative = false;
+    newText->attachedObj = NULL;
+    newText->usedFont = renderFont;
+    memset(newText->name, 0, MAX_LEN);
 
     GameWorld->TextList.count++;
 
@@ -1455,17 +1460,7 @@ void printTextListinfo(TextList *list, const char name[])
 
 int RemoveText(Text *input, World *GameWorld)
 {
-	if (input->text == NULL)
-	{
-		return EXECUTION_UNNECESSARY;
-	}
-
-	TTF_DestroyText(input->text);
-	input->text = NULL;
-	input->attachedObj = NULL;
-	GameWorld->TextList.count--;
-
-	return LEMON_SUCCESS;
+	return RemoveTextFromList(input, &GameWorld->TextList);
 }
 
 int RemoveTextFromList(Text *input, TextList *list)
@@ -1473,6 +1468,18 @@ int RemoveTextFromList(Text *input, TextList *list)
 	if (input->text == NULL)
 	{
 		return EXECUTION_UNNECESSARY;
+	}
+
+	if (input->usedFont != NULL)
+	{
+		Font *usedFont = input->usedFont;
+		usedFont->textCount--;
+		if (usedFont->textCount <= 0 && usedFont->deleteWhenUnused)
+		{
+			closeFont(usedFont);
+		}
+
+		input->usedFont = NULL;
 	}
 
 	TTF_DestroyText(input->text);
@@ -1516,10 +1523,7 @@ void RemoveObjectDebugTexts(void)
 	{
 		if (list->texts[i].text != NULL && list->texts[i].name[0] == '\0')
 		{
-			TTF_DestroyText(texts[i].text);
-			texts[i].text = NULL;
-			texts[i].attachedObj = NULL;
-			list->count--;
+			RemoveTextFromList(&texts[i], list);
 		}
 
 		i++;
@@ -1557,59 +1561,61 @@ void removeAttachedTexts(Object *input, World *GameWorld)
 
 void initialiseFontList(FontList *input)
 {
-	input->head = 0;
-	memset(input->names, 0, MAX_LOADED_FONTS * FONT_FILE_NAME_MAX);
+	input->count = 0;
+	Font *list = input->fonts;
+
 	for (int i = 0; i < MAX_LOADED_FONTS; i++)
 	{
-		input->fonts[i] = NULL;
+		list[i].font = NULL;
+		memset(list[i].name, 0, FONT_FILE_NAME_MAX);
 	}
 
 	return;
 }
 
-void closeFont(TTF_Font *font, World *GameWorld)
+void closeFont(Font *input)
 {
-	if (GameWorld == NULL)	// it's assumed here that no provided text list means there are no texts that use this font
+	if (input == NULL || input->textCount > 0)
 	{
-		TTF_CloseFont(font);
 		return;
 	}
 
-	TextList *list = &GameWorld->TextList;
-	Text *array = GameWorld->TextList.texts;
-
-	for (int i = 0; i < MAX_TEXTS; i++)
-	{
-		if (array[i].text != NULL && TTF_GetTextFont(array[i].text) == font)
-		{
-			TTF_DestroyText(array[i].text);
-			array[i].text = NULL;
-			array[i].attachedObj = NULL;
-			list->count--;
-		}
-	}
-
-	TTF_CloseFont(font);
+	TTF_CloseFont(input->font);
+	input->font = NULL;
+	input->name[0] = '\0';
 
 	return;
 }
 
-TTF_Font* loadFont(const char *desiredFont, const char *newName, World *GameWorld)
+Font* loadFont(const char *desiredFont, const char *newName, World *GameWorld)
 {	
 	if (GameWorld == NULL)
 	{
 		return NULL;
 	}
 
-	TTF_Font *newFont = getFont(newName, GameWorld);
+	Font *newFont = getFont(newName, GameWorld);
 	if (newFont != NULL)
 	{
 		return newFont;
 	}
 
-	FontList *list = &GameWorld->FontList;
+	Font *list = GameWorld->FontList.fonts;
 
-	int head = list->head % MAX_LOADED_FONTS;
+	int index = 0;
+	while (index < MAX_LOADED_FONTS && newFont == NULL)
+	{
+		if (list[index].font == NULL)
+		{
+			newFont = &list[index];
+		}
+		index++;
+	}
+
+	if (newFont == NULL)
+	{
+		return NULL;
+	}
 	
 	char fontName[MAX_LEN] = FONT_ROOT;
 	strcat(fontName, desiredFont);
@@ -1619,54 +1625,49 @@ TTF_Font* loadFont(const char *desiredFont, const char *newName, World *GameWorl
 		strcat(fontName, ".ttf");
 	}
 	
-	newFont = TTF_OpenFont(fontName, TextSettings.defaultTextPointSize);
+	newFont->font = TTF_OpenFont(fontName, TextSettings.defaultTextPointSize);
 
-	if (newFont == NULL)
+	if (newFont->font == NULL)
 	{ 
     	putConsole("\nFailed to load font! (%s)\n", SDL_GetError());
     	return NULL;
 	}
 
-	if (list->fonts[head] != NULL)
-	{
-		closeFont(list->fonts[head], GameWorld);
-		list->fonts[head] = NULL;
-	}
+	strcpy(newFont->name, newName);
+	newFont->textCount = 0;
+	newFont->deleteWhenUnused = true;
 
-	strcpy(list->names[head], newName);
-	list->fonts[head] = newFont;
-
-	list->head = (head + 1) % MAX_LOADED_FONTS;
+	GameWorld->FontList.count++;
 
 	return newFont;
 }
 
-TTF_Font* loadFontWithSize(const char *desiredFont, const char *newName, float pointSize, World *GameWorld)
+Font* loadFontWithSize(const char *desiredFont, const char *newName, float pointSize, World *GameWorld)
 {
-	TTF_Font *font = loadFont(desiredFont, newName, GameWorld);
+	Font *loaded = loadFont(desiredFont, newName, GameWorld);
 
-	if (font != NULL)
+	if (loaded != NULL)
 	{
-		TTF_SetFontSize(font, pointSize);
+		TTF_SetFontSize(loaded->font, pointSize);
 	}
 
-	return font;
+	return loaded;
 }
 
-TTF_Font* getFont(const char *name, World *GameWorld)
+Font* getFont(const char *name, World *GameWorld)
 {
-	if (GameWorld == NULL || strcmp(name, "DebugFont") == 0)
+	if (GameWorld == NULL || strcmp(name, "DebugFont") == 0 || name[0] == '\0')
 	{
-		return TextSettings.DebugFont;
+		return &TextSettings.DebugFont;
 	}
 
-	FontList *list = &GameWorld->FontList;
+	Font *list = GameWorld->FontList.fonts;
 
 	for (int i = 0; i < MAX_LOADED_FONTS; i++)
 	{
-		if (strcmp(list->names[i], name) == 0 && list->fonts[i] != NULL)
+		if (strcmp(list[i].name, name) == 0 && list[i].font != NULL)
 		{
-			return list->fonts[i];
+			return &list[i];
 		}
 	}
 
@@ -1675,14 +1676,14 @@ TTF_Font* getFont(const char *name, World *GameWorld)
 
 void setFontSize(const char *name, int size, World *GameWorld)
 {
-	TTF_Font *font = getFont(name, GameWorld);
+	Font *font = getFont(name, GameWorld);
 	
 	if (font == NULL)
 	{
 		return;
 	}
 
-	TTF_SetFontSize(font, size);
+	TTF_SetFontSize(font->font, size);
 
 	return;
 }
@@ -1701,8 +1702,7 @@ void cleanUpTexts(TextList *list)
 	{
 		if (array[i].text != NULL)
 		{
-			TTF_DestroyText(array[i].text);
-			array[i].text = NULL;
+			RemoveTextFromList(&array[i], list);
 		}
 	}
 
@@ -1718,18 +1718,20 @@ void cleanUpFonts(FontList *input)
 		return;
 	}
 
+	Font *list = input->fonts;
+
 	for (int i = 0; i < MAX_LOADED_FONTS; i++)
 	{
-		if (input->fonts[i] != NULL)
+		if (list[i].font != NULL)
 		{
-			TTF_CloseFont(input->fonts[i]);
-			input->fonts[i] = NULL;
+			TTF_CloseFont(list[i].font);
+			list[i].font = NULL;
 		}
 
-		input->names[i][0] = '\0';
+		list[i].name[0] = '\0';
 	}
 
-	input->head = 0;
+	input->count = 0;
 
 	return;
 }
@@ -1738,10 +1740,10 @@ void cleanUpTextData(RenderFrame *ScreenData)
 {
 	cleanUpTexts(&TextSettings.DebugTextList);
 
-	if (TextSettings.DebugFont != NULL)
+	if (TextSettings.DebugFont.font != NULL)
 	{
-		TTF_CloseFont(TextSettings.DebugFont);
-		TextSettings.DebugFont = NULL;
+		TTF_CloseFont(TextSettings.DebugFont.font);
+		TextSettings.DebugFont.font = NULL;
 	}
 
 	if (ScreenData->textEngine != NULL)

@@ -78,15 +78,15 @@ void adjustHUD(int prevScreenWidth, int prevScreenHeight, RenderFrame *ScreenDat
 
 
 	
-	TTF_Font **fontList = GameWorld->FontList.fonts;
+	Font *fontList = GameWorld->FontList.fonts;
 	float oldSize = 0;
 
 	for (int i = 0; i < MAX_LOADED_FONTS; i++)
 	{
-		if (fontList[i] != NULL)
+		if (fontList[i].font != NULL)
 		{
-			oldSize = TTF_GetFontSize(fontList[i]);
-			TTF_SetFontSize(fontList[i], oldSize * differenceValueY);
+			oldSize = TTF_GetFontSize(fontList[i].font);
+			TTF_SetFontSize(fontList[i].font, oldSize * differenceValueY);
 		}
 	}
 

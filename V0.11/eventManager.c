@@ -15,7 +15,7 @@ int StartGame(World *GameWorld)
 	char counter[30];
 	snprintf(counter, 30, "CoinCount: %d", GameWorld->Player.coinCount);
 
-	addTextWithName(counter, "CoinCounter", -360.0, 260.0, GameWorld);
+	attachTextToObject(addTextWithName(counter, "CoinCounter", -360.0, 260.0, GameWorld), GameWorld->Player.PlayerPtr);
 
 
 	return LEMON_SUCCESS;
@@ -177,17 +177,17 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 				SDL_SetRenderColorScale(ScreenData->Renderer, getGameEventFloat(inputEvent, NULL));
 			} break;
 
-		case EVENT_CHANGE_SCREEN_SIZE:
+		case EVENT_SET_SCREEN_SIZE:
 			{	
-				int width = getGameEventInt(inputEvent, "newWidth");
-				int height = getGameEventInt(inputEvent, "newHeight");
+				int width = getGameEventInt(inputEvent, "width");
+				int height = getGameEventInt(inputEvent, "height");
 				applyScreenSize(width, height, ScreenData, GameWorld);
 			} break;
 
-		case EVENT_CHANGE_SCREEN_SIZE_SCALE:
+		case EVENT_SET_SCREEN_SIZE_SCALE:
 			{
-				int width = getGameEventInt(inputEvent, "newWidth");
-				int height = getGameEventInt(inputEvent, "newHeight");
+				int width = getGameEventInt(inputEvent, "width");
+				int height = getGameEventInt(inputEvent, "height");
 				applyScreenSizeScale(width, height, &GameWorld->MainCamera, ScreenData);
 			} break;
 
@@ -525,14 +525,14 @@ GameEvent* changeScreenSizeScaled(int newWidth, int newHeight, World *GameWorld)
 		return NULL;
 	}
 
-	GameEvent *newEvent = addNewGameEvent(EVENT_CHANGE_SCREEN_SIZE_SCALE, GameWorld);
+	GameEvent *newEvent = addNewGameEvent(EVENT_SET_SCREEN_SIZE_SCALE, GameWorld);
 	if (newEvent == NULL)
 	{
 		return NULL;
 	}
 
-	addGameEventInt(newEvent, "newWidth", newWidth);
-	addGameEventInt(newEvent, "newHeight", newHeight);
+	addGameEventInt(newEvent, "width", newWidth);
+	addGameEventInt(newEvent, "height", newHeight);
 
 	return newEvent;
 }
@@ -544,14 +544,14 @@ GameEvent* changeScreenSize(int newWidth, int newHeight, World *GameWorld)
 		return NULL;
 	}
 
-	GameEvent *newEvent = addNewGameEvent(EVENT_CHANGE_SCREEN_SIZE, GameWorld);
+	GameEvent *newEvent = addNewGameEvent(EVENT_SET_SCREEN_SIZE, GameWorld);
 	if (newEvent == NULL)
 	{
 		return NULL;
 	}
 
-	addGameEventInt(newEvent, "newWidth", newWidth);
-	addGameEventInt(newEvent, "newHeight", newHeight);
+	addGameEventInt(newEvent, "width", newWidth);
+	addGameEventInt(newEvent, "height", newHeight);
 
 	return newEvent;
 }
@@ -788,8 +788,8 @@ const static char EventNames[EVENT_COUNT][EVENT_NAME_MAX_LEN] = {
  	[EVENT_ENABLE_FULLSCREEN] = "Enable fullscreen",
  	[EVENT_DISABLE_FULLSCREEN] = "Disable fullscreen",
  	[EVENT_ENABLE_FULLSCREEN_SCALE] = "Enable fullscreen scaled",
- 	[EVENT_CHANGE_SCREEN_SIZE] = "Change screen size",
- 	[EVENT_CHANGE_SCREEN_SIZE_SCALE] = "Change screen size scaled"
+ 	[EVENT_SET_SCREEN_SIZE] = "Set screen size",
+ 	[EVENT_SET_SCREEN_SIZE_SCALE] = "Set screen size scaled"
 };
 
 const char* getEventName(GameEventID input)
