@@ -1171,6 +1171,7 @@ Text* addTextWithFont(const char textPhrase[], float xPos, float yPos, const cha
 		if (renderFont != NULL)
 		{
 			renderFont->deleteWhenUnused = false;
+			putConsole("Marked as priority");
 		}
 	}
 	else
@@ -1208,6 +1209,7 @@ Text* addTextWithFont(const char textPhrase[], float xPos, float yPos, const cha
     newText->usedFont = renderFont;
     memset(newText->name, 0, MAX_LEN);
 
+    renderFont->textCount++;
     GameWorld->TextList.count++;
 
     return newText;
@@ -1432,15 +1434,6 @@ void printTextListinfo(TextList *list, const char name[])
 			strcat(buffer, " (Data empty)   ");
 		}
 
-		if (array[i].CameraRelative)
-		{
-			strcat(buffer, "(Camera relative)   ");
-		}
-		else
-		{
-			strcat(buffer, "(Screen relative)   ");
-		}
-
 		if (array[i].attachedObj != NULL)
 		{
 			strcat(buffer, "(Connected to object '");
@@ -1452,7 +1445,7 @@ void printTextListinfo(TextList *list, const char name[])
 			strcat(buffer, "(independent)");
 		}
 
-		putConsole("Index: %d  %s", i, buffer);
+		putConsole("Index: %d  x: %.2f y: %.2f  %s", i, array[i].xPos, array[i].yPos, buffer);
 	}
 
 	return;
@@ -1492,7 +1485,7 @@ int RemoveTextFromList(Text *input, TextList *list)
 
 int RemoveTextWithName(const char name[], World *GameWorld)
 {
-	return RemoveText(getTextWithName(name, GameWorld), GameWorld);
+	return RemoveTextFromList(getTextWithName(name, GameWorld), &GameWorld->TextList);
 }
 
 

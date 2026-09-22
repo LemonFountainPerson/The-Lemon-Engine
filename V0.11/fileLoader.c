@@ -546,7 +546,7 @@ int saveGameState(World *GameWorld)
 	{
 		fwrite(&GameWorld->Player.PlayerPtr->index, 4, 1, file);
 	}
-	
+
 	// write object controller indices to replace pointers
 	Object *list = GameWorld->ObjectList.objectComponents.Objects;
 	int i = 0;
@@ -1542,7 +1542,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	
 		setSize(AddObject(GameWorld, LEVEL_FLAG_OBJ, args[0], args[1], LEVEL_TRIGGER_SEAMLESS, args[4], 0, 0, 0), args[2], args[3]);
 	}
-	else if (strcmp(buffer, "triggergameevent") == 0)
+	else if (strcmp(buffer, "gameeventtrigger") == 0)
 	{
 		int args[4] = {0};
 
@@ -1566,6 +1566,14 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		}
 
 		getNextArgGameEvent(fPtr, objectEvent, GameWorld);
+	}
+	else if (strcmp(buffer, "gameevent") == 0)
+	{
+		GameEvent Event = {0};
+
+		getNextArgGameEvent(fPtr, &Event, GameWorld);
+
+		triggerGameEvent(&Event, GameWorld);
 	}
 	else if (strcmp(buffer, "deleteobjecttrigger") == 0)
 	{

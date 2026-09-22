@@ -12,10 +12,10 @@ int StartGame(World *GameWorld)
 	// Logic for handle flow of menus and levels, etc can go here for game start
 	loadLevel(GameWorld, 1);
 
-	char counter[30];
-	snprintf(counter, 30, "CoinCount: %d", GameWorld->Player.coinCount);
+	// char counter[30];
+	// snprintf(counter, 30, "CoinCount: %d", GameWorld->Player.coinCount);
 
-	attachTextToObject(addTextWithName(counter, "CoinCounter", -360.0, 260.0, GameWorld), GameWorld->Player.PlayerPtr);
+	// attachTextToObject(addTextWithName(counter, "CoinCounter", -360.0, 260.0, GameWorld), GameWorld->Player.PlayerPtr);
 
 
 	return LEMON_SUCCESS;
@@ -349,7 +349,9 @@ int triggerGameEvent(GameEvent *inputEvent, World *GameWorld)
 		return LEMON_ERROR;
 	}
 	
+	int clientID = eventPtr->clientID;
 	memcpy(eventPtr, inputEvent, sizeof(GameEvent));
+	eventPtr->clientID = clientID;
 	
 	return LEMON_SUCCESS;
 }

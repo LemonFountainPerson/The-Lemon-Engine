@@ -1488,7 +1488,7 @@ void RenderTextList(TextList *list, Camera inputCamera, SDL_Renderer *Screen)
 	{
 		if (array[i].text == NULL)
 		{
-			continue;
+			return;
 		}
 
 		correctedX = (ScreenData.screenWidth >> 1) + array[i].xPos;
@@ -1541,7 +1541,7 @@ void RenderTextList(TextList *list, Camera inputCamera, SDL_Renderer *Screen)
 			SDL_SetRenderScale(Screen, inputCamera.zoomX, inputCamera.zoomY);
     		SDL_SetRenderLogicalPresentation(Screen, inputCamera.width, inputCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
 		}
-
+		
 		TTF_DrawRendererText(array[i].text, correctedX, correctedY);
 
 		// cursor
