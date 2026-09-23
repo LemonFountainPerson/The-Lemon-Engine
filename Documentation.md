@@ -8,7 +8,7 @@ Current Version: 0.11
 This engine uses the C standard library and SDL3, and is compiled using GCC (Although any good C compiler should work).
 Everything is subject to change.
 
-# Getting Started
+## Getting Started
 
 **Core design methodology**
 
@@ -25,11 +25,16 @@ return value.
 example, switching between top-down and platforming), you should include multiple controllers than can be switched to dependent on the state of the game.
 
 
+## Sections:
+
+[Objects](#objects)
+
+[Animations](#animations)
+
+[Functions Quick Reference](#functions)
 
 
-
-
-# Objects
+# Objects		{#objects}
 
 The core asset in the Lemon Engine are objects; these represent almost everything in the gameworld such as the player, visible elements, geometry, etc. 
 Objects consist of three main parts: 
@@ -76,7 +81,7 @@ follow the motion and transparency of the parent are configured by setting the p
 
 
 
-# Animations
+# Animations    {#animations}
 
 The animation system is operated through the spriteSets and the DisplayData. They are stored with AnimationFrame structs as linked lists connected to 
 an Animation struct representing each animation. These Animation structs are themselves stored as a linked list from the animations pointer located
@@ -120,3 +125,4 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 
 
+## Functions    {#functions}
