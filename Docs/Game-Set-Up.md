@@ -12,8 +12,8 @@ int StartGame(World *GameWorld)
 
 ## Description
 
-This function is called after engine initialisation and by default loads the game into level 1, but you can put whatever you need your game to do when it starts.
-(For example: playing a cutscene, loading into a main menu, logos, etc.)
+This function is called after engine initialisation and by default loads the game into level 1, but you can put in whatever you need your game to do when it 
+starts. (For example: playing a cutscene, loading into a main menu, logos, etc.)
 
 This function is one the engine's Custom Callbacks. This means the function is undefined when the 'LEMON_USE_CUSTOM_CALLBACKS' macro is set to true, allowing you 
 to define your own implementation, as long as it uses the same prototype. This is useful when working with the engine as a dynamic library instead of the source 
@@ -33,7 +33,7 @@ Returns a [FuncResult](DataTypes.md#FuncResult), indicating whether the operatio
 
 Available since V0.06.
 
-
+----------------------------------------------------------------
 
 # InitialiseWorld
 
@@ -60,7 +60,7 @@ Returns a pointer to a [World](DataTypes.md#World) struct.
 
 Available since V0.08.
 
-
+---------------------------------------------------------------
 
 # DestroyWorld
 
