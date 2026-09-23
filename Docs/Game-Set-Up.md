@@ -16,7 +16,9 @@ code directly.
 
 ## Inputs
 
-| GameWorld | A pointer to a World struct. By default, this will be the main World created at engine start-up. |
+|                                                |             |                       |
+| ---------------------------------------------- | ----------- | --------------------- |
+| World * | **GameWorld** | A pointer to a World struct. By default, this will be the main World created at engine start-up. |
 
 ## Return Value
 
