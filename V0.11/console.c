@@ -801,9 +801,7 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 	NEWCOMMAND(ListClients, "show all clients that are connected with their usernames", "listclients", 0);
 
 	NEWCOMMAND(ResetBlacklist, "reset server blacklist to allow previously banned clients to re-join", "resetblacklist", CONFLAG_SERVER_SIDE);
-
-	NEWCOMMAND(SetServerPassword, "Set a password for the server", "setserverpassword [password]", CONFLAG_SERVER_SIDE | CONFLAG_PROTECTED);
-
+	
 	NEWCOMMAND(ServerPassword, "Input a password to join a server", "serverpassword [password]", 0);
 
 	NEWCOMMAND(SetUsername, "set your own username", "setusername [name]", 0);
@@ -1045,15 +1043,6 @@ int ConsoleCommand_ListClients(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 			putConsole("%d: %s", i, Networking.clientUsernames[i]);
 		}
 	}
-
-	return LEMON_SUCCESS;
-}
-
-int ConsoleCommand_SetServerPassword(char input[USER_INPUT_MAX_LEN], World *GameWorld)
-{
-	char arg[USER_INPUT_MAX_LEN];
-	getNextConsoleArg(input, arg);
-	setServerPassword(arg);
 
 	return LEMON_SUCCESS;
 }

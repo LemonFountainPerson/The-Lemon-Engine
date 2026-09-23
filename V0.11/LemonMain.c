@@ -2152,7 +2152,7 @@ void addMessageToChatLog(const char msg[], int ID, Uint64 tickSent)
 	// console copy
 	char chatMsg[MESSAGE_LENGTH] = {0};
 
-	const char *username = getClientUsername(ID);
+	const char *username = getUsername(ID);
 
 	if (username)
 	{

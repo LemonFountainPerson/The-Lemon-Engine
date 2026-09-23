@@ -84,8 +84,6 @@ int ConsoleCommand_ListClients(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 int ConsoleCommand_ResetBlacklist(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
-int ConsoleCommand_SetServerPassword(char input[USER_INPUT_MAX_LEN], World *GameWorld);
-
 int ConsoleCommand_ServerPassword(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_SetUsername(char input[USER_INPUT_MAX_LEN], World *GameWorld);

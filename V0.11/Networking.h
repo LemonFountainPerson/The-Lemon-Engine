@@ -25,9 +25,9 @@ void NewClientJoinedServer(int clientID);
 
 void JoinedServer(World *GameWorld);
 
-const char* getClientUsername(int clientID);
+const char* getUsername(int clientID);
 
-void setClientUsername(int clientID, const char username[]);
+void setUsernameLocally(int clientID, const char username[]);
 
 void setMyUsername(const char username[]);
 
@@ -41,8 +41,6 @@ void updateNetworking(World *GameWorld);
 void attemptResolveAddress(void);
 
 void attemptServerHost(World *GameWorld);
-
-void setServerPassword(const char input[]);
 
 void updateServer(World *GameWorld);
 

@@ -319,7 +319,7 @@ void removeDisconnectedClient(int index, const char reason[])
 		deleteTrackedObjectsOwnedBy(index);
 	}
 
-	const char *name = getClientUsername(index);
+	const char *name = getUsername(index);
 
 	if (name == NULL || name[0] == '\0')
 	{
@@ -347,27 +347,9 @@ void ServerOpened(World *GameWorld)
 	return;
 }
 
-void setServerPassword(const char input[])
-{
-	if (input == NULL)
-	{
-		return;
-	}
-
-	if (strlen(input) < 1 || strlen(input) >= MAX_LEN)
-	{
-		putConsoleError("Password must be between 1 and %d characters long!", MAX_LEN);
-	}
-
-//	LemonStrncpy(Networking.serverPassword, input, MAX_LEN);
-
-
-	return;
-}
-
 void NewClientJoinedServer(int clientID)
 {
-	putConsole("%s joined the game", getClientUsername(clientID));
+	putConsole("%s joined the game", getUsername(clientID));
 	
 	return;
 }
@@ -378,11 +360,16 @@ void JoinedServer(World *GameWorld)
 	return;
 }
 
-const char* getClientUsername(int clientID)
+const char* getUsername(int clientID)
 {
 	if (clientID == SERVER_CLIENT_ID)
 	{
 		return Networking.serverUsername;
+	}
+
+	if (clientID == Networking.clientID)
+	{
+		return Networking.myUsername;
 	}
 
 	if (clientID < 0)
@@ -393,7 +380,7 @@ const char* getClientUsername(int clientID)
 	return Networking.clientUsernames[clientID];
 }
 
-void setClientUsername(int clientID, const char username[])
+void setUsernameLocally(int clientID, const char username[])
 {
 	if (clientID == SERVER_CLIENT_ID)
 	{
@@ -424,7 +411,7 @@ void setUsername(const char newUsername[], int clientID)
 		return;
 	}
 
-	setClientUsername(clientID, newUsername);
+	setUsernameLocally(clientID, newUsername);
 
 	if (Networking.connectMode == OFFLINE)
 	{
@@ -435,7 +422,7 @@ void setUsername(const char newUsername[], int clientID)
 	packet.type = PACKET_CLIENT_NAME;
 	packet.tickSent = TickNumber();
 	packet.data.clientInfo.clientID = Networking.clientID;
-	strcpy(packet.data.clientInfo.clientUsername, getClientUsername(Networking.clientID));
+	strcpy(packet.data.clientInfo.clientUsername, getUsername(Networking.clientID));
 
 	if (Networking.connectMode == CLIENT)
 	{
@@ -445,7 +432,7 @@ void setUsername(const char newUsername[], int clientID)
 	{
 		for (int i = 0; i < MAX_CLIENTS; i++)
 		{
-			if (Networking.connectedClients[i] != NULL)
+			if (i != clientID && Networking.connectedClients[i] != NULL)
 			{
 				NET_WriteToStreamSocket(Networking.connectedClients[i], &packet, sizeof(NetworkPacket));
 			}
@@ -647,7 +634,7 @@ void sendServerPassword(const char password[])
 	NetworkPacket clientEntrance = {0};
 	clientEntrance.type = PACKET_CLIENT_ENTRANCE;
 	clientEntrance.tickSent = TickNumber();
-	strcpy(clientEntrance.data.clientInfo.clientUsername, getClientUsername(Networking.clientID));
+	strcpy(clientEntrance.data.clientInfo.clientUsername, getUsername(Networking.clientID));
 	LemonStrncpy(clientEntrance.data.clientInfo.password, password, MAX_LEN);
 
 	NET_WriteToStreamSocket(Networking.myClient, &clientEntrance, sizeof(NetworkPacket));
@@ -808,7 +795,7 @@ void processClientEntrancePacket(NetworkPacket *packet, int clientID, World *Gam
 	else
 	{
 		Networking.clientStates[clientID] = CLIENT_STATE_JOINED;
-		setClientUsername(clientID, packet->data.clientInfo.clientUsername);
+		setUsernameLocally(clientID, packet->data.clientInfo.clientUsername);
 		NewClientJoinedServer(clientID);
 
 		NetworkPacket response = {0};
@@ -831,7 +818,7 @@ void processClientEntrancePacket(NetworkPacket *packet, int clientID, World *Gam
 		// tell other clients that this client is joining
 		response.type = PACKET_CLIENT_JOINED;
 		response.data.clientInfo.clientID = clientID;
-		strcpy(response.data.clientInfo.clientUsername, getClientUsername(clientID));
+		strcpy(response.data.clientInfo.clientUsername, getUsername(clientID));
 
 		for (int i = 0; i < MAX_CLIENTS; i++)
 		{
@@ -1051,7 +1038,7 @@ bool receiveServerData(World *GameWorld)
 	
 		case PACKET_CLIENT_JOINED:
 			{
-				setClientUsername(buffer.data.clientInfo.clientID, buffer.data.clientInfo.clientUsername);
+				setUsernameLocally(buffer.data.clientInfo.clientID, buffer.data.clientInfo.clientUsername);
 				NewClientJoinedServer(buffer.data.clientInfo.clientID);
 			} break;
 
@@ -1070,7 +1057,7 @@ bool receiveServerData(World *GameWorld)
 
 		case PACKET_CLIENT_NAME:
 			{
-				setClientUsername(buffer.data.clientInfo.clientID, buffer.data.clientInfo.clientUsername);
+				setUsernameLocally(buffer.data.clientInfo.clientID, buffer.data.clientInfo.clientUsername);
 			} break;
 
 		case PACKET_OBJECT_RESPONSE_ADD:
@@ -1306,7 +1293,7 @@ bool processSetupPacket(NetworkPacket *packet, World *GameWorld)
 	// get clientID; server is telling the client which ID they are
 	Networking.clientID = setup->assignedClientID;
 
-	setClientUsername(Networking.clientID, Networking.myUsername);
+	setUsernameLocally(Networking.clientID, Networking.myUsername);
 
 	const char *passwordAttempt = getConVarAsString("net_password");
 	if (packet->data.setup.passwordRequired && passwordAttempt[0] != '\0')
@@ -1319,7 +1306,7 @@ bool processSetupPacket(NetworkPacket *packet, World *GameWorld)
 	NetworkPacket clientEntrance = {0};
 	clientEntrance.type = PACKET_CLIENT_ENTRANCE;
 	clientEntrance.tickSent = TickNumber();
-	strcpy(clientEntrance.data.clientInfo.clientUsername, getClientUsername(Networking.clientID));
+	strcpy(clientEntrance.data.clientInfo.clientUsername, getUsername(Networking.clientID));
 	LemonStrncpy(clientEntrance.data.clientInfo.password, passwordAttempt, MAX_LEN);
 
 	encrypt(clientEntrance.data.clientInfo.password, MAX_LEN);
