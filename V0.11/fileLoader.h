@@ -1,6 +1,6 @@
-int loadLevel(World *GameWorld, int level);
+int loadLevel(int level, World *GameWorld);
 
-int loadPartition(World *GameWorld, int partID);
+int loadPartition(int partID, World *GameWorld);
 
 int loadSave(int saveFile, World *GameWorld);
 
@@ -11,7 +11,9 @@ int saveGame(int saveFile, World *GameWorld);
 int saveSettings(int saveFile, World *GameWorld);
 
 
-void writeBooleanPhrase(FILE *fPtr, const char name[], bool trueValue);
+void writeBooleanPhraseToFile(FILE *fPtr, const char name[], bool trueValue);
+
+void writeConVarsToFile(FILE *fPtr);
 
 int loadSaveData(const char *fileName, World *GameWorld);
 
@@ -68,7 +70,7 @@ int readBranch(World *GameWorld, FILE *fPtr, bool conditionMet);
 
 bool bracketedStatementPresent(FILE *fPtr, const char expectedPhrase[]);
 
-int consumeStatement(FILE *fPtr, char stopCharacter);
+int consumeStatementUntil(FILE *fPtr, char stopCharacter);
 
 
 int atEndOfLine(FILE *fPtr);

@@ -1307,6 +1307,7 @@ typedef union ConsoleVariableData
 
 typedef struct ConsoleVariable
 {
+	int nameLength;
 	char name[MAX_LEN];
 	char helpString[CONSOLE_HELP_MAX_LEN];
 	ConsoleCommandFlag flags;
@@ -1314,6 +1315,12 @@ typedef struct ConsoleVariable
 	ConsoleVariableData value;
 	ConsoleVariableType valueType;
 } ConsoleVariable;
+
+typedef struct ConsoleVariableList
+{
+	ConsoleVariable variables[MAX_CONSOLE_VARIABLES];
+	int indices[MAX_CONSOLE_VARIABLES];
+} ConsoleVariableList;
 
 typedef struct MessageHistory
 {
@@ -1446,21 +1453,14 @@ typedef struct DisconnectData
 	char reason[MAX_LEN];
 } DisconnectData;
 
-typedef struct ServerSettings
-{
-	int trackedObjectCapacity;
-	int tickRate;
-	float WorldBoundX;
-	float WorldBoundY;
-} ServerSettings;
-
 typedef struct ServerSetup
 {
 	char setupString[MAX_LEN];
 	bool passwordRequired;
 	int assignedClientID;
 
-	ServerSettings settings;
+	int trackedObjectCapacity;
+	int tickRate;
 } ServerSetup;
 
 // sent to client when connection is accepted
@@ -1476,7 +1476,6 @@ typedef union PacketData
 	ClientWelcome welcome;
 	ConsoleVariable convar;
 	ConsoleCommand command;
-	ServerSettings settings;
 	DisconnectData disconnect;
 	char string[MESSAGE_LENGTH];
 	GameFlag flag;
@@ -1545,8 +1544,6 @@ typedef struct NetworkData
 	ConnectionState connectionStatus;
 
 	float timeElapsed;
-	ConsoleVariable *updateRate;
-	ConsoleVariable *connectionTimeout;
 	
 	char setUpString[MESSAGE_LENGTH];
 
@@ -1641,11 +1638,6 @@ typedef struct EngineConfig
 	int ReservedObjects;
 	int PreservedSpriteSets;
 
-	float WorldBoundX;
-	float WorldBoundY;
-
-	ConsoleVariable *cheats;
-
 	int GameTicksPerSecond;
 	Uint64 TickDelta;
 
@@ -1708,8 +1700,8 @@ typedef struct DebugConfig
 	int scrollVal;
 	bool consoleFocus;
 	ConsoleCommand commands[MAX_CONSOLE_COMMANDS];
-	ConsoleVariable consoleVariables[MAX_CONSOLE_VARIABLES];
-	
+	ConsoleVariableList variableList;
+
 	MessageHistory userInputHistory;
 	int argIndex;
 

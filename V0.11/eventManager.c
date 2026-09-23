@@ -10,7 +10,7 @@ int StartGame(World *GameWorld)
 	}
 
 	// Logic for handle flow of menus and levels, etc can go here for game start
-	loadLevel(GameWorld, 1);
+	loadLevel(1, GameWorld);
 
 	// char counter[30];
 	// snprintf(counter, 30, "CoinCount: %d", GameWorld->Player.coinCount);
@@ -98,8 +98,8 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 	switch (inputEvent->EventID)
 	{
 		case EVENT_SWITCH_LEVEL:
-		//	loadLevel(GameWorld, getGameEventInt(inputEvent, "level"));		Using NULL will simply pick the first instance of an Integer argument
-			loadLevel(GameWorld, getGameEventInt(inputEvent, NULL));
+		//	loadLevel(getGameEventInt(inputEvent, "level"), GameWorld);		Using NULL will simply pick the first instance of an Integer argument
+			loadLevel(getGameEventInt(inputEvent, NULL), GameWorld);
 			break;
 
 		case EVENT_PLAY_CUTSCENE:
@@ -886,7 +886,7 @@ bool getNextArgGameEvent(FILE *file, GameEvent *newEvent, World *GameWorld)
 		{
 			char name[EVENT_ARG_NAME_MAX_LEN] = {0};
 			getNextArg(file, name, EVENT_ARG_NAME_MAX_LEN);
-			consumeStatement(file, '=');
+			consumeStatementUntil(file, '=');
 
 			char text[MESSAGE_LENGTH] = {0};
 			getNextArg(file, text, MESSAGE_LENGTH);
@@ -897,7 +897,7 @@ bool getNextArgGameEvent(FILE *file, GameEvent *newEvent, World *GameWorld)
 		{
 			char name[EVENT_ARG_NAME_MAX_LEN] = {0};
 			getNextArg(file, name, EVENT_ARG_NAME_MAX_LEN);
-			consumeStatement(file, '=');
+			consumeStatementUntil(file, '=');
 
 			int val = getNextArgInt(file);
 
@@ -907,7 +907,7 @@ bool getNextArgGameEvent(FILE *file, GameEvent *newEvent, World *GameWorld)
 		{
 			char name[EVENT_ARG_NAME_MAX_LEN] = {0};
 			getNextArg(file, name, EVENT_ARG_NAME_MAX_LEN);
-			consumeStatement(file, '=');
+			consumeStatementUntil(file, '=');
 
 			float val = getNextArgFloat(file);
 

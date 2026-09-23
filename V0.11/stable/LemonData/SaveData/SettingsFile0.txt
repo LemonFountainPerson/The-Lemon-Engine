@@ -1,5 +1,5 @@
-V0.10--SAVE_DATA--
-Resolution: 1920 1080
+V0.11--SAVE_DATA--
+Resolution: 1280 720
 Fullscreen: false
 Vsync: true
 DrawSprites: true
@@ -9,7 +9,16 @@ DrawParticles: true
 DrawCamViews: true
 MaxFrameRate: 20000
 DrawHitboxes: false
-HitboxThickness: 4
 DefaultTextSize: 44.000000
 DefaultFont: "PTSansBold"
-ENDFILE	
+
+ConsoleVariables 
+{
+  ply_boundx: "100000.00"
+  ply_boundy: "100000.00"
+  cheats: "false"
+  net_updaterate: "0.05"
+  net_connectiontimeout: "5.00125"
+  net_password: ""
+}
+ENDFILE 

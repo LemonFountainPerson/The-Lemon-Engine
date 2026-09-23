@@ -1,7 +1,7 @@
 #include "LemonEngine.h"
 
 
-int loadLevel(World *GameWorld, int level)
+int loadLevel(int level, World *GameWorld)
 {
 	if (GameWorld == NULL || level < 0)
 	{
@@ -47,7 +47,7 @@ int loadLevel(World *GameWorld, int level)
 }
 
 
-int loadPartition(World *GameWorld, int partID)
+int loadPartition(int partID, World *GameWorld)
 {
 	if (GameWorld == NULL)
 	{
@@ -142,9 +142,9 @@ int saveSettings(int saveFile, World *GameWorld)
 	fwrite(SAVE_FILE_HEADER, sizeof(char), strlen(SAVE_FILE_HEADER), fPtr);
 	fwrite("\n", sizeof(char), 1, fPtr);
 
-	char buffer[MAX_LEN + 20] = {0};
+	char buffer[200] = {0};
 
-	snprintf(buffer, MAX_LEN, "Resolution: %d %d\n", ScreenData.screenWidth, ScreenData.screenHeight);
+	snprintf(buffer, 200, "Resolution: %d %d\n", ScreenData.screenWidth, ScreenData.screenHeight);
 	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
 
 	if (ScreenData.Fullscreen)
@@ -156,28 +156,27 @@ int saveSettings(int saveFile, World *GameWorld)
 		fwrite("Fullscreen: false\n", sizeof(char), 18, fPtr);
 	}
 
-	writeBooleanPhrase(fPtr, "Vsync", RenderSettings.vSync);
-	writeBooleanPhrase(fPtr, "DrawSprites", RenderSettings.drawSprites);
-	writeBooleanPhrase(fPtr, "DrawBackGround", RenderSettings.drawBackGround);
-	writeBooleanPhrase(fPtr, "DrawHUD", RenderSettings.drawHUD);
-	writeBooleanPhrase(fPtr, "DrawParticles", RenderSettings.drawParticles);
-	writeBooleanPhrase(fPtr, "DrawCamViews", RenderSettings.drawCamViews);
+	writeBooleanPhraseToFile(fPtr, "Vsync", RenderSettings.vSync);
+	writeBooleanPhraseToFile(fPtr, "DrawSprites", RenderSettings.drawSprites);
+	writeBooleanPhraseToFile(fPtr, "DrawBackGround", RenderSettings.drawBackGround);
+	writeBooleanPhraseToFile(fPtr, "DrawHUD", RenderSettings.drawHUD);
+	writeBooleanPhraseToFile(fPtr, "DrawParticles", RenderSettings.drawParticles);
+	writeBooleanPhraseToFile(fPtr, "DrawCamViews", RenderSettings.drawCamViews);
 
-	snprintf(buffer, MAX_LEN, "MaxFrameRate: %d\n", RenderSettings.RendersPerSecond);
+	snprintf(buffer, 200, "MaxFrameRate: %d\n", RenderSettings.RendersPerSecond);
 	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
 
-	writeBooleanPhrase(fPtr, "DrawHitboxes", RenderSettings.drawHitboxes);
+	writeBooleanPhraseToFile(fPtr, "DrawHitboxes", RenderSettings.drawHitboxes);
 
-	snprintf(buffer, MAX_LEN, "HitboxThickness: %d\n", RenderSettings.HitboxThickness);
+	snprintf(buffer, 200, "DefaultTextSize: %f\n", TextSettings.defaultTextPointSize);
 	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
 
-	snprintf(buffer, MAX_LEN, "DefaultTextSize: %f\n", TextSettings.defaultTextPointSize);
+	snprintf(buffer, 200, "DefaultFont: \"%s\"\n", TextSettings.defaultFont);
 	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
 
-	snprintf(buffer, MAX_LEN, "DefaultFont: \"%s\"\n", TextSettings.defaultFont);
-	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+	writeConVarsToFile(fPtr);
 
-	fwrite("ENDFILE", sizeof(char), 7, fPtr);
+	fwrite("ENDFILE", sizeof(char), 8, fPtr);
 
 	//encodeLEMFile(fPtr, path);
 
@@ -213,7 +212,7 @@ int loadSettings(int settingsFile, World *GameWorld)
 }
 
 
-void writeBooleanPhrase(FILE *fPtr, const char name[], bool trueValue)
+void writeBooleanPhraseToFile(FILE *fPtr, const char name[], bool trueValue)
 {
 	char buffer[MAX_LEN] = {0};
 
@@ -227,6 +226,31 @@ void writeBooleanPhrase(FILE *fPtr, const char name[], bool trueValue)
 	}
 	
 	fwrite(buffer, sizeof(char), strlen(buffer), fPtr);
+
+	return;
+}
+
+void writeConVarsToFile(FILE *fPtr)
+{
+	fwrite("\nConsoleVariables \n{\n", sizeof(char), 21, fPtr);
+
+	ConsoleVariable *list = DebugSettings.variableList.variables;
+	int *indices = DebugSettings.variableList.indices;
+
+	char string[200] = {0};
+	char varValue[32] = {0};
+	for (int i = 0; i < MAX_CONSOLE_VARIABLES && indices[i] >= 0; i++)
+	{
+		int varIndex = indices[i];
+		if ((list[varIndex].flags & CONFLAG_PROTECTED) == 0)
+		{
+			ConVarValueToString(&list[varIndex], varValue);
+			snprintf(string, 200, "  %s: \"%s\"\n", list[varIndex].name, varValue);
+			fwrite(string, sizeof(char), strlen(string), fPtr);
+		}
+	}
+
+	fwrite("}\n\n", sizeof(char), 2, fPtr);
 
 	return;
 }
@@ -249,8 +273,6 @@ int loadSaveData(const char *fileName, World *GameWorld)
 	char readPhrase[MAX_LEN] = {0};
 	while (!endOfFile(fPtr))
 	{
-		Next_Save_Instruction:
-
 		getNextArg(fPtr, readPhrase, MAX_LEN);
 		stringToUpper(readPhrase);
 
@@ -285,24 +307,19 @@ int loadSaveData(const char *fileName, World *GameWorld)
 
 			changeScreenSize(width, height, GameWorld);
 		}
-		else if (!strcmp(readPhrase, "GAMEFLAGS:"))
+		else if (!strcmp(readPhrase, "GAMEFLAGS:") && bracketedStatementPresent(fPtr, NULL))
 		{
-			if (!bracketedStatementPresent(fPtr, NULL))
-			{
-				goto Next_Save_Instruction;
-			}
-
-			consumeStatement(fPtr, '{');
+			consumeStatementUntil(fPtr, '{');
 
 			int i = 0;
 			int index;
 			int flagValue = 0;
-			while (i < GAME_FLAG_COUNT)
+			while (i < GAME_FLAG_COUNT && !endOfFile(fPtr))
 			{
 				i++;
 				getNextArg(fPtr, readPhrase, MAX_LEN);
 				index = getGameFlag(readPhrase);
-				consumeStatement(fPtr, ':');
+				consumeStatementUntil(fPtr, ':');
 
 				if (!hasNextArgNumber(fPtr))
 				{
@@ -320,7 +337,24 @@ int loadSaveData(const char *fileName, World *GameWorld)
 				}
 			}
 
-			consumeStatement(fPtr, '}');
+			consumeStatementUntil(fPtr, '}');
+		}
+		else if (!strcmp(readPhrase, "CONSOLEVARIABLES") && bracketedStatementPresent(fPtr, NULL))
+		{
+			consumeStatementUntil(fPtr, '{');
+
+			getNextArg(fPtr, readPhrase, MAX_LEN);
+			char conValue[CONVAR_VALUE_LEN] = {0};
+
+			while (readPhrase[0] != '}' && !endOfFile(fPtr))
+			{
+				removeChar(readPhrase, ':', MAX_LEN);
+				getNextArg(fPtr, conValue, CONVAR_VALUE_LEN);
+
+				setConVarNamed(readPhrase, conValue, GameWorld);
+
+				getNextArg(fPtr, readPhrase, MAX_LEN);
+			}
 		}
 		else if (!strcmp(readPhrase, "LEVEL:"))
 		{
@@ -1353,7 +1387,7 @@ int readBranch(World *GameWorld, FILE *fPtr, bool conditionMet)
 {
 	if (bracketedStatementPresent(fPtr, "THEN"))
 	{
-		consumeStatement(fPtr, '{');
+		consumeStatementUntil(fPtr, '{');
 
 		if (conditionMet)
 		{
@@ -1362,7 +1396,7 @@ int readBranch(World *GameWorld, FILE *fPtr, bool conditionMet)
 		}
 		else
 		{
-			consumeStatement(fPtr, '}');
+			consumeStatementUntil(fPtr, '}');
 		}
 	}
 	else 
@@ -1376,7 +1410,7 @@ int readBranch(World *GameWorld, FILE *fPtr, bool conditionMet)
 		return LEMON_SUCCESS;
 	}
 
-	consumeStatement(fPtr, '{');
+	consumeStatementUntil(fPtr, '{');
 
 	if (!conditionMet)
 	{
@@ -1384,7 +1418,7 @@ int readBranch(World *GameWorld, FILE *fPtr, bool conditionMet)
 	}
 	else
 	{
-		consumeStatement(fPtr, '}');
+		consumeStatementUntil(fPtr, '}');
 	}
 	
 
@@ -1431,7 +1465,7 @@ bool bracketedStatementPresent(FILE *fPtr, const char expectedPhrase[])
 	return true;
 }
 
-int consumeStatement(FILE *fPtr, char stopCharacter)
+int consumeStatementUntil(FILE *fPtr, char stopCharacter)
 {
 	char buffer[2] = {0};
 	size_t readData = 0;
@@ -1716,7 +1750,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 	{
 		int partID = getNextArgInt(fPtr);
 
-		loadPartition(GameWorld, partID);
+		loadPartition(partID, GameWorld);
 	}
 	else if (strcmp(buffer, "cambound") == 0 || strcmp(buffer, "cameraboundary") == 0)
 	{
@@ -1747,7 +1781,6 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		if (getGameFlag(name) >= 0)
 		{
-			putConsole("GameFlag \"%s\" already exists", name);
 			return LEMON_SUCCESS;
 		}
 
@@ -1838,11 +1871,11 @@ int loadObjectRepeated(World *GameWorld, FILE *fPtr)
 		{
 			goto Skip_Repeated_Args;
 		}
-		consumeStatement(fPtr, '=');
+		consumeStatementUntil(fPtr, '=');
 		args[i] = getNextArgInt(fPtr);
 	}
 	
-	consumeStatement(fPtr, '{');
+	consumeStatementUntil(fPtr, '{');
 
 	Skip_Repeated_Args:
 
@@ -1878,7 +1911,7 @@ int loadObjectRepeated(World *GameWorld, FILE *fPtr)
 		yVal += yChange;
 	}
 
-	consumeStatement(fPtr, '}');
+	consumeStatementUntil(fPtr, '}');
 
 	return LEMON_SUCCESS;
 }
@@ -1967,11 +2000,11 @@ int ApplyObjectLoadCommands(FILE *fPtr, Object *inputObject, char command[MAX_LE
 			return INVALID_DATA;
 		}
 
-		consumeStatement(fPtr, '{');
+		consumeStatementUntil(fPtr, '{');
 		getNextArg(fPtr, command, MAX_LEN);
 		if (command[0] != '}')
 		{
-			consumeStatement(fPtr, '}');
+			consumeStatementUntil(fPtr, '}');
 		}
 		Object *parent = FindObject(command, &GameWorld->ObjectList);
 
@@ -2043,7 +2076,7 @@ int loadObject(World *GameWorld, FILE *fPtr, int xOffset, int yOffset)
 
 	if (GameWorld->ObjectList.objectCount >= EngineSettings.MaxObjects - EngineSettings.ReservedObjects)
 	{
-		consumeStatement(fPtr, '\n');
+		consumeStatementUntil(fPtr, '\n');
 		return ACTION_DISABLED;
 	}
 

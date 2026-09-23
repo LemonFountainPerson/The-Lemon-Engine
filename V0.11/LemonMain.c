@@ -179,6 +179,9 @@ int StartUpLemonEngine(void)
 	}
 
     // initialise data not attached to GameWorld
+    initialiseConsoleVariables(&DebugSettings.variableList);
+    createConsoleCommands(DebugSettings.commands);
+
     initialiseNetworkData();
     SetEngineSettingsToDefault();
 	SetRenderSettingsToDefault();
@@ -198,8 +201,6 @@ int StartUpLemonEngine(void)
 
     initialiseChatLog(&Chat);
     
-    createConsoleCommands(DebugSettings.commands);
-
 	srand(RANDOM_SEED);
 
 	putConsole("Engine initialised!\n");
@@ -936,6 +937,10 @@ void addGameFlag(const char name[], int startValue)
 		GameFlags[index].nameLength = length;
 
 		updateServerFlag(&GameFlags[index]);
+	}
+	else
+	{
+		putConsoleError("Failed to create GameFlag %s", name);
 	}
 
 	return;
@@ -2088,7 +2093,7 @@ void addMessageHistory(const char input[], MessageHistory *history)
 
 	history->inputs[history->head % INPUT_HISTORY_LEN][length] = 0;
 
-	history->head = (history->head + 1) % INPUT_HISTORY_LEN;
+	history->head = modulo(history->head + 1, INPUT_HISTORY_LEN);
 	history->searchIndex = history->head;
 	history->inputCount++;
 
@@ -2117,10 +2122,6 @@ char* getNextMessageHistory(MessageHistory *history)
 		{
 			history->searchIndex = modulo(history->searchIndex - 1, INPUT_HISTORY_LEN);
 		} 
-	}
-	else
-	{
-		history->searchIndex = modulo(history->searchIndex, INPUT_HISTORY_LEN);
 	}
 
 	return history->inputs[history->searchIndex];
@@ -2177,10 +2178,10 @@ int ResetCamera(Camera *inputCam)
 
 	inputCam->CameraX = 0;
 	inputCam->CameraY = 0;
-	inputCam->minCameraX = -(int)EngineSettings.WorldBoundX;
-	inputCam->maxCameraX = (int)EngineSettings.WorldBoundX;
-	inputCam->minCameraY = -(int)EngineSettings.WorldBoundY;
-	inputCam->maxCameraY = (int)EngineSettings.WorldBoundY;
+	inputCam->maxCameraX = (int)getConVarAsFloat("ply_boundx");
+	inputCam->minCameraX = -inputCam->maxCameraX;
+	inputCam->maxCameraY = (int)getConVarAsFloat("ply_boundy");
+	inputCam->minCameraY = -inputCam->maxCameraY;
 	inputCam->CameraLatch = false;
 	inputCam->CameraXBuffer = 0;
 	inputCam->CameraYBuffer = 0;
@@ -2228,9 +2229,6 @@ void SetEngineSettingsToDefault(void)
 	EngineSettings.PreservedSpriteSets = PRESERVED_SPRITESETS;
 	EngineSettings.ReservedObjects = RESERVED_OBJECTS;
 
-	EngineSettings.WorldBoundX = X_WORLD_BOUND;
-	EngineSettings.WorldBoundY = Y_WORLD_BOUND;
-
 	EngineSettings.MaxSoundsPerChannel = MAX_SOUNDS_PER_CHANNEL;
 	EngineSettings.MaxSceneActions = MAX_SCENEACTIONS;
 
@@ -2238,14 +2236,11 @@ void SetEngineSettingsToDefault(void)
 	EngineSettings.TickDelta = 999999999;
 	setTickRate(TICKS_PER_SECOND);
 
-	EngineSettings.cheats = NewConsoleVariable("cheats", "set the game's cheats value", CONVAR_BOOL, "false", CONFLAG_SERVER_SIDE | CONFLAG_NOTIFY);
-
 	if (EngineSettings.DefaultTexture == NULL)
 	{
 		EngineSettings.DefaultTexture = loadSprite(DEFAULT_TEXTURE, NULL, TILE);
 	}
 }
-
 
 void SetRenderSettingsToDefault(void)
 {

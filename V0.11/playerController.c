@@ -261,6 +261,11 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 	}
 
 
+	float worldBoundX = getConVarAsFloat("ply_boundx");
+	float worldBoundY = getConVarAsFloat("ply_boundy");
+	PlayerBox->xPos = fClamp(PlayerBox->xPos, -worldBoundX, worldBoundX - PlayerBox->xSize);
+	PlayerBox->yPos = fClamp(PlayerBox->yPos, -worldBoundY, worldBoundY - PlayerBox->ySize);
+
 	return LEMON_SUCCESS;
 }
 
@@ -327,6 +332,11 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld)
 		PlayerBox->xVelocity = 0.0;
 		PlayerBox->yVelocity = 0.0;
 	}
+
+	float worldBoundX = getConVarAsFloat("ply_boundx");
+	float worldBoundY = getConVarAsFloat("ply_boundy");
+	PlayerBox->xPos = fClamp(PlayerBox->xPos, -worldBoundX, worldBoundX - PlayerBox->xSize);
+	PlayerBox->yPos = fClamp(PlayerBox->yPos, -worldBoundY, worldBoundY - PlayerBox->ySize);
 
 	return LEMON_SUCCESS;
 }

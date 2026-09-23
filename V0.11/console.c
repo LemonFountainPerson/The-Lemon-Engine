@@ -155,14 +155,19 @@ ConsoleCommand* getConsoleCommand(const char name[])
 
 ConsoleVariable* getConsoleVariable(const char name[])
 {
-	if (name == NULL || name[0] < 32)
+	if (name == NULL || name[0] == '\0')
 	{
 		return NULL;
 	}
 
-	ConsoleVariable *varList = DebugSettings.consoleVariables;
+	int inputLength = strlen(name);
+	if (inputLength >= MAX_LEN)
+	{
+		return NULL;
+	}
 
 	int index = hashConVar(name);
+	ConsoleVariable *varList = DebugSettings.variableList.variables;
 
 	for (int i = 0; i < MAX_CONSOLE_VARIABLES; i++)
 	{
@@ -171,14 +176,50 @@ ConsoleVariable* getConsoleVariable(const char name[])
 			return NULL;
 		}
 
-		if (strcmp(varList[index].name, name) == 0)
+		if (varList[index].nameLength == inputLength && strcmp(varList[index].name, name) == 0)
 		{
 			return &varList[index];	
 		}
 
 		index = (index + 1) % MAX_CONSOLE_VARIABLES;
+	}
 
-		putConsole("Hash collision %d", i);
+	return NULL;	
+}
+
+void recordVariableOrder(int index)
+{
+	int *indices = DebugSettings.variableList.indices;
+	int orderSlot = 0;
+	while (orderSlot < MAX_CONSOLE_VARIABLES && indices[orderSlot] != -1)
+	{
+		orderSlot++;
+	}
+
+	if (indices[orderSlot] == -1)
+	{
+		indices[orderSlot] = index;
+	}
+
+	return;
+}
+
+ConsoleVariable* getUnusedConVar(int hashIndex)
+{
+	ConsoleVariable *varList = DebugSettings.variableList.variables;
+
+	for (int i = 0; i < MAX_CONSOLE_VARIABLES; i++)
+	{
+		if (varList[hashIndex].name[0] == '\0')
+		{
+			recordVariableOrder(hashIndex);
+
+			return &varList[hashIndex];
+		}
+
+		putConsole("%s: Hash collision %d", varList[hashIndex].name, i);
+
+		hashIndex = (hashIndex + 1) % MAX_CONSOLE_VARIABLES;
 	}
 
 	return NULL;
@@ -187,36 +228,36 @@ ConsoleVariable* getConsoleVariable(const char name[])
 
 ConsoleVariable* NewConsoleVariable(const char name[], const char helpString[], ConsoleVariableType valueType, const char value[], ConsoleCommandFlag flags)
 {
-	if (name == NULL || name[0] < 32)
+	if (name == NULL || name[0] == '\0')
 	{
 		return NULL;
 	}
 
-	ConsoleVariable *varList = DebugSettings.consoleVariables;
+	if (DEBUG_MODE)
+	{
+		flags &= ~CONFLAG_PROTECTED;
+	}
 
 	int index = hashConVar(name);
 
-	for (int i = 0; i < MAX_CONSOLE_VARIABLES; i++)
+	ConsoleVariable *variable = getUnusedConVar(index);
+
+	if (variable == NULL)
 	{
-		if (varList[index].name[0] < 32)
-		{
-			LemonStrncpy(varList[index].name, name, MAX_LEN);
-			stringToLower(varList[index].name);
-			LemonStrncpy(varList[index].helpString, helpString, CONSOLE_HELP_MAX_LEN);
-			varList[index].flags = flags;
-			varList[index].valueType = valueType;
-
-			setConsoleVariable(&varList[index], value, NULL);
-
-			return &varList[index];
-		}
-
-		index = (index + 1) % MAX_CONSOLE_VARIABLES;
-
-		putConsole("Hash collision %d", i);
+		putConsole("Failed to create '%s' Console Variable!", name);
+		return NULL;
 	}
 
-	return NULL;
+	LemonStrncpy(variable->name, name, MAX_LEN);
+	stringToLower(variable->name);
+	variable->nameLength = strlen(variable->name);
+	LemonStrncpy(variable->helpString, helpString, CONSOLE_HELP_MAX_LEN);
+	variable->flags = flags;
+	variable->valueType = valueType;
+
+	setConsoleVariable(variable, value, NULL);
+
+	return variable;
 }
 
 int hashConVar(const char name[])
@@ -300,6 +341,13 @@ void setConsoleVariable(ConsoleVariable *variable, const char value[], World *Ga
 	return;
 }
 
+void setConVarNamed(const char *name, const char *value, World *GameWorld)
+{
+	setConsoleVariable(getConsoleVariable(name), value, GameWorld);
+
+	return;
+}
+
 int ConVarAsInt(ConsoleVariable *variable)
 {
 	if (variable == NULL || variable->valueType != CONVAR_INT)
@@ -308,6 +356,11 @@ int ConVarAsInt(ConsoleVariable *variable)
 	}
 
 	return variable->value.iValue;
+}
+
+int getConVarAsInt(const char input[])
+{
+	return ConVarAsInt(getConsoleVariable(input));
 }
 
 float ConVarAsFloat(ConsoleVariable *variable)
@@ -320,6 +373,11 @@ float ConVarAsFloat(ConsoleVariable *variable)
 	return variable->value.fValue;
 }
 
+float getConVarAsFloat(const char input[])
+{
+	return ConVarAsFloat(getConsoleVariable(input));
+}
+
 bool ConVarAsBool(ConsoleVariable *variable)
 {
 	if (variable == NULL || variable->valueType != CONVAR_BOOL)
@@ -330,17 +388,27 @@ bool ConVarAsBool(ConsoleVariable *variable)
 	return variable->value.bValue;
 }
 
+bool getConVarAsBool(const char input[])
+{
+	return ConVarAsBool(getConsoleVariable(input));
+}
+
 const char* ConVarAsString(ConsoleVariable *variable)
 {
 	if (variable == NULL || variable->valueType != CONVAR_STRING)
 	{
-		return NULL;
+		return "";
 	}
 
 	return variable->value.string;
 }
 
-const char* ConVarValueAsString(ConsoleVariable *variable, char result[32])
+const char* getConVarAsString(const char input[])
+{
+	return ConVarAsString(getConsoleVariable(input));
+}
+
+const char* ConVarValueToString(ConsoleVariable *variable, char result[32])
 {
 	if (variable == NULL)
 	{
@@ -351,6 +419,15 @@ const char* ConVarValueAsString(ConsoleVariable *variable, char result[32])
 	{
 	case CONVAR_FLOAT:
 		snprintf(result, 32, "%f", variable->value.fValue);
+		int index = 30;
+		while (index > 3 && result[index - 2] != '.')
+		{
+			if (result[index] == '0')
+			{
+				result[index] = '\0';
+			}
+			index--;
+		}
 		break;
 
 	case CONVAR_INT:
@@ -369,6 +446,7 @@ const char* ConVarValueAsString(ConsoleVariable *variable, char result[32])
 		break;
 
 	default:
+		LemonStrncpy(result, variable->value.string, CONVAR_VALUE_LEN);
 		return variable->value.string;
 	}
 
@@ -450,8 +528,9 @@ void executeCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	else if ((variable->flags & CONFLAG_PROTECTED) == 0)
 	{
-		char number[32] = {0};
-		putConsole("'%s' value: %s", variable->name, ConVarValueAsString(variable, number));
+		char number[CONVAR_VALUE_LEN] = {0};
+		ConVarValueToString(variable, number);
+		putConsole("'%s' value: %s", variable->name, number);
 	}
 
 
@@ -471,7 +550,7 @@ bool commandIsAllowed(ConsoleCommandFlag input)
 		return true;
 	}
 
-	if ((input & CONFLAG_CHEAT) != 0 && !ConVarAsBool(EngineSettings.cheats))
+	if ((input & CONFLAG_CHEAT) != 0 && !getConVarAsBool("cheats"))
 	{
 		putConsole("This command requires cheats to be enabled!"); 
 		return false;
@@ -666,6 +745,19 @@ Object* parseArgumentToFindObject(const char input[USER_INPUT_MAX_LEN], ObjectCo
 	}
 }
 
+void initialiseConsoleVariables(ConsoleVariableList *list)
+{
+	ConsoleVariable *conVarList = list->variables;
+	memset(conVarList, 0, MAX_CONSOLE_VARIABLES * sizeof(ConsoleVariable));
+
+	for (int i = 0; i < MAX_CONSOLE_COMMANDS; i++)
+	{
+		list->indices[i] = -1;
+	}
+
+	return;
+}
+
 // macro used to create new command; name and function are derived from cName
 #define NEWCOMMAND(cName, cHelp, cFormat, cFlags) 	strcpy(commandList[i].name, #cName);\
 														stringToLower(commandList[i].name); \
@@ -679,6 +771,7 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 {
 	memset(commandList, 0, MAX_CONSOLE_COMMANDS * sizeof(ConsoleCommand));
 
+
 	int i = 0;
 
 
@@ -687,8 +780,6 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 	NEWCOMMAND(Quit, "quit the game", "quit", 0);
 
 	NEWCOMMAND(Restart, "restart the game", "restart", 0);
-
-//	NEWCOMMAND(Cheats, "set the game's cheats value", "cheats [val]", CONFLAG_SERVER_SIDE);
 
 	NEWCOMMAND(Tick, "check current tick number", "tick", 0);
 
@@ -714,10 +805,6 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 	NEWCOMMAND(SetServerPassword, "Set a password for the server", "setserverpassword [password]", CONFLAG_SERVER_SIDE | CONFLAG_PROTECTED);
 
 	NEWCOMMAND(ServerPassword, "Input a password to join a server", "serverpassword [password]", 0);
-
-//	NEWCOMMAND(SetNetworkUpdateRate, "set the time interval between network updates", "setnetworkupdaterate [seconds]", 0);
-
-//	NEWCOMMAND(SetTimeOut, "set the maximum time allowed before a network connection is considered lost", "settimeout [seconds]", 0);
 
 	NEWCOMMAND(SetUsername, "set your own username", "setusername [name]", 0);
 	
@@ -794,6 +881,10 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 
 	NEWCOMMAND(Noclip, "toggles noclip.", "noclip", CONFLAG_CHEAT);
 
+	NewConsoleVariable("ply_boundx", "x-axis boundary for the player", CONVAR_FLOAT, X_WORLD_BOUND, CONFLAG_SERVER_SIDE);
+	NewConsoleVariable("ply_boundy", "y-axis boundary for the player", CONVAR_FLOAT, Y_WORLD_BOUND, CONFLAG_SERVER_SIDE);
+	NewConsoleVariable("cheats", "set the game's cheats value", CONVAR_BOOL, "false", CONFLAG_SERVER_SIDE | CONFLAG_NOTIFY);
+
 
 	if (DEBUG_MODE)
 	{
@@ -828,13 +919,6 @@ int ConsoleCommand_Restart(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 	return LEMON_SUCCESS;
 }
-
-// int ConsoleCommand_Cheats(char input[USER_INPUT_MAX_LEN], World *GameWorld)
-// {
-// 	EngineSettings.cheats = getNextConsoleInt(input);
-
-// 	return LEMON_SUCCESS;
-// }
 
 int ConsoleCommand_Tick(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
@@ -1399,7 +1483,7 @@ int ConsoleCommand_BackGround(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 int ConsoleCommand_Level(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int level = getNextConsoleInt(input);
-	switchLevel(level, GameWorld);
+	loadLevel(level, GameWorld);
 
 	return LEMON_SUCCESS;
 }
@@ -1922,15 +2006,14 @@ int ConsoleCommand_Help(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 		}
 	}
 
-	ConsoleVariable *variables = DebugSettings.consoleVariables;
+	ConsoleVariable *variables = DebugSettings.variableList.variables;
+	int *indices = DebugSettings.variableList.indices;
 
 	// find matching command to print help string for
-	for (int i = 0; i < MAX_CONSOLE_VARIABLES; i++)
+	for (int i = 0; i < MAX_CONSOLE_VARIABLES && indices[i] >= 0; i++)
 	{
-		if (variables[i].name[0] != '\0')
-		{
-			putConsole("%s - %s", variables[i].name, variables[i].helpString);
-		}
+		int varIndex = indices[i];
+		putConsole("%s - %s", variables[varIndex].name, variables[varIndex].helpString);
 	}
 
 	return LEMON_SUCCESS;
@@ -2026,11 +2109,11 @@ void updateConsoleHistoryText(Text *input)
  	updateText(consoleHistory, all);
 
  	// reposition
- 	int height = 0;
-    TTF_GetTextSize(consoleHistory->text, NULL, &height);
+ 	int width, height = 0;
+    TTF_GetTextSize(consoleHistory->text, &width, &height);
 
     consoleHistory->yPos = DebugSettings.consoleYPos + insideSpacing + (float)height;
-	
+
 	return;
 }
 

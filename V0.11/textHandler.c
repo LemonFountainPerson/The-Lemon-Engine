@@ -15,6 +15,7 @@ void startTyping(SDL_Window *window, Text *inputTypingText)
 	memset(TextSettings.userInputString, 0, USER_INPUT_MAX_LEN);
 
 	TextSettings.cursorXPos = 0.0;
+	TextSettings.cursorYPos = 0.0;
 
 	TextSettings.Typing = true;
 
@@ -39,6 +40,7 @@ void stopTyping(SDL_Window *window)
 	TextSettings.Typing = false;
 	TextSettings.userInputIndex = 0;
 	TextSettings.cursorXPos = 0.0;
+	TextSettings.cursorYPos = 0.0;
 	TextSettings.typingText = NULL;
 
 	return;
@@ -136,14 +138,13 @@ void setCursorPos(void)
 	if (TextSettings.userInputIndex < 1)
 	{
 		TextSettings.cursorXPos = 0.0;
+		TextSettings.cursorYPos = 0.0;
 		return;
 	}
 
 	TTF_Font *font = NULL;
 
 
-	int width = 0;
-	int height = 0;
 	int wrapWidth = 0;
 
 	Text *typingText = TextSettings.typingText;
@@ -164,20 +165,27 @@ void setCursorPos(void)
 		return;
 	}
 	
-	TTF_GetStringSizeWrapped(font, TextSettings.userInputString, TextSettings.userInputIndex, wrapWidth, &width, &height);
+
+	int width = 0;
 
 	if (wrapWidth > 0)
 	{
+		int height = 0;
+
+		TTF_GetStringSizeWrapped(font, TextSettings.userInputString, TextSettings.userInputIndex, wrapWidth, &width, &height);
+
 		int lineSkip = TTF_GetFontLineSkip(font);
 
 		TTF_SubString lastLine = {0};
 		TTF_GetTextSubStringForLine(typingText->text, (height / lineSkip) - 1, &lastLine);
 
-		TTF_GetStringSize(font, TextSettings.userInputString + lastLine.offset, TextSettings.userInputIndex - lastLine.offset, &width, &height);
+		TTF_GetStringSize(font, TextSettings.userInputString + lastLine.offset, TextSettings.userInputIndex - lastLine.offset, &width, NULL);
 		TextSettings.cursorYPos = (float)(height - lineSkip);
 	}
 	else
 	{
+		TTF_GetStringSize(font, TextSettings.userInputString, TextSettings.userInputIndex, &width, NULL);
+
 		TextSettings.cursorYPos = 0.0;
 	}
 

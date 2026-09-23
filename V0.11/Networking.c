@@ -16,8 +16,10 @@ void initialiseNetworkData(void)
 	Networking.clientID = NO_CLIENT_ID;
 
 	Networking.timeElapsed = 0.0;
-	Networking.updateRate = NewConsoleVariable("net_updaterate", "time between updates", CONVAR_FLOAT, "0.05", 0);
-	Networking.connectionTimeout = NewConsoleVariable("net_connectiontimeout", "max time allowed before a connection is considered lost", CONVAR_FLOAT, "5.0", 0);
+	NewConsoleVariable("net_updaterate", "time between updates", CONVAR_FLOAT, "0.05", 0);
+	NewConsoleVariable("net_connectiontimeout", "max time allowed before a connection is considered lost", CONVAR_FLOAT, "5.0", 0);
+	NewConsoleVariable("net_password", "password required to join server", CONVAR_STRING, "", CONFLAG_PROTECTED | CONFLAG_SERVER_SIDE);
+
 
 	Networking.Server = NULL;
 	for (int i = 0; i < MAX_CLIENTS; i++)
@@ -34,7 +36,6 @@ void initialiseNetworkData(void)
 	}
 	Networking.blockedIndex = 0;
 
-	memset(Networking.serverPassword, 0, MAX_LEN);
 	// example
 	Networking.privateKey = 3591059113;
 	Networking.publicKey = 92514975149715;
@@ -90,9 +91,9 @@ bool openServer(const char ip[], Uint16 portNumber, World *GameWorld)
 	Networking.connectMode = SERVER;
 	Networking.serverPort = portNumber;
 	Networking.timeElapsed = 0.0;
-	memset(Networking.serverPassword, 0, MAX_LEN);
+	setConVarNamed("net_password", "", GameWorld);
 
-	setConsoleVariable(EngineSettings.cheats, "false", GameWorld);
+	setConVarNamed("cheats", "false", GameWorld);
 
 	return true;
 }
@@ -167,7 +168,7 @@ bool connect(const char ip[], Uint16 portNumber)
 	Networking.connectionStatus = CONNECT_STATE_RESOLVING_ADDRESS;
 	Networking.serverPort = portNumber;
 	Networking.timeElapsed = 0.0;
-	memset(Networking.serverPassword, 0, MAX_LEN);
+	setConVarNamed("net_password", "", NULL);
 
 	return true;
 }
@@ -358,7 +359,7 @@ void setServerPassword(const char input[])
 		putConsoleError("Password must be between 1 and %d characters long!", MAX_LEN);
 	}
 
-	LemonStrncpy(Networking.serverPassword, input, MAX_LEN);
+//	LemonStrncpy(Networking.serverPassword, input, MAX_LEN);
 
 
 	return;
@@ -519,7 +520,7 @@ void updateNetworking(World *GameWorld)
 	{
 		Networking.timeElapsed += deltaTime;
 
-		if (Networking.timeElapsed < ConVarAsFloat(Networking.updateRate))
+		if (Networking.timeElapsed < getConVarAsFloat("net_updaterate"))
 		{
 			return;
 		}
@@ -554,7 +555,7 @@ void attemptResolveAddress(void)
 
 	Networking.timeElapsed += deltaTime;
 								 
-	if (Networking.timeElapsed > ConVarAsFloat(Networking.connectionTimeout) || status == NET_FAILURE)
+	if (Networking.timeElapsed > getConVarAsFloat("net_connectiontimeout") || status == NET_FAILURE)
 	{
 		NET_UnrefAddress(Networking.serverAddress);
 		Networking.serverAddress = NULL;
@@ -589,7 +590,7 @@ void attemptServerHost(World *GameWorld)
 	LemonStrncpy(Networking.serverUsername, Networking.myUsername, MAX_LEN);
 	putConsole("Server online!");
 
-	loadLevel(GameWorld, GameWorld->level);
+	loadLevel(GameWorld->level, GameWorld);
 
 	ServerOpened(GameWorld);
 
@@ -618,7 +619,7 @@ void attemptClientConnect(World *GameWorld)
 			return;
 		}
 
-		if (status == NET_FAILURE || Networking.timeElapsed > ConVarAsFloat(Networking.connectionTimeout))
+		if (status == NET_FAILURE || Networking.timeElapsed > getConVarAsFloat("net_connectiontimeout"))
 		{
 			disconnect();
 			putConsoleError("Server not found!");
@@ -639,7 +640,7 @@ void sendServerPassword(const char password[])
 
 	if (Networking.myClient == NULL)
 	{
-		LemonStrncpy(Networking.serverPassword, password, MAX_LEN);
+		setConVarNamed("net_password", password, NULL);
 		return;
 	}
 
@@ -717,7 +718,7 @@ void updateClient(World *GameWorld)
 
 void handlePendingClient(int clientID, World *GameWorld)
 {	
-	if (Networking.clientTimers[clientID] > ConVarAsFloat(Networking.connectionTimeout) || Networking.clientStates[clientID] == CLIENT_STATE_DISCONNECTED)
+	if (Networking.clientTimers[clientID] > getConVarAsFloat("net_connectiontimeout") || Networking.clientStates[clientID] == CLIENT_STATE_DISCONNECTED)
 	{
 		Networking.clientStates[clientID] = CLIENT_STATE_DISCONNECTED;
 		NET_DestroyStreamSocket(Networking.connectedClients[clientID]);
@@ -798,7 +799,9 @@ void processClientEntrancePacket(NetworkPacket *packet, int clientID, World *Gam
 	decrypt(receivedPass, MAX_LEN);
 	// putConsole("Deciphered: %d %d %d %d %d %d", receivedPass[0], receivedPass[1], receivedPass[2], receivedPass[3], receivedPass[4], receivedPass[5]);
 
-	if (Networking.serverPassword[0] != '\0' && strcmp(Networking.serverPassword, receivedPass))
+	const char *password = getConVarAsString("net_password");
+
+	if (password[0] != '\0' && strcmp(password, receivedPass))
 	{
 		removeDisconnectedClient(clientID, "Incorrect password");
 	}
@@ -926,7 +929,7 @@ void sendAllServerConVars(NET_StreamSocket *socket)
 	Packet.type = PACKET_CONSOLE_VARIABLE;
 	Packet.tickSent = TickNumber();
 
-	ConsoleVariable *list = DebugSettings.consoleVariables;
+	ConsoleVariable *list = DebugSettings.variableList.variables;
 
 	for (int i = 0; i < MAX_CONSOLE_VARIABLES; i++)
 	{
@@ -1042,7 +1045,7 @@ bool receiveServerData(World *GameWorld)
 
 		case PACKET_CLIENT_WELCOME:
 			{
-				loadLevel(GameWorld, buffer.data.welcome.level);
+				loadLevel(buffer.data.welcome.level, GameWorld);
 				JoinedServer(GameWorld);
 			} break;
 	
@@ -1144,7 +1147,7 @@ bool receiveServerData(World *GameWorld)
 				}
 				found->flags &= ~CONFLAG_SERVER_SIDE;
 				char number[32] = {0};
-				setConsoleVariable(found, ConVarValueAsString(received, number), GameWorld);
+				setConsoleVariable(found, ConVarValueToString(received, number), GameWorld);
 				found->flags |= CONFLAG_SERVER_SIDE;
 			} break;
 
@@ -1261,11 +1264,11 @@ void acceptClients(World *GameWorld)
 			strcpy(packet.data.setup.setupString, Networking.setUpString);
 
 			packet.data.setup.assignedClientID = client;
-			packet.data.setup.settings.tickRate = EngineSettings.GameTicksPerSecond;
-			packet.data.setup.settings.trackedObjectCapacity = MAX_TRACKED_OBJECTS;
-			packet.data.setup.settings.WorldBoundX = EngineSettings.WorldBoundX;
-			packet.data.setup.settings.WorldBoundY = EngineSettings.WorldBoundY;
-			packet.data.setup.passwordRequired = (Networking.serverPassword[0] != '\0');
+			packet.data.setup.tickRate = EngineSettings.GameTicksPerSecond;
+			packet.data.setup.trackedObjectCapacity = MAX_TRACKED_OBJECTS;
+
+			const char *password = getConVarAsString("net_password");
+			packet.data.setup.passwordRequired = (password[0] != '\0');
 			
 			NET_WriteToStreamSocket(newSocket, &packet, sizeof(NetworkPacket));
 			outgoing += sizeof(NetworkPacket);
@@ -1305,7 +1308,8 @@ bool processSetupPacket(NetworkPacket *packet, World *GameWorld)
 
 	setClientUsername(Networking.clientID, Networking.myUsername);
 
-	if (packet->data.setup.passwordRequired && Networking.serverPassword[0] < 32)
+	const char *passwordAttempt = getConVarAsString("net_password");
+	if (packet->data.setup.passwordRequired && passwordAttempt[0] != '\0')
 	{
 		putConsole("Server waiting for password...");
 		return true;
@@ -1316,7 +1320,7 @@ bool processSetupPacket(NetworkPacket *packet, World *GameWorld)
 	clientEntrance.type = PACKET_CLIENT_ENTRANCE;
 	clientEntrance.tickSent = TickNumber();
 	strcpy(clientEntrance.data.clientInfo.clientUsername, getClientUsername(Networking.clientID));
-	LemonStrncpy(clientEntrance.data.clientInfo.password, Networking.serverPassword, MAX_LEN);
+	LemonStrncpy(clientEntrance.data.clientInfo.password, passwordAttempt, MAX_LEN);
 
 	encrypt(clientEntrance.data.clientInfo.password, MAX_LEN);
 
@@ -1334,69 +1338,24 @@ void processSettingsPacket(NetworkPacket *packet)
 		return;
 	}
 
-	ServerSettings *settings = &packet->data.setup.settings;
+	ServerSetup *setup = &packet->data.setup;
 
-	// if (packet->type == PACKET_SERVER_SETUP)
-	// {
-	// 	settings = &packet->data.setup.settings;
-	// }
-	// else
-	// {
-	// 	settings = &packet->data.settings;
-	// }
-
-	if (settings->trackedObjectCapacity != MAX_TRACKED_OBJECTS)
+	if (setup->trackedObjectCapacity != MAX_TRACKED_OBJECTS)
 	{
 		// value is not what we expected, likely incompatible
-		disconnectWithMessage("Incompatible server (Settings)");
+		disconnectWithMessage("Incompatible server");
 
 		return;
 	}
 
 	// match tickrate
 	Networking.connectMode = OFFLINE;
-	setTickRate(settings->tickRate);
+	setTickRate(setup->tickRate);
 	setTickNumber(packet->tickSent + 1);
 	Networking.connectMode = CLIENT;
 
-	//EngineSettings.cheats = settings->cheatsVal;
-	EngineSettings.WorldBoundX = settings->WorldBoundX;
-	EngineSettings.WorldBoundY = settings->WorldBoundY;
-
 	return;
 }
-
-// void updateServerSettings(void)
-// {
-// 	if (Networking.connectMode != SERVER)
-// 	{
-// 		return;
-// 	}
-
-// 	NetworkPacket Packet = {0};
-// 	Packet.type = PACKET_SERVER_SETTINGS;
-// 	Packet.tickSent = TickNumber();
-
-// 	Packet.data.settings.trackedObjectCapacity = MAX_TRACKED_OBJECTS;
-// 	Packet.data.settings.tickRate = EngineSettings.GameTicksPerSecond;
-// 	//Packet.data.settings.cheatsVal = EngineSettings.cheats;
-// 	Packet.data.settings.WorldBoundX = EngineSettings.WorldBoundX;
-// 	Packet.data.settings.WorldBoundY = EngineSettings.WorldBoundY;
-
-
-// 	for (int i = 0; i < MAX_CLIENTS; i++)
-// 	{
-// 		if (Networking.connectedClients[i] != NULL)
-// 		{
-// 			Packet.data.setup.assignedClientID = i;
-// 			NET_WriteToStreamSocket(Networking.connectedClients[i], &Packet, sizeof(NetworkPacket));
-// 			outgoing += sizeof(NetworkPacket);
-// 		}
-// 	}
-	
-
-// 	return;
-// }
 
 void updateServerConVar(ConsoleVariable *input)
 {

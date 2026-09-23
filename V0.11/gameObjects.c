@@ -4597,10 +4597,6 @@ int MoveObject(Object *inputObject, World *GameWorld)
 		bulletCollision(inputObject, GameWorld);
 	}
 
-	PhysicsBox *inputBox = inputObject->ObjectBox;
-	inputBox->xPos = fClamp(inputBox->xPos, -EngineSettings.WorldBoundX, EngineSettings.WorldBoundX - inputBox->xSize);
-	inputBox->yPos = fClamp(inputBox->yPos, -EngineSettings.WorldBoundY, EngineSettings.WorldBoundY - inputBox->ySize);
-
 	// this is a hack, but it fixes the case where a platform is moving with gravity (eg. down) and the subject lands on the platform before it has moved for this tick
 	redoGroundCheck(inputObject, GameWorld);
 

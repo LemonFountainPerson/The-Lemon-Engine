@@ -1409,8 +1409,9 @@ Text* addDebugTextWithName(const char textPhrase[], const char name[], float xPo
 		text = addDebugText(textPhrase, xPos, yPos, wrapWidth, format);
 
 		setTextName(text, name);
-	}
 
+		TTF_SetTextWrapWidth(text->text, wrapWidth);
+	}
 
 	return text;
 }

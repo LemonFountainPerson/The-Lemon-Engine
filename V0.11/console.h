@@ -10,15 +10,25 @@ int hashConVar(const char name[]);
 
 void setConsoleVariable(ConsoleVariable *variable, const char value[], World *GameWorld);
 
+void setConVarNamed(const char *name, const char *value, World *GameWorld);
+
 int ConVarAsInt(ConsoleVariable *variable);
+
+int getConVarAsInt(const char input[]);
 
 float ConVarAsFloat(ConsoleVariable *variable);
 
+float getConVarAsFloat(const char input[]);
+
 bool ConVarAsBool(ConsoleVariable *variable);
+
+bool getConVarAsBool(const char input[]);
 
 const char* ConVarAsString(ConsoleVariable *variable);
 
-const char* ConVarValueAsString(ConsoleVariable *variable, char result[32]);
+const char* getConVarAsString(const char input[]);
+
+const char* ConVarValueToString(ConsoleVariable *variable, char result[32]);
 
 
 void consoleInput(const char inputSource[USER_INPUT_MAX_LEN], World *GameWorld);
@@ -43,6 +53,8 @@ bool getNextConsoleBool(const char input[USER_INPUT_MAX_LEN]);
 
 Object* parseArgumentToFindObject(const char input[USER_INPUT_MAX_LEN], ObjectController *ObjectList);
 
+void initialiseConsoleVariables(ConsoleVariableList *list);
+
 void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS]);
 
 
@@ -51,8 +63,6 @@ int ConsoleCommand_Version(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 int ConsoleCommand_Quit(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_Restart(char input[USER_INPUT_MAX_LEN], World *GameWorld);
-
-int ConsoleCommand_Cheats(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_Tick(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
@@ -77,10 +87,6 @@ int ConsoleCommand_ResetBlacklist(char input[USER_INPUT_MAX_LEN], World *GameWor
 int ConsoleCommand_SetServerPassword(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_ServerPassword(char input[USER_INPUT_MAX_LEN], World *GameWorld);
-
-int ConsoleCommand_SetNetworkUpdateRate(char input[USER_INPUT_MAX_LEN], World *GameWorld);
-
-int ConsoleCommand_SetTimeOut(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 int ConsoleCommand_SetUsername(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
