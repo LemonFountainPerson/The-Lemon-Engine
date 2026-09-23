@@ -3,7 +3,7 @@
 
 ## File Location
 
-Defined in [EventManager.h](The-Lemon-Engine/V0.11/eventManager.h).
+Defined in [EventManager.h](../V0.11/eventManager.h).
 
 ## Syntax
 ```
@@ -39,7 +39,7 @@ Available since V0.06.
 
 ## File Location
 
-Defined in [LemonMain.h](The-Lemon-Engine/V0.11/LemonMain.h).
+Defined in [LemonMain.h](../V0.11/LemonMain.h).
 
 ## Syntax
 ```
@@ -66,7 +66,7 @@ Available since V0.08.
 
 ## File Location
 
-Defined in [LemonMain.h](The-Lemon-Engine/V0.11/LemonMain.h).
+Defined in [LemonMain.h](../V0.11/LemonMain.h).
 
 ## Syntax
 ```
