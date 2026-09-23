@@ -16,7 +16,7 @@ code directly.
 
 ## Inputs
 
-|                                                |             |                       |
+|                  Type                          |    Name     |      Description      |
 | ---------------------------------------------- | ----------- | --------------------- |
 | World * | **GameWorld** | A pointer to a World struct. By default, this will be the main World created at engine start-up. |
 
@@ -26,4 +26,4 @@ Returns a regular FuncResult enum, indicating whether the operation was successf
 
 ## Version
 
-Available since V0.06
+Available since V0.06.
