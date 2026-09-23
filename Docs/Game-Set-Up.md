@@ -24,3 +24,6 @@ code directly.
 
 Returns a regular FuncResult enum, indicating whether the operation was successful. (0 = LEMON_SUCCESS, -1 = LEMON_FAILURE, etc.)
 
+## Version
+
+Available since V0.06
