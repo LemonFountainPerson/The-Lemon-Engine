@@ -127,4 +127,4 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 ## Functions by Category
 
-[Game Set-Up](game-set-up.md)
+[Game Set-Up](Game Set-Up.md)
