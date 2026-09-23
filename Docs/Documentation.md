@@ -31,7 +31,7 @@ example, switching between top-down and platforming), you should include multipl
 
 [Animations](#animations)
 
-[Functions Quick Reference](#functions)
+[Functions Quick Reference](#functions-by-category)
 
 
 # Objects	
@@ -125,4 +125,6 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 
 
-## Functions 
+## Functions by Category
+
+[Game Set-Up](game-set-up.md)
