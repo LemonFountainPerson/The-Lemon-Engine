@@ -5,6 +5,7 @@
 
 Defined in [EventManager.h](The-Lemon-Engine/V0.11/eventManager.h).
 
+## Syntax
 ```
 int StartGame(World *GameWorld)
 ```
@@ -40,6 +41,7 @@ Available since V0.06.
 
 Defined in [LemonMain.h](The-Lemon-Engine/V0.11/LemonMain.h).
 
+## Syntax
 ```
 World* InitialiseWorld(void)
 ```
@@ -66,6 +68,7 @@ Available since V0.08.
 
 Defined in [LemonMain.h](The-Lemon-Engine/V0.11/LemonMain.h).
 
+## Syntax
 ```
 void DestroyWorld(World *GameWorld)	
 ```
