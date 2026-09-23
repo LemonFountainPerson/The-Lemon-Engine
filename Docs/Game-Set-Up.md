@@ -27,7 +27,7 @@ code directly.
 
 ## Return Value
 
-Returns a [FuncResult](DataTypes.md#FuncResult), indicating whether the operation was successful. (0 = LEMON_SUCCESS, -1 = LEMON_FAILURE, etc.)
+Returns a [FuncResult](EnumTypes.md#FuncResult), indicating whether the operation was successful. (0 = LEMON_SUCCESS, -1 = LEMON_FAILURE, etc.)
 
 ## Version
 
@@ -88,3 +88,5 @@ will be deleted after this function call, and thus any pointer to this data will
 ## Version
 
 Available since V0.10.
+
+-------------------------------
