@@ -30,4 +30,4 @@ Features include:
 - And more!
 
 
-Documentation can be found [here](Documentation.md)
+Documentation can be found [here.](Documentation.md)

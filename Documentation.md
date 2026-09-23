@@ -34,7 +34,7 @@ example, switching between top-down and platforming), you should include multipl
 [Functions Quick Reference](#functions)
 
 
-# Objects		{#objects}
+# Objects	
 
 The core asset in the Lemon Engine are objects; these represent almost everything in the gameworld such as the player, visible elements, geometry, etc. 
 Objects consist of three main parts: 
@@ -81,7 +81,7 @@ follow the motion and transparency of the parent are configured by setting the p
 
 
 
-# Animations    {#animations}
+# Animations   
 
 The animation system is operated through the spriteSets and the DisplayData. They are stored with AnimationFrame structs as linked lists connected to 
 an Animation struct representing each animation. These Animation structs are themselves stored as a linked list from the animations pointer located
@@ -125,4 +125,4 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 
 
-## Functions    {#functions}
+## Functions 
