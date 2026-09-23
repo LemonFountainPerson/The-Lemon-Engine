@@ -8,23 +8,6 @@ Current Version: 0.11
 This engine uses the C standard library and SDL3, and is compiled using GCC (Although any good C compiler should work).
 Everything is subject to change.
 
-## Getting Started
-
-**Core design methodology**
-
-This is not 100% uniform across the entire codebase, but in general:
-
--> Functions starting with a lowercase letter are intended to operate a core function for the engine and should not be changed unless the core functionality of 
-the engine needs to be changed. Conversely, functions that start with a capital letter are intended to be modified or added to in order to facilitate your game.
-
--> The FunctionResult enum defines a few simple exit conditions for functions to take - these can be used to clarify why a function is returning, primarily for 
-debugging purposes. For compatibility, 0 is still success (LEMON_SUCCESS) and -1 is a general error (LEMON_ERROR). Most functions will use these enums as their 
-return value.
-
--> The playerController can have its functionality completely swapped out or removed. If you are planning to have multiple physics formats in your game (for 
-example, switching between top-down and platforming), you should include multiple controllers than can be switched to dependent on the state of the game.
-
-
 ## Sections:
 
 [Objects](#objects)

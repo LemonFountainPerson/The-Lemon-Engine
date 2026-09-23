@@ -1,6 +1,10 @@
 
 # StartGame
 
+## File Location
+
+Defined in [EventManager.h](The-Lemon-Engine/V0.11/eventManager.h).
+
 ```
 int StartGame(World *GameWorld)
 ```
@@ -22,8 +26,62 @@ code directly.
 
 ## Return Value
 
-Returns a regular FuncResult enum, indicating whether the operation was successful. (0 = LEMON_SUCCESS, -1 = LEMON_FAILURE, etc.)
+Returns a [FuncResult](DataTypes.md#FuncResult), indicating whether the operation was successful. (0 = LEMON_SUCCESS, -1 = LEMON_FAILURE, etc.)
 
 ## Version
 
 Available since V0.06.
+
+
+
+# InitialiseWorld
+
+## File Location
+
+Defined in [LemonMain.h](The-Lemon-Engine/V0.11/LemonMain.h).
+
+```
+World* InitialiseWorld(void)
+```
+
+## Description
+
+This function will return a pointer to a new initialised World struct, allocated on the heap. 
+When finished with this World, you should call '[DestroyWorld](#DestroyWorld)' on it.
+
+
+## Return Value
+
+Returns a pointer to a [World](DataTypes.md#World) struct.
+
+## Version
+
+Available since V0.08.
+
+
+
+# DestroyWorld
+
+## File Location
+
+Defined in [LemonMain.h](The-Lemon-Engine/V0.11/LemonMain.h).
+
+```
+void DestroyWorld(World *GameWorld)	
+```
+
+## Description
+
+This function is used t dispose of a World that is no longer in use. All Objects, SceneActions, Texts, etc. created from this World
+will be deleted after this function call, and thus any pointer to this data will become invalid.
+
+## Inputs
+
+|                  Type                          |    Name     |      Description      |
+| ---------------------------------------------- | ----------- | --------------------- |
+| [World](DataTypes.md#World) * | **GameWorld** | A pointer to a World struct. This pointer is invalid after this function call. |
+
+
+## Version
+
+Available since V0.10.
