@@ -75,8 +75,7 @@ void DestroyWorld(World *GameWorld)
 
 ## Description
 
-This function is used t dispose of a World that is no longer in use. All Objects, SceneActions, Texts, etc. created from this World
-will be deleted after this function call, and thus any pointer to this data will become invalid.
+This function is used to dispose of a World that is no longer in use. All [Objects](DataTypes.md#Object), [SceneActions](DataTypes.md#SceneAction), [Texts](DataType.md#Text), etc. created from this World will be deleted after this function call, and thus any pointer to this data will become invalid.
 
 ## Inputs
 
