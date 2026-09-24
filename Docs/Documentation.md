@@ -99,6 +99,8 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 **Game set-up**
 
+- [StartUpLemonEngine()](Func_StartUpLemonEngine.md)
+
 - [StartGame()](Func_StartGame.md)
 
 - [InitialiseWorld()](Func_InitialiseWorld.md)
