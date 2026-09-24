@@ -1,4 +1,4 @@
-# The LemonEngine
+# The Lemon Engine
 **Liam Fuentes Pessoa**
 _________________________________________________
 
@@ -11,7 +11,7 @@ Inspired by many of the greats such as Source, GameMaker and Unity.
 
 Features include:
 
-- A Game Event system that controls triggerable events and is a sahred communication method for many parts of the engine
+- A Game Event system that controls triggerable events and is a shared communication method for many parts of the engine
 
 - Component add-ons for Objects to modularly expand an Objects' functionality
 
