@@ -16,33 +16,19 @@ Everything is subject to change.
 
 [Functions Quick Reference](#functions-by-category)
 
+[Data Structures](#data-structures)
+
+
 
 # Objects	
 
 The core asset in the Lemon Engine are objects; these represent almost everything in the gameworld such as the player, visible elements, geometry, etc. 
 Objects consist of three main parts: 
 
-The main Object struct is the most important element of an object, and it represents all logical attributes of an object. Objects are organised by IDs, 
+The main [Object](Data_Object.md) struct is the most important element of an object, and it represents all logical attributes of an object. Objects are organised by IDs, 
 with each ID uniquely defining behaviour. (E.g representing what the object is, enemy, collectable, interactable sign, etc.)
 
-```
-typedef struct Object
-{
-	char name[OBJECT_NAME_LENGTH];	// unique identifier for Object 		
-	int ObjectID;
-	...
-
-	PhysicsBox *ObjectBox;
-	DisplayData *ObjectDisplay;
-
-	struct Object *ParentObject;
-	ParentType ParentLink;
-
-	...
-} Object;
-```
-
-PhysicsBoxes represent the shape and collision state of an object. It controls how it will collide with other objects (if it should) as well as its
+[PhysicsBoxes](Data_PhysicsBox.md) represent the shape and collision state of an object. It controls how it will collide with other objects (if it should) as well as its
 current position, direction and velocities. The current position (xPos, yPos) is stored alongside the previous position (prevXPos, prevYPos) from 1 GameTick ago.
 'XVelocity' and 'YVelocity' are self-explanitory, but 'forwardVelocity' defines a separate velocity that is used to move the object along its pointed direction. Using
 this is optional.
@@ -51,7 +37,7 @@ Likewise, 'inAir' and 'GroundBox' are also paramters used to controlphysics; ina
 is in the air, up to 100. 
 The 'shape' variable defines what shape the hitbox is, while the 'solid' variable describes its behaviour.
 
-DisplayDatas are used to control the sprites rendered and animations playing on the object, if it has any. For more info on Animations, check out the Animations section.
+[DisplayDatas](Data_DisplayData.md) are used to control the sprites rendered and animations playing on the object, if it has any. For more info on Animations, check out the Animations section.
 
 In addition to these 3 base components, additional components can be created and added via the ObjectComponent system. Each type of component has a SparseList to store
 them, allowing for fast and space efficient structs of data that can 'attached' to specific instances of objects to expand their functionality. Examples include TileMaps and 
@@ -66,9 +52,9 @@ follow the motion and transparency of the parent are configured by setting the p
 
 # Animations   
 
-The animation system is operated through the spriteSets and the DisplayData. They are stored with AnimationFrame structs as linked lists connected to 
-an Animation struct representing each animation. These Animation structs are themselves stored as a linked list from the animations pointer located
-in the spriteSet.
+The animation system is operated through the spriteSets and the DisplayData. They are stored with [AnimationFrame](Data_AnimationFrame.md) structs as an array stored in 
+an [Animation](Data_Animation.md) struct representing each animation. These Animation structs are stored as a linked list from the animations pointer located
+in the [SpriteSet](Data_SpriteSet.md).
 
 ```
 struct animationFrame 
@@ -113,23 +99,27 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 **Game set-up**
 
--[StartGame()](Func_StartGame.md)
+- [StartGame()](Func_StartGame.md)
 
--[InitialiseWorld()](Func_InitialiseWorld.md)
+- [InitialiseWorld()](Func_InitialiseWorld.md)
 
--[DestroyWorld()](Func_DestroyWorld.md)
+- [DestroyWorld()](Func_DestroyWorld.md)
 
 
 ## Data Structures
 
--[World](Data_World.md)
+- [World](Data_World.md)
 
--[Object](Data_Object.md)
+- [Object](Data_Object.md)
 
--[PhysicsBox](Data_PhysicsBox.md)
+- [PhysicsBox](Data_PhysicsBox.md)
 
--[DisplayData](Data_DisplayData.md)
+- [DisplayData](Data_DisplayData.md)
 
--[SceneAction](Data_SceneAction.md)
+- [SpriteSet](Data_SpriteSet.md)
 
--[Text](Data_Text.md)
+- [Animation](Data_Animation.md)
+
+- [SceneAction](Data_SceneAction.md)
+
+- [Text](Data_Text.md)
