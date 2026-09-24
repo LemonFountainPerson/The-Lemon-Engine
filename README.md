@@ -31,3 +31,5 @@ Features include:
 
 
 Documentation can be found [here.](Docs/Documentation.md)
+
+For the full changelog, go [here.](ChangeLog.md)

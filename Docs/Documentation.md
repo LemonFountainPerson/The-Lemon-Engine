@@ -110,4 +110,26 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 ## Functions by Category
 
-[Game Set-Up](Game-Set-Up.md)
+
+**Game set-up**
+
+-[StartGame()](Func_StartGame.md)
+
+-[InitialiseWorld()](Func_InitialiseWorld.md)
+
+-[DestroyWorld()](Func_DestroyWorld.md)
+
+
+## Data Structures
+
+-[World](Data_World.md)
+
+-[Object](Data_Object.md)
+
+-[PhysicsBox](Data_PhysicsBox.md)
+
+-[DisplayData](Data_DisplayData.md)
+
+-[SceneAction](Data_SceneAction.md)
+
+-[Text](Data_Text.md)
