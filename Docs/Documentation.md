@@ -112,12 +112,20 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 - [CameraControl()](Func_CameraControl.md)
 
+- [EndCutscene()](Func_EndCutscene.md)
+
+- [PlaySound()](Func_PlaySound.md)
+
+- [SetLRPan()](Func_SetLRPan.md)
+
 - [NewConsoleVariable()](Func_NewConsoleVariable.md)
 
 
 ## Data Structures
 
 - [World](Data_World.md)
+
+- [PlayerData](Data_PlayerData.md)
 
 - [Camera](Data_Camera.md)
 
@@ -131,9 +139,13 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 - [Animation](Data_Animation.md)
 
+- [Sprite](Data_Sprite.md)
+
 - [SceneAction](Data_SceneAction.md)
 
 - [Text](Data_Text.md)
+
+- [SoundInstance](Data_SoundInstance.md)
 
 - [ConsoleCommand](Data_ConsoleCommand.md)
 

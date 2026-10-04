@@ -27,8 +27,6 @@ const char* getSceneActionName(SceneActionID input);
 
 int EndCutscene(World *GameWorld);
 
-int WaitUntil(SceneAction *inputAction);
-
 SceneAction* SceneAction_SwitchCutscene(int sceneID, World *GameWorld);
 
 SceneAction* SceneAction_TriggerGameEvent(GameEvent *inputEvent, World *GameWorld);

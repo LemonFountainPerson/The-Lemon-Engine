@@ -6,7 +6,6 @@
 
 
 static MIX_Mixer *audioMixer = NULL;
-
 static SDL_PropertiesID propertiesContainer = 0;
 
 static const char channelNames[CHANNEL_COUNT][CHANNEL_NAME_LENGTH] = {"Music", "Speech", "PlayerSfx", "ObjectSfx"};

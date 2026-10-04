@@ -1757,7 +1757,7 @@ FuncResult ConsoleCommand_Cutscene(char input[USER_INPUT_MAX_LEN], World *GameWo
 	{
 		if (GameWorld->CurrentCutscene != NO_CUTSCENE)
 		{
-			GameWorld->CurrentCutscene = END_CUTSCENE;
+			EndCutscene(GameWorld);
 			GameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;
 		}
 	}

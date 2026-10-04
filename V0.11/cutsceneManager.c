@@ -1280,6 +1280,7 @@ int EndCutscene(World *GameWorld)
 		GameWorld->GameState = GAMEPLAY;
 	}
 
+	// release player if exists
 	Object *PlayerObject = GameWorld->Player.PlayerPtr;
 
 	if (PlayerObject != NULL)

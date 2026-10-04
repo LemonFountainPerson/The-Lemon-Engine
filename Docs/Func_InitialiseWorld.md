@@ -17,7 +17,7 @@ When finished with this World, you should call '[DestroyWorld()](Func_DestroyWor
 
 ## Return Value
 
-Returns a pointer to a [World](Data_World.md) struct.
+Returns a pointer to a [World](Data_World.md) struct, or NULL on failure.
 
 ## Version
 

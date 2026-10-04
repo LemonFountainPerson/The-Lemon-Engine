@@ -25,7 +25,7 @@ This function is used to create a new [ConsoleVariable](Data_ConsoleVariable.md)
 
 ## Return Value
 
-Returns a pointer to the newly created [ConsoleVariable](Data_ConsoleVariable.md).
+Returns a pointer to the newly created [ConsoleVariable](Data_ConsoleVariable.md), or NULL on failure.
 
 ## Version
 
