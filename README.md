@@ -32,4 +32,4 @@ Features include:
 
 Documentation can be found [here.](Docs/Documentation.md)
 
-For the full changelog, go [here.](ChangeLog.md)
+The full changelog can be found [here.](ChangeLog.md)
