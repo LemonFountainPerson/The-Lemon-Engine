@@ -1929,7 +1929,7 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 
 void putConsole(const char input[], ...)
 {
-	if (input[0] < 32)
+	if (input[0] == '\0')
 	{
 		return;
 	}
@@ -1954,7 +1954,7 @@ void putConsole(const char input[], ...)
 
 void putConsoleTS(const char input[], ...)
 {
-	if (input[0] < 32)
+	if (input[0] == '\0')
 	{
 		return;
 	}
@@ -1981,7 +1981,7 @@ void putConsoleTS(const char input[], ...)
 
 void putConsoleError(const char input[], ...)
 {
-	if (input[0] < 32 || !DebugSettings.showErrors)
+	if (input[0] == '\0' || !DebugSettings.showErrors)
 	{
 		return;
 	}

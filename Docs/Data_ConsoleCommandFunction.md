@@ -2,7 +2,7 @@
 
 ## Definition
 ```
-typedef int (*ConsoleCommandFunction)(char *, World *);
+typedef FuncResult (*ConsoleCommandFunction)(char *, World *);
 ```
 
 ## Description

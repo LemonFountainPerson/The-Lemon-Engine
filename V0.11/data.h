@@ -1321,7 +1321,7 @@ typedef enum ConsoleFlag
 	CONFLAG_SVR_AND_PRO	= CONFLAG_PROTECTED | CONFLAG_SERVER_SIDE
 } ConsoleFlag;
 
-typedef int (*ConsoleCommandFunction)(char *, World *);
+typedef FuncResult (*ConsoleCommandFunction)(char *, World *);
 
 typedef struct ConsoleCommand
 {

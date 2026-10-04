@@ -1,8 +1,8 @@
 LEMONSCRIPT<1>--LEVEL_DATA--
 Preset:  "Preset1"
 > Level data
-LVFLAG: START_CamPos, 1000, 0
-LVFLAG: Player_Position 1000, 200	
+LVFLAG: STARTCamPos, 1000, 0
+LVFLAG: PlayerPosition 1000, 200	
 
 OBJECT: 1, 0, -32, 48000, 1, 1
 

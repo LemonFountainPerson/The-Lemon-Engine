@@ -905,7 +905,7 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 }
 
 
-int ConsoleCommand_Version(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Version(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	putConsole("\n%s\n%s\nScript Version: %s", LEMON_ENGINE_INFO, LEMON_VERSION, LEMON_SCRIPT_VERSION);
 	if (DEBUG_MODE)
@@ -916,28 +916,28 @@ int ConsoleCommand_Version(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Quit(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Quit(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	GameWorld->GameState = CLOSE_GAME;
 
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Restart(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Restart(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	GameWorld->GameState = RESTART_GAME;
 
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Tick(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Tick(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	putConsoleTS("Tickrate: %d", EngineSettings.GameTicksPerSecond);
 
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Say(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Say(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char buffer[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, buffer);
@@ -947,7 +947,7 @@ int ConsoleCommand_Say(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_SayText(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_SayText(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char buffer[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, buffer);
@@ -962,7 +962,7 @@ int ConsoleCommand_SayText(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_StartServer(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_StartServer(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char address[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, address);
@@ -981,14 +981,14 @@ int ConsoleCommand_StartServer(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_CloseServer(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_CloseServer(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	closeServer();	
 
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Connect(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Connect(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char address[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, address);
@@ -1007,14 +1007,14 @@ int ConsoleCommand_Connect(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Disconnect(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Disconnect(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	disconnect();
 
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Kick(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Kick(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char username[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, username);
@@ -1023,7 +1023,7 @@ int ConsoleCommand_Kick(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_ResetBlacklist(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_ResetBlacklist(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	if (Networking.connectMode != SERVER)
 	{
@@ -1044,7 +1044,7 @@ int ConsoleCommand_ResetBlacklist(char input[USER_INPUT_MAX_LEN], World *GameWor
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_ListClients(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_ListClients(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	putConsole("Server: %s", Networking.serverUsername);
 
@@ -1059,7 +1059,7 @@ int ConsoleCommand_ListClients(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_ServerPassword(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_ServerPassword(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN];
 	getNextConsoleArg(input, arg);
@@ -1069,7 +1069,7 @@ int ConsoleCommand_ServerPassword(char input[USER_INPUT_MAX_LEN], World *GameWor
 }
 
 
-int ConsoleCommand_SetUsername(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_SetUsername(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN];
 	getNextConsoleArg(input, arg);
@@ -1079,7 +1079,7 @@ int ConsoleCommand_SetUsername(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 }
 
 // convar
-// int ConsoleCommand_SetNetworkUpdateRate(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+// FuncResult ConsoleCommand_SetNetworkUpdateRate(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 // {
 // 	float time = fClamp(getNextConsoleFloat(input), 0.001, 1.0);
 // 	Networking.secondsBetweenUpdates = time;
@@ -1088,7 +1088,7 @@ int ConsoleCommand_SetUsername(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 // }
 
 // convar
-// int ConsoleCommand_SetTimeOut(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+// FuncResult ConsoleCommand_SetTimeOut(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 // {
 // 	Networking.connectionTimeout = fClamp(getNextConsoleFloat(input), 0.1, 60.0);
 
@@ -1096,7 +1096,7 @@ int ConsoleCommand_SetUsername(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 // }
 
 
-int ConsoleCommand_Fullscreen(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Fullscreen(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	if (ScreenData.Fullscreen)
 	{
@@ -1121,7 +1121,7 @@ int ConsoleCommand_Fullscreen(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 }
 
 // convar
-int ConsoleCommand_Show(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Show(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, arg);
@@ -1151,14 +1151,14 @@ int ConsoleCommand_Show(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Vsync(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Vsync(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	setVsync(getNextConsoleBool(input));
 
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Debug(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Debug(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	DebugSettings.DebugTextDisplayMode = getNextConsoleInt(input);
 	RemoveObjectDebugTexts();
@@ -1167,7 +1167,7 @@ int ConsoleCommand_Debug(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 }
 
 // convar
-int ConsoleCommand_Fps(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Fps(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	DebugSettings.FPSCounter = getNextConsoleBool(input);
 
@@ -1175,7 +1175,7 @@ int ConsoleCommand_Fps(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 }
 
 // convar
-int ConsoleCommand_Draw(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Draw(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, arg);
@@ -1217,7 +1217,7 @@ int ConsoleCommand_Draw(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 }
 
 // convar
-int ConsoleCommand_HitboxThickness(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_HitboxThickness(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	RenderSettings.HitboxThickness = getNextConsoleInt(input);
 
@@ -1225,7 +1225,7 @@ int ConsoleCommand_HitboxThickness(char input[USER_INPUT_MAX_LEN], World *GameWo
 }
 
 
-int ConsoleCommand_UsedMemory(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_UsedMemory(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	ObjectController *ObjectList = &GameWorld->ObjectList;
 	char arg[USER_INPUT_MAX_LEN] = {0};
@@ -1357,7 +1357,7 @@ int ConsoleCommand_UsedMemory(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_AddObject(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_AddObject(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int ID = getNextConsoleInt(input);
 	int args[6] = {0};
@@ -1371,7 +1371,7 @@ int ConsoleCommand_AddObject(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Object(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Object(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	ObjectController *ObjectList = &GameWorld->ObjectList;
 	char arg[USER_INPUT_MAX_LEN] = {0};
@@ -1475,7 +1475,7 @@ void displayObjectInfoConsole(Object *input)
 	putConsole("XPos: %f  YPos: %f \nLayer: %d (%s)", input->ObjectBox->xPos, input->ObjectBox->yPos, objLayer, getLayerName(objLayer));
 }
 
-int ConsoleCommand_BackGround(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_BackGround(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int ID = getNextConsoleInt(input);
 	int set = getNextConsoleInt(input);
@@ -1485,7 +1485,7 @@ int ConsoleCommand_BackGround(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Level(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Level(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int level = getNextConsoleInt(input);
 	loadLevel(level, GameWorld);
@@ -1493,7 +1493,7 @@ int ConsoleCommand_Level(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Event(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Event(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, arg);
@@ -1543,7 +1543,7 @@ int ConsoleCommand_Event(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_List(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_List(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	ObjectController *ObjectList = &GameWorld->ObjectList;
 	char arg[USER_INPUT_MAX_LEN] = {0};
@@ -1625,7 +1625,7 @@ int ConsoleCommand_List(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_CamView(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_CamView(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, arg);
@@ -1689,7 +1689,7 @@ int ConsoleCommand_CamView(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Sound(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Sound(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, arg);
@@ -1735,7 +1735,7 @@ int ConsoleCommand_Sound(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Cutscene(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Cutscene(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, arg);
@@ -1769,7 +1769,7 @@ int ConsoleCommand_Cutscene(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Load(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Load(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, arg);
@@ -1794,7 +1794,7 @@ int ConsoleCommand_Load(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 		return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_DebugText(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_DebugText(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, arg);
@@ -1811,7 +1811,7 @@ int ConsoleCommand_DebugText(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Pause(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Pause(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	DebugSettings.PauseEngine = (DebugSettings.PauseEngine + 1) % 2;
 
@@ -1827,7 +1827,7 @@ int ConsoleCommand_Pause(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_SetPos(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_SetPos(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	float x = getNextConsoleFloat(input);
 	float y = getNextConsoleFloat(input);
@@ -1837,7 +1837,7 @@ int ConsoleCommand_SetPos(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_SetCamPos(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_SetCamPos(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	float x = getNextConsoleFloat(input);
 	float y = getNextConsoleFloat(input);
@@ -1847,7 +1847,7 @@ int ConsoleCommand_SetCamPos(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_SetCamZoom(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_SetCamZoom(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	if (input[DebugSettings.argIndex] == 0)
 	{
@@ -1864,7 +1864,7 @@ int ConsoleCommand_SetCamZoom(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_SetTickRate(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_SetTickRate(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int rate = getNextConsoleInt(input);
 
@@ -1873,7 +1873,7 @@ int ConsoleCommand_SetTickRate(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Save(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Save(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int save = getNextConsoleInt(input);
 	saveGame(save, GameWorld);
@@ -1881,7 +1881,7 @@ int ConsoleCommand_Save(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_SaveSettings(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_SaveSettings(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int save = getNextConsoleInt(input);
 	saveSettings(save, GameWorld);
@@ -1889,7 +1889,7 @@ int ConsoleCommand_SaveSettings(char input[USER_INPUT_MAX_LEN], World *GameWorld
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_LoadSave(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_LoadSave(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int save = getNextConsoleInt(input);
 	loadSave(save, GameWorld);
@@ -1897,14 +1897,14 @@ int ConsoleCommand_LoadSave(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_LoadSettings(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_LoadSettings(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	loadSettings(getNextConsoleInt(input), GameWorld);
 
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_AddGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_AddGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char name[USER_INPUT_MAX_LEN] = {0};
 
@@ -1917,7 +1917,7 @@ int ConsoleCommand_AddGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_SetGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_SetGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int index;
 
@@ -1946,7 +1946,7 @@ int ConsoleCommand_SetGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_CheckGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_CheckGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int index;
 
@@ -1974,7 +1974,7 @@ int ConsoleCommand_CheckGameFlag(char input[USER_INPUT_MAX_LEN], World *GameWorl
 }
 
 
-int ConsoleCommand_Help(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Help(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	char arg[USER_INPUT_MAX_LEN] = {0};
 	getNextConsoleArg(input, arg);
@@ -2024,7 +2024,7 @@ int ConsoleCommand_Help(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_DoABarrelRoll(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_DoABarrelRoll(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	Object *player = GameWorld->Player.PlayerPtr;
 	if (player == NULL)
@@ -2049,7 +2049,7 @@ int ConsoleCommand_DoABarrelRoll(char input[USER_INPUT_MAX_LEN], World *GameWorl
 	return LEMON_SUCCESS;
 }
 
-int ConsoleCommand_Noclip(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+FuncResult ConsoleCommand_Noclip(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	if (GameWorld->Player.PlayerPtr == NULL)
 	{
