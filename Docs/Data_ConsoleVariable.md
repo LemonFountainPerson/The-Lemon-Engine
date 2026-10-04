@@ -15,7 +15,7 @@ typedef struct ConsoleVariable
 ```
 
 ## Description
-ConsoleVariables are a type of variable that are exposed during runtime in the Developer Console. ConsoleVariables have identifying 
+ConsoleVariables are a type of variable that are exposed during runtime in the [Developer Console](Doc_DeveloperConsole.md). ConsoleVariables have identifying 
 names, a data type defined by valueType ([ConsoleVariableType](Enum_ConsoleVariableType.md)) and can have attributes controlled by flags 
 ([ConsoleCommandFlag](Enum_ConsoleCommandFlag.md)).
 
