@@ -124,3 +124,5 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 - [SceneAction](Data_SceneAction.md)
 
 - [Text](Data_Text.md)
+
+- [ConsoleVariable](Data_ConsoleVariable.md)

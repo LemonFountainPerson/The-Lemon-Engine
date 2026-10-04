@@ -239,7 +239,7 @@ ConsoleVariable* getUnusedConVar(int hashIndex)
 }
 
 
-ConsoleVariable* NewConsoleVariable(const char name[], const char helpString[], ConsoleVariableType valueType, const char value[], ConsoleCommandFlag flags)
+ConsoleVariable* NewConsoleVariable(const char name[], const char helpString[], ConsoleVariableType valueType, const char value[], ConsoleFlag flags)
 {
 	if (name == NULL || name[0] == '\0')
 	{
@@ -552,7 +552,7 @@ void executeCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	return;
 }
 
-bool commandIsAllowed(ConsoleCommandFlag input)
+bool commandIsAllowed(ConsoleFlag input)
 {
 	if ((input & CONFLAG_SERVER_SIDE) != 0 && Networking.connectMode == CLIENT)
 	{

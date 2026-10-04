@@ -27,6 +27,8 @@ variable can only be changed when cheats are active, CONFLAG_SERVER_SIDE means t
 
 -> Added the 'RepeatUntil' and 'RepeatWhile' SceneActions, usable in LemonScript files.
 
+-> Added BSPTrees to store static Objects for faster collision detection.
+
 
 ## Structure Changes
 

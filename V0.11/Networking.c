@@ -1361,7 +1361,12 @@ void processSettingsPacket(NetworkPacket *packet)
 
 void updateServerConVar(ConsoleVariable *input)
 {
-	if (Networking.connectMode != SERVER || input == NULL || (input->flags & CONFLAG_SVR_AND_PRO) != CONFLAG_SERVER_SIDE)
+	if (Networking.connectMode != SERVER || input == NULL)
+	{
+		return;
+	}
+
+	if ((input->flags & CONFLAG_PROTECTED) != 0 || (input->flags & CONFLAG_SERVER_SIDE) == 0) 
 	{
 		return;
 	}

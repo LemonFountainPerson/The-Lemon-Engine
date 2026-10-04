@@ -6,7 +6,7 @@ ConsoleCommand* getConsoleCommand(const char name[]);
 
 ConsoleVariable* getConsoleVariable(const char name[]);
 
-ConsoleVariable* NewConsoleVariable(const char name[], const char helpString[], ConsoleVariableType valueType, const char value[], ConsoleCommandFlag flags);
+ConsoleVariable* NewConsoleVariable(const char name[], const char helpString[], ConsoleVariableType valueType, const char value[], ConsoleFlag flags);
 
 int hashConVar(const char name[]);
 
@@ -37,7 +37,7 @@ void consoleInput(const char inputSource[USER_INPUT_MAX_LEN], World *GameWorld);
 
 void executeCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
-bool commandIsAllowed(ConsoleCommandFlag input);
+bool commandIsAllowed(ConsoleFlag input);
 
 void getNextConsoleArg(const char input[], char argDest[]);
 

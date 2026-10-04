@@ -1311,7 +1311,7 @@ typedef struct SceneAction
 } SceneAction;
 
 
-typedef enum ConsoleCommandFlag
+typedef enum ConsoleFlag
 {
 	CONFLAG_NONE		= 0x0000,
 	CONFLAG_CHEAT 		= 0x0001,
@@ -1319,7 +1319,7 @@ typedef enum ConsoleCommandFlag
 	CONFLAG_NOTIFY		= 0x0004,
 	CONFLAG_PROTECTED 	= 0x0008,
 	CONFLAG_SVR_AND_PRO	= CONFLAG_PROTECTED | CONFLAG_SERVER_SIDE
-} ConsoleCommandFlag;
+} ConsoleFlag;
 
 typedef int (*ConsoleCommandFunction)(char *, World *);
 
@@ -1327,7 +1327,7 @@ typedef struct ConsoleCommand
 {
 	char name[MAX_LEN];
 	char helpString[CONSOLE_HELP_MAX_LEN];
-	ConsoleCommandFlag flags;
+	ConsoleFlag flags;
 
 	char formatString[MAX_LEN];
 	ConsoleCommandFunction function;
@@ -1354,7 +1354,7 @@ typedef struct ConsoleVariable
 	int nameLength;
 	char name[MAX_LEN];
 	char helpString[CONSOLE_HELP_MAX_LEN];
-	ConsoleCommandFlag flags;
+	ConsoleFlag flags;
 
 	ConsoleVariableData value;
 	ConsoleVariableType valueType;
