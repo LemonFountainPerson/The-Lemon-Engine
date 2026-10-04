@@ -24,8 +24,8 @@ typedef struct soundInstance
 
 ## Description
 This struct represents a sound being played by the engine. Sounds can be loaded asynchronously, so
-before attempting to write, delete, or otherwise modify one you should ensure that the 'state' variable
-is not set to 'SOUND_LOADING'. (Failing to do so will result in a race condition.)
+before attempting to write, delete, or otherwise modify one you should ensure that the ['state'](Enum_SoundState.md) 
+variable is not set to 'SOUND_LOADING'. (Failing to do so will result in a race condition.)
 
 Sounds can be played by calling [PlaySound()](Func_PlaySound.md).
 
