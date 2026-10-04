@@ -665,7 +665,6 @@ typedef struct Object
 	ObjectState State;
 	CurrentAction Action;
 	ReservedFlags reserved;
-	int instanceNumber;
 
 	struct Object *Parent;
 	ParentType ParentLink;
@@ -676,6 +675,7 @@ typedef struct Object
 	struct Object *nextObject;
 	struct Object *prevObject;	
 	const int index;
+	int instanceNumber;
 
 	// Multi-purpose args
 	int arg1;
@@ -1120,7 +1120,6 @@ typedef struct Camera
 
 	float CameraXBuffer;
 	float CameraYBuffer;
-	bool CameraLatch;
 	CameraState CameraMode;
 } Camera;
 

@@ -106,12 +106,20 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 - [Tick()](Func_Tick.md)
 
+- [Render()](Func_Render.md)
+
+- [RenderEngine()](Func_RenderEngine.md)
+
+- [CameraControl()](Func_CameraControl.md)
+
 - [NewConsoleVariable()](Func_NewConsoleVariable.md)
 
 
 ## Data Structures
 
 - [World](Data_World.md)
+
+- [Camera](Data_Camera.md)
 
 - [Object](Data_Object.md)
 

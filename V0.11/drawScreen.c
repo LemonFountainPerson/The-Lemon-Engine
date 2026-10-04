@@ -973,8 +973,8 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 		break;
 
 	case 2: 
-		sprintf(text, "Camera X: %.2f  Camera Y: %.2f \nCameraLatch: %d \nBuffer X: %.2f  Buffer Y: %.2f", 
-			renderCamera.CameraX, renderCamera.CameraY, renderCamera.CameraLatch, renderCamera.CameraXBuffer, renderCamera.CameraYBuffer);
+		sprintf(text, "Camera X: %.2f  Camera Y: %.2f \nBuffer X: %.2f  Buffer Y: %.2f", 
+			renderCamera.CameraX, renderCamera.CameraY, renderCamera.CameraXBuffer, renderCamera.CameraYBuffer);
 		addDebugText(text, -140, (renderCamera.height >> 1), 0, DTFORMAT_SCREEN_RELATIVE);
 		break;
 

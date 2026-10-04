@@ -2107,7 +2107,6 @@ int ResetCamera(Camera *inputCam)
 	inputCam->minCameraX = -inputCam->maxCameraX;
 	inputCam->maxCameraY = (int)GetConVarAsFloat("ply_boundy");
 	inputCam->minCameraY = -inputCam->maxCameraY;
-	inputCam->CameraLatch = false;
 	inputCam->CameraXBuffer = 0;
 	inputCam->CameraYBuffer = 0;
 	inputCam->CameraMode = FOLLOW_PLAYER;
