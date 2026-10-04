@@ -20,10 +20,11 @@ typedef enum RenderMode
 
 ## Description
 This defines the method through which to render a [Sprite](Data_Sprite.md), usually to an [Object](Data_Object.md).
-For example, SINGLE renders the entire image once centered on the Object.
-SCALE renders the entire image once stretched or squeezed to fit the exact size of the Object.
-TILE renders the image tiled to fit the size of the Object, and cannot be rotated.
-DEFAULT_TO_SPRITE is not to be used by actual Sprites as it is used by Objects to allow the Sprites' default rendermode to be used.
+For example, 
+- SINGLE renders the entire image once centered on the Object.
+- SCALE renders the entire image once stretched or squeezed to fit the exact size of the Object.
+- TILE renders the image tiled to fit the size of the Object, and cannot be rotated.
+- DEFAULT_TO_SPRITE is not to be used by actual Sprites as it is used by Objects to allow the Sprites' default rendermode to be used.
 
 
 ## Version
