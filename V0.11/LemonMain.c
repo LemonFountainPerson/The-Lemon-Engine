@@ -6,7 +6,7 @@ RenderFrame ScreenData = {0};
 float deltaTime = 0.0;
 
 
-ButtonState buttons[INPUT_COUNT] = {0};
+ButtonState Buttons[INPUT_COUNT] = {0};
 
 MouseData MouseInput = {0};
 
@@ -45,7 +45,7 @@ int RunLemonEngine(void)
 
 
 	// Game initialisation
-	World *GameWorld = initialiseWorld();
+	World *GameWorld = InitialiseWorld();
     if (GameWorld == NULL)
     {
     	return LEMON_ERROR;
@@ -99,8 +99,8 @@ int RunLemonEngine(void)
 
 		if (GameWorld->GameState == RESTART_GAME)
 		{
-			destroyWorld(GameWorld);
-			GameWorld = initialiseWorld();
+			DestroyWorld(GameWorld);
+			GameWorld = InitialiseWorld();
 			if (GameWorld == NULL)
 			{
 				return LEMON_ERROR;	
@@ -160,7 +160,7 @@ int StartUpLemonEngine(void)
 		return LEMON_ERROR;
 	}
 	
-	if (initialiseScreen(&ScreenData, H_RESOLUTION, V_RESOLUTION, false) != LEMON_SUCCESS)
+	if (InitialiseScreen(&ScreenData, H_RESOLUTION, V_RESOLUTION, false) != LEMON_SUCCESS)
 	{
 		SDL_Quit();
 		TTF_Quit();
@@ -173,35 +173,29 @@ int StartUpLemonEngine(void)
 		return LEMON_ERROR;
 	}
 
-	if (initialiseAudio() != LEMON_SUCCESS)
+	if (InitialiseAudio() != LEMON_SUCCESS)
 	{
 		return LEMON_ERROR;
 	}
 
-    // initialise data not attached to GameWorld
-    initialiseConsoleVariables(&DebugSettings.variableList);
-    createConsoleCommands(DebugSettings.commands);
-
-    initialiseNetworkData();
+	// initialise data not attached to GameWorld
+    InitialiseConsole();
+    InitialiseChatLog(&Chat);
+    InitialiseNetworkData();
     SetEngineSettingsToDefault();
 	SetRenderSettingsToDefault();
 	SetTextSettingsToDefault();
 	SetDebugSettingsToDefault();
 
 	GamePadInput.gamepad = NULL;
-	GamePadInput.ID = 0;
     ClearInput();
 	 
-    char debugFontPath[MAX_LEN] = DEBUG_FONT;
-    TextSettings.DebugFont.font = TTF_OpenFont(debugFontPath, TextSettings.DebugTextPointSize);
-    TextSettings.DebugFont.textCount = 0;
-    TextSettings.DebugFont.name[0] = '\0';
-    TextSettings.DebugFont.deleteWhenUnused = false;
-    initialiseTextList(&TextSettings.DebugTextList);
+	memset(&DebugSettings.DebugFont, 0, sizeof(Font));
+    DebugSettings.DebugFont.font = TTF_OpenFont(DEBUG_FONT, DebugSettings.DebugTextPointSize);
+    DebugSettings.DebugFont.deleteWhenUnused = false;
+    InitialiseTextList(&DebugSettings.DebugTextList);
 
-    initialiseChatLog(&Chat);
-    
-	srand(RANDOM_SEED);
+    SetWindowIcon("MissingIcon");							// Initial window icon
 
 	putConsole("Engine initialised!\n");
 
@@ -212,7 +206,7 @@ int StartUpLemonEngine(void)
 int CloseGame(World *GameWorld, RenderFrame *ScreenData)
 {
 	// Clear game data and cleanup
-	destroyWorld(GameWorld);
+	DestroyWorld(GameWorld);
 
 	cleanUpAudioData();
 
@@ -220,6 +214,7 @@ int CloseGame(World *GameWorld, RenderFrame *ScreenData)
 
 	if (LEMON_NETWORKING_ENABLED)
 	{
+		CleanUpNetworkData();
 		NET_Quit();
 	}
  	
@@ -256,7 +251,6 @@ FuncResult CheckResourceData(void)
 		return MISSING_DATA;
 	}
 
-	printf("%d", access(newPath, W_OK));
 	if (!DEBUG_MODE && access(newPath, W_OK) != -1)
 	{
 		return INVALID_DATA;
@@ -266,7 +260,7 @@ FuncResult CheckResourceData(void)
 	return LEMON_SUCCESS;
 }
 
-int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullscreen)
+int InitialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullscreen)
 {
 	if (ScreenData == NULL)
 	{
@@ -318,14 +312,10 @@ int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullsc
 		putConsoleError("Failed to create Text renderer.");
 	}
 
-	SetWindowIcon("MissingIcon");							// Initial window icon
-
-	putConsole("Renderer initialised!\n");
-
 	return LEMON_SUCCESS;
 }
 
-World* initialiseWorld(void)
+World* InitialiseWorld(void)
 {
 	World *GameWorld = malloc(sizeof(World));
 	if (GameWorld == NULL)
@@ -337,9 +327,9 @@ World* initialiseWorld(void)
 	// Game world creation
 	memset(GameWorld, 0, sizeof(World));
 	ResetCamera(&GameWorld->MainCamera);
-    initialiseCameraViews(GameWorld->views);
-    initialiseTextList(&GameWorld->TextList);
-    initialiseFontList(&GameWorld->FontList);
+    InitialiseCameraViews(GameWorld->views);
+    InitialiseTextList(&GameWorld->TextList);
+    InitialiseFontList(&GameWorld->FontList);
 
 	GameWorld->GameState = EMPTY_GAME;
 	GameWorld->CurrentCutscene = NO_CUTSCENE;
@@ -348,10 +338,10 @@ World* initialiseWorld(void)
 	GameWorld->nextSceneAction = NULL;
 	
 	// Object controller creation
-	initialiseObjectController(&GameWorld->ObjectList);
+	InitialiseObjectController(&GameWorld->ObjectList);
 
 	// Load backgrounds
-	initialiseBackGround(&GameWorld->WorldBackground);
+	InitialiseBackGround(&GameWorld->WorldBackground);
 
 	InitialisePlayerData(&GameWorld->Player);
 
@@ -365,81 +355,15 @@ World* initialiseWorld(void)
 	return GameWorld;
 }
 
-void initialiseObjectController(ObjectController *newController)
-{
-	if (newController == NULL)
-	{
-		return;
-	}
 
-	newController->lastObject = NULL;
-	newController->firstObject = NULL;
-	initialiseSpriteSetList(&newController->spriteSets);
-	newController->cachedFirstObject = NULL;
-	newController->cachedLastObject = NULL;
-	newController->availableSlots = NULL;
-	newController->FrameUpdates = NULL;
-
-	initialiseComponents(newController);
-	
-	ComponentData *newArena = &newController->objectComponents;
-
-	int i = EngineSettings.MaxObjects - 1;
-	Object *newObject = NULL;
-
-	while (i >= 0)
-	{
-		newObject = &newArena->Objects[i];
-		clearObjectData(newObject);
-
-		// This pointer nonsense is used to circumvent the const modifier; this should not be used elsewhere as these values should not change
-		// pointers to the objectbox, objectdisplay and index values of the object are cast to regular values without const, before being dereferenced to be assigned with new values
-		(*(PhysicsBox * *)&newObject->ObjectBox) = &newArena->PhysicsBoxes[i];
-		(*(DisplayData * *)&newObject->ObjectDisplay) = &newArena->Displays[i];
-		*((int *)&newObject->index) = i;
-
-		if (newController->availableSlots != NULL)
-		{
-			newController->availableSlots->prevObject = newObject;
-		}
-
-		newObject->nextObject = newController->availableSlots;
-		newController->availableSlots = newObject;
-		i--;
-	}
-
-
-	return;
-}
-
-
-void deleteObjectController(ObjectController *ObjectList)
-{
-	if (ObjectList == NULL)
-	{
-		return;
-	}
-
-	deleteAllObjects(ObjectList);
-	deleteAllCachedObjects(ObjectList);	
-
-	deleteAllSpriteSets(&ObjectList->spriteSets);
-
-	// texts might be attached to objects
-	RemoveObjectDebugTexts();
-
-	return;
-}
-
-
-void destroyWorld(World *GameWorld)	// honestly picked this name because its funny
+void DestroyWorld(World *GameWorld)	// honestly picked this name because its funny
 {
 	if (GameWorld == NULL)
 	{
 		return;
 	}
 
-	cleanUpNetworkData();
+	CleanUpTrackedObjectsFromWorld(GameWorld);
 	
 	deleteAllSceneActions(GameWorld);
 
@@ -449,7 +373,7 @@ void destroyWorld(World *GameWorld)	// honestly picked this name because its fun
 	cleanUpTexts(&GameWorld->TextList);
 	cleanUpFonts(&GameWorld->FontList);
 
-	deleteObjectController(&GameWorld->ObjectList);
+	ClearObjectController(&GameWorld->ObjectList);
 
 	deleteAllSpriteSets(&GameWorld->WorldBackground.bgSpriteSets);
 
@@ -468,7 +392,7 @@ int GameTick(World *GameWorld)
 	}
 
 	// Input acknowledgement is delayed until the next frame by doing this so that gameFrame can use this frame's input correctly
-	buttons[ACKNOWLEDGE_INPUT] = 1;
+	Buttons[ACKNOWLEDGE_INPUT] = 1;
 	
 	MasterControls(GameWorld, ScreenData.Window);
 
@@ -483,9 +407,9 @@ int GameTick(World *GameWorld)
 
 	CameraControl(GameWorld, &GameWorld->MainCamera);
 
-	updateCutscene(GameWorld);
-
 	updateObjects(GameWorld);
+
+	updateCutscene(GameWorld);
 
 	#ifdef LEMON_USE_CUSTOM_CALLBACKS
 	Tick(GameWorld);
@@ -550,9 +474,14 @@ void RenderEngine(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 		drawHitboxes(renderCamera, GameWorld, Screen);
 	}
 
+	if (RenderSettings.drawBSP)
+	{
+		renderBSPNode(GameWorld->ObjectList.staticGeometry.root, renderCamera, Screen);
+	}
+
 	FPSCounter(GameWorld);
 
-	renderTexts(renderCamera, GameWorld, Screen);
+	RenderTextElements(renderCamera, GameWorld, Screen);
 
 	return;
 }
@@ -578,7 +507,7 @@ int Render(World *GameWorld, RenderFrame *ScreenData)
 }
 
 
-void initialiseCameraViews(CameraView list[VIEW_COUNT])
+void InitialiseCameraViews(CameraView list[VIEW_COUNT])
 {
 	for (int i = 0; i < VIEW_COUNT; i++)
 	{
@@ -590,7 +519,7 @@ void initialiseCameraViews(CameraView list[VIEW_COUNT])
 		list[i].direction = DEFAULT_DIRECTION;
 		list[i].layer = MIDDLEGROUND;
 		list[i].useMainCam = false;
-		list[i].attachedObj = NULL;
+		ClearObjectReference(&list[i].attachedObj);
 		list[i].target = NULL;
 
 		list[i].ticksUntilRefresh = 1;
@@ -598,6 +527,8 @@ void initialiseCameraViews(CameraView list[VIEW_COUNT])
 
 		list[i].active = false;
 	}
+
+	return;
 }
 
 CameraView* addCameraViewToList(float camX, float camY, int camWidth, int camHeight, float viewPosX, float viewPosY, float width, float height, Layer drawLayer, bool useMain, CameraView list[VIEW_COUNT])
@@ -672,9 +603,7 @@ void attachCameraViewToObject(CameraView *input, Object *attach)
 		return;
 	}
 
-	input->attachedObj = attach;
-	input->recordedInstance = attach->instanceNumber;
-
+	SetObjectReference(&input->attachedObj, attach);
 	attach->ObjectDisplay->RenderModeOverride = DO_NOT_RENDER;
 
 	return;
@@ -703,10 +632,11 @@ void printCameraViewInfo(CameraView list[VIEW_COUNT])
 	{
 		if (list[i].active)
 		{
-			if (list[i].attachedObj != NULL)
+			Object *attached = list[i].attachedObj.obj;
+			if (attached != NULL)
 			{
-				putConsole("%d: (Active) (Attached object ID: %d) CamX: %.2f CamY: %.2f  Ticks until render: %lld", 
-					i, list[i].attachedObj->index, list[i].cam.CameraX, list[i].cam.CameraY, list[i].cam.zoomedWidth, list[i].ticksUntilRefresh);
+				putConsole("%d: (Active) (Attached object Index: %d) CamX: %.2f CamY: %.2f  Ticks until render: %lld", 
+					i, attached->index, list[i].cam.CameraX, list[i].cam.CameraY, list[i].cam.zoomedWidth, list[i].ticksUntilRefresh);
 			}
 			else
 			{
@@ -726,12 +656,12 @@ void removeCameraView(CameraView *input)
 
 	input->active = false;
 
-	if (input->attachedObj != NULL)
+	if (ObjectDeleted(input->attachedObj))
 	{
-		input->attachedObj->ObjectDisplay->RenderModeOverride = DEFAULT_TO_SPRITE;
+		setRenderModeOverride(input->attachedObj.obj, DEFAULT_TO_SPRITE);
 	}
 
-	input->attachedObj = NULL;
+	ClearObjectReference(&input->attachedObj);
 
 	if (input->target != NULL)
 	{
@@ -772,13 +702,9 @@ void renderCameraViews(Camera mainCam, World *GameWorld, SDL_Renderer *Screen, L
 	RenderSettings.drawHUD = false;
 	RenderSettings.drawCamViews = false;
 
-	SDL_SetRenderDrawColor(Screen, 0x00, 0x00, 0x00, 0xFF);
-
 	float halfW = (float)(mainCam.width >> 1);
 	float halfH = (float)(mainCam.height >> 1);
 	SDL_FRect box = {0};
-
-	Object *attached = NULL;
 
 	for (int i = 0; i < VIEW_COUNT; i++)
 	{
@@ -787,18 +713,17 @@ void renderCameraViews(Camera mainCam, World *GameWorld, SDL_Renderer *Screen, L
 			continue;
 		}
 
-		if (list[i].attachedObj != NULL)
+		if (list[i].attachedObj.obj != NULL)
 		{
-			attached = list[i].attachedObj;
-
-			if (attached->State == EMPTY_OBJECT || attached->instanceNumber != list[i].recordedInstance)
+			if (ObjectDeleted(list[i].attachedObj))
 			{
-				list[i].attachedObj = NULL;
 				removeCameraView(&list[i]);
 				continue;
 			}
 
-			list[i].layer = getDisplayLayer(list[i].attachedObj);
+			Object *attached = list[i].attachedObj.obj;
+
+			list[i].layer = getDisplayLayer(attached);
 			list[i].direction = getDisplayDirection(attached);
 
 
@@ -807,8 +732,8 @@ void renderCameraViews(Camera mainCam, World *GameWorld, SDL_Renderer *Screen, L
 			{
 				box.w = list[i].viewWidth;
 				box.h = list[i].viewHeight;
-				box.x = (objBox->xSize >> 1) + objBox->xPos - (box.w / 2.0) + halfW;
-				box.y = (objBox->ySize >> 1) - objBox->yPos + (box.h / 2.0) + halfH;	
+				box.x = (objBox->xSize / 2) + objBox->xPos - (box.w / 2.0) + halfW;
+				box.y = (objBox->ySize / 2) - objBox->yPos + (box.h / 2.0) + halfH;	
 			}
 			else
 			{
@@ -1105,7 +1030,7 @@ int FPSCounter(World *GameWorld)
 }
 
 
-int initialiseBackGround(BackgroundData *input)
+int InitialiseBackGround(BackgroundData *input)
 {
 	if (input == NULL)
 	{
@@ -1115,7 +1040,7 @@ int initialiseBackGround(BackgroundData *input)
 	input->bgParallax = 0.1;
 	input->BackgroundSpriteBuffer = NULL;
 	input->BackgroundRenderMode = DEFAULT_TO_SPRITE;
-	initialiseSpriteSetList(&input->bgSpriteSets);
+	InitialiseSpriteSetList(&input->bgSpriteSets);
 
 	input->tileBG.tiles = NULL;
 	input->tileBG.GridWidth = 0;
@@ -1152,9 +1077,9 @@ int getExternalInput(World *GameWorld, SDL_Renderer *screen)
 		return MISSING_DATA;
 	}
 
-	if (buttons[ACKNOWLEDGE_INPUT])
+	if (Buttons[ACKNOWLEDGE_INPUT])
 	{
-		buttons[ACKNOWLEDGE_INPUT] = 0;
+		Buttons[ACKNOWLEDGE_INPUT] = 0;
 		AcknowledgeHeldButtons();
 	}
 
@@ -1262,7 +1187,7 @@ int getExternalInput(World *GameWorld, SDL_Renderer *screen)
     		break;
 
     	case SDL_EVENT_TEXT_INPUT:
-    			inputTyping(event.text.text);
+    			InputTyping(event.text.text);
     		break;
 
     	default:
@@ -1274,7 +1199,7 @@ int getExternalInput(World *GameWorld, SDL_Renderer *screen)
 	updateMousePos();
 
 	updateConsole(ScreenData.Window, GameWorld);
-	updateTyping(ScreenData.Window, GameWorld);
+	UpdateTyping(ScreenData.Window, GameWorld);
 
 	return LEMON_SUCCESS;
 }
@@ -1367,16 +1292,16 @@ int getKeyboardInput(SDL_KeyboardEvent *key)
 			break;
 	}
 	
-	buttons[keyCode] = key->down;
+	Buttons[keyCode] = key->down;
 
 	return LEMON_SUCCESS;
 }
 
 void keyPressedWhen(int key, bool keyMap)
 {
-	if (buttons[key] == 0 || keyMap == 0)
+	if (Buttons[key] == 0 || keyMap == 0)
 	{
-		buttons[key] = keyMap;
+		Buttons[key] = keyMap;
 	}
 
 	return;
@@ -1384,23 +1309,23 @@ void keyPressedWhen(int key, bool keyMap)
 
 void updateCustomKeys(void)
 {
-	keyPressedWhen(LMN_LEFT, buttons['A'] || buttons[LMN_LEFTARROW] || GamePadInput.dPadLeft || (GamePadInput.leftStickX < -0.9));
-	keyPressedWhen(LMN_RIGHT, buttons['D'] || buttons[LMN_RIGHTARROW] || GamePadInput.dPadRight || (GamePadInput.leftStickX > 0.9));
-	keyPressedWhen(LMN_UP, buttons['W'] || buttons[LMN_UPARROW] || GamePadInput.dPadUp || (GamePadInput.leftStickY > 0.9));
-	keyPressedWhen(LMN_DOWN, buttons['S'] || buttons[LMN_DOWNARROW] || GamePadInput.dPadDown || (GamePadInput.leftStickY < -0.9));
+	keyPressedWhen(LMN_LEFT, Buttons['A'] || Buttons[LMN_LEFTARROW] || GamePadInput.dPadLeft || (GamePadInput.leftStickX < -0.9));
+	keyPressedWhen(LMN_RIGHT, Buttons['D'] || Buttons[LMN_RIGHTARROW] || GamePadInput.dPadRight || (GamePadInput.leftStickX > 0.9));
+	keyPressedWhen(LMN_UP, Buttons['W'] || Buttons[LMN_UPARROW] || GamePadInput.dPadUp || (GamePadInput.leftStickY > 0.9));
+	keyPressedWhen(LMN_DOWN, Buttons['S'] || Buttons[LMN_DOWNARROW] || GamePadInput.dPadDown || (GamePadInput.leftStickY < -0.9));
 
-	keyPressedWhen(LMN_JUMP, buttons[LMN_SPACE] || GamePadInput.southButton);
-	keyPressedWhen(LMN_INTERACT, buttons['E'] || buttons['Z'] || GamePadInput.westButton);
-	keyPressedWhen(LMN_INTERACT2, buttons['Q'] || buttons['X'] || GamePadInput.eastButton);
-	keyPressedWhen(LMN_INTERACT3, buttons['R'] || buttons['C'] || GamePadInput.northButton);
+	keyPressedWhen(LMN_JUMP, Buttons[LMN_SPACE] || GamePadInput.southButton);
+	keyPressedWhen(LMN_INTERACT, Buttons['E'] || Buttons['Z'] || GamePadInput.westButton);
+	keyPressedWhen(LMN_INTERACT2, Buttons['Q'] || Buttons['X'] || GamePadInput.eastButton);
+	keyPressedWhen(LMN_INTERACT3, Buttons['R'] || Buttons['C'] || GamePadInput.northButton);
 
-	keyPressedWhen(LMN_TEXT_SKIP, buttons[LMN_INTERACT2] || MouseInput.RightButton || buttons[LMN_LSHIFT]);
-	keyPressedWhen(LMN_TEXT_CONFIRM, buttons[LMN_INTERACT] || GamePadInput.southButton || MouseInput.LeftButton || buttons[LMN_ENTER]);
-	keyPressedWhen(LMN_MENU_CONFIRM, buttons[LMN_INTERACT] || GamePadInput.southButton || buttons[LMN_ENTER]);
-	keyPressedWhen(LMN_MENU_OPEN, buttons[LMN_ESCAPE] || GamePadInput.start);
-	keyPressedWhen(LMN_TYPING_END, buttons[LMN_ENTER] || GamePadInput.northButton);
+	keyPressedWhen(LMN_TEXT_SKIP, Buttons[LMN_INTERACT2] || MouseInput.RightButton || Buttons[LMN_LSHIFT]);
+	keyPressedWhen(LMN_TEXT_CONFIRM, Buttons[LMN_INTERACT] || GamePadInput.southButton || MouseInput.LeftButton || Buttons[LMN_ENTER]);
+	keyPressedWhen(LMN_MENU_CONFIRM, Buttons[LMN_INTERACT] || GamePadInput.southButton || Buttons[LMN_ENTER]);
+	keyPressedWhen(LMN_MENU_OPEN, Buttons[LMN_ESCAPE] || GamePadInput.start);
+	keyPressedWhen(LMN_TYPING_END, Buttons[LMN_ENTER] || GamePadInput.northButton);
 
-	keyPressedWhen(LMN_CONSOLE_OPEN, buttons[LMN_GRAVE] || GamePadInput.back);
+	keyPressedWhen(LMN_CONSOLE_OPEN, Buttons[LMN_GRAVE] || GamePadInput.back);
 	
 
 	return;
@@ -1411,7 +1336,7 @@ void ClearInput(void)
 {
 	for (int i = ACKNOWLEDGE_INPUT + 1; i < INPUT_COUNT; i++)
 	{
-		buttons[i] = 0;	
+		Buttons[i] = 0;	
 	}
 
 	memset(&MouseInput, 0, sizeof(MouseData));
@@ -1438,9 +1363,9 @@ void AcknowledgeHeldButtons(void)
 {
 	for (int i = ACKNOWLEDGE_INPUT + 1; i < INPUT_COUNT; i++)
 	{
-		if (buttons[i] == 1)
+		if (Buttons[i] == 1)
 		{
-			buttons[i] = 2;
+			Buttons[i] = 2;
 		}
 	}
 
@@ -1515,9 +1440,9 @@ void AcknowledgeButton(LemonKeys Key)
 			break;
 	}
 
-	if (buttons[Key] == 1)
+	if (Buttons[Key] == 1)
 	{
-		buttons[Key] = 2;
+		Buttons[Key] = 2;
 	}
 
 	return;
@@ -1561,27 +1486,27 @@ int getMouseInput(SDL_MouseButtonEvent *event)
 	{	
 		case SDL_BUTTON_LEFT:
 			MouseInput.LeftButton = event->down;
-			buttons[MOUSE_LEFT] = event->down;
+			Buttons[MOUSE_LEFT] = event->down;
 			break;
 
 		case SDL_BUTTON_RIGHT:
 			MouseInput.RightButton = event->down;
-			buttons[MOUSE_RIGHT] = event->down;
+			Buttons[MOUSE_RIGHT] = event->down;
 			break;
 
 		case SDL_BUTTON_MIDDLE:
 			MouseInput.MiddleButton = event->down;
-			buttons[MOUSE_MIDDLE] = event->down;
+			Buttons[MOUSE_MIDDLE] = event->down;
 			break;
 
 		case SDL_BUTTON_X1:
 			MouseInput.SideButton1 = event->down;
-			buttons[MOUSE_SIDE1] = event->down;
+			Buttons[MOUSE_SIDE1] = event->down;
 			break;
 
 		case SDL_BUTTON_X2:
 			MouseInput.SideButton2 = event->down;
-			buttons[MOUSE_SIDE2] = event->down;
+			Buttons[MOUSE_SIDE2] = event->down;
 			break;
 
 		default:
@@ -1599,77 +1524,77 @@ int getGamepadInput(SDL_GamepadButtonEvent *event)
 	{	
 		case SDL_GAMEPAD_BUTTON_SOUTH:
 			GamePadInput.southButton = event->down;
-			buttons[GAMEPAD_SOUTH] = event->down;
+			Buttons[GAMEPAD_SOUTH] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_NORTH:
 			GamePadInput.northButton = event->down;
-			buttons[GAMEPAD_NORTH] = event->down;
+			Buttons[GAMEPAD_NORTH] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_EAST:
 			GamePadInput.eastButton = event->down;
-			buttons[GAMEPAD_EAST] = event->down;
+			Buttons[GAMEPAD_EAST] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_WEST:
 			GamePadInput.westButton = event->down;
-			buttons[GAMEPAD_WEST] = event->down;
+			Buttons[GAMEPAD_WEST] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_BACK:
 			GamePadInput.back = event->down;
-			buttons[GAMEPAD_BACK] = event->down;
+			Buttons[GAMEPAD_BACK] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_START:
 			GamePadInput.start = event->down;
-			buttons[GAMEPAD_START] = event->down;
+			Buttons[GAMEPAD_START] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_GUIDE:
 			GamePadInput.guide = event->down;
-			buttons[GAMEPAD_GUIDE] = event->down;
+			Buttons[GAMEPAD_GUIDE] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_DPAD_UP:
 			GamePadInput.dPadUp = event->down;
-			buttons[GAMEPAD_DPAD_UP] = event->down;
+			Buttons[GAMEPAD_DPAD_UP] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
 			GamePadInput.dPadDown = event->down;
-			buttons[GAMEPAD_DPAD_DOWN] = event->down;
+			Buttons[GAMEPAD_DPAD_DOWN] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
 			GamePadInput.dPadLeft = event->down;
-			buttons[GAMEPAD_DPAD_LEFT] = event->down;
+			Buttons[GAMEPAD_DPAD_LEFT] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
 			GamePadInput.dPadRight = event->down;
-			buttons[GAMEPAD_DPAD_RIGHT] = event->down;
+			Buttons[GAMEPAD_DPAD_RIGHT] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
 			GamePadInput.leftShoulder = event->down;
-			buttons[GAMEPAD_LEFT_SHOULDER] = event->down;
+			Buttons[GAMEPAD_LEFT_SHOULDER] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
 			GamePadInput.rightShoulder = event->down;
-			buttons[GAMEPAD_RIGHT_SHOULDER] = event->down;
+			Buttons[GAMEPAD_RIGHT_SHOULDER] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_LEFT_STICK:
 			GamePadInput.leftStick = event->down;
-			buttons[GAMEPAD_LEFT_STICK] = event->down;
+			Buttons[GAMEPAD_LEFT_STICK] = event->down;
 			break;
 
 		case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
 			GamePadInput.rightStick = event->down;
-			buttons[GAMEPAD_RIGHT_STICK] = event->down;
+			Buttons[GAMEPAD_RIGHT_STICK] = event->down;
 			break;
 
 		default:
@@ -1728,34 +1653,34 @@ void updateGamepadAxis(SDL_GamepadAxisEvent *event)
 }
 
 
-bool buttonPressed(int key)
+bool ButtonPressed(int key)
 {
 	if (key < 0 || key >= INPUT_COUNT)
 	{
 		return false;
 	}
 
-	return (buttons[key] == 1);
+	return (Buttons[key] == BUTTON_PRESSED);
 }
 
-bool keyPressed(int key)
+bool KeyPressed(int key)
 {
-	return buttonPressed(key);
+	return ButtonPressed(key);
 }
 
-bool buttonHeld(int key)
+bool ButtonHeld(int key)
 {
 	if (key < 0 || key >= INPUT_COUNT)
 	{
 		return false;
 	}
 
-	return (buttons[key] > 0);
+	return (Buttons[key] > 0);
 }
 
-bool keyHeld(int key)
+bool KeyHeld(int key)
 {
-	return buttonHeld(key);
+	return ButtonHeld(key);
 }
 
 
@@ -1859,7 +1784,7 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 		return;
 	}
 
-	if (buttons[LMN_ENTER] == 1 && DebugSettings.PauseEngine == ENGINE_PAUSED)
+	if (Buttons[LMN_ENTER] == 1 && DebugSettings.PauseEngine == ENGINE_PAUSED)
 	{
 		GameWorld->MainCamera.CameraMode = FREE_ROAM;
 		DebugSettings.PauseEngine = ENGINE_SINGLE_TICK;
@@ -1869,41 +1794,41 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 		GameWorld->MainCamera.CameraMode = FOLLOW_PLAYER;	
 	}
 	
-	if (buttons[LMN_LSHIFT] == 0)
+	if (Buttons[LMN_LSHIFT] == 0)
 	{
 		return;
 	}
 
-	if (buttons['J'] == 1)
+	if (Buttons['J'] == 1)
 	{
 		enableFullscreen(GameWorld);
 	}
 
-	if (buttons['H'] == 1)
+	if (Buttons['H'] == 1)
 	{
 		disableFullscreen(GameWorld);
 	}
 
-	if (buttons[LMN_BACKSPACE] == 1)
+	if (Buttons[LMN_BACKSPACE] == 1)
 	{
 		setVsync(!RenderSettings.vSync);
 	}
 
-	if (buttons['1'] == 1)
+	if (Buttons['1'] == 1)
 	{
 		DebugSettings.DebugTextDisplayMode = (DebugSettings.DebugTextDisplayMode + 1) % DEBUG_TEXT_MODE_COUNT;
 		RemoveObjectDebugTexts();
 		putConsole("\nToggling draw Debug Text: %d", DebugSettings.DebugTextDisplayMode);
 	}
 
-	if (buttons['2'] == 1)
+	if (Buttons['2'] == 1)
 	{
     	DebugSettings.PauseEngine = (DebugSettings.PauseEngine + 1) % 2;
 		putConsole("\nToggling Pause: %d", DebugSettings.PauseEngine);
     }
 
 
-	if (buttons['3'] == 1)
+	if (Buttons['3'] == 1)
 	{
 		DebugSettings.ConsoleTextEnabled = (DebugSettings.ConsoleTextEnabled + 1) % CONSOLE_TEXT_SETTING_COUNT;
 		putConsole("\nToggling Console Text: %d",DebugSettings.ConsoleTextEnabled);
@@ -1912,32 +1837,32 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 
 	if (DebugSettings.DebugTextDisplayMode)
 	{
-		if (buttons[LMN_COMMA] == 1)
+		if (Buttons[LMN_COMMA] == 1)
 		{
 			DebugSettings.DebugTextInfoPreset = modulo(DebugSettings.DebugTextInfoPreset - 1, 15);
 		}
 		
-		if (buttons[LMN_PERIOD] == 1)
+		if (Buttons[LMN_PERIOD] == 1)
 		{
 			DebugSettings.DebugTextInfoPreset = (DebugSettings.DebugTextInfoPreset + 1) % 15;
 		}
 
-		if (buttons['4'] == 1)
+		if (Buttons['4'] == 1)
 		{
 			DebugSettings.CameraInfo = (DebugSettings.CameraInfo + 1) % 4;
 		}
 
-		if (buttons['5'] == 1)
+		if (Buttons['5'] == 1)
 		{
 			DebugSettings.DebugOverlay = (DebugSettings.DebugOverlay + 1) % 2;
 		}
 
-		if (buttons['6'] == 1)
+		if (Buttons['6'] == 1)
 		{
 			DebugSettings.FPSCounter = (DebugSettings.FPSCounter + 1) % 2;
 		}
 
-		if (buttons['7'] == 1)
+		if (Buttons['7'] == 1)
 		{
 			DebugSettings.SoundInfo = (DebugSettings.SoundInfo + 1) % (CHANNEL_COUNT + 1);
 		}
@@ -1945,43 +1870,43 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 
 	if (DebugSettings.PauseEngine == ENGINE_PAUSED || GameWorld->Player.PlayerPtr == NULL)
 	{
-		if (buttons[LMN_LEFT])
+		if (Buttons[LMN_LEFT])
 		{
 			GameWorld->MainCamera.CameraX -= 16.0;
 		}
 
-		if (buttons[LMN_RIGHT])
+		if (Buttons[LMN_RIGHT])
 		{
 			GameWorld->MainCamera.CameraX += 16.0;
 		}
 
-		if (buttons[LMN_UP])
+		if (Buttons[LMN_UP])
 		{
 			GameWorld->MainCamera.CameraY += 12.0;
 		}
 
-		if (buttons[LMN_DOWN])
+		if (Buttons[LMN_DOWN])
 		{
 			GameWorld->MainCamera.CameraY -= 12.0;
 		}
 	}
 
-	if (buttons[LMN_UPARROW] == 1 && RenderSettings.drawHitboxes == 1)
+	if (Buttons[LMN_UPARROW] == 1 && RenderSettings.drawHitboxes == 1)
 	{ 
 		RenderSettings.HitboxThickness++;
 	}
 
-	if (buttons[LMN_DOWNARROW] == 1 && RenderSettings.drawHitboxes == 1)
+	if (Buttons[LMN_DOWNARROW] == 1 && RenderSettings.drawHitboxes == 1)
 	{
 		RenderSettings.HitboxThickness--;
 	}
 
-	if (buttons['R'] == 1)
+	if (Buttons['R'] == 1)
 	{
 		setCameraPos(&GameWorld->MainCamera, 0.0, 0.0);
 	}
 
-	if (buttons['I'] == 1)
+	if (Buttons['I'] == 1)
 	{
 		if (GameWorld->PhysicsType == PLATFORMER)
 		{
@@ -1993,9 +1918,9 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 		}
 	}
 
-	if (buttons['O'] == 1)
+	if (Buttons['O'] == 1)
 	{
-		AddObject(GameWorld, UI_ELEMENT, 0, 0, LEVEL_FADE, 0, 0, 0, 0);
+		AddObject(GameWorld, UI_ELEMENT, 0, 0, LEVEL_FADE, 0, 0, 0);
 	}
 
     return;
@@ -2004,7 +1929,7 @@ void MasterControls(World *GameWorld, SDL_Window *window)
 
 void putConsole(const char input[], ...)
 {
-	if (input[0] < 9)
+	if (input[0] < 32)
 	{
 		return;
 	}
@@ -2029,7 +1954,7 @@ void putConsole(const char input[], ...)
 
 void putConsoleTS(const char input[], ...)
 {
-	if (input[0] < 9)
+	if (input[0] < 32)
 	{
 		return;
 	}
@@ -2056,7 +1981,7 @@ void putConsoleTS(const char input[], ...)
 
 void putConsoleError(const char input[], ...)
 {
-	if (input[0] < 9 || !DebugSettings.showErrors)
+	if (input[0] < 32 || !DebugSettings.showErrors)
 	{
 		return;
 	}
@@ -2128,7 +2053,7 @@ char* getNextMessageHistory(MessageHistory *history)
 }
 
 
-void initialiseChatLog(ChatLog *chat)
+void InitialiseChatLog(ChatLog *chat)
 {
 	chat->current = 0;
 	chat->chatCount = 0;
@@ -2154,7 +2079,7 @@ void addMessageToChatLog(const char msg[], int ID, Uint64 tickSent)
 
 	const char *username = getUsername(ID);
 
-	if (username)
+	if (username != NULL && username[0] != '\0')
 	{
 		strcpy(chatMsg, username);
 		strcat(chatMsg, ": ");
@@ -2178,9 +2103,9 @@ int ResetCamera(Camera *inputCam)
 
 	inputCam->CameraX = 0;
 	inputCam->CameraY = 0;
-	inputCam->maxCameraX = (int)getConVarAsFloat("ply_boundx");
+	inputCam->maxCameraX = (int)GetConVarAsFloat("ply_boundx");
 	inputCam->minCameraX = -inputCam->maxCameraX;
-	inputCam->maxCameraY = (int)getConVarAsFloat("ply_boundy");
+	inputCam->maxCameraY = (int)GetConVarAsFloat("ply_boundy");
 	inputCam->minCameraY = -inputCam->maxCameraY;
 	inputCam->CameraLatch = false;
 	inputCam->CameraXBuffer = 0;
@@ -2250,6 +2175,7 @@ void SetRenderSettingsToDefault(void)
 	RenderSettings.drawHUD = true;
 	RenderSettings.drawCamViews = true;
 
+	RenderSettings.drawBSP = false;
 	RenderSettings.drawHitboxes = false;
 	RenderSettings.HitboxThickness = 4;
 
@@ -2273,12 +2199,6 @@ void SetTextSettingsToDefault(void)
 	TextSettings.portraitSize = 200;
 	strcpy(TextSettings.defaultFont, DEFAULT_FONT);
 
-	TextSettings.DebugTextColour.r = 255;
-	TextSettings.DebugTextColour.g = 255;
-	TextSettings.DebugTextColour.b = 255;
-	TextSettings.DebugTextColour.a = SDL_ALPHA_TRANSPARENT;
-	TextSettings.DebugTextPointSize = 18.0;
-
 	TextSettings.Typing = SDL_TextInputActive(ScreenData.Window);
 	TextSettings.userInputIndex = -1;
 	TextSettings.cursorXPos = 0.0;
@@ -2292,6 +2212,12 @@ void SetTextSettingsToDefault(void)
 
 void SetDebugSettingsToDefault(void)
 {
+	DebugSettings.DebugTextColour.r = 255;
+	DebugSettings.DebugTextColour.g = 255;
+	DebugSettings.DebugTextColour.b = 255;
+	DebugSettings.DebugTextColour.a = SDL_ALPHA_TRANSPARENT;
+	DebugSettings.DebugTextPointSize = 18.0;
+
 	DebugSettings.DebugTextDisplayMode = DEBUG_TEXT_DISABLED;
 	DebugSettings.DebugTextInfoPreset = 0;
 	DebugSettings.FPSCounter = 0;
@@ -2548,6 +2474,11 @@ void removeChar(char string[], char remove, int capacity)
 	return;
 }
 
+bool StringsEqual(const char *first, const char *second)
+{
+	return (strcmp(first, second) == 0);
+}
+
 int copyStringUntil(const char source[], char dest[], char stopPoint, int capacity)
 {
 	if (source == NULL || dest == NULL)
@@ -2567,7 +2498,7 @@ int copyStringUntil(const char source[], char dest[], char stopPoint, int capaci
 	return i;
 }
 
-void swapStrings(char *first, char *second, int capacity)
+void SwapStrings(char *first, char *second, int capacity)
 {
 	char buffer[capacity];
 	memcpy(buffer, second, capacity);
@@ -2587,7 +2518,7 @@ int PickRandomIntBetween(int low, int high)
 
 	int range = high - low;
 
-	return (rand() % range) + low;
+	return (8585 % range) + low;
 }
 
 float PickRandomFloatBetween(float low, float high)
@@ -2599,7 +2530,7 @@ float PickRandomFloatBetween(float low, float high)
 	
 	float range = high - low;
 
-	float generatedValue = ((float)rand()/(float)(RAND_MAX)) * range;
+	float generatedValue = ((float)8585/(float)(RAND_MAX)) * range;
 
 	return generatedValue + low;
 }
@@ -2712,7 +2643,7 @@ int stackAdd(int input, StackArray *List)
 		return -1;
 	}
 
-	List->list[List->storedElements] = input;
+	List->array[List->storedElements] = input;
 	List->storedElements++;
 
 	return input;
@@ -2727,9 +2658,10 @@ int stackPop(StackArray *List)
 
 	List->storedElements--;
 
-	return List->list[List->storedElements];
+	return List->array[List->storedElements];
 }
 
+// this function doesn't preserve the stack order; ideally shouldn't be used
 int stackRemove(int input, StackArray *List)
 {
 	if (input < 0)
@@ -2738,7 +2670,7 @@ int stackRemove(int input, StackArray *List)
 	}
 
 	int foundIndex = STACKARRAY_LENGTH - 1;
-	while (foundIndex >= 0 && List->list[foundIndex] != input)
+	while (foundIndex >= 0 && List->array[foundIndex] != input)
 	{
 		foundIndex--;
 	}
@@ -2755,11 +2687,11 @@ int stackRemove(int input, StackArray *List)
 	// swap last and component to delete
 	if (foundIndex != lastIndex)
 	{
-		int temp = List->list[foundIndex];
+		int temp = List->array[foundIndex];
 
-		List->list[foundIndex] = List->list[lastIndex];
+		List->array[foundIndex] = List->array[lastIndex];
 
-		List->list[lastIndex] = temp;
+		List->array[lastIndex] = temp;
 	}
 
 	List->storedElements--;
@@ -2767,249 +2699,3 @@ int stackRemove(int input, StackArray *List)
 	return LEMON_SUCCESS;
 }
 
-
-void clearString(String *input)
-{
-	if (input == NULL)
-	{
-		return;
-	}
-
-	if (input->stringChars)
-	{
-		free(input->stringChars);
-		input->stringChars = NULL;
-	}
-
-	input->length = 0;
-
-	return;
-}
-
-void setString(String *input, const char stringInput[])
-{
-	if (input == NULL || stringInput == NULL)
-	{
-		return;
-	}
-
-	int length = strlen(stringInput);
-
-	if (length < 1)
-	{
-		return;
-	}
-
-	if (input->stringChars != NULL)
-	{
-		free(input->stringChars);
-	}
-
-	input->stringChars = malloc(sizeof(char) * length);
-	if (input->stringChars == NULL)
-	{
-		input->length = 0;
-		return;
-	}
-
-	memcpy(input->stringChars, stringInput, length * sizeof(char));
-	input->length = length;
-
-	return;
-}
-
-
-void freeString(String *input)
-{
-	if (input == NULL)
-	{
-		return;
-	}
-
-	input->length = 0;
-
-	if (input->stringChars)
-	{
-		free(input->stringChars);
-	}
-
-	return;
-}
-
-
-void copyString(String source, String *destination)
-{
-	if (source.stringChars == NULL)
-	{
-		return;
-	}
-
-	freeString(destination);
-
-	destination->stringChars = malloc(sizeof(char) * source.length);
-	if (destination->stringChars == NULL)
-	{
-		return;
-	}
-
-	destination->length = source.length;
-
-	memcpy(destination->stringChars, source.stringChars, source.length);
-
-	return;
-}
-
-
-void concatString(String *string1, String string2)
-{
-	String temp = {0};
-	copyString(*(string1), &temp);
-
-	freeString(string1);
-
-
-	string1->length = temp.length + string2.length;
-	string1->stringChars = malloc(sizeof(char) * string1->length);
-
-	if (string1->stringChars == NULL)
-	{
-		string1->length = 0;
-		return;
-	}
-
-	memcpy(string1->stringChars, temp.stringChars, temp.length);
-	memcpy(string1->stringChars + temp.length, string2.stringChars, string2.length);
-
-	return;
-}
-
-void concatStringCStr(String *string1, const char *string2)
-{
-	String temp = {0};
-	copyString(*(string1), &temp);
-
-	freeString(string1);
-
-	int str2Length = 0;
-	while(string2[str2Length] != 0)
-	{
-		str2Length++;
-	}
-
-	string1->length = temp.length + str2Length;
-	string1->stringChars = malloc(sizeof(char) * string1->length);
-
-	if (string1->stringChars == NULL)
-	{
-		string1->length = 0;
-		return;
-	}
-
-	memcpy(string1->stringChars, temp.stringChars, temp.length);
-	memcpy(string1->stringChars + temp.length, string2, str2Length);
-
-	return;
-}
-
-void setStringUpper(String input)
-{
-	for (int i = 0; i < input.length; i++)
-	{
-		input.stringChars[i] = toupper(input.stringChars[i]);
-	}
-
-	return;
-}
-
-void setStringLower(String input)
-{
-	for (int i = 0; i < input.length; i++)
-	{
-		input.stringChars[i] = tolower(input.stringChars[i]);
-	}
-
-	return;
-}
-
-bool stringEquals(String input1, String input2)
-{
-	if (input1.length != input2.length)
-	{
-		return false;
-	}
-
-	for (int i = 0; i < input1.length; i++)
-	{
-		if (input1.stringChars[i] != input2.stringChars[i])
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-bool stringContains(String input, String sub)
-{
-	int subIndex = 0;
-	int iterations = 0;
-
-	for (int i = iterations; i < input.length && subIndex < sub.length; i++)
-	{
-		if (input.stringChars[i] == sub.stringChars[subIndex])
-		{
-			subIndex++;
-		}
-		else
-		{
-			subIndex = 0;
-			iterations++;
-			i = iterations;
-		}
-	}
-
-	if (subIndex == sub.length)
-	{
-		return true;
-	}
-
-	return false;
-}
-// not great, has complexity of n(n + 1)/2
-
-char at(String input, int index)
-{
-	if (index < 0 || index > input.length || input.stringChars == NULL)
-	{
-		return 0;
-	}
-
-	return input.stringChars[index];
-}
-
-bool stringEqualsCString(String input1, const char input2[])
-{
-	if (input2 == NULL || input1.stringChars == NULL)
-	{
-		return false;
-	}
-
-	String temp = {0};
-	setString(&temp, input2);
-
-	return stringEquals(input1, temp);
-}
-
-void printString(String input)
-{
-	printf("%.*s", input.length, input.stringChars);	
-
-	return;
-}
-
-void printStringLine(String input)
-{
-	printf("\n%.*s", input.length, input.stringChars);	
-
-	return;
-}

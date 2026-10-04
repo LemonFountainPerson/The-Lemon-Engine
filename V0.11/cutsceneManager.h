@@ -4,21 +4,26 @@ int initialiseCutsceneFromFile(const char sceneName[], World *GameWorld);
 
 int LoadCutsceneFromFile(const char sceneName[], World *GameWorld);
 
+int updateCutscene(World *GameWorld);
+
+int updateSceneActions(World *GameWorld);
+
+int SkipSceneActions(int skipCount, World *GameWorld);
+
+FuncResult RunSceneAction(World *GameWorld);
+
+bool ConditionIsTrue(ConditionalStatement *input);
+
+
 SceneAction* loadSceneAction(char inputString[MAX_LEN], World *GameWorld, FILE *fPtr);
 
 int loadBracketedSceneActions(FILE *fPtr, World *GameWorld);
 
+int LoadConditionalStatement(FILE *fPtr, ConditionalStatement *input);
 
-int updateCutscene(World *GameWorld);
 
-int updateSceneActions(SceneAction *queue, World *GameWorld);
-
-SceneAction* skipSceneActions(int skipCount, SceneAction *startPoint, World *GameWorld);
-
-FuncResult RunSceneAction(SceneAction *inputAction, World *GameWorld);
 
 const char* getSceneActionName(SceneActionID input);
-
 
 int EndCutscene(World *GameWorld);
 
@@ -36,30 +41,19 @@ SceneAction* Wait(float seconds, World *GameWorld);
 
 SceneAction* Repeat(int repeatTimes, int instructions, World *GameWorld);
 
+SceneAction* RepeatUntil(ConditionalStatement condition, int instructions, World *GameWorld);
+
+SceneAction* RepeatWhile(ConditionalStatement condition, int instructions, World *GameWorld);
+
 SceneAction* setVariableTo(int variableIndex, int value, World *GameWorld);
 
 SceneAction* changeVariableBy(int variableIndex, int value, World *GameWorld);
 
-// branching based on variable
-SceneAction* mapSymbolToIfAction(int variableIndex, int value, int instructionsIfTrue, const char operator[], World *GameWorld);
-
-SceneAction* ifEquals(int variableIndex, int value, int instructionsIfTrue, World *GameWorld);
-
-SceneAction* ifNotEquals(int variableIndex, int value, int instructionsIfTrue, World *GameWorld);
-
-SceneAction* ifLessThan(int variableIndex, int value, int instructionsIfTrue, World *GameWorld);
-
-SceneAction* ifLessThanEquals(int variableIndex, int value, int instructionsIfTrue, World *GameWorld);
-
-SceneAction* ifGreaterThan(int variableIndex, int value, int instructionsIfTrue, World *GameWorld);
-
-SceneAction* ifGreaterThanEquals(int variableIndex, int value, int instructionsIfTrue, World *GameWorld);
-
-
 SceneAction* SceneAction_SayText(TextBox *text, World *GameWorld);
 
-
 SceneAction* AnimateActor(char objName[], const char animName[], int loopCount, World *GameWorld);
+
+SceneAction* AnimateActorAndWait(char objName[], const char animName[], int loopCount, World *GameWorld);
 
 SceneAction* SwitchActorSprite(char objName[], const char spriteName[], World *GameWorld);
 
@@ -84,6 +78,8 @@ SceneAction* SetActorLayer(char objName[], Layer destLayer, World *GameWorld);
 SceneAction* CreateActor(char objName[], ObjectType actorID, float xPos, float yPos, World *GameWorld);
 
 SceneAction* ReleaseActor(char objName[], World *GameWorld);
+
+SceneAction* RenameActor(char objName[], const char newName[], World *GameWorld);
 
 SceneAction* placeInvisibleWall(int xPos, int yPos, int xSize, int ySize, World *GameWorld);
 

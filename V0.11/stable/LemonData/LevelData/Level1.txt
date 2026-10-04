@@ -1,35 +1,39 @@
 LEMONSCRIPT<1>--LEVEL_DATA--
 Preset:  "Preset1"
->LVFLAG: Start_Cutscene, "Scene8"
+>LVFLAG: StartCutscene, "Scene8"
 
 >		ID	XPos	YPos	Arg1	Arg2	Arg3	Arg4	Arg5
 OBJECT:		Spring	2494	0	30	0
-OBJECT:		1	0	-32	48000	1	2
-OBJECT:		1	1000	96	32	32	1
+OBJECT:		1	0	-32	48000	1	2 {setname "floor"}
+OBJECT:		1	1000	96	32	32	1 {setname "brick"}
 
 
 
-LVFLAG:	SET_BG_TRIGGER,	4600, 0, 32, 4000, 1, 1	
+LVFLAG:	SETBGTRIGGER,	4600, 0, 32, 4000, 1, 1	
 
 > Obstacle course
-OBJECT:		1	4064 0 2 4 4	 
-OBJECT:		1	4448 0 2 6 4 	
-OBJECT:		1	4832 64 2 6 4 	
-OBJECT:		1	5216 64 2 8 4 	
-OBJECT:		1	5600 0 2 12 4   
-OBJECT:		1	5984 320 24 2 4 
+OBJECT:		1	4064 0 2 4 4	 {setname "obs 1"}
+OBJECT:		1	4448 0 2 6 4 	 {setname "obs 2"}
+OBJECT:		1	4832 64 2 6 4 	 {setname "obs 3"}
+OBJECT:		1	5216 64 2 8 4 	 {setname "obs 4"}
+OBJECT:		1	5600 0 2 12 4    {setname "obs 5"}
+OBJECT:		1	5984 320 24 2 4  {setname "obs 6"}
+OBJECT:		1	6368 300 24 2 4  {setname "obs 7"}
+OBJECT:		1	6000 400 24 2 2  {setname "obs 8"}
+OBJECT:		1	6200 260 24 2 2  {setname "obs 9"}
 
 OBJECT:	GateSwitch,	750	0	1	0
 OBJECT:	GateSwitch,	296	0	1	1
-OBJECT:	GateSwitchTimed, 496	0	1	1,	300	{ setname test }
+OBJECT:	GateSwitchTimed, 496	0	1	1,	300	
 OBJECT:	VerticalGate,	608	0	2	4	1	6
 OBJECT:	1	608	132	2	13	1		
 
-OBJECT:	2	3000	0	192	64	1	{ setName "Slope" }
+OBJECT:	2	3000	0	192	64	1	 {setname "slope 1"}
 OBJECT:	1	3192	0	8	2	1	-1
-OBJECT:	2	3428	0	256	64	-1
+OBJECT:	2	3428	0	256	64	-1	 {setname "slope 2"}
+
 OBJECT:	Door	1472	1120	3264	64	
-OBJECT:	LevelDoor	1472	0	0 	900
+OBJECT:	LevelDoor	1472	0	0 	900	
 
 			
 OBJECT:	MovingPlatform_Horizontal	2500	128	2500	4000	6	105
@@ -44,26 +48,29 @@ OBJECT:	3	7640	96	5	1
 OBJECT:		2	8800	0	2048	1024	-1
 OBJECT:		2	9800	0	2048	1024	1
 OBJECT:		2	8800	0	2048	1024	1
-OBJECT:	1,	10000,	0,	192,	48, 	{ UNSOLID, TOBACKGROUND, SETNAME "Backdrop Object" }
-OBJECT:	MovingPlatform_Vertical	2664	192	192	500	6	100	{ SETNAME "platform" }
-OBJECT:	MovingPlatform_Vertical	7664	192	192	600	6	100	{ SETNAME "platform" }
+OBJECT:		2	9000	0	2048	1024	-1
+OBJECT:		2	10000	0	2048	1024	1
+OBJECT:		2	11000	0	2048	1024	1
+OBJECT:	1,	10000,	0,	192,	48, 	{ UNSOLID, TOBACKGROUND }
+OBJECT:	MovingPlatform_Vertical	2664	192	192	500	6	100	
+OBJECT:	MovingPlatform_Vertical	7664	192	192	600	6	100	
 
-LVFLAG:	PLAYER_POSITION, 3500, 300	
->LVFLAG: PLAY_SOUND, 	"Music\StartUp", 0.4	
+LVFLAG:	PLAYERPOSITION, 3500, 300	
+>LVFLAG: PLAYSOUND, 	"Music\StartUp", 0.4	
 
->LVFLAG: Level_Trigger_SEAMLESS, 3000 0 64 1024 0
+>LVFLAG: LevelTriggerSEAMLESS, 3000 0 64 1024 0
 
-LVFLAG:	CUTSCENE_TRIGGER,	1800, 300, 128, 1280, 9
+LVFLAG:	CutsceneTrigger,	1800, 300, 128, 1280, 9
 
-LVFLAG: Add_GameFlag "flag1" 0
+LVFLAG: AddGameFlag "flag1" 0
 IFVARIABLE: "flag1" < 2 
-THEN { 
+{ 
 	REPEAT: times = 20, XOffset = 64, times=8, YOffset=64, 
-	{ OBJECT: 8 2200 192 {TrackOverNetwork} } 
+	{ OBJECT: 8 2200 192 {SetName "GenericCoin"} } 
 	LVFLAG: IncrementGameFlag "flag1"
 }
 
-LVFLAG: Delete_Body_Trigger, -128, 0, 128, 3000		> deletes all 'body' objects it touches; typically players, enemies, npcs, etc.
+LVFLAG: DeleteBodyTrigger, -128, 0, 128, 3000		> deletes all 'body' objects it touches; typically players, enemies, npcs, etc.
 
 ENDFILE
 

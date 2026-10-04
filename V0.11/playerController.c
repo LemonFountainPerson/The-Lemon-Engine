@@ -45,6 +45,7 @@ PlayerData* InitialisePlayerData(PlayerData *Player)
 	Player->jumpForce = 14.0;
 
 	Player->PlayerPtr = NULL;
+	ClearObjectReference(&Player->PlayerRef);
 
 	return Player;
 }
@@ -87,9 +88,10 @@ FuncResult UpdatePlayer(World *GameWorld)
 {
 	PlayerData *Player = &GameWorld->Player;
 
-	if (objectDeleted(Player->PlayerPtr, Player->instance))
+	if (ObjectDeleted(Player->PlayerRef))
 	{
 		Player->PlayerPtr = NULL;
+		ClearObjectReference(&Player->PlayerRef);
 		return MISSING_DATA;
 	}
 
@@ -119,22 +121,22 @@ void playerNoclip(PlayerData *Player)
 	PhysicsBox *playerBox = Player->PlayerPtr->ObjectBox;
 	playerBox->solid = UNSOLID;
 
-	if (buttons[LMN_LEFT])
+	if (Buttons[LMN_LEFT])
 	{
 		playerBox->xVelocity -= 2.5;
 	}
 
-	if (buttons[LMN_RIGHT])
+	if (Buttons[LMN_RIGHT])
 	{
 		playerBox->xVelocity += 2.5;
 	}
 
-	if (buttons[LMN_UP])
+	if (Buttons[LMN_UP])
 	{
 		playerBox->yVelocity += 2.5;
 	}
 
-	if (buttons[LMN_DOWN])
+	if (Buttons[LMN_DOWN])
 	{
 		playerBox->yVelocity -= 2.5;
 	}
@@ -178,7 +180,7 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 		}
 		else
 		{
-			hAxis = (float)(buttons[LMN_RIGHT] != 0) - (buttons[LMN_LEFT] != 0);
+			hAxis = (float)(Buttons[LMN_RIGHT] != 0) - (Buttons[LMN_LEFT] != 0);
 		}
 
 		if (fabs(GamePadInput.leftStickY) > 0.001)
@@ -187,10 +189,10 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 		}
 		else
 		{
-			vAxis = (float)(buttons[LMN_UP] != 0) - (buttons[LMN_DOWN] != 0);
+			vAxis = (float)(Buttons[LMN_UP] != 0) - (Buttons[LMN_DOWN] != 0);
 		}
 
-		if (buttons[LMN_JUMP])
+		if (Buttons[LMN_JUMP])
 		{
 			jump = true;
 		}
@@ -261,8 +263,8 @@ int PlayerPlatformerPhysics(PlayerData *Player, World *GameWorld)
 	}
 
 
-	float worldBoundX = getConVarAsFloat("ply_boundx");
-	float worldBoundY = getConVarAsFloat("ply_boundy");
+	float worldBoundX = GetConVarAsFloat("ply_boundx");
+	float worldBoundY = GetConVarAsFloat("ply_boundy");
 	PlayerBox->xPos = fClamp(PlayerBox->xPos, -worldBoundX, worldBoundX - PlayerBox->xSize);
 	PlayerBox->yPos = fClamp(PlayerBox->yPos, -worldBoundY, worldBoundY - PlayerBox->ySize);
 
@@ -295,9 +297,9 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld)
 	// Player input
 	if (PlayerObject->State != PAUSE_STATE && !GameWorld->TextBox)
 	{
-		hAxis = (buttons[LMN_RIGHT] != 0) - (buttons[LMN_LEFT] != 0);
+		hAxis = (Buttons[LMN_RIGHT] != 0) - (Buttons[LMN_LEFT] != 0);
 
-		vAxis = (buttons[LMN_UP] != 0) - (buttons[LMN_DOWN] != 0);
+		vAxis = (Buttons[LMN_UP] != 0) - (Buttons[LMN_DOWN] != 0);
 
 		HandlePlayerInteract(Player, GameWorld);
 	}
@@ -333,8 +335,8 @@ int PlayerTopDownPhysics(PlayerData *Player, World *GameWorld)
 		PlayerBox->yVelocity = 0.0;
 	}
 
-	float worldBoundX = getConVarAsFloat("ply_boundx");
-	float worldBoundY = getConVarAsFloat("ply_boundy");
+	float worldBoundX = GetConVarAsFloat("ply_boundx");
+	float worldBoundY = GetConVarAsFloat("ply_boundy");
 	PlayerBox->xPos = fClamp(PlayerBox->xPos, -worldBoundX, worldBoundX - PlayerBox->xSize);
 	PlayerBox->yPos = fClamp(PlayerBox->yPos, -worldBoundY, worldBoundY - PlayerBox->ySize);
 
@@ -400,15 +402,15 @@ int HandlePlayerInteract(PlayerData *Player, World *GameWorld)
 
 	PhysicsBox *PlayerBox = Player->PlayerPtr->ObjectBox;
 	
-	if (buttons[LMN_INTERACT] == 1)
+	if (Buttons[LMN_INTERACT] == 1)
 	{
 		InteractBox->xSize = 50;
 		InteractBox->ySize = 50;
-		float playerCenterX = PlayerBox->xPos + (PlayerBox->xSize>>1);
-		float playerCenterY = PlayerBox->yPos + (PlayerBox->ySize>>1);
+		float playerCenterX = PlayerBox->xPos + (PlayerBox->xSize/ 2);
+		float playerCenterY = PlayerBox->yPos + (PlayerBox->ySize/ 2);
 
-		InteractBox->xPos = playerCenterX - (InteractBox->xSize>>1) + (PlayerBox->xFlip << 4);
-		InteractBox->yPos = playerCenterY - (InteractBox->ySize>>1);
+		InteractBox->xPos = playerCenterX - (InteractBox->xSize/ 2) + (PlayerBox->xFlip << 4);
+		InteractBox->yPos = playerCenterY - (InteractBox->ySize/ 2);
 	}
 	else
 	{
@@ -429,7 +431,7 @@ bool PlayerInteractingWithBox(PhysicsBox *inputBox, World *GameWorld)
 
 	PhysicsBox *interactBox = &GameWorld->Player.InteractBox;
 
-	if (checkBoxOverlapsBoxBroad(inputBox, interactBox))
+	if (CheckBoxOverlapsBoxBroad(inputBox, interactBox))
 	{
 		interactBox->xSize = 0;
 		return true;

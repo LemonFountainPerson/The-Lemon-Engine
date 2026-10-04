@@ -108,7 +108,7 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 		 	long tempFilePosition = ftell(fPtr);
 			getNextArg(fPtr, argBuffer, MAX_LEN);
 			
-			int renderMode = convertStringToRenderMode(argBuffer);
+			int renderMode = GetRenderMode(argBuffer);
 
 			if (renderMode == UNDEFINED_RENDERMODE)
 			{

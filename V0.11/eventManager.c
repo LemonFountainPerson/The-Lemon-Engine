@@ -26,7 +26,7 @@ int HandleGameEvents(World *GameWorld, RenderFrame *ScreenData)
 		return MISSING_DATA;
 	}
 
-	if (buttons[LMN_MENU_OPEN] == BUTTON_PRESSED)
+	if (Buttons[LMN_MENU_OPEN] == BUTTON_PRESSED)
 	{
 		AcknowledgeButton(LMN_MENU_OPEN);
 
@@ -344,9 +344,12 @@ int triggerGameEvent(GameEvent *inputEvent, World *GameWorld)
 		return LEMON_ERROR;
 	}
 	
-	int clientID = eventPtr->clientID;
 	memcpy(eventPtr, inputEvent, sizeof(GameEvent));
-	eventPtr->clientID = clientID;
+
+	if (eventNetworkingPermission(inputEvent->EventID) == LOCAL_CLIENT_ID)
+	{
+		eventPtr->clientID = LOCAL_CLIENT_ID;
+	}
 	
 	return LEMON_SUCCESS;
 }
@@ -1189,7 +1192,7 @@ int PauseGame(World *GameWorld)
 	HideHUD(&GameWorld->ObjectList);
 	prevTickVal = TickNumber();
 
-	AddObject(GameWorld, UI_ELEMENT, 0, 0, PAUSE_MENU_CONTROLLER, 0, 0, 0, 0);
+	AddObject(GameWorld, UI_ELEMENT, 0, 0, PAUSE_MENU_CONTROLLER, 0, 0, 0);
 
 	// In order to have objects be visible in the pause menu while hiding objects from the previous scene, the camera is moved elsewhere
 	// and is restored to its previous position when unpaused  (There should not be any level geometry before X pos 0)
@@ -1234,7 +1237,7 @@ bool detectPlayer(Object* inputObject, PlayerData *Player)
 		return false;
 	}
 
-	int touchingPlayer = checkBoxOverlapsBoxBroad(Player->PlayerPtr->ObjectBox, inputObject->ObjectBox);
+	int touchingPlayer = CheckBoxOverlapsBoxBroad(Player->PlayerPtr->ObjectBox, inputObject->ObjectBox);
 
 	if (touchingPlayer == 1 && inputObject->Action == 0)
 	{
@@ -1286,7 +1289,7 @@ bool detectCamera(Object* inputObject, Camera inputCamera)
 	PhysicsBox camBox = {0};
 	mapPhysicsBoxToCamera(&camBox, inputCamera);
 
-	int touchingCamBox = checkBoxOverlapsBoxBroad(&camBox, inputObject->ObjectBox);
+	int touchingCamBox = CheckBoxOverlapsBoxBroad(&camBox, inputObject->ObjectBox);
 
 	if (touchingCamBox == 1 && inputObject->Action == 0)
 	{
@@ -1357,17 +1360,6 @@ int UpdateFlagObject(Object* flag, World *GameWorld)
 			}
 		} break;
 
-		case CACHE_TRIGGER:
-		if (detectCamera(flag, GameWorld->MainCamera))
-		{
-			PhysicsBox boundingBox;
-			mapPhysicsBoxToCamera(&boundingBox, GameWorld->MainCamera);
-
-			cacheObjects(&GameWorld->ObjectList, boundingBox);
-			flag->Action = 2;
-		} break;
-
-
 		case CUTSCENE_TRIGGER:
 		if (detectPlayer(flag, Player))
 		{
@@ -1407,7 +1399,7 @@ int UpdateFlagObject(Object* flag, World *GameWorld)
 				}
 
 				box = current->ObjectBox;
-				if (checkBoxOverlapsBoxBroad(box, flag->ObjectBox) && (flag->arg2 == 0 || box->solid != UNSOLID))
+				if (CheckBoxOverlapsBoxBroad(box, flag->ObjectBox) && (flag->arg2 == 0 || box->solid != UNSOLID))
 				{
 					MarkObjectForDeletion(current);
 				}
@@ -1431,7 +1423,7 @@ int UpdateFlagObject(Object* flag, World *GameWorld)
 				}
 
 				box = current->ObjectBox;
-				if (box->solid == BODY && checkBoxOverlapsBoxBroad(box, flag->ObjectBox))
+				if (box->solid == BODY && CheckBoxOverlapsBoxBroad(box, flag->ObjectBox))
 				{
 					MarkObjectForDeletion(current);
 				}

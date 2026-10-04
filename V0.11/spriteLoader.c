@@ -156,7 +156,7 @@ int loadSpriteFromPath(Sprite *inputSprite, const char inputPath[])
 }
 
 
-void initialiseSpriteSetList(SpriteSetList *input)
+void InitialiseSpriteSetList(SpriteSetList *input)
 {
 	if (input == NULL)
 	{
@@ -164,6 +164,7 @@ void initialiseSpriteSetList(SpriteSetList *input)
 	}
 
 	input->start = NULL;
+	input->SpriteSetCount = 0;
 
 	return;
 }
@@ -263,6 +264,8 @@ SpriteSet* createNewSpriteSet(SpriteSetList *setList, int desiredSetID)
 	{
 		setList->start = newSet;
 	}
+
+	setList->SpriteSetCount++;
 		
 	// initialise new set
 	newSet->setID = desiredSetID;
@@ -853,6 +856,8 @@ int deleteSpriteSet(SpriteSet *inputSet, SpriteSetList *setList)
 		setList->start = nextSet;
 	}
 
+	setList->SpriteSetCount--;
+
 	free(inputSet);
 
 	return LEMON_SUCCESS;
@@ -872,33 +877,23 @@ int deleteAllSpriteSets(SpriteSetList *setList)
 }
 
 
-bool setNotBeingUsed(SpriteSet *input, ObjectController *ObjectList)
+bool SpriteSetNotBeingUsed(SpriteSet *input, ObjectController *ObjectList)
 {
 	if (ObjectList != NULL)
 	{
-		Object *obj = ObjectList->firstObject;
+		return true;
+	}
 
-		while (obj != NULL && input != NULL)
+	Object *obj = ObjectList->firstObject;
+
+	while (obj != NULL && input != NULL)
+	{
+		if (obj->ObjectDisplay->spriteSetSource == input)
 		{
-			if (obj->ObjectDisplay->spriteSetSource == input)
-			{
-				// there is an object that is still using this set
-				return false;
-			}
-			obj = obj->nextObject;
+			// there is an object that is still using this set
+			return false;
 		}
-
-		obj = ObjectList->cachedFirstObject;
-
-		while (obj != NULL && input != NULL)
-		{
-			if (obj->ObjectDisplay->spriteSetSource == input)
-			{
-				// there is an object that is still using this set
-				return false;
-			}
-			obj = obj->nextObject;
-		}
+		obj = obj->nextObject;
 	}
 
 	return true;
@@ -928,7 +923,7 @@ int deleteExcessSpriteSets(ObjectController *ObjectList, int numberToKeep)
 		delete = currentSet;
 		currentSet = currentSet->nextSet;
 		
-		if (setNotBeingUsed(delete, ObjectList))
+		if (SpriteSetNotBeingUsed(delete, ObjectList))
 		{
 			deleteSpriteSet(delete, setList);
 		}
@@ -938,7 +933,7 @@ int deleteExcessSpriteSets(ObjectController *ObjectList, int numberToKeep)
 }
 
 
-RenderMode convertStringToRenderMode(char string[])
+RenderMode GetRenderMode(char string[])
 {
 	if (string == NULL || strlen(string) >= MAX_LEN)
 	{
@@ -983,7 +978,7 @@ RenderMode convertStringToRenderMode(char string[])
 	}
 }
 
-const char* getRenderModeName(RenderMode input)
+const char* GetRenderModeName(RenderMode input)
 {
 	switch (input)
 	{

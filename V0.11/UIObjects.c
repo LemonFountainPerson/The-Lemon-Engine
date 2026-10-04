@@ -202,11 +202,11 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 	case PAUSE_MENU_CONTROLLER:
 	{
 		float xPosOrigin = (3 * X_TILESCALE) - (ScreenData.HUDWidth >> 1);
-		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin, 132, PAUSE_HEADER, 0, 0, 0, 0);
+		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin, 132, PAUSE_HEADER, 0, 0, 0);
 
 		basicMenuCreation(xPosOrigin, 128, UIElement, GameWorld, 3, 
 			"ResumeGame", "Settings", "QuitGame");
-		setObjectName(UIElement, "PauseController");
+		SetObjectName(UIElement, "PauseController");
 	} break;
 
 
@@ -216,7 +216,7 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 
 		basicMenuCreation(xPosOrigin, 128, UIElement, GameWorld, 5, 
 			"Save1", "Save2", "SaveState", "LoadState", "BackOption");
-		setObjectName(UIElement, "SaveController");
+		SetObjectName(UIElement, "SaveController");
 	} break;
 
 	case SETTINGS_MENU_CONTROLLER:
@@ -224,11 +224,11 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 		float xPosOrigin = (3 * X_TILESCALE) - (ScreenData.HUDWidth >> 1);
 
 		//AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, 0, 0, PAUSE_BACKGROUND, 0, 0, 0, 0);
-		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin + X_TILESCALE, 260, SETTINGS_HEADER, 0, 0, 0, 0);
+		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin + X_TILESCALE, 260, SETTINGS_HEADER, 0, 0, 0);
 		
 		basicMenuCreation(xPosOrigin, 128, UIElement, GameWorld, 4, 
 			"VideoSettings", "SoundSettings", "Settings", "BackOption");
-		setObjectName(UIElement, "MenuController");
+		SetObjectName(UIElement, "MenuController");
 	} break;
 
 
@@ -237,11 +237,11 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 		float xPosOrigin = (3 * X_TILESCALE) - (ScreenData.HUDWidth >> 1);
 
 		//AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, 0, 0, PAUSE_BACKGROUND, 0, 0, 0, 0);
-		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin + X_TILESCALE, 328, SETTINGS_HEADER, 0, 0, 0, 0);
+		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin + X_TILESCALE, 328, SETTINGS_HEADER, 0, 0, 0);
 		
 		basicMenuCreation(xPosOrigin, 128, UIElement, GameWorld, 5, 
 			"Settings", "Settings", "Settings", "Settings", "BackOption");
-		setObjectName(UIElement, "VideoController");
+		SetObjectName(UIElement, "VideoController");
 	} break;
 
 
@@ -250,11 +250,11 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 		float xPosOrigin = (3 * X_TILESCALE) - (ScreenData.HUDWidth >> 1);
 
 		//AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, 0, 0, PAUSE_BACKGROUND, 0, 0, 0, 0);
-		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin + X_TILESCALE, 260, SETTINGS_HEADER, 0, 0, 0, 0);
+		AddObjectWithParent(GameWorld, UIElement, UI_ELEMENT, xPosOrigin + X_TILESCALE, 260, SETTINGS_HEADER, 0, 0, 0);
 		
 		basicMenuCreation(xPosOrigin, 128, UIElement, GameWorld, 4, 
 			"Settings", "Settings", "Settings", "BackOption");
-		setObjectName(UIElement, "SoundController");
+		SetObjectName(UIElement, "SoundController");
 	} break;
 
 
@@ -453,7 +453,7 @@ bool MenuControl(Object *MenuController, World *GameWorld)
 	// arg3: Number of options
 	// arg4: Y Pos for first option
 
-	if (buttonPressed(LMN_DOWN))
+	if (ButtonPressed(LMN_DOWN))
 	{
 		AcknowledgeButton(LMN_DOWN);
 
@@ -466,7 +466,7 @@ bool MenuControl(Object *MenuController, World *GameWorld)
 		}
 	}
 
-	if (buttonPressed(LMN_UP))
+	if (ButtonPressed(LMN_UP))
 	{
 		AcknowledgeButton(LMN_UP);
 		
@@ -486,7 +486,7 @@ bool MenuControl(Object *MenuController, World *GameWorld)
 	}
 
 
-	if ((buttons[LMN_MENU_CONFIRM] == 1 && MouseInput.LeftButton != 1) || MenuController->Action == MOUSECLICK_INTERRUPT)
+	if ((Buttons[LMN_MENU_CONFIRM] == 1 && MouseInput.LeftButton != 1) || MenuController->Action == MOUSECLICK_INTERRUPT)
 	{
 		AcknowledgeHeldButtons();
 		MenuController->Action = IDLE;
@@ -506,7 +506,7 @@ void refreshMenu(Object *MenuController, World *GameWorld)
 	}
 
 	MarkObjectForDeletion(MenuController);
-	Object *newMenu = AddObject(GameWorld, UI_ELEMENT, 0, 0, getSubType(MenuController), 0, 0, 0, 0);
+	Object *newMenu = AddObject(GameWorld, UI_ELEMENT, 0, 0, getSubType(MenuController), 0, 0, 0);
 
 	if (newMenu != NULL)
 	{
@@ -529,7 +529,7 @@ int PauseMenu(Object *MenuController, World *GameWorld)
 		switch (MenuController->arg2)
 		{
 			case 1:
-				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SETTINGS_MENU_CONTROLLER, 0, 0, 0, 0) != NULL)
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SETTINGS_MENU_CONTROLLER, 0, 0, 0) != NULL)
 				{
 					MarkObjectForDeletion(MenuController);
 				}
@@ -583,7 +583,7 @@ int SaveMenu(Object *MenuController, World *GameWorld)
 				break;
 
 			default:
-				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SETTINGS_MENU_CONTROLLER, 0, 0, 0, 0) != NULL)
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SETTINGS_MENU_CONTROLLER, 0, 0, 0) != NULL)
 				{
 					MarkObjectForDeletion(MenuController);
 				}
@@ -614,21 +614,21 @@ int SettingsMenuControl(Object *MenuController, World *GameWorld)
 		switch (MenuController->arg2)
 		{
 			case 0:
-				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, VIDEO_SETTINGS_CONTROLLER, 0, 0, 0, 0) != NULL)
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, VIDEO_SETTINGS_CONTROLLER, 0, 0, 0) != NULL)
 				{
 					MarkObjectForDeletion(MenuController);
 				}
 				break;
 
 			case 1:
-				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SOUND_SETTINGS_CONTROLLER, 0, 0, 0, 0) != NULL)
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SOUND_SETTINGS_CONTROLLER, 0, 0, 0) != NULL)
 				{
 					MarkObjectForDeletion(MenuController);
 				}
 				break;
 
 			case 2:
-				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SAVE_OPTIONS_CONTROLLER, 0, 0, 0, 0) != NULL)
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SAVE_OPTIONS_CONTROLLER, 0, 0, 0) != NULL)
 				{
 					MarkObjectForDeletion(MenuController);
 				}
@@ -681,7 +681,7 @@ int VideoSettingsControl(Object *MenuController, World *GameWorld)
 				break;
 
 			default:
-				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SETTINGS_MENU_CONTROLLER, 0, 0, 0, 0) != NULL)
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SETTINGS_MENU_CONTROLLER, 0, 0, 0) != NULL)
 				{
 					MarkObjectForDeletion(MenuController);
 				}
@@ -727,7 +727,7 @@ int SoundSettingsControl(Object *MenuController, World *GameWorld)
 
 
 			default:
-				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SETTINGS_MENU_CONTROLLER, 0, 0, 0, 0) != NULL)
+				if (AddObject(GameWorld, UI_ELEMENT, 0, 0, SETTINGS_MENU_CONTROLLER, 0, 0, 0) != NULL)
 				{
 					MarkObjectForDeletion(MenuController);
 				}
@@ -752,7 +752,7 @@ Object* AddOptionButton(const char spriteName[], int xPos, int yPos, Object *Men
 		return NULL;
 	}
 
-	Object *createdOption = AddObjectWithParent(GameWorld, MenuController, UI_ELEMENT, xPos, yPos, OPTION_BUTTON, MenuController->arg3, 0, 0, 0);
+	Object *createdOption = AddObjectWithParent(GameWorld, MenuController, UI_ELEMENT, xPos, yPos, OPTION_BUTTON, MenuController->arg3, 0, 0);
 	if (createdOption == NULL)
 	{
 		return NULL;
@@ -813,7 +813,7 @@ int UpdateOptionButton(Object *Button, Camera inputCam)
 	// animate
 	if (Button->Parent->arg2 == Button->arg2)
 	{
-		if (buttons[LMN_MENU_CONFIRM] == 1 || Button->Action == MOUSECLICK_INTERRUPT)
+		if (Buttons[LMN_MENU_CONFIRM] == 1 || Button->Action == MOUSECLICK_INTERRUPT)
 		{
 			smoothSizeChangeTo(Button, 1.10, 2.0);
 		}

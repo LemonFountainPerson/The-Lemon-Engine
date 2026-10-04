@@ -20,6 +20,7 @@
 #include "config.h"
 #include "data.h"
 #include "gameObjects.h"
+#include "ObjectController.h"
 #include "drawScreen.h"
 #include "animations.h"
 #include "spriteLoader.h"
@@ -32,5 +33,4 @@
 #include "fileLoader.h"
 #include "cutsceneManager.h"
 #include "console.h"
-#include "isaac64.h"
 #include "Networking.h"

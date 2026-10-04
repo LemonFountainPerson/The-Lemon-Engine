@@ -1,3 +1,14 @@
+void StartTyping(SDL_Window *window, Text *inputTypingText);
+
+void StopTyping(SDL_Window *window);
+
+void UpdateTyping(SDL_Window *window, World *GameWorld);
+
+void InputTyping(const char input[]);
+
+void SetCursorPos(void);
+
+
 int UpdateUIText(World *GameWorld, Object *UIText);
 
 TextBox* SayText(const char inputPhrase[], const char Portrait[], TextPreset inputPreset, World *GameWorld);				// Equivalent to calling createText and then applyTextPresets
@@ -70,9 +81,11 @@ int RemoveTextFromList(Text *input, TextList *list);
 
 int RemoveTextWithName(const char name[], World *GameWorld);
 
+void RemoveConsoleText(void);
 
 
-void initialiseTextList(TextList *input);
+
+void InitialiseTextList(TextList *input);
 
 void printTextListinfo(TextList *list, const char name[]);
 
@@ -80,10 +93,10 @@ void RemoveAllTexts(World *GameWorld);
 
 void RemoveObjectDebugTexts(void);
 
-void removeAttachedTexts(Object *input, World *GameWorld);
+void RemoveAttachedTexts(Object *input, World *GameWorld);
 
 
-void initialiseFontList(FontList *input);
+void InitialiseFontList(FontList *input);
 
 void closeFont(Font *input);
 

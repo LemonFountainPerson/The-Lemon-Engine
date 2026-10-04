@@ -14,7 +14,8 @@ int StartGame(World *GameWorld)
 This function is called after engine initialisation and by default loads the game into level 1, but you can put in whatever you need your game to do when it 
 starts. (For example: playing a cutscene, loading into a main menu, logos, etc.)
 
-This function is one the engine's Custom Callbacks. This means the function is undefined when the 'LEMON_USE_CUSTOM_CALLBACKS' macro is set to true, allowing you 
+
+This function is one the engine's Custom Callbacks. This function is undefined when the 'LEMON_USE_CUSTOM_CALLBACKS' macro is set to true, allowing you 
 to define your own implementation, as long as it uses the same prototype. This is useful when working with the engine as a dynamic library instead of the source 
 code directly.
 

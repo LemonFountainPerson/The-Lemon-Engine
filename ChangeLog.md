@@ -25,6 +25,8 @@ New colours can be added via the 'setTextBoxColor' function in the 'TextHandler'
 reference to one or search for it via [getConsoleVariable]. A default value can be set, as well as flags that indicate special behaviour (For example CONFLAG_CHEAT means the 
 variable can only be changed when cheats are active, CONFLAG_SERVER_SIDE means the variable is synced with the server if connected to one and cannot be modified by clients, etc.)
 
+-> Added the 'RepeatUntil' and 'RepeatWhile' SceneActions, usable in LemonScript files.
+
 
 ## Structure Changes
 
@@ -36,6 +38,14 @@ Graphics are stretched but text is automatically re-sized and re-positioned to r
 
 -> TextBoxes are now a type of SceneAction, instead of using a sceneaction to coordinate themselves during cutscenes. As part of this, the TextQueue in the World struct has been 
 removed and TextBox behaviour is more consistent. (TextBoxes can also be repeated when placed in loops.)
+
+-> Removed the 'parallelAction' variable from SceneActions and consequently the 'WaitUntil' command.
+
+-> SceneActions no longer store a reference to an ActorObject when first created and instead lookup the desired Object by name during runtime. This improves functionality
+and is more reliable, at the cost of performance.
+
+-> Removed 'Object caching' due to lack of usefulness. The original intention of this feature was to allow for levels that modified its layout as you progress, but since
+the Level Partitions fulfill the same purpose in a much more straightforward way, the caching feature had no purpose.
 
 
 ## Bug fixes/Improvements

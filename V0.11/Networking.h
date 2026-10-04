@@ -1,4 +1,4 @@
-void initialiseNetworkData(void);
+void InitialiseNetworkData(void);
 
 bool openServer(const char ip[], Uint16 portNumber, World *GameWorld);
 
@@ -10,16 +10,18 @@ void disconnect(void);
 
 void disconnectWithMessage(const char message[]);
 
-void cleanUpNetworkData(void);
+void CleanUpNetworkData(void);
 
 void resetTrackedObjects(void);
 
-void deleteUnownedTrackedObjects(void);
+void CleanUpUnownedTrackedObjects(void);
+
+void CleanUpTrackedObjectsFromWorld(World *GameWorld);
 
 void removeDisconnectedClient(int index, const char reason[]);
 
 
-void ServerOpened(World *GameWorld);
+void OpenedServer(World *GameWorld);
 
 void NewClientJoinedServer(int clientID);
 
@@ -83,13 +85,13 @@ void sendServerCommand(ConsoleCommand *input, const char consoleInput[USER_INPUT
 void updateServerFlag(GameFlag *input);
 
 
-int TrackObjectOverNetwork(Object *input);
+int TrackObjectOverNetwork(Object *input, World *GameWorld);
 
 int RespondToTrackObjectRequest(NetworkPacket *packet, int index, World *GameWorld);
 
 int RespondToDeleteObjectRequest(NetworkPacket *packet, int clientIndex, World *GameWorld);
 
-int addNewTrackedObject(Object *input, int owner);
+int addNewTrackedObject(Object *input, int owner, World *GameWorld);
 
 void processTrackedObjectResponse(NetworkPacket *packet);
 
@@ -123,3 +125,24 @@ void sendGameEventPackets(int recipientID);
 void saveEventForNetworkTransmission(GameEvent *input);
 
 void sendCommandToClients(const char command[]);
+
+
+/*
+------------------------------------------------------------------------------
+ If (flag==TRUE), then use the contents of randrsl[0..255] as the seed.
+------------------------------------------------------------------------------
+*/
+void randinit(/*_ word flag _*/);
+
+void isaac64();
+
+
+/*
+------------------------------------------------------------------------------
+ Call rand() to retrieve a single 64-bit random value
+------------------------------------------------------------------------------
+*/
+#define rand64() \
+   (!randcnt-- ? (isaac64(), randcnt = RANDSIZ - 1, randrsl[randcnt]) : randrsl[randcnt])
+
+

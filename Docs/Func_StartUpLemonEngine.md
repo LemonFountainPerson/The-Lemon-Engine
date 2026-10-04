@@ -21,6 +21,6 @@ Returns a [FuncResult](Enum_FuncResult.md), indicating whether the operation was
 
 ## Version
 
-Available since V0.10.
+Available since V0.08.
 
 -------------------------------

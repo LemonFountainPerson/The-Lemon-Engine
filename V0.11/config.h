@@ -38,8 +38,8 @@
 #define RESERVED_OBJECTS 500
 #define PRESERVED_SPRITESETS 2
 
-#define X_WORLD_BOUND "100000.0"
-#define Y_WORLD_BOUND "100000.0"		
+#define X_PLAYER_BOUND "100000.0"
+#define Y_PLAYER_BOUND "100000.0"		
 
 #define TICKS_PER_SECOND 60
 #define RENDERS_PER_SECOND 20000	
@@ -60,11 +60,15 @@
 #define LEMON_COLLISION_PHYSICS true 		// turn this to false to disable all physics and collision if you want to implement your own scheme
 #define LEMON_NETWORKING_ENABLED true		// turn this to false to remove all networking functionality; small perfomance/memory gain, but may be desirable for security
 
-#define RANDOM_SEED time(NULL)
+#define X_BSP_BOUND "32000.0"
+#define Y_BSP_BOUND "32000.0"
+#define BSPNODE_OBJECT_THRESHOLD "6"
+#define BSPNODE_MAX_DEPTH 18
+#define MINIMUM_BSP_SIZE 32.0
 
 #define GAME_FLAG_COUNT 64  
 
-#define MAX_OBJECTS 5000
+#define MAX_OBJECTS 15000
 #define MAX_COMPONENT_SLOTS 256
 
 #define OBJECT_NAME_LENGTH 24
@@ -122,7 +126,6 @@
 #define NS_PER_SECOND				1000000000	
 #define INTERP_FRAMERATE(x)			(x << (FRAMERATE_UPDATE_RATE - 1))
 #define FRAMERATE_UPDATE_TICK 		(NS_PER_SECOND >> (FRAMERATE_UPDATE_RATE - 1))
-
 
 #define MAX_TRACKED_OBJECTS 512
 #define MAX_CLIENTS 16

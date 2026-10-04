@@ -2,7 +2,7 @@
 #include "utf8Decoder.h"
 
 
-void startTyping(SDL_Window *window, Text *inputTypingText)
+void StartTyping(SDL_Window *window, Text *inputTypingText)
 {
 	if (SDL_TextInputActive(window))
 	{
@@ -28,7 +28,7 @@ void startTyping(SDL_Window *window, Text *inputTypingText)
 	return;
 }
 
-void stopTyping(SDL_Window *window)
+void StopTyping(SDL_Window *window)
 {
 	if (!TextSettings.Typing)
 	{
@@ -46,14 +46,14 @@ void stopTyping(SDL_Window *window)
 	return;
 }
 
-void updateTyping(SDL_Window *window, World *GameWorld)
+void UpdateTyping(SDL_Window *window, World *GameWorld)
 {
 	if (!TextSettings.Typing)
 	{
 		return;
 	}
 
-	if (buttonPressed(LMN_BACKSPACE) && TextSettings.userInputIndex > 0)
+	if (ButtonPressed(LMN_BACKSPACE) && TextSettings.userInputIndex > 0)
 	{
 		TextSettings.userInputIndex--;				
 
@@ -71,24 +71,24 @@ void updateTyping(SDL_Window *window, World *GameWorld)
 			updateText(TextSettings.typingText, TextSettings.userInputString);
 		}
 
-		setCursorPos();
+		SetCursorPos();
 	}
 
-	if (buttonPressed(LMN_LEFTARROW))
+	if (ButtonPressed(LMN_LEFTARROW))
 	{
 		TextSettings.userInputIndex = clamp(TextSettings.userInputIndex - 1, 0, USER_INPUT_MAX_LEN);
-		setCursorPos();
+		SetCursorPos();
 	}
 
-	if (buttonPressed(LMN_RIGHTARROW))
+	if (ButtonPressed(LMN_RIGHTARROW))
 	{
 		TextSettings.userInputIndex = clamp(TextSettings.userInputIndex + 1, 0, strlen(TextSettings.userInputString));
-		setCursorPos();
+		SetCursorPos();
 	}
 
-	if (buttonPressed(LMN_TYPING_END) && TextSettings.userInputString[0] != '\0')
+	if (ButtonPressed(LMN_TYPING_END) && TextSettings.userInputString[0] != '\0')
 	{
-		stopTyping(window);
+		StopTyping(window);
 	}
 
 	
@@ -97,7 +97,7 @@ void updateTyping(SDL_Window *window, World *GameWorld)
 	return;
 }
 
-void inputTyping(const char input[])
+void InputTyping(const char input[])
 {
 	int prevLength = strlen(TextSettings.userInputString);
 	TextSettings.userInputIndex = clamp(TextSettings.userInputIndex, 0, USER_INPUT_MAX_LEN - 1);
@@ -128,12 +128,12 @@ void inputTyping(const char input[])
 		updateText(TextSettings.typingText, TextSettings.userInputString);
 	}
 
-	setCursorPos();
+	SetCursorPos();
 
 	return;
 }
 
-void setCursorPos(void)
+void SetCursorPos(void)
 {
 	if (TextSettings.userInputIndex < 1)
 	{
@@ -151,7 +151,7 @@ void setCursorPos(void)
 
 	if (typingText == NULL)
 	{
-		font = TextSettings.DebugFont.font;
+		font = DebugSettings.DebugFont.font;
 	}
 	else
 	{
@@ -213,8 +213,6 @@ int InitialiseUIText(Object *UIText, World *GameWorld)
 			UIText->arg2 = -1;
 			initialiseTextCharacter(UIText, '>', GameWorld);
 			switchSpriteByName("TextCursor", 0, UIText->ObjectDisplay);
-
-			UpdateUIText(GameWorld, UIText);
 		break;
 
 	case TEXT_CHARACTER:
@@ -240,36 +238,6 @@ int UpdateUIText(World *GameWorld, Object *UIText)
 		return MISSING_DATA;
 	}
 
-
-	switch (getSubType(UIText))
-	{
-	case TEXT_OPTION_CURSOR:
-	{
-		TextBox *currentText = getCurrentTextBox(GameWorld);
-
-		if (currentText == NULL || currentText->boxPtr == NULL || currentText->textTypeSetting != TEXTBOX_OPTION_PROMPT)
-		{
-			MarkObjectForDeletion(UIText);
-			break;
-		}
-
-		TextOptionPrompt *optionPrompt = &currentText->textTypeData.OptionPrompt;
-		int option = optionPrompt->SelectedOption;
-
-		if (optionPrompt != NULL && UIText->arg2 != option)
-		{
-			//float sizeRatio = (TextSettings.defaultTextPointSize / DEFAULT_TEXT_SIZE);
-			UIText->ObjectBox->xPos = (currentText->boxPtr->ObjectBox->xPos + currentText->boxOffsetX);
-			UIText->ObjectBox->yPos = (currentText->boxPtr->ObjectBox->yPos + optionPrompt->OptionYPositions[option]);
-			UIText->arg2 = option;
-			playTextVoice(currentText);
-		}
-	} break;
-
-	default:
-		break;
-	}
-
 	return LEMON_SUCCESS;
 }
 
@@ -288,8 +256,6 @@ TextBox* SayText(const char inputPhrase[], const char Portrait[], TextPreset pre
 	{
 		return NULL;
 	}
-
-	newAction->parallelAction = false;
 
 	// get Text Box within scene action
 	TextBox *newText = &newAction->ActionData.sceneText;
@@ -652,9 +618,9 @@ int displayText(TextBox *currentText, World *GameWorld)
 	int response = LEMON_SUCCESS;
 
 	// Skip text animation if skip button is held
-	if (buttons[LMN_TEXT_SKIP] && currentText->Skippable == true)
+	if (Buttons[LMN_TEXT_SKIP] && currentText->Skippable == true)
 	{
-		buttons[LMN_TEXT_CONFIRM] = -1;
+		Buttons[LMN_TEXT_CONFIRM] = -1;
 
 		while (currentText->currentIndex >= 0 && response == LEMON_SUCCESS)
 		{
@@ -665,7 +631,7 @@ int displayText(TextBox *currentText, World *GameWorld)
 	{
 		currentText->Counter++;
 
-		if (!(currentText->Counter >= currentText->textDelayFrames || currentText->currentIndex == 0))
+		if (currentText->Counter < currentText->textDelayFrames && currentText->currentIndex != 0)
 		{
 			return ACTION_DISABLED;
 		}
@@ -695,8 +661,6 @@ int displayNextCharacter(TextBox *inputText, World *GameWorld)
 
 	if (inputText->boxPtr == NULL)
 	{
-		GameWorld->TextBox = true;
-
 		ApplyTextPresets(inputText, GameWorld);
 
 		if (inputText->boxPtr == NULL)
@@ -715,6 +679,8 @@ int displayNextCharacter(TextBox *inputText, World *GameWorld)
 
 		inputText->currentXPos = inputText->boxOffsetX;
 		inputText->currentYPos = inputText->boxOffsetY;
+
+		GameWorld->TextBox = true;
 	}
 
 	int decodedIndex = inputText->currentIndex;
@@ -788,7 +754,7 @@ int displayNextCharacter(TextBox *inputText, World *GameWorld)
 	{
 		int newTextXPos = inputText->currentXPos + (int)inputText->boxPtr->ObjectBox->xPos;
 		int newTextYPos = inputText->currentYPos + (int)inputText->boxPtr->ObjectBox->yPos;
-		AddObject(GameWorld, UI_TEXT, newTextXPos, newTextYPos, TEXT_CHARACTER, decodedChar, 0, 0, 0);
+		AddObject(GameWorld, UI_TEXT, newTextXPos, newTextYPos, TEXT_CHARACTER, decodedChar, 0, 0);
 
 		inputText->currentXPos += getCharacterSpacing(decodedChar);
 	}
@@ -944,7 +910,7 @@ int TextInteraction(TextBox *currentText, World *GameWorld)
 		break;
 
 		default:
-			if (buttonPressed(LMN_TEXT_CONFIRM) || buttonPressed(MOUSE_LEFT))
+			if (ButtonPressed(LMN_TEXT_CONFIRM) || ButtonPressed(MOUSE_LEFT))
 			{
 				endTextBox(currentText, GameWorld);
 			}
@@ -968,10 +934,10 @@ int handleOptionPrompt(TextBox *inputText, World *GameWorld)
 
 		if (optionData->SelectedOption > 0)
 		{
-			swapStrings(inputText->textPhrase, optionData->optionNames[optionData->SelectedOption - 1], OPTION_TEXT_MAX_LEN);
+			SwapStrings(inputText->textPhrase, optionData->optionNames[optionData->SelectedOption - 1], OPTION_TEXT_MAX_LEN);
 		}
 
-		swapStrings(inputText->textPhrase, optionData->optionNames[optionData->SelectedOption], OPTION_TEXT_MAX_LEN);
+		SwapStrings(inputText->textPhrase, optionData->optionNames[optionData->SelectedOption], OPTION_TEXT_MAX_LEN);
 
 		inputText->currentIndex = 0;
 
@@ -987,58 +953,75 @@ int handleOptionPrompt(TextBox *inputText, World *GameWorld)
 
 		return LEMON_SUCCESS;
 	}
-	else if (inputText->currentIndex == -1)
-	{
-		AddObjectWithParent(GameWorld, inputText->boxPtr, UI_TEXT, 0, 0, TEXT_OPTION_CURSOR, 0, 0, 0, 0);
-		inputText->currentIndex = -2;
 
-		return LEMON_SUCCESS;
-	}
-
-	if (buttonPressed(LMN_UP))
+	if (ButtonPressed(LMN_UP))
 	{
 		optionData->SelectedOption = clamp(optionData->SelectedOption - 1, 0, optionData->numberOfOptions - 1);
 	}
 
-	if (buttonPressed(LMN_DOWN))
+	if (ButtonPressed(LMN_DOWN))
 	{
 		optionData->SelectedOption = clamp(optionData->SelectedOption + 1, 0, optionData->numberOfOptions - 1);
+		putConsole("pressing to %d", optionData->SelectedOption);
 	}
 
-	bool selectOption = buttonPressed(LMN_TEXT_CONFIRM);
+	bool selectOption = ButtonPressed(LMN_TEXT_CONFIRM);
 
-	// detect mouse input
 	if (inputText->boxPtr != NULL)
 	{
+		// detect mouse input
 		PhysicsBox *boxRect = inputText->boxPtr->ObjectBox;
-		PhysicsBox stateSave;
-		memcpy(&stateSave, boxRect, sizeof(PhysicsBox));
-
-		boxRect->xSize = 600;
-		boxRect->ySize = 50;
-		boxRect->xPos = inputText->boxOffsetX + boxRect->xPos;
-		float boxYPos = boxRect->yPos;
-
+		float *optionY = optionData->OptionYPositions;
+		float xSize = 600;
+		float ySize = 50;
+		float xPos = inputText->boxOffsetX + boxRect->xPos;
+		float yPos;
+		float mouseX = getMouseXHUD();
+		float mouseY = getMouseYHUD();
+		int numOptions = optionData->numberOfOptions;
+		
 		int i = 0;
-		while (i < optionData->numberOfOptions)
+		while (i < numOptions)
 		{
-			boxRect->yPos = optionData->OptionYPositions[i] + boxYPos;
+			yPos = optionY[i] + boxRect->yPos;
 
-			if (MouseOverlappingBox(inputText->boxPtr, GameWorld->MainCamera))
+			if (mouseX < xPos + xSize && mouseX > xPos && mouseY > yPos && mouseY < yPos + ySize)
 			{
-				optionData->SelectedOption = clamp(i, 0, optionData->numberOfOptions - 1);
-				break;
+				optionData->SelectedOption = i;
+				numOptions = 0;
 			}
-
-			i++;
-
-			if (i >= optionData->numberOfOptions && buttonPressed(MOUSE_LEFT))
+			else
 			{
-				selectOption = false;
+				i++;
 			}
 		}
+
+		if (i >= optionData->numberOfOptions && ButtonPressed(MOUSE_LEFT))
+		{
+			selectOption = false;
+		}
+
+		xPos = (boxRect->xPos + inputText->boxOffsetX);
+		yPos = (boxRect->yPos + optionY[optionData->SelectedOption]);
+
+		if (inputText->currentIndex == -1)
+		{
+			optionData->cursor = AddObjectWithParent(GameWorld, inputText->boxPtr, UI_TEXT, xPos, yPos, TEXT_OPTION_CURSOR, -1, 0, 0);
+			inputText->currentIndex = -2;
+			return LEMON_SUCCESS;
+		}
 		
-		memcpy(boxRect, &stateSave, sizeof(PhysicsBox));
+		// Move cursor
+		Object *cursor = optionData->cursor;
+	
+		if (cursor != NULL && cursor->arg2 != optionData->SelectedOption)
+		{
+			cursor->ObjectBox->xPos = xPos;
+			cursor->ObjectBox->yPos = yPos;
+
+			cursor->arg2 = optionData->SelectedOption;
+			playTextVoice(inputText);
+		}
 	}
 
 
@@ -1213,7 +1196,7 @@ Text* addTextWithFont(const char textPhrase[], float xPos, float yPos, const cha
     newText->yPos = yPos;
 
     newText->CameraRelative = false;
-    newText->attachedObj = NULL;
+    ClearObjectReference(&newText->attachedObject);
     newText->usedFont = renderFont;
     memset(newText->name, 0, MAX_LEN);
 
@@ -1265,8 +1248,7 @@ void attachTextToObject(Text *input, Object *obj)
 		return;
 	}
 
-	input->attachedObj = obj;
-	input->recordedInstance = obj->instanceNumber;
+	SetObjectReference(&input->attachedObject, obj);
 
 	return;
 }
@@ -1284,8 +1266,8 @@ void attachTextWithNameToObject(const char name[], Object *input, World *GameWor
 	{
 		if (strcmp(name, list[i].name) == 0)
 		{
-			list[i].attachedObj = input;
-			list[i].recordedInstance = input->instanceNumber;
+			SetObjectReference(&list[i].attachedObject, input);
+
 			return;
 		}
 	}
@@ -1399,7 +1381,7 @@ void setTextName(Text *input, const char name[])
 }
 
 
-void initialiseTextList(TextList *input)
+void InitialiseTextList(TextList *input)
 {
 	if (input == NULL)
 	{
@@ -1410,7 +1392,7 @@ void initialiseTextList(TextList *input)
 	for (int i = 0; i < MAX_TEXTS; i++)
 	{
 		input->texts[i].text = NULL;
-		input->texts[i].attachedObj = NULL;
+		ClearObjectReference(&input->texts[i].attachedObject);
 	}
 }
 
@@ -1442,15 +1424,12 @@ void printTextListinfo(TextList *list, const char name[])
 			strcat(buffer, " (Data empty)   ");
 		}
 
-		if (array[i].attachedObj != NULL)
+		Object *obj = array[i].attachedObject.obj;
+		if (obj != NULL)
 		{
 			strcat(buffer, "(Connected to object '");
-			strcat(buffer, array[i].attachedObj->name);
+			strcat(buffer, obj->name);
 			strcat(buffer, "')");
-		}
-		else
-		{
-			strcat(buffer, "(independent)");
 		}
 
 		putConsole("Index: %d  x: %.2f y: %.2f  %s", i, array[i].xPos, array[i].yPos, buffer);
@@ -1485,15 +1464,25 @@ int RemoveTextFromList(Text *input, TextList *list)
 
 	TTF_DestroyText(input->text);
 	input->text = NULL;
-	input->attachedObj = NULL;
-	list->count--;
+	ClearObjectReference(&input->attachedObject);
 
+	if (list != NULL)
+	{
+		list->count--;
+	}
+	
 	return LEMON_SUCCESS;
 }
 
 int RemoveTextWithName(const char name[], World *GameWorld)
 {
 	return RemoveTextFromList(getTextWithName(name, GameWorld), &GameWorld->TextList);
+}
+
+void RemoveConsoleText(void)
+{
+	RemoveTextFromList(&DebugSettings.ConsoleText[0], NULL);
+	RemoveTextFromList(&DebugSettings.ConsoleText[1], NULL);
 }
 
 
@@ -1516,7 +1505,7 @@ void RemoveAllTexts(World *GameWorld)
 
 void RemoveObjectDebugTexts(void)
 {
-	TextList *list = &TextSettings.DebugTextList;
+	TextList *list = &DebugSettings.DebugTextList;
 	Text *texts = list->texts;
 
 	int i = 0;
@@ -1551,7 +1540,7 @@ void removeAttachedTexts(Object *input, World *GameWorld)
 
 	for (int i = 0; i < MAX_TEXTS; i++)
 	{
-		if (array[i].attachedObj == input)
+		if (array[i].attachedObject.obj == input)
 		{
 			RemoveText(&array[i], GameWorld);
 		}
@@ -1560,7 +1549,7 @@ void removeAttachedTexts(Object *input, World *GameWorld)
 	return;
 }
 
-void initialiseFontList(FontList *input)
+void InitialiseFontList(FontList *input)
 {
 	input->count = 0;
 	Font *list = input->fonts;
@@ -1659,7 +1648,7 @@ Font* getFont(const char *name, World *GameWorld)
 {
 	if (GameWorld == NULL || strcmp(name, "DebugFont") == 0 || name[0] == '\0')
 	{
-		return &TextSettings.DebugFont;
+		return &DebugSettings.DebugFont;
 	}
 
 	Font *list = GameWorld->FontList.fonts;
@@ -1739,12 +1728,13 @@ void cleanUpFonts(FontList *input)
 
 void cleanUpTextData(RenderFrame *ScreenData)
 {
-	cleanUpTexts(&TextSettings.DebugTextList);
+	RemoveConsoleText();
+	cleanUpTexts(&DebugSettings.DebugTextList);
 
-	if (TextSettings.DebugFont.font != NULL)
+	if (DebugSettings.DebugFont.font != NULL)
 	{
-		TTF_CloseFont(TextSettings.DebugFont.font);
-		TextSettings.DebugFont.font = NULL;
+		TTF_CloseFont(DebugSettings.DebugFont.font);
+		DebugSettings.DebugFont.font = NULL;
 	}
 
 	if (ScreenData->textEngine != NULL)
@@ -1797,7 +1787,7 @@ int initialiseTextCharacter(Object *inputCharacter, char charValue, World *GameW
 
 Object* createTextBoxSprite(TextBox *inputText, const char textBoxName[], World *GameWorld)
 {
-	Object *Box = AddObject(GameWorld, UI_TEXT, inputText->boxStartPosX, inputText->boxStartPosY, TEXT_BOX, 0, 0, 0, 0);
+	Object *Box = AddObject(GameWorld, UI_TEXT, inputText->boxStartPosX, inputText->boxStartPosY, TEXT_BOX, 0, 0, 0);
 
 	inputText->boxPtr = Box;
 
@@ -1808,7 +1798,7 @@ Object* createTextBoxSprite(TextBox *inputText, const char textBoxName[], World 
 		return NULL;
 	}
 
-	setObjectName(Box, "TextBox");
+	SetObjectName(Box, "TextBox");
 
 	if (textBoxName[0] == '\0')
 	{
@@ -1835,7 +1825,7 @@ Object* createTextBoxPortrait(TextBox *inputText, World *GameWorld)
 	int boxXPos = (int)inputText->boxPtr->ObjectBox->xPos;
 	int boxYPos = (int)inputText->boxPtr->ObjectBox->yPos + ((inputText->boxOffsetY - TextSettings.portraitSize) >> 1) + 44;
 
-	Object *portrait = AddObjectWithParent(GameWorld, inputText->boxPtr, UI_TEXT, inputText->boxStartPosX, boxYPos, TEXT_PORTRAIT, 0, 0, 0, 0);
+	Object *portrait = AddObjectWithParent(GameWorld, inputText->boxPtr, UI_TEXT, inputText->boxStartPosX, boxYPos, TEXT_PORTRAIT, 0, 0, 0);
 
 	if (portrait != NULL)
 	{
@@ -1942,7 +1932,7 @@ int endTextBox(TextBox *text, World *GameWorld)
 		{
 			TextOptionPrompt *optionData = &text->textTypeData.OptionPrompt;
 			optionData->setUpComplete = false;
-			swapStrings(text->textPhrase, optionData->optionNames[optionData->numberOfOptions - 1], OPTION_TEXT_MAX_LEN);
+			SwapStrings(text->textPhrase, optionData->optionNames[optionData->numberOfOptions - 1], OPTION_TEXT_MAX_LEN);
 		
 			if (optionData->SelectedOption < 0 || optionData->SelectedOption >= optionData->numberOfOptions)
 			{
@@ -1968,8 +1958,8 @@ int endTextBox(TextBox *text, World *GameWorld)
 	}
 
 
+	AcknowledgeHeldButtons();
 	deleteTextBox(text, GameWorld);
-
 
 	return LEMON_SUCCESS;
 }
@@ -1995,7 +1985,7 @@ int deleteTextBox(TextBox *input, World *GameWorld)
 
 TextBox* getCurrentTextBox(World *GameWorld)
 {
-	if (GameWorld == NULL || GameWorld->SceneActionQueue == NULL)
+	if (GameWorld == NULL || GameWorld->SceneActionQueue == NULL || !GameWorld->TextBox)
 	{
 		return NULL;
 	}
@@ -2009,12 +1999,7 @@ TextBox* getCurrentTextBox(World *GameWorld)
 			return &currentAction->ActionData.sceneText;
 		}
 
-		if (currentAction->parallelAction == false)
-		{
-			return NULL;
-		}
-
-		currentAction = currentAction->nextSceneAction;
+		currentAction = currentAction->nextAction;
 	}	
 
 	return NULL;

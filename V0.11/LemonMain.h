@@ -7,15 +7,13 @@ EXPORT int CloseGame(World *GameWorld, RenderFrame *ScreenData);
 
 EXPORT FuncResult CheckResourceData(void);
 
-EXPORT int initialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullscreen);
+EXPORT int InitialiseScreen(RenderFrame *ScreenData, int width, int height, bool Fullscreen);
 
-EXPORT World* initialiseWorld(void);
+EXPORT World* InitialiseWorld(void);
 
-EXPORT int initialiseBackGround(BackgroundData *input);
+EXPORT int InitialiseBackGround(BackgroundData *input);
 
-EXPORT void initialiseObjectController(ObjectController *newController);
-
-EXPORT void destroyWorld(World *GameWorld);
+EXPORT void DestroyWorld(World *GameWorld);
 
 
 EXPORT int getExternalInput(World *GameWorld, SDL_Renderer *screen);
@@ -36,7 +34,7 @@ EXPORT void setTickNumber(Uint64 input);
 EXPORT int FPSCounter(World *GameWorld);
 
 
-EXPORT void initialiseCameraViews(CameraView list[VIEW_COUNT]);
+EXPORT void InitialiseCameraViews(CameraView list[VIEW_COUNT]);
 
 EXPORT CameraView* addCameraViewToList(float camX, float camY, int camWidth, int camHeight, float viewPosX, float viewPosY, float width, float height, Layer drawLayer, bool useMain, CameraView list[VIEW_COUNT]);
 
@@ -83,7 +81,7 @@ EXPORT char* getPreviousMessageHistory(MessageHistory *history);
 EXPORT char* getNextMessageHistory(MessageHistory *history);
 
 
-EXPORT void initialiseChatLog(ChatLog *chat);
+EXPORT void InitialiseChatLog(ChatLog *chat);
 
 EXPORT void addMessageToChatLog(const char msg[], int ID, Uint64 tickSent);
 
@@ -107,13 +105,13 @@ EXPORT int getKeyboardInput(SDL_KeyboardEvent *key);
 
 EXPORT void updateCustomKeys(void);
 
-EXPORT bool buttonPressed(int key);
+EXPORT bool ButtonPressed(int key);
 
-EXPORT bool keyPressed(int key);
+EXPORT bool KeyPressed(int key);
 
-EXPORT bool buttonHeld(int key);
+EXPORT bool ButtonHeld(int key);
 
-EXPORT bool keyHeld(int key);
+EXPORT bool KeyHeld(int key);
 
 EXPORT void ClearInput(void);
 
@@ -189,9 +187,11 @@ EXPORT int LemonStrncpy(char dest[], const char source[], int capacity);
 
 EXPORT void removeChar(char string[], char remove, int capacity);
 
+EXPORT bool StringsEqual(const char *first, const char *second);
+
 EXPORT int copyStringUntil(const char source[], char dest[], char stopPoint, int capacity);
 
-EXPORT void swapStrings(char *first, char *second, int capacity);
+EXPORT void SwapStrings(char *first, char *second, int capacity);
 
 
 EXPORT int PickRandomIntBetween(int low, int high);
@@ -213,31 +213,3 @@ EXPORT int stackPop(StackArray *List);
 
 EXPORT int stackRemove(int input, StackArray *List);
 
-
-void clearString(String *input);
-
-void setString(String *input, const char stringInput[]);
-
-void freeString(String *input);
-
-void copyString(String source, String *destination);
-
-void concatString(String *string1, String string2);
-
-void concatStringCStr(String *string1, const char *string2);
-
-void setStringUpper(String input);
-
-void setStringLower(String input);
-
-bool stringEquals(String input1, String input2);
-
-bool stringContains(String input, String sub);
-
-char at(String input, int index);
-
-bool stringEqualsCString(String input1, const char input2[]);
-
-void printString(String input);
-
-void printStringLine(String input);

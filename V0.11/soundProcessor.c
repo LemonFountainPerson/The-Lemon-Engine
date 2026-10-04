@@ -902,7 +902,7 @@ SoundInstance* createEmptySoundInstance(ChannelName Channel)
 }
 
 
-int initialiseAudio(void)
+int InitialiseAudio(void)
 {
 	if (!MIX_Init())
 	{

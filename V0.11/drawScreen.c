@@ -367,8 +367,8 @@ int renderHitbox(Camera inputCamera, PhysicsBox *inputBox, SDL_Renderer *Screen)
 
 	if (inputBox->shape == CIRCLE)
 	{
-		int radius = inputBox->ySize >> 1;
-		xCoord += (inputBox->xSize >> 1);
+		int radius = inputBox->ySize / 2;
+		xCoord += (inputBox->xSize / 2);
 		yCoord += radius;
 		
 		for (int i = 0; i < RenderSettings.HitboxThickness && i < 50; i++)
@@ -473,8 +473,8 @@ int renderObject(Camera inputCamera, Object *input, SDL_Renderer *Screen, World 
 		}
 	}
 
-	float realXOffset = (inputCamera.width >> 1) + inputBox.xPos + inputData.spriteXOffset - inputCamera.CameraX;
-	float realYOffset = (inputCamera.height >> 1) - inputBox.yPos - inputData.spriteYOffset + inputCamera.CameraY - inputBox.ySize;
+	float screenX = (inputCamera.width >> 1) + inputBox.xPos + inputData.spriteXOffset - inputCamera.CameraX;
+	float screenY = (inputCamera.height >> 1) - inputBox.yPos - inputData.spriteYOffset + inputCamera.CameraY - inputBox.ySize;
 	double renderDirection = inputBox.direction;
 
 	if (inputData.frameBuffer != NULL)
@@ -488,8 +488,8 @@ int renderObject(Camera inputCamera, Object *input, SDL_Renderer *Screen, World 
 			renderDirection += inputData.frameBuffer->rotation;
 		}
 
-		realXOffset += inputData.frameBuffer->SpriteXOffset;
-		realYOffset -= inputData.frameBuffer->SpriteYOffset;
+		screenX += inputData.frameBuffer->SpriteXOffset;
+		screenY -= inputData.frameBuffer->SpriteYOffset;
 		// This line is unnecessary and really just a safety instruction
 		spritePtr = inputData.frameBuffer->frameSprite;
 	}
@@ -499,10 +499,6 @@ int renderObject(Camera inputCamera, Object *input, SDL_Renderer *Screen, World 
 	{
 		renderDirection = DEFAULT_DIRECTION;
 	}
-
-
-	float xOffset2 = realXOffset + inputBox.xSize;
-	float yOffset2 = realYOffset + inputBox.ySize;
 
 	// Decide how to render
 	RenderMode inputRenderMode = inputData.RenderModeOverride;
@@ -517,13 +513,15 @@ int renderObject(Camera inputCamera, Object *input, SDL_Renderer *Screen, World 
 		goto Skip_Render_Effects;
 	}
 
-	float centerX = realXOffset + (inputBox.xSize >> 1);
-	float centerY = realYOffset + (inputBox.ySize >> 1);
+	float centerX = screenX + (inputBox.xSize / 2);
+	float centerY = screenY + (inputBox.ySize / 2);
 
 	if (inputRenderMode == SINGLE)
 	{
 		inputBox.xSize = spritePtr->width;
 		inputBox.ySize = spritePtr->height;
+		screenX = centerX - (inputBox.xSize / 2);
+		screenY = centerY - (inputBox.ySize / 2);
 	}
 
 	if (inputData.size > 0.00001 && fabs(inputData.size - 1.0) > 0.0001)	// Modify box size/pos and rendermode if size value is set to a non 1.0 value
@@ -531,20 +529,20 @@ int renderObject(Camera inputCamera, Object *input, SDL_Renderer *Screen, World 
 		inputBox.xSize = (int)(inputBox.xSize * inputData.size);
 		inputBox.ySize = (int)(inputBox.ySize * inputData.size);
 
-		inputBox.xPos = (float)(centerX - (inputBox.xSize >> 1));
-		inputBox.yPos = (float)(centerY - (inputBox.ySize >> 1));	
+		inputBox.xPos = (float)(centerX - (inputBox.xSize / 2));
+		inputBox.yPos = (float)(centerY - (inputBox.ySize / 2));	
+		screenX = centerX - (inputBox.xSize / 2);
+		screenY = centerY - (inputBox.ySize / 2);
 
 		inputRenderMode = SCALE;				
 	}
 
-	realXOffset = centerX - (inputBox.xSize >> 1);
-	realYOffset = centerY - (inputBox.ySize >> 1);
-	xOffset2 = realXOffset + inputBox.xSize;
-	yOffset2 = realYOffset + inputBox.ySize;
-
 	Skip_Render_Effects:
 
-	if (realXOffset >= inputCamera.zoomedWidth || xOffset2 < 0 || yOffset2 < 0 || realYOffset >= inputCamera.zoomedHeight || realXOffset >= xOffset2 || realYOffset >= yOffset2)
+	float screenX2 = screenX + inputBox.xSize;
+	float screenY2 = screenY + inputBox.ySize;
+
+	if (screenX >= inputCamera.zoomedWidth || screenX2 < 0 || screenY2 < 0 || screenY >= inputCamera.zoomedHeight || screenX >= screenX2 || screenY >= screenY2)
 	{
 		return INVALID_DATA;
 	}
@@ -560,8 +558,8 @@ int renderObject(Camera inputCamera, Object *input, SDL_Renderer *Screen, World 
 
 		for (int i = 0; i < polygon->vertices; i++)
 		{
-			renderPoly[i].position.x += (float)realXOffset;
-			renderPoly[i].position.y += (float)realYOffset;
+			renderPoly[i].position.x += (float)screenX;
+			renderPoly[i].position.y += (float)screenY;
 			renderPoly[i].color.a -= inputData.transparency;
 		}
 
@@ -574,8 +572,8 @@ int renderObject(Camera inputCamera, Object *input, SDL_Renderer *Screen, World 
 	SDL_SetTextureAlphaMod(spritePtr->texture, alphaVal);
 
 	SDL_FRect renderBox;
-	renderBox.x = (float)realXOffset;
-	renderBox.y = (float)realYOffset;
+	renderBox.x = (float)screenX;
+	renderBox.y = (float)screenY;
 	renderBox.w = (float)inputBox.xSize;
 	renderBox.h = (float)inputBox.ySize;
 
@@ -1044,7 +1042,7 @@ void DisplayDebugInfo(Camera renderCamera, World *GameWorld, SDL_Renderer *Scree
 			
 			DisplayObjectDebugInfo(currentObject, objCount, true, renderCamera);
 
-			if (buttonPressed(MOUSE_LEFT))
+			if (ButtonPressed(MOUSE_LEFT))
 			{
 				AcknowledgeButton(MOUSE_LEFT);
 				toggleHidden(currentObject);
@@ -1132,8 +1130,9 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 		}
 		else
 		{
-			snprintf(text, DEBUG_TEXT_MAX_LENGTH, "Sprite ID: %d \nSprite name: %s \nSprite Rendermode: %s", 
-				inputDisplay->currentSprite, inputDisplay->spriteBuffer->name, getRenderModeName(inputDisplay->spriteBuffer->RenderMode));
+			snprintf(text, DEBUG_TEXT_MAX_LENGTH, "Sprite ID: %d \nSprite name: %s \nSprite Rendermode: %s \nDisplay layer: %d (%s)", 
+				inputDisplay->currentSprite, inputDisplay->spriteBuffer->name, GetRenderModeName(inputDisplay->spriteBuffer->RenderMode), 
+				inputDisplay->layer, getLayerName(inputDisplay->layer));
 		}
 		
 		break;
@@ -1141,7 +1140,7 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 
 	case 7:
 		snprintf(text, DEBUG_TEXT_MAX_LENGTH, "Rendermode Override: %s \nTransparency: %f", 
-			getRenderModeName(inputDisplay->RenderModeOverride), inputDisplay->transparency);
+			GetRenderModeName(inputDisplay->RenderModeOverride), inputDisplay->transparency);
 
 		int length = strlen(text);
 		if (inputDisplay->hidden)
@@ -1258,9 +1257,8 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 
 	case 12:
 		snprintf(text, DEBUG_TEXT_MAX_LENGTH, 
-			"Object State: %d (%s) \nCurrent Action: %d \nDisplayLayer: %d (%s) \nObject List Position: %d \nIndex: %d", 
-			input->State, getObjectStateName(input->State), input->Action, getDisplayLayer(input), 
-			getLayerName(getDisplayLayer(input)), objectNumber, input->index);
+			"Object State: %d (%s) \nCurrent Action: %d \nReserved: %d \nObject List Position: %d \nIndex: %d", 
+			input->State, getObjectStateName(input->State), input->Action, input->reserved, objectNumber, input->index);
 		break;
 
 
@@ -1290,8 +1288,16 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 		break;
 
 	default:
-		snprintf(text, DEBUG_TEXT_MAX_LENGTH, "ObjectID: %d (%s) \nObjectName: %s \nXPos: %.2f \nYPos: %.2f \nIndex: %d", 
+		if (input->name[0] == '\0')
+		{
+			snprintf(text, DEBUG_TEXT_MAX_LENGTH, "ObjectID: %d (%s) \n<Unnamed> \nXPos: %.2f \nYPos: %.2f \nIndex: %d", 
+			input->ObjectID, getObjectIDName(input->ObjectID), inputBox->xPos, inputBox->yPos, input->index);	
+		}
+		else
+		{
+			snprintf(text, DEBUG_TEXT_MAX_LENGTH, "ObjectID: %d (%s) \nObjectName: %s \nXPos: %.2f \nYPos: %.2f \nIndex: %d", 
 			input->ObjectID, getObjectIDName(input->ObjectID), input->name, inputBox->xPos, inputBox->yPos, input->index);	
+		}
 		break;
 	}
 	
@@ -1318,7 +1324,7 @@ int DisplayObjectDebugInfo(Object *input, int objectNumber, bool goToMouse, Came
 
 Text* addDebugText(const char inputPhrase[], float x, float y, int wrapwidth, DebugTextFormatting format)
 {
-	TextList *list = &TextSettings.DebugTextList;
+	TextList *list = &DebugSettings.DebugTextList;
 	if (inputPhrase == NULL || list->count >= MAX_TEXTS)
 	{
 		return NULL;
@@ -1338,50 +1344,55 @@ Text* addDebugText(const char inputPhrase[], float x, float y, int wrapwidth, De
 		return NULL;
 	}
 	
-	if (TextsArray[index].text == NULL)
-    {
-    	TTF_Font *DebugFont = TextSettings.DebugFont.font;
-    	if (DebugFont == NULL)
-    	{
-    		return NULL;
-    	}
 
-    	TextsArray[index].usedFont = &TextSettings.DebugFont;
-    	TextsArray[index].text = TTF_CreateText(ScreenData.textEngine, DebugFont, inputPhrase, wrapwidth);
-    	TextSettings.DebugFont.textCount++;
-    }
-    else
-    {
-    	TTF_SetTextString(TextsArray[index].text, inputPhrase, 0);
-    	TTF_SetTextWrapWidth(TextsArray[index].text, wrapwidth);
-    }
-	
 	list->count++;
 
-    if (format == DTFORMAT_LIST_SOUND)
+    InitialiseDebugText(&TextsArray[index], inputPhrase, x, y, wrapwidth, format);
+    
+	return &TextsArray[index];
+}
+
+void InitialiseDebugText(Text *input, const char inputPhrase[], float x, float y, int wrapwidth, DebugTextFormatting format)
+{
+	if (input->text != NULL)
     {
-    	TextsArray[index].yPos = 50.0 - (y * 20.0);
+    	return;
+    }
+
+    TTF_Font *DebugFont = DebugSettings.DebugFont.font;
+	if (DebugFont == NULL)
+	{
+		return;
+	}
+
+	input->text = TTF_CreateText(ScreenData.textEngine, DebugFont, inputPhrase, wrapwidth);
+	DebugSettings.DebugFont.textCount++;
+	input->usedFont = &DebugSettings.DebugFont;
+	
+
+	if (format == DTFORMAT_LIST_SOUND)
+    {
+    	input->yPos = 50.0 - (y * 20.0);
     }
     else if (format == DTFORMAT_JUSTIFY_TOP)
     {
     	int height = 0;
-	    TTF_GetTextSize(TextsArray[index].text, NULL, &height);
+	    TTF_GetTextSize(input->text, NULL, &height);
 
-	    TextsArray[index].yPos = y + (float)height;
+	    input->yPos = y + (float)height;
     }
     else
     {
-    	TextsArray[index].yPos = y;
+    	input->yPos = y;
     }
 
-    TextsArray[index].xPos = x;
+    input->xPos = x;
 
-    TextsArray[index].CameraRelative = (format == DTFORMAT_CAMERA_RELATIVE);
-    TextsArray[index].attachedObj = NULL;
-    memset(TextsArray[index].name, 0, TEXT_NAME_MAX_LEN);
+    input->CameraRelative = (format == DTFORMAT_CAMERA_RELATIVE);
+    ClearObjectReference(&input->attachedObject);
+    memset(input->name, 0, TEXT_NAME_MAX_LEN);
 
-    
-	return &TextsArray[index];
+    return;
 }
 
 Text* addDebugTextWithName(const char textPhrase[], const char name[], float xPos, float yPos, int wrapWidth, DebugTextFormatting format)
@@ -1408,6 +1419,11 @@ Text* addDebugTextWithName(const char textPhrase[], const char name[], float xPo
 	{
 		text = addDebugText(textPhrase, xPos, yPos, wrapWidth, format);
 
+		if (text == NULL)
+		{
+			return NULL;
+		}
+
 		setTextName(text, name);
 
 		TTF_SetTextWrapWidth(text->text, wrapWidth);
@@ -1418,7 +1434,7 @@ Text* addDebugTextWithName(const char textPhrase[], const char name[], float xPo
 
 Text* getDebugTextWithName(const char name[])
 {
-	Text *list = TextSettings.DebugTextList.texts;
+	Text *list = DebugSettings.DebugTextList.texts;
 
 	for (int i = 0; i < MAX_TEXTS; i++)
 	{
@@ -1439,13 +1455,13 @@ int removeDebugTextWithName(const char name[])
 		return MISSING_DATA;
 	}
 
-	RemoveTextFromList(input, &TextSettings.DebugTextList);
+	RemoveTextFromList(input, &DebugSettings.DebugTextList);
 
 	return LEMON_SUCCESS;
 }
 
 
-void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
+void RenderTextElements(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 {
 	SDL_SetRenderScale(Screen, 1.0, 1.0);
 	SDL_SetRenderLogicalPresentation(Screen, ScreenData.screenWidth, ScreenData.screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
@@ -1453,11 +1469,6 @@ void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
 	// render in-game text (immune to camera zoom, centered on the screen)
 	RenderTextList(&GameWorld->TextList, renderCamera, Screen);
 	
-	// render console
-	if (DebugSettings.consoleOpen)
-	{
-		renderConsole(GameWorld, Screen);	
-	}
 
 	// load debug text to be rendered if in debug mode
 	if (DebugSettings.DebugTextDisplayMode != DEBUG_TEXT_DISABLED)
@@ -1466,12 +1477,113 @@ void renderTexts(Camera renderCamera, World *GameWorld, SDL_Renderer *Screen)
     	DisplayDebugInfo(renderCamera, GameWorld, Screen);	
     }
 
-    RenderTextList(&TextSettings.DebugTextList, renderCamera, Screen);
+    RenderTextList(&DebugSettings.DebugTextList, renderCamera, Screen);
+
+    // render console
+	if (DebugSettings.consoleOpen)
+	{
+		renderConsole(GameWorld, Screen);	
+		RenderText(&DebugSettings.ConsoleText[0], NULL, renderCamera, Screen);
+		RenderText(&DebugSettings.ConsoleText[1], NULL, renderCamera, Screen);
+	}
 
     SDL_SetRenderScale(Screen, renderCamera.zoomX, renderCamera.zoomY);
     SDL_SetRenderLogicalPresentation(Screen, renderCamera.width, renderCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
 
     return;
+}
+
+void RenderText(Text *input, TextList *list, Camera inputCamera, SDL_Renderer *Screen)
+{
+	if (input->text == NULL)
+	{
+		return;
+	}
+
+	float correctedX = (ScreenData.screenWidth >> 1) + input->xPos;
+	float correctedY = (ScreenData.screenHeight >> 1) - input->yPos;
+	Object *obj = input->attachedObject.obj;
+
+	if (obj != NULL)
+	{
+		if (ObjectDeleted(input->attachedObject))
+		{
+			RemoveTextFromList(input, list);
+			return;
+		}
+
+		if (obj->ObjectDisplay->hidden)
+		{
+			return;
+		}
+		
+		// position text relative to object
+		PhysicsBox *box = obj->ObjectBox;
+		float xPos = box->xPos;
+		float yPos = box->yPos;
+		if (INTERPOLATION_ENABLED && DebugSettings.PauseEngine == 0)	// object interpolation
+		{
+			xPos = box->prevXPos + ((box->xPos - box->prevXPos) * RenderSettings.timeSlice);
+		 	yPos = box->prevYPos + ((box->yPos - box->prevYPos) * RenderSettings.timeSlice);
+		}
+
+		if (getDisplayLayer(obj) == HUD)
+		{
+			correctedX += xPos * ((float)ScreenData.screenWidth / (float)ScreenData.HUDWidth);
+			correctedY -= yPos * ((float)ScreenData.screenHeight / (float)ScreenData.HUDHeight);
+
+			input->CameraRelative = false;
+		}
+		else
+		{
+			correctedX += xPos;
+			correctedY -= yPos;
+
+			input->CameraRelative = true;
+		}
+	}
+
+	if (input->CameraRelative == true)
+	{
+		correctedX -= inputCamera.CameraX + (float)((ScreenData.screenWidth - inputCamera.zoomedWidth) >> 1);
+		correctedY += inputCamera.CameraY + (float)((inputCamera.zoomedHeight - ScreenData.screenHeight) >> 1);
+		SDL_SetRenderScale(Screen, inputCamera.zoomX, inputCamera.zoomY);
+		SDL_SetRenderLogicalPresentation(Screen, inputCamera.width, inputCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
+	}
+	else if (RenderSettings.drawHUD == 0)
+	{
+		return;
+	}
+	
+	TTF_DrawRendererText(input->text, correctedX, correctedY);
+
+	// cursor
+	if (TextSettings.Typing && TextSettings.typingText == input)
+	{
+		SDL_FRect box;
+	   	box.w = 2.0;
+	   	if (list == NULL)
+	   	{
+	   		box.h = DebugSettings.DebugTextPointSize;
+	   	}
+	   	else
+	   	{
+	   		box.h = TextSettings.defaultTextPointSize;
+	   	}
+		
+		box.x = correctedX + TextSettings.cursorXPos;
+		box.y = correctedY + TextSettings.cursorYPos + 3.0;
+		SDL_SetRenderDrawColor(Screen, 0xFF, 0xFF, 0xFF, 0xFF);
+		SDL_RenderFillRect(Screen, &box);
+	}
+
+	if (input->CameraRelative == true)
+	{
+		SDL_SetRenderScale(Screen, 1.0, 1.0);
+		SDL_SetRenderLogicalPresentation(Screen, ScreenData.screenWidth, ScreenData.screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
+	}
+
+	return;
 }
 
 void RenderTextList(TextList *list, Camera inputCamera, SDL_Renderer *Screen)
@@ -1483,93 +1595,9 @@ void RenderTextList(TextList *list, Camera inputCamera, SDL_Renderer *Screen)
 
 	Text *array = list->texts; 
 
-	float correctedX, correctedY;
-
 	for (int i = 0; i < MAX_TEXTS; i++)
 	{
-		if (array[i].text == NULL)
-		{
-			return;
-		}
-
-		correctedX = (ScreenData.screenWidth >> 1) + array[i].xPos;
-		correctedY = (ScreenData.screenHeight >> 1) - array[i].yPos;
-
-		if (array[i].attachedObj != NULL)
-		{
-			Object *obj = array[i].attachedObj;
-			if (objectDeleted(obj, array[i].recordedInstance))
-			{
-				RemoveTextFromList(&array[i], list);
-				continue;
-			}
-
-			if (obj->ObjectDisplay->hidden)
-			{
-				continue;
-			}
-			
-			// position text relative to object
-			PhysicsBox *box = obj->ObjectBox;
-			float xPos = box->xPos;
-			float yPos = box->yPos;
-			if (INTERPOLATION_ENABLED && DebugSettings.PauseEngine == 0)	// object interpolation
-			{
-				xPos = box->prevXPos + ((box->xPos - box->prevXPos) * RenderSettings.timeSlice);
-			 	yPos = box->prevYPos + ((box->yPos - box->prevYPos) * RenderSettings.timeSlice);
-			}
-
-			if (getDisplayLayer(obj) == HUD)
-			{
-				correctedX += xPos * ((float)ScreenData.screenWidth / (float)ScreenData.HUDWidth);
-				correctedY -= yPos * ((float)ScreenData.screenHeight / (float)ScreenData.HUDHeight);
-
-				array[i].CameraRelative = false;
-			}
-			else
-			{
-				correctedX += xPos;
-				correctedY -= yPos;
-
-				array[i].CameraRelative = true;
-			}
-		}
-
-		if (array[i].CameraRelative == true)
-		{
-			correctedX -= inputCamera.CameraX + (float)((ScreenData.screenWidth - inputCamera.zoomedWidth) >> 1);
-			correctedY += inputCamera.CameraY + (float)((inputCamera.zoomedHeight - ScreenData.screenHeight) >> 1);
-			SDL_SetRenderScale(Screen, inputCamera.zoomX, inputCamera.zoomY);
-    		SDL_SetRenderLogicalPresentation(Screen, inputCamera.width, inputCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
-		}
-		
-		TTF_DrawRendererText(array[i].text, correctedX, correctedY);
-
-		// cursor
-		if (TextSettings.Typing && TextSettings.typingText == &array[i])
-		{
-			SDL_FRect box;
-		   	box.w = 2.0;
-		   	if (array == TextSettings.DebugTextList.texts)
-		   	{
-		   		box.h = TextSettings.DebugTextPointSize;
-		   	}
-		   	else
-		   	{
-		   		box.h = TextSettings.defaultTextPointSize;
-		   	}
-			
-			box.x = correctedX + TextSettings.cursorXPos;
-			box.y = correctedY + TextSettings.cursorYPos + 3.0;
-			SDL_SetRenderDrawColor(Screen, 0xFF, 0xFF, 0xFF, 0xFF);
-			SDL_RenderFillRect(Screen, &box);
-		}
-
-		if (array[i].CameraRelative == true)
-		{
-			SDL_SetRenderScale(Screen, 1.0, 1.0);
-    		SDL_SetRenderLogicalPresentation(Screen, ScreenData.screenWidth, ScreenData.screenHeight, SDL_LOGICAL_PRESENTATION_STRETCH);
-		}
+		RenderText(&array[i], list, inputCamera, Screen);
 	}
 
 	return;

@@ -1,7 +1,18 @@
 #include "LemonEngine.h"
 
 
-// command console
+void InitialiseConsole(void)
+{
+	InitialiseConsoleVariables(&DebugSettings.variableList);
+    createConsoleCommands(DebugSettings.commands);
+
+    // technically unnecessary, as DebugSettings is initialised to 0s but just in case
+    DebugSettings.ConsoleText[0].text = NULL;
+    DebugSettings.ConsoleText[1].text = NULL;
+
+    return;
+}
+
 static const float consoleWidth = 1024.0;
 static const float consoleHeight = 650.0;
 static const float insideSpacing = 8.0;
@@ -12,7 +23,7 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 	if (DebugSettings.consoleOpen == false)
 	{
 		// open console
-		if (buttonPressed(LMN_CONSOLE_OPEN) && !TextSettings.Typing)
+		if (ButtonPressed(LMN_CONSOLE_OPEN) && !TextSettings.Typing)
 		{
 			AcknowledgeButton(LMN_CONSOLE_OPEN);
 
@@ -22,28 +33,30 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 			float inputXPos = DebugSettings.consoleXPos + insideSpacing;
 			float inputYPos = DebugSettings.consoleYPos;
 
-			Text *consoleInput = addDebugTextWithName("", "ConsoleUserInput", inputXPos, inputYPos, consoleTextWidth, DTFORMAT_SCREEN_RELATIVE);
-			updateConsoleHistoryText(addDebugTextWithName("", "ConsoleHistory", inputXPos, inputYPos, consoleTextWidth, DTFORMAT_JUSTIFY_TOP));
+			Text *conHistory = &DebugSettings.ConsoleText[1];
+			Text *conText = &DebugSettings.ConsoleText[0];
+			InitialiseDebugText(conText, "", inputXPos, inputYPos, consoleTextWidth, DTFORMAT_SCREEN_RELATIVE);
+			InitialiseDebugText(conHistory, "", inputXPos, inputYPos, consoleTextWidth, DTFORMAT_JUSTIFY_TOP);
+			updateConsoleHistoryText();
     
 			DebugSettings.consoleOpen = true;
 			DebugSettings.consoleFocus = false;
 			DebugSettings.scrollVal = 0;
-			startTyping(window, consoleInput);
+			StartTyping(window, conText);
 		}
 
 		return;
 	}
 
 	// close console
-	if (buttonPressed(LMN_CONSOLE_OPEN))
+	if (ButtonPressed(LMN_CONSOLE_OPEN))
 	{
 		AcknowledgeButton(LMN_CONSOLE_OPEN);
 
 		DebugSettings.consoleOpen = false;
-		stopTyping(window);
+		StopTyping(window);
 
-		removeDebugTextWithName("ConsoleHistory");
-		removeDebugTextWithName("ConsoleUserInput");
+		RemoveConsoleText();
 
 		return;
 	}
@@ -61,12 +74,12 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 		DebugSettings.scrollVal = 0;
 		
 		consoleInput(TextSettings.userInputString, GameWorld);
-		startTyping(window, getDebugTextWithName("ConsoleUserInput"));
+		StartTyping(window, &DebugSettings.ConsoleText[0]);
 
 		return;
 	}
 
-	if (buttonPressed(MOUSE_LEFT))
+	if (ButtonPressed(MOUSE_LEFT))
 	{
 		bool xOverlap = MouseInput.xPos > DebugSettings.consoleXPos && MouseInput.xPos < DebugSettings.consoleXPos + consoleWidth;
 		bool yOverlap = MouseInput.yPos > DebugSettings.consoleYPos && MouseInput.yPos < DebugSettings.consoleYPos + consoleHeight;
@@ -80,7 +93,7 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 		}
 	}
 
-	if (buttonPressed(LMN_UPARROW) || MouseInput.wheelYDir > 0 || GamePadInput.rightStickY > 0.9)
+	if (ButtonPressed(LMN_UPARROW) || MouseInput.wheelYDir > 0 || GamePadInput.rightStickY > 0.9)
 	{
 		if (DebugSettings.consoleFocus || GamePadInput.rightStickY > 0.9)
 		{
@@ -95,7 +108,7 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 				strcpy(TextSettings.userInputString, next);
 				TextSettings.userInputIndex = strlen(TextSettings.userInputString);
 
-				setCursorPos();
+				SetCursorPos();
 
 				if (TextSettings.typingText != NULL)
 				{
@@ -105,7 +118,7 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 		}
 	}
 
-	if (buttonPressed(LMN_DOWNARROW) || MouseInput.wheelYDir < 0 || GamePadInput.rightStickY < -0.9)
+	if (ButtonPressed(LMN_DOWNARROW) || MouseInput.wheelYDir < 0 || GamePadInput.rightStickY < -0.9)
 	{
 		if (DebugSettings.consoleFocus || GamePadInput.rightStickY < -0.9)
 		{
@@ -120,7 +133,7 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 				strcpy(TextSettings.userInputString, prev);
 				TextSettings.userInputIndex = strlen(TextSettings.userInputString);
 
-				setCursorPos();
+				SetCursorPos();
 
 				if (TextSettings.typingText != NULL)
 				{
@@ -217,7 +230,7 @@ ConsoleVariable* getUnusedConVar(int hashIndex)
 			return &varList[hashIndex];
 		}
 
-		putConsole("%s: Hash collision %d", varList[hashIndex].name, i);
+		//putConsole("%s: Hash collision %d", varList[hashIndex].name, i);
 
 		hashIndex = (hashIndex + 1) % MAX_CONSOLE_VARIABLES;
 	}
@@ -281,6 +294,7 @@ void setConsoleVariable(ConsoleVariable *variable, const char value[], World *Ga
 	// check if command is allowed to run
 	if (variable == NULL || !commandIsAllowed(variable->flags)) 
 	{ 
+		putConsole("Cant update %s", value);
 		return; 
 	}
 
@@ -304,7 +318,7 @@ void setConsoleVariable(ConsoleVariable *variable, const char value[], World *Ga
 		break;
 
 	case CONVAR_INT:
-		variable->value.fValue = atof(value);
+		variable->value.iValue = atoi(value);
 		break;
 
 	case CONVAR_BOOL:
@@ -358,7 +372,7 @@ int ConVarAsInt(ConsoleVariable *variable)
 	return variable->value.iValue;
 }
 
-int getConVarAsInt(const char input[])
+int GetConVarAsInt(const char input[])
 {
 	return ConVarAsInt(getConsoleVariable(input));
 }
@@ -373,7 +387,7 @@ float ConVarAsFloat(ConsoleVariable *variable)
 	return variable->value.fValue;
 }
 
-float getConVarAsFloat(const char input[])
+float GetConVarAsFloat(const char input[])
 {
 	return ConVarAsFloat(getConsoleVariable(input));
 }
@@ -388,7 +402,7 @@ bool ConVarAsBool(ConsoleVariable *variable)
 	return variable->value.bValue;
 }
 
-bool getConVarAsBool(const char input[])
+bool GetConVarAsBool(const char input[])
 {
 	return ConVarAsBool(getConsoleVariable(input));
 }
@@ -403,7 +417,7 @@ const char* ConVarAsString(ConsoleVariable *variable)
 	return variable->value.string;
 }
 
-const char* getConVarAsString(const char input[])
+const char* GetConVarAsString(const char input[])
 {
 	return ConVarAsString(getConsoleVariable(input));
 }
@@ -498,6 +512,7 @@ void executeCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 		// check if command is allowed to run
 		if (!commandIsAllowed(command->flags)) 
 		{ 
+			putConsole("Cant run %s", input);
 			return; 
 		}
 
@@ -550,7 +565,7 @@ bool commandIsAllowed(ConsoleCommandFlag input)
 		return true;
 	}
 
-	if ((input & CONFLAG_CHEAT) != 0 && !getConVarAsBool("cheats"))
+	if ((input & CONFLAG_CHEAT) != 0 && !GetConVarAsBool("cheats"))
 	{
 		putConsole("This command requires cheats to be enabled!"); 
 		return false;
@@ -745,7 +760,7 @@ Object* parseArgumentToFindObject(const char input[USER_INPUT_MAX_LEN], ObjectCo
 	}
 }
 
-void initialiseConsoleVariables(ConsoleVariableList *list)
+void InitialiseConsoleVariables(ConsoleVariableList *list)
 {
 	ConsoleVariable *conVarList = list->variables;
 	memset(conVarList, 0, MAX_CONSOLE_VARIABLES * sizeof(ConsoleVariable));
@@ -879,15 +894,12 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 
 	NEWCOMMAND(Noclip, "toggles noclip.", "noclip", CONFLAG_CHEAT);
 
-	NewConsoleVariable("ply_boundx", "x-axis boundary for the player", CONVAR_FLOAT, X_WORLD_BOUND, CONFLAG_SERVER_SIDE);
-	NewConsoleVariable("ply_boundy", "y-axis boundary for the player", CONVAR_FLOAT, Y_WORLD_BOUND, CONFLAG_SERVER_SIDE);
+	NewConsoleVariable("ply_boundx", "x-axis boundary for the player", CONVAR_FLOAT, X_PLAYER_BOUND, CONFLAG_SERVER_SIDE);
+	NewConsoleVariable("ply_boundy", "y-axis boundary for the player", CONVAR_FLOAT, Y_PLAYER_BOUND, CONFLAG_SERVER_SIDE);
 	NewConsoleVariable("cheats", "set the game's cheats value", CONVAR_BOOL, "false", CONFLAG_SERVER_SIDE | CONFLAG_NOTIFY);
-
-
-	if (DEBUG_MODE)
-	{
-		putConsole("Loaded %d commands.", i);
-	}
+	NewConsoleVariable("bsp_rangex", "x-axis range for collision BSP", CONVAR_FLOAT, X_BSP_BOUND, CONFLAG_SERVER_SIDE);
+	NewConsoleVariable("bsp_rangey", "y-axis range for collision BSP", CONVAR_FLOAT, Y_BSP_BOUND, CONFLAG_SERVER_SIDE);
+	NewConsoleVariable("bsp_threshold", "number of objects in a node's area required to split it", CONVAR_INT, BSPNODE_OBJECT_THRESHOLD, CONFLAG_SERVER_SIDE);
 	
 	return;
 }
@@ -1172,6 +1184,10 @@ int ConsoleCommand_Draw(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	{
 		RenderSettings.drawHitboxes = getNextConsoleBool(input);
 	}
+	else if (strcmp(arg, "bsp") == 0)
+	{
+		RenderSettings.drawBSP = getNextConsoleBool(input);
+	}
 	else if (strcmp(arg, "sprites") == 0)
 	{
 		RenderSettings.drawSprites = getNextConsoleBool(input);
@@ -1344,13 +1360,13 @@ int ConsoleCommand_UsedMemory(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 int ConsoleCommand_AddObject(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	int ID = getNextConsoleInt(input);
-	int args[7] = {0};
-	for (int i = 0; i < 7; i++)
+	int args[6] = {0};
+	for (int i = 0; i < 6; i++)
 	{
 		args[i] = getNextConsoleInt(input);
 	}
 
-	AddObject(GameWorld, ID, args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+	AddObject(GameWorld, ID, args[0], args[1], args[2], args[3], args[4], args[5]);
 
 	return LEMON_SUCCESS;
 }
@@ -1416,7 +1432,7 @@ int ConsoleCommand_Object(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	else if (strcmp(arg, "setname") == 0)
 	{
 		getNextConsoleArg(input, arg);
-		setObjectName(object, arg);
+		SetObjectName(object, arg);
 	}
 	else if (strcmp(arg, "removecomponents") == 0)
 	{
@@ -1424,7 +1440,7 @@ int ConsoleCommand_Object(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	else if (strcmp(arg, "delete") == 0)
 	{
-		object->State = TO_BE_DELETED;
+		MarkObjectForDeletion(object);
 	}
 	else
 	{
@@ -1567,7 +1583,7 @@ int ConsoleCommand_List(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	else if (strcmp(arg, "debugtext") == 0)
 	{
-		printTextListinfo(&TextSettings.DebugTextList, "Debug Textlist");
+		printTextListinfo(&DebugSettings.DebugTextList, "Debug Textlist");
 	}
 	else if (strcmp(arg, "spritesets") == 0)
 	{
@@ -1785,7 +1801,7 @@ int ConsoleCommand_DebugText(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 
 	if (strcmp(arg, "info") == 0)
 	{
-		printTextListinfo(&TextSettings.DebugTextList, "TextList");
+		printTextListinfo(&DebugSettings.DebugTextList, "TextList");
 	}
 	else 
 	{
@@ -2064,19 +2080,9 @@ int ConsoleCommand_Noclip(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 }
 
 
-void updateConsoleHistoryText(Text *input)
+void updateConsoleHistoryText(void)
 {
-	Text *consoleHistory = input;
-
-	if (consoleHistory == NULL)
-	{
-		consoleHistory = getDebugTextWithName("ConsoleHistory");
-	}
-	
-	if (consoleHistory == NULL)
-	{
-		return;
-	}
+	Text *consoleHistory = &DebugSettings.ConsoleText[1];
 
 	static const int consoleLinesDisplayed = 32;
 	int firstLineOffset = consoleLinesDisplayed + clamp(DebugSettings.scrollVal, 0, INPUT_HISTORY_LEN - consoleLinesDisplayed);
@@ -2135,7 +2141,7 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 	// render console
 	box.h = consoleHeight;
 	box.y -= consoleHeight;
-	SDL_SetRenderDrawColor(Screen, 0x1D, 0x1A, 0x1A, 0xBB);
+	SDL_SetRenderDrawColor(Screen, 0x1C, 0x19, 0x19, 0xBB);
 	SDL_RenderFillRect(Screen, &box);
 
 
@@ -2150,7 +2156,7 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 	lastUpdated = DebugSettings.consoleHistory.inputCount;
 	lastScrollVal = DebugSettings.scrollVal;
 
-	updateConsoleHistoryText(NULL);
+	updateConsoleHistoryText();
 
 
 	return;

@@ -1,17 +1,16 @@
 LEMONSCRIPT<1>--CUTSCENE_DATA--
-StaticScene: true  > decides whether the game pauses for the cutscene
-SetCameraMode: 2    > Sets camera mode to free roam so that it is not tied to player
+StaticScene: true  	> decides whether the game pauses for the cutscene
+SetCameraMode: 2    	> Sets camera mode to free roam so that it is not tied to player
 
-Repeat: 2
-{
-	SayTextOption: "A Test cutscene from a FILE? HUH!?"	NO_PORTRAIT  2    3
-		"Play cutscene 2"	    "Play Cutscene"             { int "cutsceneID" = 2 }
-		"play cutscene 9"	    "Play Cutscene from file"   { "cutsceneName" = "Scene9" }
-		"Do nothing"  
-
+SetGameFlag: "flag1" 1
+RepeatUntil: "flag1" > 4
+{ 
+	ChangeGameFlag: "flag1" 1
+	
+	TriggerGameEvent: "Chat Message"             { string "message" = "This is a looped message!"
+						int "speaker" = 0 }
 }
 
-ENDFILE
 
 PlaceInvisibleWall: 1000, 64, 2, 10  > places an invisible wall at coords specified with size specified
 
@@ -21,6 +20,8 @@ SetCameraMode: 0
 
 createActor: "Mysterious block" 1 1700.0 1060.0 
 setActorSize: "Mysterious block" 96 32
+animateActorAndWait: "Player" Jump 4
+
 animateActor: "Mysterious block" Hurt 200
 
 
@@ -37,21 +38,10 @@ TriggerGameEvent: "Chat Message"             { string "message" = "This is my fi
 TriggerGameEvent: "Play Sound"		{ string "path" = "Player/Jump.wav"
 					int "channel" = 1 
 					float "volume" = 0.5 }
- 
-
-
-IFVARIABLE: "flag1" < 2
-THEN	
-{ 
-	PlaySound: "Objects/DoorOpen" 1.0	
-	IncrementGameFlag: "flag1"
-}
-
-
-SayTextOption: "A Test cutscene from a FILE? HUH!?"	NO_PORTRAIT  2    3
+ SayTextOption: "A Test cutscene from a FILE? HUH!?"	NO_PORTRAIT  2    3
 		"Play cutscene 2"	    "Play Cutscene"             { int "cutsceneID" = 2 }
 		"play cutscene 9"	    "Play Cutscene from file"   { "cutsceneName" = "Scene9" }
-		"Do nothing"  
+		"Do nothing" 
 
 ENDFILE
 

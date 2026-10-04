@@ -44,7 +44,7 @@ int IterateAudio(Camera positionCam);
 int applyAudioPositionEffect(SoundInstance *input, Camera positionCam);
 
 
-int initialiseAudio(void);
+int InitialiseAudio(void);
 
 SoundInstance* createEmptySoundInstance(ChannelName Channel);
 

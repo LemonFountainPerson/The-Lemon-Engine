@@ -1,3 +1,5 @@
+void InitialiseConsole(void);
+
 void updateConsole(SDL_Window *window, World *GameWorld);
 
 ConsoleCommand* getConsoleCommand(const char name[]);
@@ -14,19 +16,19 @@ void setConVarNamed(const char *name, const char *value, World *GameWorld);
 
 int ConVarAsInt(ConsoleVariable *variable);
 
-int getConVarAsInt(const char input[]);
+int GetConVarAsInt(const char input[]);
 
 float ConVarAsFloat(ConsoleVariable *variable);
 
-float getConVarAsFloat(const char input[]);
+float GetConVarAsFloat(const char input[]);
 
 bool ConVarAsBool(ConsoleVariable *variable);
 
-bool getConVarAsBool(const char input[]);
+bool GetConVarAsBool(const char input[]);
 
 const char* ConVarAsString(ConsoleVariable *variable);
 
-const char* getConVarAsString(const char input[]);
+const char* GetConVarAsString(const char input[]);
 
 const char* ConVarValueToString(ConsoleVariable *variable, char result[32]);
 
@@ -53,7 +55,7 @@ bool getNextConsoleBool(const char input[USER_INPUT_MAX_LEN]);
 
 Object* parseArgumentToFindObject(const char input[USER_INPUT_MAX_LEN], ObjectController *ObjectList);
 
-void initialiseConsoleVariables(ConsoleVariableList *list);
+void InitialiseConsoleVariables(ConsoleVariableList *list);
 
 void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS]);
 
@@ -161,6 +163,6 @@ int ConsoleCommand_DoABarrelRoll(char input[USER_INPUT_MAX_LEN], World *GameWorl
 int ConsoleCommand_Noclip(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 
-void updateConsoleHistoryText(Text *input);
+void updateConsoleHistoryText(void);
 
 void renderConsole(World *GameWorld, SDL_Renderer *Screen);

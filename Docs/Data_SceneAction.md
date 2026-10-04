@@ -5,10 +5,8 @@
 typedef struct SceneAction
 {
 	SceneActionID ActionID;
-	bool parallelAction;
 
-	Object *ActorObject;
-	union SceneActionArguments ActionData;
+	SceneActionArguments ActionData;
 
 	struct SceneAction *nextSceneAction;
 	struct SceneAction *prevSceneAction;

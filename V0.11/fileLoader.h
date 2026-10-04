@@ -68,12 +68,12 @@ void getNextArgIfExpression(char dest[3], FILE *fPtr);
 
 int readBranch(World *GameWorld, FILE *fPtr, bool conditionMet);
 
-bool bracketedStatementPresent(FILE *fPtr, const char expectedPhrase[]);
+bool BracketedStatementPresent(FILE *fPtr);
 
 int consumeStatementUntil(FILE *fPtr, char stopCharacter);
 
 
-int atEndOfLine(FILE *fPtr);
+bool AtEndOfLine(FILE *fPtr);
 
 bool endOfFile(FILE *fPtr);
 

@@ -1,0 +1,1 @@
+gcc -o stable\LemonEngine.exe -L./stable -lSDL3 -lSDL3_ttf -lSDL3_image -lSDL3_mixer -lSDL3_net -Wall --all-warning main.c LemonMain.c gameObjects.c objectController.c fileLoader.c drawScreen.c playerController.c spriteLoader.c soundProcessor.c eventManager.c animations.c UIObjects.c textHandler.c cutsceneManager.c console.c Networking.c 

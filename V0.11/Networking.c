@@ -1,10 +1,8 @@
 #include "LemonEngine.h"
 
-#define AWAITING_TRACKED_ID -1
-
 static int outgoing = 0;
 
-void initialiseNetworkData(void)
+void InitialiseNetworkData(void)
 {
 	Networking.connectMode = OFFLINE;
 	Networking.connectionStatus = CONNECT_STATE_DISCONNECTED;
@@ -91,8 +89,8 @@ bool openServer(const char ip[], Uint16 portNumber, World *GameWorld)
 	Networking.connectMode = SERVER;
 	Networking.serverPort = portNumber;
 	Networking.timeElapsed = 0.0;
-	setConVarNamed("net_password", "", GameWorld);
 
+	setConVarNamed("net_password", "", GameWorld);
 	setConVarNamed("cheats", "false", GameWorld);
 
 	return true;
@@ -139,7 +137,7 @@ void closeServer(void)
 	}
 	Networking.clientCount = 0;
 
-	deleteUnownedTrackedObjects();
+	CleanUpUnownedTrackedObjects();
 	resetTrackedObjects();
 
 	return;
@@ -164,11 +162,11 @@ bool connect(const char ip[], Uint16 portNumber)
 		return false;
 	}
 
+	setConVarNamed("net_password", "", NULL);
 	Networking.connectMode = CLIENT;
 	Networking.connectionStatus = CONNECT_STATE_RESOLVING_ADDRESS;
 	Networking.serverPort = portNumber;
 	Networking.timeElapsed = 0.0;
-	setConVarNamed("net_password", "", NULL);
 
 	return true;
 }
@@ -195,7 +193,7 @@ void disconnect(void)
 		Networking.myClient = NULL;
 	}
 
-	deleteUnownedTrackedObjects();
+	CleanUpUnownedTrackedObjects();
 	resetTrackedObjects();
 
 	return;
@@ -217,7 +215,7 @@ void disconnectWithMessage(const char message[])
 	return;
 }
 
-void cleanUpNetworkData(void)
+void CleanUpNetworkData(void)
 {
 	if (Networking.connectMode == SERVER)
 	{
@@ -236,7 +234,8 @@ void resetTrackedObjects(void)
 	for (int i = 0; i < MAX_TRACKED_OBJECTS; i++)
 	{
 		Networking.TrackedObjects[i].clientID = NO_CLIENT_ID;
-		Networking.TrackedObjects[i].object = NULL;
+		Networking.TrackedObjects[i].object.obj = NULL;
+		Networking.TrackedObjects[i].OriginWorld = NULL;
 		Networking.TrackedObjects[i].clientDeleted = false;
 		Networking.TrackedIDs[i] = NO_CLIENT_ID;
 	}
@@ -246,7 +245,7 @@ void resetTrackedObjects(void)
 	return;
 }
 
-void deleteUnownedTrackedObjects(void)	// should be used for clean-up only
+void CleanUpUnownedTrackedObjects(void)	// should be used for clean-up only
 {
 	if (Networking.connectionStatus == CONNECT_STATE_CONNECTED)
 	{
@@ -254,7 +253,6 @@ void deleteUnownedTrackedObjects(void)	// should be used for clean-up only
 	}
 
 	TrackedObject *list = Networking.TrackedObjects;
-
 	for (int i = 0; i < MAX_TRACKED_OBJECTS && list[i].clientID != NO_CLIENT_ID; i++)
 	{
 		if (list[i].clientID == Networking.clientID || list[i].clientID == NO_CLIENT_ID)
@@ -262,9 +260,10 @@ void deleteUnownedTrackedObjects(void)	// should be used for clean-up only
 			continue;
 		}
 
-		MarkObjectInstanceForDeletion(list[i].object, list[i].instance);
+		MarkObjectReferenceForDeletion(list[i].object);
 
-		list[i].object = NULL;
+		list[i].object.obj = NULL;
+		list[i].OriginWorld = NULL;
 	}
 
 	return;
@@ -284,8 +283,27 @@ void deleteTrackedObjectsOwnedBy(int ownerClientID)
 		removeTrackedObject(i);
 	}
 
-
 	return;
+}
+
+void CleanUpTrackedObjectsFromWorld(World *GameWorld)
+{
+	TrackedObject *list = Networking.TrackedObjects;
+
+	for (int i = 0; i < MAX_TRACKED_OBJECTS; i++)
+	{
+		if (list[i].OriginWorld != GameWorld)
+		{
+			continue;
+		}
+
+		MarkObjectReferenceForDeletion(list[i].object);
+
+		list[i].object.obj = NULL;
+		list[i].OriginWorld = NULL;
+	}
+
+	return; 
 }
 
 void removeDisconnectedClient(int index, const char reason[])
@@ -341,7 +359,7 @@ void removeDisconnectedClient(int index, const char reason[])
 }
 
 
-void ServerOpened(World *GameWorld)
+void OpenedServer(World *GameWorld)
 {
 
 	return;
@@ -507,7 +525,7 @@ void updateNetworking(World *GameWorld)
 	{
 		Networking.timeElapsed += deltaTime;
 
-		if (Networking.timeElapsed < getConVarAsFloat("net_updaterate"))
+		if (Networking.timeElapsed < GetConVarAsFloat("net_updaterate"))
 		{
 			return;
 		}
@@ -542,7 +560,7 @@ void attemptResolveAddress(void)
 
 	Networking.timeElapsed += deltaTime;
 								 
-	if (Networking.timeElapsed > getConVarAsFloat("net_connectiontimeout") || status == NET_FAILURE)
+	if (Networking.timeElapsed > GetConVarAsFloat("net_connectiontimeout") || status == NET_FAILURE)
 	{
 		NET_UnrefAddress(Networking.serverAddress);
 		Networking.serverAddress = NULL;
@@ -579,7 +597,7 @@ void attemptServerHost(World *GameWorld)
 
 	loadLevel(GameWorld->level, GameWorld);
 
-	ServerOpened(GameWorld);
+	OpenedServer(GameWorld);
 
 	return;
 }
@@ -606,7 +624,7 @@ void attemptClientConnect(World *GameWorld)
 			return;
 		}
 
-		if (status == NET_FAILURE || Networking.timeElapsed > getConVarAsFloat("net_connectiontimeout"))
+		if (status == NET_FAILURE || Networking.timeElapsed > GetConVarAsFloat("net_connectiontimeout"))
 		{
 			disconnect();
 			putConsoleError("Server not found!");
@@ -705,13 +723,12 @@ void updateClient(World *GameWorld)
 
 void handlePendingClient(int clientID, World *GameWorld)
 {	
-	if (Networking.clientTimers[clientID] > getConVarAsFloat("net_connectiontimeout") || Networking.clientStates[clientID] == CLIENT_STATE_DISCONNECTED)
+	if (Networking.clientTimers[clientID] > GetConVarAsFloat("net_connectiontimeout") || Networking.clientStates[clientID] == CLIENT_STATE_DISCONNECTED)
 	{
 		Networking.clientStates[clientID] = CLIENT_STATE_DISCONNECTED;
 		NET_DestroyStreamSocket(Networking.connectedClients[clientID]);
 		Networking.connectedClients[clientID] = NULL;
 		Networking.clientCount--;
-		putConsole("Removing client %d", clientID);
 
 		return;
 	}
@@ -782,13 +799,11 @@ void processClientEntrancePacket(NetworkPacket *packet, int clientID, World *Gam
 
 	char receivedPass[MAX_LEN];
 	memcpy(receivedPass, packet->data.clientInfo.password, MAX_LEN);
-	// putConsole("received: %d %d %d %d %d %d", receivedPass[0], receivedPass[1], receivedPass[2], receivedPass[3], receivedPass[4], receivedPass[5]);
 	decrypt(receivedPass, MAX_LEN);
-	// putConsole("Deciphered: %d %d %d %d %d %d", receivedPass[0], receivedPass[1], receivedPass[2], receivedPass[3], receivedPass[4], receivedPass[5]);
 
-	const char *password = getConVarAsString("net_password");
+	const char *password = GetConVarAsString("net_password");
 
-	if (password[0] != '\0' && strcmp(password, receivedPass))
+	if (password[0] != '\0' && !StringsEqual(password, receivedPass))
 	{
 		removeDisconnectedClient(clientID, "Incorrect password");
 	}
@@ -884,10 +899,10 @@ void sendAllTrackedObjects(NET_StreamSocket *socket)
 			continue;
 		}
 
-		object = TrackedObjects[index].object;
+		object = TrackedObjects[index].object.obj;
 
 		// double check object exists before copying data
-		if (object == NULL || object->State == EMPTY_OBJECT || TrackedObjects[index].instance != object->instanceNumber)
+		if (ObjectDeleted(TrackedObjects[index].object))
 		{
 			packet.data.objectData.object.State = EMPTY_OBJECT;
 		}
@@ -1254,7 +1269,7 @@ void acceptClients(World *GameWorld)
 			packet.data.setup.tickRate = EngineSettings.GameTicksPerSecond;
 			packet.data.setup.trackedObjectCapacity = MAX_TRACKED_OBJECTS;
 
-			const char *password = getConVarAsString("net_password");
+			const char *password = GetConVarAsString("net_password");
 			packet.data.setup.passwordRequired = (password[0] != '\0');
 			
 			NET_WriteToStreamSocket(newSocket, &packet, sizeof(NetworkPacket));
@@ -1295,7 +1310,7 @@ bool processSetupPacket(NetworkPacket *packet, World *GameWorld)
 
 	setUsernameLocally(Networking.clientID, Networking.myUsername);
 
-	const char *passwordAttempt = getConVarAsString("net_password");
+	const char *passwordAttempt = GetConVarAsString("net_password");
 	if (packet->data.setup.passwordRequired && passwordAttempt[0] != '\0')
 	{
 		putConsole("Server waiting for password...");
@@ -1346,7 +1361,7 @@ void processSettingsPacket(NetworkPacket *packet)
 
 void updateServerConVar(ConsoleVariable *input)
 {
-	if (Networking.connectMode != SERVER || input == NULL || (input->flags & CONFLAG_SERVER_SIDE) == 0)
+	if (Networking.connectMode != SERVER || input == NULL || (input->flags & CONFLAG_SVR_AND_PRO) != CONFLAG_SERVER_SIDE)
 	{
 		return;
 	}
@@ -1432,14 +1447,14 @@ void updateServerFlag(GameFlag *input)
 }
 
 
-int TrackObjectOverNetwork(Object *input)
+int TrackObjectOverNetwork(Object *input, World *GameWorld)
 {
 	if (Networking.connectMode == OFFLINE)
 	{
 		return ACTION_DISABLED;
 	}
 
-	int index = addNewTrackedObject(input, Networking.clientID);
+	int index = addNewTrackedObject(input, Networking.clientID, GameWorld);
 
 	if (index < 0)
 	{
@@ -1479,6 +1494,54 @@ int TrackObjectOverNetwork(Object *input)
 	return LEMON_SUCCESS;
 }
 
+
+
+int addNewTrackedObject(Object *input, int owner, World *GameWorld)
+{
+	if (Networking.clientID == AWAITING_CLIENT_ID || Networking.clientID == NO_CLIENT_ID || input == NULL)
+	{
+		return -1;
+	}
+
+	TrackedObject *TrackedObjects = Networking.TrackedObjects;
+
+	int index = 0;
+	while (TrackedObjects[index].clientID != NO_CLIENT_ID && index < 1)
+	{
+		if (ObjectMatchesReference(TrackedObjects[index].object, input))
+		{
+			// Object is already being tracked
+			return -1;
+		}
+
+		index++;
+	}
+		
+	if (index >= MAX_TRACKED_OBJECTS)
+	{
+		return -1;
+	}
+	
+	TrackedObjects[index].clientID = owner;
+	TrackedObjects[index].clientDeleted = false;
+
+	if (Networking.clientID == SERVER_CLIENT_ID)
+	{
+		TrackedObjects[index].trackedID = index;
+	}
+	else
+	{
+		TrackedObjects[index].trackedID = -1;
+	}
+
+	SetObjectReference(&TrackedObjects[index].object, input);
+	TrackedObjects[index].OriginWorld = GameWorld;
+
+	Networking.TrackedObjectCount++;
+
+	return index;
+}
+
 int RespondToTrackObjectRequest(NetworkPacket *packet, int clientIndex, World *GameWorld)
 {
 	if (Networking.connectMode != SERVER)
@@ -1505,9 +1568,9 @@ int RespondToTrackObjectRequest(NetworkPacket *packet, int clientIndex, World *G
 		copyPacketDataToObject(newObject, packet);
 	}
 
-	int trackedID = addNewTrackedObject(newObject, clientIndex);
+	int trackedID = addNewTrackedObject(newObject, clientIndex, GameWorld);
 
-	// send response
+	// // send response
 	NetworkPacket reponsePacket = {0};
 	reponsePacket.type = PACKET_OBJECT_RESPONSE_ADD;
 	reponsePacket.tickSent = TickNumber();
@@ -1523,70 +1586,23 @@ int RespondToTrackObjectRequest(NetworkPacket *packet, int clientIndex, World *G
 		return LEMON_ERROR;
 	}
 
-	packet->type = PACKET_OBJECT_ADDED;
-	packet->tickSent = TickNumber();
-	packet->data.objectData.trackedID = trackedID;
+	reponsePacket.type = PACKET_OBJECT_ADDED;
+	reponsePacket.data.objectData.trackedID = trackedID;
+	reponsePacket.data.objectData.ownerClientID = clientIndex;
+	copyObjectToPacketData(newObject, &reponsePacket);
 
 	int count = Networking.clientCount;
 	for (int i = 0; i < MAX_CLIENTS && count > 1; i++)
 	{
 		if (i != clientIndex && Networking.connectedClients[i] != NULL)
 		{
-			NET_WriteToStreamSocket(Networking.connectedClients[i], packet, sizeof(NetworkPacket));
+			NET_WriteToStreamSocket(Networking.connectedClients[i], &reponsePacket, sizeof(NetworkPacket));
 			outgoing += sizeof(NetworkPacket);
 			count--;
 		}
 	}
 
 	return LEMON_SUCCESS;
-}
-
-
-int addNewTrackedObject(Object *input, int owner)
-{
-	if (Networking.clientID == AWAITING_CLIENT_ID || Networking.clientID == NO_CLIENT_ID || input == NULL)
-	{
-		return -1;
-	}
-
-	TrackedObject *TrackedObjects = Networking.TrackedObjects;
-
-	int index = 0;
-	while (TrackedObjects[index].clientID != NO_CLIENT_ID && index < 1)
-	{
-		if (TrackedObjects[index].object == input && TrackedObjects[index].instance == input->instanceNumber)
-		{
-			// Object is already being tracked
-			return -1;
-		}
-
-		index++;
-	}
-		
-	if (index >= MAX_TRACKED_OBJECTS)
-	{
-		return -1;
-	}
-			
-	TrackedObjects[index].clientID = owner;
-	TrackedObjects[index].clientDeleted = false;
-
-	if (Networking.clientID == SERVER_CLIENT_ID)
-	{
-		TrackedObjects[index].trackedID = index;
-	}
-	else
-	{
-		TrackedObjects[index].trackedID = AWAITING_TRACKED_ID;
-	}
-
-	TrackedObjects[index].object = input;
-	
-	TrackedObjects[index].instance = input->instanceNumber;
-
-	Networking.TrackedObjectCount++;
-
-	return index;
 }
 
 void processTrackedObjectResponse(NetworkPacket *packet)
@@ -1616,7 +1632,7 @@ void processTrackedObjectResponse(NetworkPacket *packet)
 		// rejection
 
 		TrackedObjects[clientTrackedID].clientID = NO_CLIENT_ID;
-		TrackedObjects[clientTrackedID].object = NULL;
+		ClearObjectReference(&TrackedObjects[clientTrackedID].object);
 	}
 	else
 	{
@@ -1626,12 +1642,10 @@ void processTrackedObjectResponse(NetworkPacket *packet)
 		Networking.TrackedIDs[serverTrackedID] = clientTrackedID;
 
 		// if object has since been deleted or replaced, set to NULL so that the next update can re-create this object
-		Object *object = TrackedObjects[clientTrackedID].object;
-		int instance = TrackedObjects[clientTrackedID].instance;
-		
-		if (object != NULL && (object->State == EMPTY_OBJECT || object->instanceNumber != instance))
+
+		if (ObjectDeleted(TrackedObjects[clientTrackedID].object))
 		{
-			TrackedObjects[clientTrackedID].object = NULL;
+			ClearObjectReference(&TrackedObjects[clientTrackedID].object);
 		}
 	}
 }
@@ -1657,7 +1671,7 @@ void processTrackedObjectAdded(NetworkPacket *packet, World *GameWorld)
 
 	copyPacketDataToObject(newObject, packet);
 
-	int index = addNewTrackedObject(newObject, owner);
+	int index = addNewTrackedObject(newObject, owner, GameWorld);
 
 	if (index < 0)
 	{
@@ -1698,17 +1712,18 @@ void removeTrackedObject(int deletedID)
 		outgoing += sizeof(NetworkPacket);
 
 		TrackedObjects[Networking.TrackedIDs[deletedID]].clientDeleted = true;
-		TrackedObjects[Networking.TrackedIDs[deletedID]].object = NULL;
+		ClearObjectReference(&TrackedObjects[Networking.TrackedIDs[deletedID]].object);
 
 		return;
 	}
 
 	Networking.TrackedObjectCount--;
 
-	MarkObjectInstanceForDeletion(TrackedObjects[deletedID].object, TrackedObjects[deletedID].instance);
+	MarkObjectReferenceForDeletion(TrackedObjects[deletedID].object);
 
 	TrackedObjects[deletedID].clientID = NO_CLIENT_ID;
-	TrackedObjects[deletedID].object = NULL;
+	TrackedObjects[deletedID].object.obj = NULL;
+	TrackedObjects[deletedID].OriginWorld = NULL;
 
 	if (Networking.connectionStatus != CONNECT_STATE_CONNECTED)
 	{
@@ -1766,7 +1781,7 @@ int RespondToDeleteObjectRequest(NetworkPacket *packet, int clientIndex, World *
 		reponsePacket.tickSent = TickNumber();
 		reponsePacket.data.objectData.ownerClientID = Networking.TrackedObjects[trackedID].clientID;
 		reponsePacket.data.objectData.trackedID = trackedID;
-		copyObjectToPacketData(Networking.TrackedObjects[trackedID].object, &reponsePacket);
+		copyObjectToPacketData(Networking.TrackedObjects[trackedID].object.obj, &reponsePacket);
 
 		NET_WriteToStreamSocket(ownerSocket, &reponsePacket, sizeof(NetworkPacket));
 		outgoing += sizeof(NetworkPacket);
@@ -1800,10 +1815,10 @@ void processTrackedObjectDeleted(int deletedID)
 	TrackedObjects[index].clientID = NO_CLIENT_ID;
 
 	// only delete if it is the correct instance
-	MarkObjectInstanceForDeletion(TrackedObjects[index].object, TrackedObjects[index].instance);
+	MarkObjectReferenceForDeletion(TrackedObjects[index].object);
 
-	TrackedObjects[index].object = NULL;
-
+	TrackedObjects[index].object.obj = NULL;
+	TrackedObjects[index].OriginWorld = NULL;
 	
 	return;
 }
@@ -1835,12 +1850,15 @@ TrackedObject* getTrackedObject(int trackedID, int claimedOwnerID, World *GameWo
 	}
 
 
-	Object *tracked = TrackedObjects[index].object;
-
 	// check if object has been deleted
-	if (tracked == NULL || tracked->State == EMPTY_OBJECT || tracked->instanceNumber != TrackedObjects[index].instance)
+	if (ObjectDeleted(TrackedObjects[index].object))
 	{
-		TrackedObjects[index].object = NULL;
+		ClearObjectReference(&TrackedObjects[index].object);
+	}
+
+	if (TrackedObjects[index].OriginWorld != GameWorld)
+	{
+		return NULL;
 	}
 
 	return &TrackedObjects[index];
@@ -1864,7 +1882,7 @@ void updateTrackedObject(NetworkPacket *packet, World *GameWorld)
 		return;
 	}
 
-	if (tracked->object == NULL || tracked->object->State == EMPTY_OBJECT)
+	if (ObjectDeleted(tracked->object))
 	{
 		if (Networking.connectMode == SERVER)
 		{
@@ -1872,17 +1890,17 @@ void updateTrackedObject(NetworkPacket *packet, World *GameWorld)
 		}
 
 		Object *packetObject = &packet->data.objectData.object;
-		tracked->object = AddNamedObject(GameWorld, packetObject->name, packetObject->ObjectID, 0, 0);
+		Object *newObject = AddNamedObject(GameWorld, packetObject->name, packetObject->ObjectID, 0, 0);
 
-		if (tracked->object == NULL)
+		if (newObject == NULL)
 		{
 			return;
 		}
 
-		tracked->instance = tracked->object->instanceNumber;
+		SetObjectReference(&tracked->object, newObject);
 	}
 
-	copyPacketDataToObject(tracked->object, packet);
+	copyPacketDataToObject(tracked->object.obj, packet);
 
 	return;
 }
@@ -1899,16 +1917,16 @@ void updateTrackedObjectHealth(NetworkPacket *packet, World *GameWorld)
 	
 	TrackedObject *tracked = getTrackedObject(trackedID, claimedOwnerID, GameWorld);
 
-	if (tracked == NULL || tracked->object == NULL)
+	if (tracked == NULL || tracked->object.obj == NULL)
 	{
 		return;
 	}
 
-	HealthComponent *health = getHealthComponent(tracked->object, GameWorld);
+	HealthComponent *health = getHealthComponent(tracked->object.obj, GameWorld);
 
 	if (health == NULL)
 	{
-		health = addHealthComponent(tracked->object, 1, 0, GameWorld);
+		health = addHealthComponent(tracked->object.obj, 1, 0, GameWorld);
 
 		if (health == NULL)
 		{
@@ -2007,7 +2025,7 @@ void sendTrackedObjectPacket(int index, NET_StreamSocket *socket, World *GameWor
 		return;
 	}
 
-	if (Tracked->object == NULL || Tracked->object->State == EMPTY_OBJECT || Tracked->object->instanceNumber != Tracked->instance)
+	if (ObjectDeleted(Tracked->object))
 	{
 		removeTrackedObject(Tracked->trackedID);
 	}
@@ -2018,18 +2036,20 @@ void sendTrackedObjectPacket(int index, NET_StreamSocket *socket, World *GameWor
 			return;
 		}
 
+		Object *tracked = Tracked->object.obj;
+
 		NetworkPacket packet = {0};
 		packet.tickSent = TickNumber();
 
 		packet.type = PACKET_OBJECT_UPDATE;
-		copyObjectToPacketData(Tracked->object, &packet);
+		copyObjectToPacketData(tracked, &packet);
 		packet.data.objectData.trackedID = Tracked->trackedID;
 		packet.data.objectData.ownerClientID = Tracked->clientID;
 		NET_WriteToStreamSocket(socket, &packet, sizeof(NetworkPacket));
 		outgoing += sizeof(NetworkPacket);
 
 
-		HealthComponent *health = getHealthComponent(Tracked->object, GameWorld);
+		HealthComponent *health = getHealthComponent(tracked, GameWorld);
 
 		if (health != NULL)
 		{
@@ -2123,6 +2143,7 @@ void copyPacketDataToObject(Object *input, NetworkPacket *packet)
 	display->spriteSetSource = prevSource;
 
 	UpdateObjectDisplay(input, 0.0);
+
 	if (input->ObjectDisplay->currentSprite < 0)
 	{
 		input->ObjectDisplay->spriteBuffer = EngineSettings.DefaultTexture;
@@ -2198,7 +2219,7 @@ void sendGameEventPackets(int recipientID)
 			continue;
 		}
 
-		//putConsole("sending %s to %d", getEventName(events[i].EventID), recipientID);
+	//	putConsole("sending %s to %d,   owned by %d", getEventName(events[i].EventID), recipientID, events[i].clientID);
 
 		memcpy(&buffer.data, &events[i], sizeof(PacketData));	// copy first half of game event into networkPacket's data section
 
@@ -2256,4 +2277,136 @@ void sendCommandToClients(const char command[])
 	saveEventForNetworkTransmission(&event);
 
 	return;
+}
+
+
+/*
+------------------------------------------------------------------------------
+isaac64.c: My random number generator for 64-bit machines.
+By Bob Jenkins, 1996.  Public Domain.
+------------------------------------------------------------------------------
+*/
+
+#define UB8MAXVAL 0xffffffffffffffffLL
+#define UB8BITS 64
+#define SB8MAXVAL 0x7fffffffffffffffLL
+#define UB4MAXVAL 0xffffffff
+#define UB4BITS 32
+#define SB4MAXVAL 0x7fffffff
+#define UB2MAXVAL 0xffff
+#define UB2BITS 16
+#define SB2MAXVAL 0x7fff
+#define UB1MAXVAL 0xff
+#define UB1BITS 8
+#define SB1MAXVAL 0x7f
+typedef int word;  /* fastest type available */
+
+#define bis(target,mask)  ((target) |=  (mask))
+#define bic(target,mask)  ((target) &= ~(mask))
+#define bit(target,mask)  ((target) &   (mask))
+#ifndef isaacMin
+# define isaacMin(a,b) (((a)<(b)) ? (a) : (b))
+#endif /* min */
+#ifndef isaacMax
+# define isaacMax(a,b) (((a)<(b)) ? (b) : (a))
+#endif /* max */
+#ifndef align
+# define align(a) (((Uint32)a+(sizeof(void *)-1))&(~(sizeof(void *)-1)))
+#endif /* align */
+#ifndef abs
+# define isaacAbs(a)   (((a)>0) ? (a) : -(a))
+#endif
+#define TRUE  1
+#define FALSE 0
+#define SUCCESS 0  /* 1 on VAX */
+
+#define RANDSIZL   (8)
+#define RANDSIZ    (1<<RANDSIZL)
+
+static Uint64 randrsl[RANDSIZ], randcnt;
+static Uint64 mm[RANDSIZ];
+static Uint64 aa=0, bb=0, cc=0;
+
+#define ind(mm,x)  (*(Uint64 *)((Uint8 *)(mm) + ((x) & ((RANDSIZ-1) << 3))))
+#define rngstep(mix,a,b,mm,m,m2,r,x) \
+{ \
+  x = *m;  \
+  a = (mix) + *(m2++); \
+  *(m++) = y = ind(mm,x) + a + b; \
+  *(r++) = b = ind(mm,y>>RANDSIZL) + x; \
+}
+
+void isaac64()
+{
+  register Uint64 a,b,x,y,*m,*m2,*r,*mend;
+  m=mm; r=randrsl;
+  a = aa; b = bb + (++cc);
+  for (m = mm, mend = m2 = m+(RANDSIZ/2); m<mend; )
+  {
+    rngstep(~(a^(a<<21)), a, b, mm, m, m2, r, x);
+    rngstep(  a^(a>>5)  , a, b, mm, m, m2, r, x);
+    rngstep(  a^(a<<12) , a, b, mm, m, m2, r, x);
+    rngstep(  a^(a>>33) , a, b, mm, m, m2, r, x);
+  }
+  for (m2 = mm; m2<mend; )
+  {
+    rngstep(~(a^(a<<21)), a, b, mm, m, m2, r, x);
+    rngstep(  a^(a>>5)  , a, b, mm, m, m2, r, x);
+    rngstep(  a^(a<<12) , a, b, mm, m, m2, r, x);
+    rngstep(  a^(a>>33) , a, b, mm, m, m2, r, x);
+  }
+  bb = b; aa = a;
+}
+
+#define mix(a,b,c,d,e,f,g,h) \
+{ \
+   a-=e; f^=h>>9;  h+=a; \
+   b-=f; g^=a<<9;  a+=b; \
+   c-=g; h^=b>>23; b+=c; \
+   d-=h; a^=c<<15; c+=d; \
+   e-=a; b^=d>>14; d+=e; \
+   f-=b; c^=e<<20; e+=f; \
+   g-=c; d^=f>>17; f+=g; \
+   h-=d; e^=g<<14; g+=h; \
+}
+
+void randinit(flag)
+word flag;
+{
+   word i;
+   Uint64 a,b,c,d,e,f,g,h;
+   aa=bb=cc=(Uint64)0;
+   a=b=c=d=e=f=g=h=0x9e3779b97f4a7c13LL;  /* the golden ratio */
+
+   for (i=0; i<4; ++i)                    /* scramble it */
+   {
+     mix(a,b,c,d,e,f,g,h);
+   }
+
+   for (i=0; i<RANDSIZ; i+=8)   /* fill in mm[] with messy stuff */
+   {
+     if (flag)                  /* use all the information in the seed */
+     {
+       a+=randrsl[i  ]; b+=randrsl[i+1]; c+=randrsl[i+2]; d+=randrsl[i+3];
+       e+=randrsl[i+4]; f+=randrsl[i+5]; g+=randrsl[i+6]; h+=randrsl[i+7];
+     }
+     mix(a,b,c,d,e,f,g,h);
+     mm[i  ]=a; mm[i+1]=b; mm[i+2]=c; mm[i+3]=d;
+     mm[i+4]=e; mm[i+5]=f; mm[i+6]=g; mm[i+7]=h;
+   }
+
+   if (flag) 
+   {        /* do a second pass to make all of the seed affect all of mm */
+     for (i=0; i<RANDSIZ; i+=8)
+     {
+       a+=mm[i  ]; b+=mm[i+1]; c+=mm[i+2]; d+=mm[i+3];
+       e+=mm[i+4]; f+=mm[i+5]; g+=mm[i+6]; h+=mm[i+7];
+       mix(a,b,c,d,e,f,g,h);
+       mm[i  ]=a; mm[i+1]=b; mm[i+2]=c; mm[i+3]=d;
+       mm[i+4]=e; mm[i+5]=f; mm[i+6]=g; mm[i+7]=h;
+     }
+   }
+
+   isaac64();          /* fill in the first set of results */
+   randcnt=RANDSIZ;    /* prepare to use the first set of results */
 }

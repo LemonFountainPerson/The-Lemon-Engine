@@ -1,14 +1,14 @@
 // Object Creation
 // Creates new instance of an object and puts at the end of the object list
-Object* AddObject(World *GameWorld, int objectID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5);
+Object* AddObject(World *GameWorld, int objectID, float xPos, float yPos, int arg1, int arg2, int arg3, int arg4);
 
-Object* AddNamedObject(World *GameWorld, const char name[], int objectID, int xPos, int yPos);
+Object* AddNamedObject(World *GameWorld, const char name[], int objectID, float xPos, float yPos);
 
-Object* AddObjectWithParent(World *GameWorld, Object *ParentObject, int objectID, int xPos, int yPos, int arg1, int arg2, int arg3, int arg4, int arg5);
+Object* AddObjectWithParent(World *GameWorld, Object *ParentObject, int objectID, float xPos, float yPos, int arg1, int arg2, int arg3, int arg4);
 
 Object* AddObjectFromMeta(World *GameWorld, ObjectMeta input);
 
-Object* AddParticle(World *GameWorld, ParticleSubType animation, int xPos, int yPos, int repeatCount, int particleLifeTime);
+Object* AddParticle(World *GameWorld, ParticleSubType animation, float xPos, float yPos, int repeatCount, int particleLifeTime);
 
 Object* cloneObject(Object *input, World *GameWorld);
 
@@ -18,21 +18,21 @@ Object* getNewObject(ObjectType objectID, ObjectController *ObjectList);
 
 Object* findNewObject(ObjectController *ObjectList);
 
-int initialiseGenericObject(Object *inputObject, ObjectType objectID, ObjectController *ObjectList);
+int InitialiseGenericObject(Object *inputObject, ObjectType objectID, ObjectController *ObjectList);
 
 void clearObjectData(Object *input);
 
 SpriteSet* loadSpriteSet(ObjectController *ObjectList, int ObjectID);
 
 
-int setObjectName(Object *inputObject, const char name[]);
+int SetObjectName(Object *inputObject, const char name[]);
 
 Object* FindObject(const char name[], ObjectController *ObjectList);
 
 Object* FindObjectID(const char name[], int objectID, ObjectController ObjectList);
 
 
-int snapPositionToTileGrid(Object *input, int xPos, int yPos);
+int snapPositionToTileGrid(Object *input, float xPos, float yPos);
 
 
 PhysicsBox* createPhysicsBox(SolidType inputSolid);
@@ -91,8 +91,6 @@ int switchObjectSpriteByName(const char spriteName[], Object *inputObject);
 
 Object* deleteObject(Object *input, ObjectController *objController);
 
-void removeSceneActionReferences(Object *input, World *GameWorld);
-
 void deleteAssociatedFrameFunction(Object *input, ObjectController *ObjectList);
 
 void deleteAllObjects(ObjectController *objectList);
@@ -104,11 +102,17 @@ void deleteAllEnvironmentObjects(ObjectController *ObjectList);
 
 int MarkObjectForDeletion(Object *inputObject);
 
-int MarkObjectInstanceForDeletion(Object *inputObject, int instance);
-
 int UnmarkObjectForDeletion(Object *inputObject);
 
-bool objectDeleted(Object *input, int instance);
+int MarkObjectReferenceForDeletion(ObjectReference input);
+
+bool ObjectDeleted(ObjectReference input);
+
+bool ObjectMatchesReference(ObjectReference ref, Object *compare);
+
+void SetObjectReference(ObjectReference *input, Object *obj);
+
+void ClearObjectReference(ObjectReference *input);
 
 
 void IncrementDrawPriority(ObjectController *objectList, Object *input);
@@ -121,17 +125,6 @@ void SetDrawPriorityToFront(ObjectController *objController, Object *input);
 
 // Sets given object to start of object list to put it on the back layer when being drawn
 void SetDrawPriorityToBack(ObjectController *objController, Object *input);
-
-
-int moveObjectToCachedList(ObjectController *ObjectList, Object *inputObject);
-
-int swapMainAndCachedLists(ObjectController *ObjectList);
-
-int restoreAllCachedObjects(ObjectController *ObjectList);
-
-int deleteAllCachedObjects(ObjectController *ObjectList);
-
-int cacheObjects(ObjectController *ObjectList, PhysicsBox boundingBox);
 
 
 
@@ -159,108 +152,7 @@ int applyMagnetisation(PhysicsBox *inputBox, PhysicsBox *GroundBox, World *GameW
 
 int ResolveAllObjects(World *GameWorld);
 
-
 int UpdateParentChildLink(Object *inputObject);
-
-
-int initialiseComponents(ObjectController *ObjectList);
-
-void initialiseSparseList(SparseList *input, const char name[]);
-
-int removeComponents(Object *input, ObjectController *ObjectList);
-
-ComponentType* addComponent(Object *input, SparseList *List);
-
-int removeComponent(Object *input, SparseList *List);
-
-ComponentType* getComponentWithIndex(int index, SparseList *List);
-	
-ComponentType* getComponent(Object *input, SparseList *List);
-
-
-GameEvent* addObjectEvent(Object *input, bool triggerOnce, World *GameWorld);
-
-GameEvent* getObjectEvent(Object *input, World *GameWorld);
-
-bool hasObjectEvent(Object *input, World *GameWorld);
-
-void triggerObjectEvent(Object *input, World *GameWorld);
-
-
-
-PhysicsComponent* addPhysics(Object *input, bool gravity, World *GameWorld);
-
-PhysicsComponent* addPhysicsDefault(Object *input, World *GameWorld);
-
-PhysicsComponent* getPhysicsComponent(Object *input, World *GameWorld);
-
-bool HasPhysics(Object *input, World *GameWorld);
-
-bool HasGravity(Object *input, World *GameWorld);
-
-void SetPhysicsGravity(Object *input, bool gravity, World *GameWorld);
-
-void updatePhysicsComponents(World *GameWorld);
-
-
-Polygon* addPolygon(Object *input, World *GameWorld, int numOfVertices, ...);
-
-Polygon* addQuad(Object *input, World *GameWorld);
-
-Polygon* getPolygon(Object *input, World *GameWorld);
-
-void movePolygonVertex(Object *input, int vertex, float newX, float newY, World *GameWorld);
-
-SDL_Vertex* getPolygonVertex(Object *input, int vertex, World *GameWorld);
-
-
-HealthComponent* addHealthComponent(Object *input, int Health, GroupType group, World *GameWorld);
-
-HealthComponent* getHealthComponent(Object *input, World *GameWorld);
-
-GroupType getGroupAffiliation(Object *input, World *GameWorld);
-
-int inflictDamage(int damage, Object *input, World *GameWorld);
-
-bool isHurt(Object *input, World *GameWorld);
-
-
-BulletComponent* addBulletComponent(Object *input, Object *owner, int damage, ParticleSubType particleType, World *GameWorld);
-
-bool isBullet(Object *input, World *GameWorld);
-
-void bulletCollision(Object *bulletObject, World *GameWorld);
-
-
-int addTileMap(Object *input, int centerTileX, int centerTileY, int tileSize, World *GameWorld);
-
-TileMap* getTileMap(Object *input, World *GameWorld);
-
-
-int startTimer(int ticks, Object *input, World *GameWorld);
-
-int startTimerSeconds(float seconds, Object *input, World *GameWorld);
-
-bool timerExpired(Object *input, World *GameWorld);
-
-Uint64 checkTimer(Object *input, World *GameWorld);
-
-Timer* getTimer(Object *input, World *GameWorld);
-
-int endTimer(Object *input, World *GameWorld);
-
-void pauseTimers(ComponentData *data, World *GameWorld);
-
-
-int startStopWatch(Object *input, World *GameWorld);
-
-float checkStopWatch(Object *input, World *GameWorld);
-
-void pauseStopWatch(Object *input, World *GameWorld);
-
-void unpauseStopWatch(Object *input, World *GameWorld);
-
-float endStopWatch(Object *input, World *GameWorld);
 
 
 FuncResult updateObjectsFrame(World *GameWorld);
@@ -382,35 +274,15 @@ bool MouseClickedObject(Object *input, Camera inputCam);
 
 
 // Collision Detection
-Object* GetCollidingObject(PhysicsBox *inputBox, ObjectController *ObjectList);
-
-int putObjectIntoCollisionGrid(Object *input, ObjectController *list);
-
-int* getObjectIndicesAtGridCell(float xPos, float yPos, ObjectController *list);
-
-
 bool CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox);
 
-bool checkBoxOverlapsBoxBroad(PhysicsBox *inputBox, PhysicsBox *compareBox);
+bool CheckBoxOverlapsBoxBroad(PhysicsBox *inputBox, PhysicsBox *compareBox);
 
 bool CheckBoxOverlapsBox(PhysicsBox *inputBox, PhysicsBox *compareBox);
 
 bool pointOverlapsWithSlope(float x, int y, PhysicsBox *slope);
 
 bool circleOverlapsWithLine(float x1, float y1, float x2, float y2, float circleCenterX, float circleCenterY, float radius);
-
-
-Object* GetOverlappingObject(PhysicsBox *inputBox, ObjectController *ObjectList);
-
-
-Object* GetOverlappingObjectType(PhysicsBox *inputBox, int overlapObjectID, ObjectController *objectList);
-
-
-Object* GetOverlappingObjectSolid(PhysicsBox *inputBox, int solidID, ObjectController *objectList);
-
-
-Object* GetOverlappingObjectAllSolids(PhysicsBox *inputBox, ObjectController *ObjectList);
-
 
 bool OverlapsObject(Object *inputObject, Object *otherObject);
 

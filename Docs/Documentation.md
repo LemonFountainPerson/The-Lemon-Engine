@@ -94,10 +94,7 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 
 
-## Functions by Category
-
-
-**Game set-up**
+## Functions
 
 - [StartUpLemonEngine()](Func_StartUpLemonEngine.md)
 
@@ -106,6 +103,8 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 - [InitialiseWorld()](Func_InitialiseWorld.md)
 
 - [DestroyWorld()](Func_DestroyWorld.md)
+
+- [Tick()](Func_Tick.md)
 
 
 ## Data Structures

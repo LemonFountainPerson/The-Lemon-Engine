@@ -13,8 +13,7 @@ typedef enum FunctionResult
 	EXECUTION_UNNECESSARY = 2,
 	AT_FULL_CAPACITY = 3,
 	FILE_NOT_FOUND = 4,
-	END_OF_FILE = 5,
-	DATA_CLEARED = 6
+	END_OF_FILE = 5
 } FuncResult;
 
 typedef enum LemonKeys 
@@ -174,8 +173,8 @@ typedef enum RenderMode
 	UNDEFINED_RENDERMODE
 } RenderMode;
 
-RenderMode convertStringToRenderMode(char string[]);
-const char* getRenderModeName(RenderMode input);
+RenderMode GetRenderMode(char string[]);
+const char* GetRenderModeName(RenderMode input);
 
 
 //  Order of Object list determines layering of individual Objects within layers
@@ -247,18 +246,18 @@ typedef enum CameraState
 typedef enum ReservedFlags
 {
 	RFLAG_DEFAULT 			= 0x00000000,	// 0000
-	RFLAG_DISABLE_PHYSICS 	= 0x00000001,	// 0001
-	RFLAG_PRESERVE_OBJECT	= 0x00000002,	// 0010
-	RFLAG_PRESERVE_ONCE		= 0x00000006, 	// 0110 - activates PRESERVE_OBJECT as well
-	RFLAG_CUTSCENE_IMMUNITY	= 0x00000008,	// 1000
-	RFLAG_GROUND_SET		= 0x00000010	// 0001_0000
+	RFLAG_TO_BE_DELETED		= 0x00000001,	// 0001
+	RFLAG_DISABLE_PHYSICS 	= 0x00000002,	// 0010
+	RFLAG_CUTSCENE_IMMUNITY	= 0x00000004,	// 0100
+	RFLAG_GROUND_SET		= 0x00000008, 	// 1000 
+	RFLAG_PRESERVE_OBJECT	= 0x00000010,	// 0001_0000
+	RFLAG_PRESERVE_ONCE		= 0x00000030	// 0011_0000 - activates PRESERVE_OBJECT as well
 } ReservedFlags;
 
 
 typedef enum ObjectState 
 {
-	EMPTY_OBJECT = -2,
-	TO_BE_DELETED = -1,
+	EMPTY_OBJECT = -1,
 	DEFAULT_STATE = 0,
 	STATIC_STATE,
 	PAUSE_STATE,
@@ -386,7 +385,6 @@ typedef enum Flags
 	LEVEL_TRIGGER,
 	LEVEL_TRIGGER_SEAMLESS,
 	SET_PLAYER_LAYER,
-	CACHE_TRIGGER,
 	LOAD_PART_TRIGGER,
 	GAME_EVENT_TRIGGER,
 	UNDEFINED_FLAG
@@ -577,13 +575,13 @@ typedef struct Animation
 // Sprite sets that lead to linked lists of sprites corresponding to an Object type;
 // only needs to be initialised once per Object type
 // Starts counting sprite IDs from 1
-typedef struct spriteSet
+typedef struct SpriteSet
 {
 	Sprite *firstSprite;
 	Sprite *lastSprite;
 
-	struct spriteSet *nextSet;
-	struct spriteSet *prevSet;
+	struct SpriteSet *nextSet;
+	struct SpriteSet *prevSet;
 
 	Animation *Animations;
 
@@ -597,6 +595,7 @@ typedef struct spriteSet
 typedef struct SpriteSetList
 {
 	SpriteSet *start;
+	int SpriteSetCount;
 } SpriteSetList;
 
 typedef struct displayData
@@ -635,8 +634,8 @@ typedef struct PhysicsBox
 	float prevXPos;
 	float prevYPos;
 
-	int xSize;
-	int ySize;
+	float xSize;
+	float ySize;
 
 	float forwardVelocity;
 	float yVelocity;
@@ -665,6 +664,8 @@ typedef struct Object
 	int ObjectID;
 	ObjectState State;
 	CurrentAction Action;
+	ReservedFlags reserved;
+	int instanceNumber;
 
 	struct Object *Parent;
 	ParentType ParentLink;
@@ -674,9 +675,6 @@ typedef struct Object
 
 	struct Object *nextObject;
 	struct Object *prevObject;	
-
-	ReservedFlags reserved;
-	int instanceNumber;
 	const int index;
 
 	// Multi-purpose args
@@ -685,6 +683,12 @@ typedef struct Object
 	int arg3;
 	int arg4;
 } Object;
+
+typedef struct ObjectReference
+{
+	Object *obj;
+	int recordedInstance;
+} ObjectReference;
 
 typedef struct World World;
 typedef int (*TriggerableFunction)(Object*, struct World*);
@@ -921,8 +925,34 @@ typedef struct IntSparseList
 typedef struct StackArray
 {
 	int storedElements;
-	int list[STACKARRAY_LENGTH];
+	int array[STACKARRAY_LENGTH];
 } StackArray;
+
+typedef struct BSPNode
+{
+	char axis;
+	float edgePos;
+
+	// for debug rendering
+	float xPos;
+	float yPos;
+	float xSize;
+	float ySize;
+
+	struct BSPNode *left;
+	struct BSPNode *right;
+	int height;
+
+	int objectCount;
+	Object **objects;
+} BSPNode;
+
+typedef struct BSPTree
+{
+	BSPNode *root;
+	int maxHeight;
+	int nodeCount;
+} BSPTree;
 
 typedef struct ObjectController
 {
@@ -932,10 +962,6 @@ typedef struct ObjectController
 
 	Object *availableSlots;
 
-	int cachedCount;
-	Object *cachedFirstObject;
-	Object *cachedLastObject;
-
 	SpriteSetList spriteSets;
 
 	FrameUpdateFunction *FrameUpdates;
@@ -943,6 +969,7 @@ typedef struct ObjectController
 	ComponentData objectComponents;
 
 	StackArray solidList;
+	BSPTree staticGeometry;
 } ObjectController;
 
 
@@ -950,7 +977,7 @@ typedef struct ObjectController
 typedef struct playerData
 {
 	Object *PlayerPtr;
-	int instance;
+	ObjectReference PlayerRef;
 
 	PhysicsBox InteractBox;
 
@@ -980,6 +1007,7 @@ typedef struct TextOptionPrompt
 	int SelectedOption;
 	bool setUpComplete;
 
+	Object *cursor;
 	float OptionYPositions[MAX_TEXT_OPTIONS];
 	char optionNames[MAX_TEXT_OPTIONS][OPTION_TEXT_MAX_LEN];
 
@@ -1019,8 +1047,7 @@ typedef struct Text
 	TTF_Text *text;
 	Font *usedFont;
 
-	Object *attachedObj;
-	int recordedInstance;
+	ObjectReference attachedObject;
 
 	char name[TEXT_NAME_MAX_LEN];
 } Text;
@@ -1109,8 +1136,7 @@ typedef struct CameraView
 	double direction;
 	Layer layer;
 
-	Object *attachedObj;
-	int recordedInstance;
+	ObjectReference attachedObj;
 	
 	SDL_Texture *target;
 
@@ -1166,17 +1192,33 @@ typedef struct ObjectMeta
 {
 	char name[OBJECT_NAME_LENGTH];
 	ObjectType objectID;
-	int xPos;
-	int yPos;
+	float xPos;
+	float yPos;
+	int xSize;
+	int ySize;
+
+	double direction;
+	Layer layer;
+
+	char animationName[ANIMATION_NAME_LENGTH];
+	char spriteName[MAX_LEN];
+	int loopCount;
+	int animationTriggered;
+
+	float speed;
 } ObjectMeta;
 
 
-typedef struct IfStatementData
+typedef struct ConditionalStatement
 {
 	int variableIndex;
 	int comparisonValue;
 	char expression[3];
+} ConditionalStatement;
 
+typedef struct IfStatementData
+{
+	ConditionalStatement condition;
 	bool elseBranchPresent;
 	int branchDistanceIfFalse;	// amount of instructions to skip if false
 } IfStatementData;
@@ -1188,10 +1230,16 @@ typedef struct LoopData
 	int instructionCount;
 } LoopData;
 
-union SceneActionArguments
+typedef struct ConditionalLoopData
 {
-	char objectName[OBJECT_NAME_LENGTH];
-	LoopData sceneLoop;
+	ConditionalStatement condition;
+	int instructionCount;
+} ConditionalLoopData;
+
+typedef union SceneActionArguments
+{
+	LoopData loop;
+	ConditionalLoopData loopUntil;
 	int instructionsToSkip;
 	int SceneID;
 	GameEvent TriggerEvent;
@@ -1199,23 +1247,21 @@ union SceneActionArguments
 	int variableArgs[2];
 	IfStatementData sceneIfStatement;
 	TextBox sceneText;
-	int animationDetails[2];
-	float positions[2];
-	ObjectMeta sceneObjectInfo;
-	bool hidden;
-	Layer layer;
-	int invisWall[4];
+	ObjectMeta actor;
 	SoundMeta soundData;
 	float CameraData[3];
 	float zoomScales[3];
 	int cameraMode;
-};
+} SceneActionArguments;
 
 typedef enum SceneActionID
 {
 	SCENE_END,
-	SCENE_LOOP_POINT,
+	SCENE_REPEAT,
+	SCENE_REPEAT_UNTIL,
+	SCENE_REPEAT_WHILE,
 	SCENE_SKIP_INSTRUCTIONS,
+	SCENE_IF_STATEMENT,
 	SCENE_SWITCH_CUTSCENE,
 	SCENE_TRIGGER_GAME_EVENT,
 	SCENE_DISABLE_PLAYER,
@@ -1223,9 +1269,14 @@ typedef enum SceneActionID
 	SCENE_WAIT,
 	SCENE_CHANGE_VARIABLE_BY,
 	SCENE_SET_VARIABLE_TO,
-	SCENE_IF_STATEMENT,
 	SCENE_SAY_TEXT,
+	SCENE_PLACE_INVISIBLE_WALL,
+	SCENE_CREATE_ACTOR,
+	SCENE_RELEASE_ACTOR,
+	SCENE_SHOW_ACTOR,
+	SCENE_HIDE_ACTOR,
 	SCENE_ANIMATE_ACTOR,
+	SCENE_ANIMATE_ACTOR_WAIT,
 	SCENE_SET_ACTOR_SPRITE,
 	SCENE_SET_ACTOR_POS,
 	SCENE_MOVE_ACTOR,
@@ -1234,12 +1285,7 @@ typedef enum SceneActionID
 	SCENE_MOVE_ACTOR_TO,
 	SCENE_ROTATE_ACTOR,
 	SCENE_SET_ACTOR_DIRECTION,
-	SCENE_HIDE_ACTOR,
-	SCENE_SHOW_ACTOR,
 	SCENE_SET_ACTOR_LAYER,
-	SCENE_CREATE_ACTOR,
-	SCENE_RELEASE_ACTOR,
-	SCENE_PLACE_INVISIBLE_WALL,
 	SCENE_PLAY_SOUND,
 	SCENE_SET_CHANNEL_VOL,
 	SCENE_CHANGE_CHANNEL_VOL,
@@ -1251,19 +1297,17 @@ typedef enum SceneActionID
 	SCENE_SET_CAMERA_ZOOM,
 	SCENE_CHANGE_CAMERA_ZOOM,
 	SCENE_CHANGE_CAMERA_ZOOM_TO,
-	UNDEFINED_SCENE_ACTION
+	SCENE_ACTION_COUNT
 } SceneActionID;
 
 typedef struct SceneAction
 {
 	SceneActionID ActionID;
-	bool parallelAction;
 
-	Object *ActorObject;
-	union SceneActionArguments ActionData;
+	SceneActionArguments ActionData;
 
-	struct SceneAction *nextSceneAction;
-	struct SceneAction *prevSceneAction;
+	struct SceneAction *nextAction;
+	struct SceneAction *prevAction;
 } SceneAction;
 
 
@@ -1362,8 +1406,8 @@ typedef struct World
 	LemonGameState GameState;
 	GameEventManager GameEvents;
 	
-	CutsceneID CurrentCutscene;
 	bool TextBox;
+	CutsceneID CurrentCutscene;
 	SceneAction *SceneActionQueue;
 	SceneAction *nextSceneAction;
 	int SceneActionCount;
@@ -1410,7 +1454,8 @@ typedef enum PacketType
 
 typedef struct TrackedObjectData
 {
-	Object object;
+	// better solution in future may send only necessary data, without need to send entire data structures 
+	Object object;	
 	PhysicsBox box;
 	DisplayData display;
 
@@ -1499,8 +1544,8 @@ typedef struct TrackedObject
 	int trackedID;	// location of object within the server (client only)
 	bool clientDeleted;
 
-	Object *object;
-	int instance;	// used to check whether the object in the slot this points to has been replaced with a new object; i.e: if it has been deleted
+	ObjectReference object;
+	World *OriginWorld;
 } TrackedObject;
 
 typedef enum ConnectionType
@@ -1653,7 +1698,8 @@ typedef struct RenderConfig
 	bool drawParticles;
 	bool drawCamViews;
 
-	int drawHitboxes;
+	bool drawBSP;
+	bool drawHitboxes;
 	int HitboxThickness;
 
 	int maxObjects;
@@ -1676,11 +1722,6 @@ typedef struct TextConfig
 	float defaultTextPointSize;
 	char defaultFont[FONT_FILE_NAME_MAX];
 
-	SDL_Color DebugTextColour;
-	float DebugTextPointSize;
-	Font DebugFont;
-	TextList DebugTextList;
-
 	bool Typing;
 	char userInputString[USER_INPUT_MAX_LEN];
 	int userInputIndex;
@@ -1692,6 +1733,12 @@ typedef struct TextConfig
 
 typedef struct DebugConfig
 {
+	Font DebugFont;
+	TextList DebugTextList;
+	SDL_Color DebugTextColour;
+	float DebugTextPointSize;
+
+	Text ConsoleText[2];
 	bool consoleOpen;
 	ConsoleTextSetting ConsoleTextEnabled;
 	MessageHistory consoleHistory;
@@ -1699,6 +1746,7 @@ typedef struct DebugConfig
 	float consoleYPos;
 	int scrollVal;
 	bool consoleFocus;
+
 	ConsoleCommand commands[MAX_CONSOLE_COMMANDS];
 	ConsoleVariableList variableList;
 
@@ -1740,7 +1788,7 @@ EXPORT extern MouseData MouseInput;
 
 EXPORT extern GamePadData GamePadInput;
 
-EXPORT extern ButtonState buttons[INPUT_COUNT];
+EXPORT extern ButtonState Buttons[INPUT_COUNT];
 
 EXPORT extern GameFlag GameFlags[GAME_FLAG_COUNT];
 
@@ -1756,50 +1804,3 @@ EXPORT extern TextConfig TextSettings;
 
 EXPORT extern DebugConfig DebugSettings;
 
-
-
-typedef  uint64_t  ub8;
-#define UB8MAXVAL 0xffffffffffffffffLL
-#define UB8BITS 64
-typedef  int64_t   sb8;
-#define SB8MAXVAL 0x7fffffffffffffffLL
-typedef  uint32_t  ub4;   /* unsigned 4-byte quantities */
-#define UB4MAXVAL 0xffffffff
-typedef  int32_t   sb4;
-#define UB4BITS 32
-#define SB4MAXVAL 0x7fffffff
-typedef  uint16_t  ub2;
-#define UB2MAXVAL 0xffff
-#define UB2BITS 16
-typedef  int16_t  sb2;
-#define SB2MAXVAL 0x7fff
-typedef  uint8_t   ub1;
-#define UB1MAXVAL 0xff
-#define UB1BITS 8
-typedef  int8_t    sb1;   /* signed 1-byte quantities */
-#define SB1MAXVAL 0x7f
-typedef  int  word;  /* fastest type available */
-
-#define bis(target,mask)  ((target) |=  (mask))
-#define bic(target,mask)  ((target) &= ~(mask))
-#define bit(target,mask)  ((target) &   (mask))
-#ifndef isaacMin
-# define isaacMin(a,b) (((a)<(b)) ? (a) : (b))
-#endif /* min */
-#ifndef isaacMax
-# define isaacMax(a,b) (((a)<(b)) ? (b) : (a))
-#endif /* max */
-#ifndef align
-# define align(a) (((ub4)a+(sizeof(void *)-1))&(~(sizeof(void *)-1)))
-#endif /* align */
-#ifndef abs
-# define isaacAbs(a)   (((a)>0) ? (a) : -(a))
-#endif
-#define TRUE  1
-#define FALSE 0
-#define SUCCESS 0  /* 1 on VAX */
-
-#define RANDSIZL   (8)
-#define RANDSIZ    (1<<RANDSIZL)
-
-extern ub8 randrsl[RANDSIZ], randcnt;
