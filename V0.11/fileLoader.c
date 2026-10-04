@@ -1153,7 +1153,7 @@ int loadLevelData(World *GameWorld, FILE *fPtr, bool closeFileOnExit)
 		{
 			loadLevelFlag(GameWorld, fPtr);
 		}
-		else if (strcmp(buffer, "IFVARIABLE:") == 0 || strcmp(buffer, "IF") == 0)
+		else if (strcmp(buffer, "IFVARIABLE:") == 0 || strcmp(buffer, "IF:") == 0)
 		{
 			loadConditionalStatement(GameWorld, fPtr);
 		}
