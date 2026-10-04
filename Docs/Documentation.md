@@ -106,6 +106,8 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 - [Tick()](Func_Tick.md)
 
+- [NewConsoleVariable()](Func_NewConsoleVariable.md)
+
 
 ## Data Structures
 
