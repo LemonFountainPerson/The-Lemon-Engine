@@ -94,7 +94,10 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 
 
-## Functions
+# Functions by Category
+
+
+## Core Functions
 
 - [StartUpLemonEngine()](Func_StartUpLemonEngine.md)
 
@@ -106,17 +109,33 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 - [Tick()](Func_Tick.md)
 
+## Cutscenes
+
+- [EndCutscene()](Func_EndCutscene.md)
+
+## Animations
+
+- [PlayAnimation()](Func_PlayAnimation.md)
+
+- [PlayAnimationByIndex()](Func_PlayAnimationByIndex.md)
+
+- [PlayNewAnimation()](Func_PlayNewAnimation.md)
+
+## Sound
+
+- [PlaySound()](Func_PlaySound.md)
+
+- [SetLRPan()](Func_SetLRPan.md)
+
+## Rendering
+
 - [Render()](Func_Render.md)
 
 - [RenderEngine()](Func_RenderEngine.md)
 
 - [CameraControl()](Func_CameraControl.md)
 
-- [EndCutscene()](Func_EndCutscene.md)
-
-- [PlaySound()](Func_PlaySound.md)
-
-- [SetLRPan()](Func_SetLRPan.md)
+## Developer Console
 
 - [NewConsoleVariable()](Func_NewConsoleVariable.md)
 

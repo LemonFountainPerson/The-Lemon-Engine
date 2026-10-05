@@ -1,7 +1,7 @@
-int switchBackGroundSprite(int spriteID, int desiredSetID, BackgroundData *inputData);
+int SwitchBackGroundSprite(int spriteID, int desiredSetID, BackgroundData *inputData);
 
 
-int switchBackGroundSpriteName(const char spriteName[], int desiredSetID, BackgroundData *inputData);
+int SwitchBackGroundSpriteName(const char spriteName[], int desiredSetID, BackgroundData *inputData);
 
 
 int loadSpriteFromPath(Sprite *inputSprite, const char inputPath[]);
@@ -33,9 +33,9 @@ int getSpriteIndexSpriteSet(const char spriteName[], SpriteSet *currentSet);
 
 Sprite* getSpriteSpriteSet(const char spriteName[], SpriteSet *currentSet);
 
-int switchSprite(int spriteID, int spriteSet, DisplayData *inputData);
+int SwitchSprite(int spriteID, int spriteSet, DisplayData *inputData);
 
-int switchSpriteByName(const char spriteName[], int spriteSet, DisplayData *inputData);
+int SwitchSpriteByName(const char spriteName[], int spriteSet, DisplayData *inputData);
 
 
 Sprite* loadBackGroundSprite(const char spriteName[], int desiredSetID, RenderMode renderMode, BackgroundData *inputData);

@@ -417,7 +417,7 @@ FuncResult RunSceneAction(World *GameWorld)
 			char *spriteName = data->actor.spriteName;
 
 			actorDisplay->currentAnimation = 0;
-			switchSpriteByName(spriteName, USE_CURRENT_SPRITESET, actorDisplay);
+			SwitchSpriteByName(spriteName, USE_CURRENT_SPRITESET, actorDisplay);
 		} break;
 
 	case SCENE_SET_ACTOR_POS:

@@ -206,7 +206,7 @@ Object* AddObject(World *GameWorld, int objectID, float xPos, float yPos, int ar
 		newObject->ObjectBox->ySize = arg2 * Y_TILESCALE;
 		addPhysics(newObject, false, GameWorld);
 		snapPositionToTileGrid(newObject, xPos, yPos);
-		switchSpriteByName("MissingMeasure", USE_CURRENT_SPRITESET, newObject->ObjectDisplay);
+		SwitchSpriteByName("MissingMeasure", USE_CURRENT_SPRITESET, newObject->ObjectDisplay);
 		break;
 
 
@@ -905,7 +905,7 @@ int setSubType(Object *input, int subType)
 }
 
 
-// These are convienience functions shorthand for calling the normal switchSprite functions without switching spriteset
+// These are convienience functions shorthand for calling the normal SwitchSprite functions without switching spriteset
 int switchObjectSprite(int spriteID, Object *inputObject)
 {
 	DisplayData *ObjectDisplay = getDisplay(inputObject);
@@ -922,7 +922,7 @@ int switchObjectSprite(int spriteID, Object *inputObject)
 	}
 
 
-	switchSprite(spriteID, USE_CURRENT_SPRITESET, ObjectDisplay);
+	SwitchSprite(spriteID, USE_CURRENT_SPRITESET, ObjectDisplay);
 		
 	return LEMON_SUCCESS;
 }
@@ -941,7 +941,7 @@ int switchObjectSpriteByName(const char spriteName[], Object *inputObject)
 		return EXECUTION_UNNECESSARY;
 	}
 
-	switchSpriteByName(spriteName, USE_CURRENT_SPRITESET, ObjectDisplay);
+	SwitchSpriteByName(spriteName, USE_CURRENT_SPRITESET, ObjectDisplay);
 
 	return LEMON_SUCCESS;
 }
@@ -1814,7 +1814,7 @@ int UpdateObjectDisplay(Object *inputObject, float deltaTime)
 	// Assign Sprite   
 	if (inputDisplay->currentSprite > 0 && (inputDisplay->spriteBuffer == NULL || inputDisplay->currentSprite != inputDisplay->spriteBuffer->spriteID))
 	{
-		switchSprite(inputDisplay->currentSprite, USE_CURRENT_SPRITESET, inputDisplay);
+		SwitchSprite(inputDisplay->currentSprite, USE_CURRENT_SPRITESET, inputDisplay);
 	}
 
 	return LEMON_SUCCESS;

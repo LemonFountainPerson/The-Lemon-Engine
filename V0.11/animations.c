@@ -247,7 +247,7 @@ void loadFrameSound(FILE *fPtr, AnimationFrame *newFrame, Animation *anim)
 }
 
 
-int stopAnimation(DisplayData *inputData)
+int StopAnimation(DisplayData *inputData)
 {
 	if (inputData == NULL || inputData->spriteSetSource == NULL)
 	{
@@ -264,6 +264,7 @@ int useThisAnimation(Animation *anim, int loopCount, DisplayData *inputData)
 {
 	if (anim == NULL || anim->animationData == NULL)
 	{
+		inputData->currentAnimation = 0;
 		return MISSING_DATA;
 	}
 	
@@ -310,11 +311,11 @@ int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputDat
 
 	Animation *currentAnimation = inputData->spriteSetSource->Animations;
 
-	int i = 0;
-	while (currentAnimation != NULL && strcmp(currentAnimation->name, desiredName) != 0 && i < 9999)
+	int i = inputData->spriteSetSource->animationCount;
+	while (currentAnimation != NULL && strcmp(currentAnimation->name, desiredName) != 0 && i > 0)
 	{
 		currentAnimation = currentAnimation->nextAnimation;
-		i++;
+		i--;
 	}
 
 	return useThisAnimation(currentAnimation, loopCount, inputData);
@@ -335,7 +336,6 @@ Animation* getAnimationByIndex(int index, DisplayData *inputData)
 
 	if (index < 1 || inputData->spriteSetSource->Animations == NULL)
 	{
-		inputData->currentAnimation = 0;
 		return NULL; 
 	}
 
@@ -433,7 +433,7 @@ int getAnimationIndex(const char animationName[], DisplayData *inputData)
 }
 
 
-bool playingAnimation(DisplayData *inputData)
+bool PlayingAnimation(DisplayData *inputData)
 {
 	if (inputData == NULL)
 	{
@@ -443,7 +443,7 @@ bool playingAnimation(DisplayData *inputData)
 	return (inputData->currentAnimation != 0);
 }
 
-bool playingThisAnimation(DisplayData *inputData, const char name[])
+bool PlayingThisAnimation(DisplayData *inputData, const char name[])
 {
 	if (inputData == NULL || inputData->currentAnimation == 0 || inputData->animationBuffer == NULL)
 	{
@@ -454,12 +454,12 @@ bool playingThisAnimation(DisplayData *inputData, const char name[])
 
 bool objectPlayingAnimation(Object *input)
 {
-	return playingAnimation(getDisplay(input));
+	return PlayingAnimation(getDisplay(input));
 }
 
 bool objectPlayingThisAnimation(Object *input, const char name[])
 {
-	return playingThisAnimation(getDisplay(input), name);
+	return PlayingThisAnimation(getDisplay(input), name);
 }
 
 
@@ -589,6 +589,7 @@ Animation* initialiseNewAnimation(const char animationName[], int frameCount, fl
 		currentAnimation->nextAnimation = newAnimation;
 	}
 
+	inputSet->animCount++;
 
 	newAnimation->nextAnimation = NULL;
 	newAnimation->animationData = malloc(sizeof(AnimationFrame) * frameCount);
@@ -712,18 +713,15 @@ AnimationFrame* addSpriteToAnimationWithAttributes(const char spriteName[], Anim
 }
 
 
-int deleteAnimation(SpriteSet *inputSet, Animation *deleteAnimation)
+int deleteFirstAnimation(SpriteSet *inputSet)
 {
-	if (deleteAnimation == NULL)
+	if (inputSet == NULL || inputSet->Animations == NULL)
 	{
 		return MISSING_DATA;
 	}
 
-	if (inputSet != NULL && inputSet->Animations == deleteAnimation)
-	{
-		inputSet->Animations = deleteAnimation->nextAnimation;
-	}
-
+	Animation *deleteAnimation = inputSet->Animations;
+	inputSet->Animations = deleteAnimation->nextAnimation;
 
 	AnimationFrame *frameList = deleteAnimation->animationData;
 	free(frameList);
@@ -865,7 +863,7 @@ int loadTileSetBackground(const char *name, BackgroundData *bg)
 			getNextArg(file, arg, MAX_LEN);
 			int spriteSet = USE_CURRENT_SPRITESET;
 
-			switchBackGroundSpriteName(arg, spriteSet, bg);
+			SwitchBackGroundSpriteName(arg, spriteSet, bg);
 		}
 		else if (!strcmp("xpos:", arg))
 		{

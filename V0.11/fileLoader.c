@@ -798,7 +798,7 @@ int loadGameState(World *GameWorld)
 	int bgSetIndex = 0;
 	readData = fread(&bgSetIndex, 4, 1, file);
 
-	switchBackGroundSprite(bgIndex, bgSetIndex, &GameWorld->WorldBackground);
+	SwitchBackGroundSprite(bgIndex, bgSetIndex, &GameWorld->WorldBackground);
 
 
 	int index = -1;
@@ -1460,7 +1460,7 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		readIntArgs(fPtr, args, 2);
 	
-		switchBackGroundSprite(args[0], args[1], &GameWorld->WorldBackground);
+		SwitchBackGroundSprite(args[0], args[1], &GameWorld->WorldBackground);
 	}
 	else if (strcmp(buffer, "setbgtrigger") == 0)
 	{

@@ -69,8 +69,8 @@ int ResetPlayer(PlayerData *Player)
 	PlayerBox->inAir = 0;
 	PlayerBox->crouch = false;
 	
-	stopAnimation(PlayerDisplay);
-	switchSprite(1, PLAYER_OBJECT, PlayerDisplay);
+	StopAnimation(PlayerDisplay);
+	SwitchSprite(1, PLAYER_OBJECT, PlayerDisplay);
 
 	return LEMON_SUCCESS;
 }
@@ -500,7 +500,7 @@ int switchPlayerSprite(int spriteID, DisplayData *PlayerDisplay)
 		return EXECUTION_UNNECESSARY;
 	}
 
-	return switchSprite(spriteID, USE_CURRENT_SPRITESET, PlayerDisplay);
+	return SwitchSprite(spriteID, USE_CURRENT_SPRITESET, PlayerDisplay);
 }
 
 
@@ -517,6 +517,6 @@ int switchPlayerSpriteName(const char spriteName[], DisplayData *PlayerDisplay)
 	}
 
 
-	return switchSpriteByName(spriteName, USE_CURRENT_SPRITESET, PlayerDisplay);
+	return SwitchSpriteByName(spriteName, USE_CURRENT_SPRITESET, PlayerDisplay);
 }
 

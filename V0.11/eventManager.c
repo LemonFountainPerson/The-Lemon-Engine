@@ -1433,7 +1433,7 @@ int UpdateFlagObject(Object* flag, World *GameWorld)
 		case SET_BACKGROUND_TRIGGER:
 		if (detectPlayer(flag, Player))
 		{
-			switchBackGroundSprite(flag->arg2, flag->arg3, &GameWorld->WorldBackground);
+			SwitchBackGroundSprite(flag->arg2, flag->arg3, &GameWorld->WorldBackground);
 		} break;
 
 

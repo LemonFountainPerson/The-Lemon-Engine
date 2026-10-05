@@ -173,7 +173,7 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 		UIElement->Action = 0;
 		UIElement->reserved |= RFLAG_PRESERVE_OBJECT;	// This means do not delete between level transitions
 		setTransparency(UIElement, 1.0);
-		switchSpriteByName("FadeOut", 0, getDisplay(UIElement));
+		SwitchSpriteByName("FadeOut", 0, getDisplay(UIElement));
 		UIElement->ObjectBox->xSize = ScreenData.HUDWidth;
 		UIElement->ObjectBox->ySize = ScreenData.HUDHeight;
 		centerOnXY(UIElement, 0.0, 0.0);
@@ -185,17 +185,17 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 
 
 	case PAUSE_BACKGROUND:
-		switchSpriteByName("PauseBackground", 0, getDisplay(UIElement));
+		SwitchSpriteByName("PauseBackground", 0, getDisplay(UIElement));
 		break;
 
 
 	case PAUSE_HEADER:
-		switchSpriteByName("PauseHeader", 0, getDisplay(UIElement));
+		SwitchSpriteByName("PauseHeader", 0, getDisplay(UIElement));
 		break;
 
 
 	case SETTINGS_HEADER:
-		switchSpriteByName("SettingsHeader", 0, getDisplay(UIElement));
+		SwitchSpriteByName("SettingsHeader", 0, getDisplay(UIElement));
 		break;
 
 
@@ -259,7 +259,7 @@ int InitialiseUIElement(Object *UIElement, World *GameWorld)
 
 
 	case MOUSE_CURSOR:
-		switchSpriteByName("MouseCursor", USE_CURRENT_SPRITESET, getDisplay(UIElement));
+		SwitchSpriteByName("MouseCursor", USE_CURRENT_SPRITESET, getDisplay(UIElement));
 		setDisplayLayer(UIElement, FRONT_LAYER);
 		UIElement->ObjectBox->solid = SOLID;
 		UIElement->ObjectBox->xSize = 64;
@@ -758,7 +758,7 @@ Object* AddOptionButton(const char spriteName[], int xPos, int yPos, Object *Men
 		return NULL;
 	}
 
-	switchSpriteByName(spriteName, USE_CURRENT_SPRITESET, getDisplay(createdOption));
+	SwitchSpriteByName(spriteName, USE_CURRENT_SPRITESET, getDisplay(createdOption));
 	matchBoxToDisplayDimensions(createdOption);
 	UpdateOptionButton(createdOption, GameWorld->MainCamera);
 

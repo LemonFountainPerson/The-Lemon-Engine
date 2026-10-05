@@ -3,7 +3,7 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 void loadFrameSound(FILE *fPtr, AnimationFrame *newFrame, Animation *anim);
 
 
-int stopAnimation(DisplayData *inputData);
+int StopAnimation(DisplayData *inputData);
 
 int useThisAnimation(Animation *anim, int loopCount, DisplayData *inputData);
 
@@ -29,9 +29,9 @@ int SwitchAnimation(const char desiredName[], int loopCount, DisplayData *inputD
 int getAnimationIndex(const char animationName[], DisplayData *inputData);
 
 
-bool playingAnimation(DisplayData *inputData);
+bool PlayingAnimation(DisplayData *inputData);
 
-bool playingThisAnimation(DisplayData *inputData, const char name[]);
+bool PlayingThisAnimation(DisplayData *inputData, const char name[]);
 
 bool objectPlayingAnimation(Object *input);
 
@@ -51,7 +51,7 @@ AnimationFrame* addSpriteToAnimation(const char spriteName[], Animation *inputAn
 AnimationFrame* addSpriteToAnimationWithAttributes(const char spriteName[], Animation *inputAnimation, SpriteSet *sourceSet, float XOffset, float YOffset, float rotation);
 
 
-int deleteAnimation(SpriteSet *inputSet, Animation *deleteAnimation);
+int deleteFirstAnimation(SpriteSet *inputSet);
 
 
 // tile set stuff

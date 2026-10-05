@@ -1,7 +1,7 @@
 #include "LemonEngine.h"
 
 
-int switchBackGroundSprite(int spriteID, int desiredSetID, BackgroundData *inputData)
+int SwitchBackGroundSprite(int spriteID, int desiredSetID, BackgroundData *inputData)
 {
 	if (spriteID < 0 || desiredSetID < 0)
 	{
@@ -59,7 +59,7 @@ int switchBackGroundSprite(int spriteID, int desiredSetID, BackgroundData *input
 }
 
 
-int switchBackGroundSpriteName(const char spriteName[], int desiredSetID, BackgroundData *inputData)
+int SwitchBackGroundSpriteName(const char spriteName[], int desiredSetID, BackgroundData *inputData)
 {
 	SpriteSet *currentSet = getSpriteSet(&inputData->bgSpriteSets, desiredSetID);
 
@@ -270,6 +270,7 @@ SpriteSet* createNewSpriteSet(SpriteSetList *setList, int desiredSetID)
 	// initialise new set
 	newSet->setID = desiredSetID;
 	newSet->spriteCount = 0;
+	newSet->animCount = 0;
 	newSet->lastSprite = NULL;
 	newSet->firstSprite = NULL;
 	newSet->Animations = NULL;
@@ -472,7 +473,7 @@ int getSpriteIndexSpriteSet(const char spriteName[], SpriteSet *currentSet)
 }
 
 
-int switchSprite(int spriteID, int spriteSet, DisplayData *inputData)
+int SwitchSprite(int spriteID, int spriteSet, DisplayData *inputData)
 {
 	if (inputData == NULL)
 	{
@@ -578,7 +579,7 @@ int switchSprite(int spriteID, int spriteSet, DisplayData *inputData)
 }
 
 
-int switchSpriteByName(const char spriteName[], int spriteSet, DisplayData *inputData)
+int SwitchSpriteByName(const char spriteName[], int spriteSet, DisplayData *inputData)
 {
 	if (inputData == NULL || spriteName == NULL)
 	{
@@ -835,7 +836,7 @@ int deleteSpriteSet(SpriteSet *inputSet, SpriteSetList *setList)
 	while (inputSet->Animations != NULL && check < 9999)
 	{
 		check++;
-		deleteAnimation(inputSet, inputSet->Animations);
+		deleteFirstAnimation(inputSet);
 	}
 
 

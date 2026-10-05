@@ -577,16 +577,16 @@ typedef struct Animation
 // Starts counting sprite IDs from 1
 typedef struct SpriteSet
 {
-	Sprite *firstSprite;
-	Sprite *lastSprite;
-
+	int setID;
 	struct SpriteSet *nextSet;
 	struct SpriteSet *prevSet;
 
-	Animation *Animations;
-
-	int setID;
 	int spriteCount;
+	Sprite *firstSprite;
+	Sprite *lastSprite;
+
+	int animCount;
+	Animation *Animations;
 
 	int copyCount;
 	int *copies;

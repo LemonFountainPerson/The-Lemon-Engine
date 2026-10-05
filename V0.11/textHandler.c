@@ -212,7 +212,7 @@ int InitialiseUIText(Object *UIText, World *GameWorld)
 	case TEXT_OPTION_CURSOR:
 			UIText->arg2 = -1;
 			initialiseTextCharacter(UIText, '>', GameWorld);
-			switchSpriteByName("TextCursor", 0, UIText->ObjectDisplay);
+			SwitchSpriteByName("TextCursor", 0, UIText->ObjectDisplay);
 		break;
 
 	case TEXT_CHARACTER:
@@ -1770,7 +1770,7 @@ int initialiseTextCharacter(Object *inputCharacter, char charValue, World *GameW
 
 	if (charValue > 32 && charValue < 123)
 	{
-		switchSpriteByName("Pixel_White", 0, inputCharacter->ObjectDisplay);
+		SwitchSpriteByName("Pixel_White", 0, inputCharacter->ObjectDisplay);
 		mapTextToCharacter(inputCharacter, charValue);
 	}
 	else
@@ -1807,7 +1807,7 @@ Object* createTextBoxSprite(TextBox *inputText, const char textBoxName[], World 
 		return Box;
 	}
 
-	switchSpriteByName(textBoxName, 0, boxDisplay);
+	SwitchSpriteByName(textBoxName, 0, boxDisplay);
 
 	matchBoxToDisplayDimensions(Box);
 
@@ -1829,7 +1829,7 @@ Object* createTextBoxPortrait(TextBox *inputText, World *GameWorld)
 
 	if (portrait != NULL)
 	{
-		switchSpriteByName(inputText->Portrait, 0, getDisplay(portrait));
+		SwitchSpriteByName(inputText->Portrait, 0, getDisplay(portrait));
 
 		portrait->ObjectBox->xSize = TextSettings.portraitSize;
 		portrait->ObjectBox->ySize = TextSettings.portraitSize;

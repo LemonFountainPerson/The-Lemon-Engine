@@ -1480,7 +1480,7 @@ FuncResult ConsoleCommand_BackGround(char input[USER_INPUT_MAX_LEN], World *Game
 	int ID = getNextConsoleInt(input);
 	int set = getNextConsoleInt(input);
 
-	switchBackGroundSprite(ID, set, &GameWorld->WorldBackground);
+	SwitchBackGroundSprite(ID, set, &GameWorld->WorldBackground);
 
 	return LEMON_SUCCESS;
 }
@@ -2037,7 +2037,7 @@ FuncResult ConsoleCommand_DoABarrelRoll(char input[USER_INPUT_MAX_LEN], World *G
 		if (objectPlayingThisAnimation(player, "DoABarrelRoll"))
 		{
 			player->State = DEFAULT_STATE;
-			stopAnimation(player->ObjectDisplay);
+			StopAnimation(player->ObjectDisplay);
 		}
 	}
 	else if (player->State == DEFAULT_STATE)
