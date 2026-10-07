@@ -139,8 +139,9 @@ or which frame is playing, you can simply set the 'currentAnimation' and 'curren
 
 - [NewConsoleVariable()](Func_NewConsoleVariable.md)
 
+- [SetConsoleVariable()](Func_SetConsoleVariable.md)
 
-## Data Structures
+# Data Structures
 
 - [World](Data_World.md)
 

@@ -17,6 +17,11 @@ This function is one the engine's Custom Callbacks. This function is not defined
 is defined. This means you provide a custom implementation for this function to then be invoked by the engine. This is useful when working with 
 the engine as a dynamic library instead of the source code directly.
 
+## Inputs 
+
+|                  Type                          |    Name     |      Description      |
+| ---------------------------------------------- | ----------- | --------------------- |
+| [World](Data_World.md) * | **GameWorld** | A pointer to a World struct. By default, this will be the main World created at engine start-up. |
 
 ## Return Value
 
