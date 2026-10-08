@@ -38,7 +38,17 @@ Everything is subject to change.
 
 - [Tick()](Func_Tick.md)
 
+- [SwitchLevel()](Func_SwitchLevel.md)
+
+## Input
+
+- [ButtonPressed()](Func_ButtonPressed.md)
+
+- [ButtonHeld()](Func_ButtonHeld.md)
+
 ## Cutscenes
+
+- [PlayCutscene()](Func_PlayCutscene.md)
 
 - [EndCutscene()](Func_EndCutscene.md)
 
@@ -70,6 +80,7 @@ Everything is subject to change.
 
 - [SetConsoleVariable()](Func_SetConsoleVariable.md)
 
+
 # Data Structures
 
 - [World](Data_World.md)
@@ -99,3 +110,39 @@ Everything is subject to change.
 - [ConsoleCommand](Data_ConsoleCommand.md)
 
 - [ConsoleVariable](Data_ConsoleVariable.md)
+
+
+# Enums
+
+- [ButtonState](Enum_ButtonState.md)
+
+- [CameraState](Enum_CameraState.md)
+
+- [ChannelName](Enum_ChannelName.md)
+
+- [ConsoleFlag](Enum_ConsoleFlag.md)
+
+- [ConsoleVariableType](Enum_ConoleVariableType.md)
+
+- [FuncResult](Enum_FuncResult.md)
+
+- [GameEventID](Enum_GameEventID.md)
+
+- [Layer](Enum_Layer.md)
+
+- [LemonKey](Enum_LemonKey.md)
+
+- [ObjectType](Enum_ObjectType.md)
+
+- [ParentType](Enum_ParentType.md)
+
+- [RenderMode](Enum_RenderMode.md)
+
+- [RotationMode](Enum_RotationMode.md)
+
+- [SceneActionID](Enum_SceneActionID.md)
+
+- [SolidType](Enum_SolidType.md)
+
+- [SoundState](Enum_SoundState.md)
+

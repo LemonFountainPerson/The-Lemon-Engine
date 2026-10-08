@@ -1,7 +1,5 @@
 # The Lemon Engine
-**Liam Fuentes Pessoa**
-_________________________________________________
-
+**By Liam Fuentes Pessoa**
 
 Current Version: 0.11
 
@@ -30,7 +28,7 @@ Features include:
 - And more!
 
 
-Documentation can be found [here.](Docs/Documentation.md)
+Documentation can be found [here.](Docs/Doc_Main_.md)
 
 The full changelog can be found [here.](ChangeLog.md)
 

@@ -6,7 +6,7 @@ Defined in [cutsceneManager.h](../V0.11/cutsceneManager.h).
 
 ## Syntax
 ```
-int EndCutscene(World *GameWorld);
+int EndCutscene(World *GameWorld)
 ```
 
 ## Description
