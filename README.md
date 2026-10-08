@@ -17,11 +17,11 @@ Features include:
 
 - A sound system that organises sounds into channels and can load larger sound files asynchronously
 
-- An animation system that can be entirely utilised via LemponScript files
+- An animation system that can be entirely utilised via LemonScript files
 
-- An intuitive level-based format for constructing environments or scenes via LemponScript files
+- An intuitive level-based format for constructing environments or scenes via LemonScript files
 
-- A built-in cutscene management system that can create dynamic scenes with branching execution via LemponScript files
+- A built-in cutscene management system that can create dynamic scenes with branching execution via LemonScript files
 
 - Basic networking, allowing one instance to act as a Server while other instances can join as clients, syncing Game Events, variables and Objects
 
@@ -33,3 +33,14 @@ Features include:
 Documentation can be found [here.](Docs/Documentation.md)
 
 The full changelog can be found [here.](ChangeLog.md)
+
+
+# Dependencies
+
+- Thanks to the SDL3 team for the all the hardware back-end code (SDL3).
+   https://github.com/libsdl-org/SDL
+- Thanks to Bob Jenkins for the Cryptographically secure random number generator code (ISAAC).
+   https://www.burtleburtle.net/bob/rand/isaacafa.html
+- Thanks to JSON.org for the utf8 decoder code (utf8Decoder.h).
+
+

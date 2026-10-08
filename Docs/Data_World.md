@@ -33,9 +33,9 @@ typedef struct World
 ```
 
 ## Description
-The Backbone of the entire Lemon Engine, this struct represents an entire world with Objects, GameEvents, SceneActions, etc. 
+The Backbone of the entire Lemon Engine, this struct represents an entire world with [Objects](Data_Object.md), [GameEvents](Data_GameEvent.md), [SceneActions](Data_SceneAction.md), etc. 
 A World represents the game's entire state and switching to another is equivalent to switching the type of game being played.
-The state of the application window, developer console and settings are not contained within the World.
+The state of the application window, [Developer Console](Doc_DeveloperConsole.md) and settings are not contained within the World.
 
 
 ## Version

@@ -21,7 +21,7 @@ New colours can be added via the 'setTextBoxColor' function in the 'TextHandler'
 
 -> Added the 'EVENT_CONSOLE_COMMAND' event, which allows any command to be entered into the console via a GameEvent or LevelFlag. 
 
--> PROVISIONAL: Added Console Variables, a standardised variable that can be accessed/modified by the console. Console Variables are stored as a list, so you must either save a
+-> Added Console Variables, a standardised variable that can be accessed/modified by the console. Console Variables are stored as a list, so you must either save a
 reference to one or search for it via [getConsoleVariable]. A default value can be set, as well as flags that indicate special behaviour (For example CONFLAG_CHEAT means the 
 variable can only be changed when cheats are active, CONFLAG_SERVER_SIDE means the variable is synced with the server if connected to one and cannot be modified by clients, etc.)
 
@@ -62,18 +62,6 @@ can be modified by the 'cheats' command.
 -> PROVISIONAL: TextBoxes now store their GameEvents as data allocated on the heap, meaning the memory use of the data structure has been reduced significantly by default.
 
 -> Fixed a small physics bug where momentum on an Object did not properly decay.
-
-
-# Thanks
-
-- Thanks to the SDL3 team for the all the hardware back-end code (SDL3).
-   https://github.com/libsdl-org/SDL
-- Thanks to Bob Jenkins for the Cryptographically secure random number generator code (ISAAC).
-   https://www.burtleburtle.net/bob/rand/isaacafa.html
-- Thanks to JSON.org for the utf8 decoder code (utf8Decoder.h).
-
-NOTE: Changes marked with 'PROVISIONAL' are changes that are not necessarily a direct improvement and as such may be reverted.
-
 
 
 # v0.10

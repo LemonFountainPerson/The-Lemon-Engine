@@ -1,0 +1,28 @@
+# ParentType
+
+## Definition
+```
+typedef enum ParentType 
+{
+	DEFAULT_LINK 		= 	0x00000000,
+	FINAL_LINK			= 	0x00000001,
+	MOTION_LINK 		= 	0x00000002,
+	POSITION_LINK 		= 	0x00000004,
+	PHYSICSBOX_LINK		= 	0x00000008,
+	SPRITE_LINK 		= 	0x00000010,
+	ANIMATION_LINK		= 	0x00000020,
+	TRANSPARENCY_LINK	= 	0x00000040,
+	HIDDEN_LINK			=	0x00000080,
+	PARENTLINK_CONFIRM	=	0x80000000,
+	PARENTLINK_MASK		=	0x7FFFFFFF
+} ParentType;
+```
+
+## Description
+
+
+## Version
+Available since V0.06.
+
+
+----
