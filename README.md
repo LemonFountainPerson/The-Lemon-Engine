@@ -28,7 +28,7 @@ Features include:
 - And more!
 
 
-Documentation can be found [here.](Docs/Doc_Main_.md)
+Documentation can be found [here.](Docs/Doc_Main.md)
 
 The full changelog can be found [here.](ChangeLog.md)
 
