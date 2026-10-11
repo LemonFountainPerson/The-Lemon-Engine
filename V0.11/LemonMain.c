@@ -124,7 +124,7 @@ int StartUpLemonEngine(void)
     InitialiseMessageLog(&Chat, 20);
     InitialiseNetworkData();
 
-	putConsole("\nStarting up...\nWOW!\nOK stop pls");
+	putConsole("\nStarting up...\n");
 
 	// Check for resource data access
 	FuncResult result = CheckResourceData();
