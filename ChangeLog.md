@@ -10,26 +10,26 @@
    -  Game flags on a client's instance can also be controlled via the server.
    -  All networking functionality can be disabled by setting the 'LEMON_NETWORKING_ENABLED' macro to false in the config file.
 
--> Added the 'ObjectEvent' component type. Objects can now store a game event to execute when desired; especially useful for level flag objects.
+-> Added the 'ObjectEvent' component type. [Objects](Docs/Data_object.md) can now store a game event to execute when desired; especially useful for level flag objects.
 
 -> Added interpolation that can be optionally enabled at compile-time. This smooths out motion based on the positions of objects and cameras one tick ago. This allows for smooth 
 motion with high refresh-rate monitors, even at low tickrates.
 
--> Added multi-colour rendering to TextBoxes, allowing for text to change colour mid-typing. For example: ```"Watch out for <BLUE>Stop signs<DEFAULT>."```
+-> Added multi-colour rendering to [TextBoxes](Docs/Data_TextBox.md), allowing for text to change colour mid-typing. For example: ```"Watch out for <BLUE>Stop signs<DEFAULT>."```
 (This will display white text with the 'stop signs' phrase coloured in blue.)
 New colours can be added via the 'setTextBoxColor' function in the 'TextHandler' file.
 
--> Added the 'EVENT_CONSOLE_COMMAND' event, which allows any command to be entered into the console via a GameEvent or LevelFlag. 
+-> Added the 'EVENT_CONSOLE_COMMAND' event, which allows any command to be entered into the console via a [GameEvent](Docs/Data_GameEvent.md) or LevelFlag. 
 
--> Added Console Variables, a standardised variable that can be accessed/modified by the console. Console Variables are stored as a list, so you must either save a
-reference to one or search for it via [getConsoleVariable]. A default value can be set, as well as flags that indicate special behaviour (For example CONFLAG_CHEAT means the 
+-> Added [Console Variables](Docs/Data_ConsoleVariable.md), a standardised variable that can be accessed/modified by the console. Console Variables are stored as a list, so you must either save a
+reference to one or search for it via [GetConsoleVariable()](Docs/Func_GetConsoleVariable.md). A default value can be set, as well as flags that indicate special behaviour (For example CONFLAG_CHEAT means the 
 variable can only be changed when cheats are active, CONFLAG_SERVER_SIDE means the variable is synced with the server if connected to one and cannot be modified by clients, etc.)
 
--> Added the 'RepeatUntil' and 'RepeatWhile' SceneActions, usable in LemonScript files.
+-> Added the 'RepeatUntil' and 'RepeatWhile' [SceneActions](Docs/Data_SceneAction.md), usable in LemonScript files.
 
 -> Added BSPTrees to store static Objects for faster collision detection.
 
--> Loaded Sprites can now be loaded as 'PixelMode' or 'LinearMode' by adding the repective phrase next to the associated 'AddSprite' command in Animation LemonScript files.
+-> Loaded [Sprites](Docs/Data_Sprite.md) can now be loaded as 'PixelMode' or 'LinearMode' by adding the repective phrase next to the associated 'AddSprite' command in Animation LemonScript files.
 This will affect how the pixels in the sprite will be rendered when scaled; Aliasing will interpolate the pixels while Pixel will choose the nearest neighbour.
 
 
@@ -41,7 +41,7 @@ better performance.)
 -> The HUD layer will now render based on the ScreenData's HUDWidth and HUDHeight variables, allowing the dimensions of the HUD to remain constant relative to the screen dimensions.
 Graphics are stretched but text is automatically re-sized and re-positioned to render at the highest possible resolution.
 
--> TextBoxes are now a type of SceneAction, instead of using a sceneaction to coordinate themselves during cutscenes. As part of this, the TextQueue in the World struct has been 
+-> TextBoxes are now a type of SceneAction, instead of using an action to coordinate themselves during cutscenes. As part of this, the TextQueue in the World struct has been 
 removed and TextBox behaviour is more consistent. (TextBoxes can also be repeated when placed in loops.)
 
 -> Removed the 'parallelAction' variable from SceneActions and consequently the 'WaitUntil' command.

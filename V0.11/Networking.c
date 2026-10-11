@@ -34,10 +34,6 @@ void InitialiseNetworkData(void)
 	}
 	Networking.blockedIndex = 0;
 
-	// example
-	Networking.privateKey = 3591059113;
-	Networking.publicKey = 92514975149715;
-
 	Networking.myClient = NULL;
 
 	memset(Networking.clientUsernames, 0, MAX_CLIENTS * MAX_LEN);
@@ -90,10 +86,8 @@ bool openServer(const char ip[], Uint16 portNumber, World *GameWorld)
 	Networking.serverPort = portNumber;
 	Networking.timeElapsed = 0.0;
 
-	Networking.privateKey = rand64();
+	Networking.privateKey = 0; // rand64();
 	Networking.publicKey = rand64();
-
-	putConsole("Chose public: %llu  private: %llu", Networking.publicKey, Networking.privateKey);
 
 	setConVarNamed("net_password", "");
 	setConVarNamed("cheats", "false");
@@ -1147,14 +1141,14 @@ bool receiveServerData(World *GameWorld)
 		case PACKET_CONSOLE_VARIABLE:
 			{
 				ConsoleVariable *received = &buffer.data.convar;
-				ConsoleVariable *found = getConsoleVariable(received->name);
+				ConsoleVariable *found = GetConsoleVariable(received->name);
 				if (found == NULL || (found->flags & CONFLAG_SVR_AND_PRO) != CONFLAG_SERVER_SIDE)
 				{
 					break;
 				}
 				found->flags &= ~CONFLAG_SERVER_SIDE;
 				char number[32] = {0};
-				setConsoleVariable(found, ConVarValueToString(received, number));
+				SetConsoleVariable(found, ConVarValueToString(received, number));
 				found->flags |= CONFLAG_SERVER_SIDE;
 			} break;
 

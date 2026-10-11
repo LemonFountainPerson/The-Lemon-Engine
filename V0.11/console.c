@@ -168,7 +168,7 @@ ConsoleCommand* getConsoleCommand(const char name[])
 }
 
 
-ConsoleVariable* getConsoleVariable(const char name[])
+ConsoleVariable* GetConsoleVariable(const char name[])
 {
 	if (name == NULL || name[0] == '\0')
 	{
@@ -269,7 +269,7 @@ ConsoleVariable* NewConsoleVariable(const char name[], const char helpString[], 
 	LemonStrncpy(variable->helpString, helpString, CONSOLE_HELP_MAX_LEN);
 	variable->valueType = valueType;
 
-	setConsoleVariable(variable, value);
+	SetConsoleVariable(variable, value);
 
 	variable->flags = flags;
 
@@ -292,7 +292,7 @@ int hashConVar(const char name[])
 }
 
 
-void setConsoleVariable(ConsoleVariable *variable, const char value[])
+void SetConsoleVariable(ConsoleVariable *variable, const char value[])
 {
 	// check if command is allowed to run
 	if (variable == NULL || !commandIsAllowed(variable->flags)) 
@@ -357,9 +357,9 @@ void setConsoleVariable(ConsoleVariable *variable, const char value[])
 	return;
 }
 
-void setConVarNamed(const char *name, const char *value)
+void SetConVarNamed(const char *name, const char *value)
 {
-	setConsoleVariable(getConsoleVariable(name), value);
+	SetConsoleVariable(GetConsoleVariable(name), value);
 
 	return;
 }
@@ -376,7 +376,7 @@ int ConVarAsInt(ConsoleVariable *variable)
 
 int GetConVarAsInt(const char input[])
 {
-	return ConVarAsInt(getConsoleVariable(input));
+	return ConVarAsInt(GetConsoleVariable(input));
 }
 
 float ConVarAsFloat(ConsoleVariable *variable)
@@ -391,7 +391,7 @@ float ConVarAsFloat(ConsoleVariable *variable)
 
 float GetConVarAsFloat(const char input[])
 {
-	return ConVarAsFloat(getConsoleVariable(input));
+	return ConVarAsFloat(GetConsoleVariable(input));
 }
 
 bool ConVarAsBool(ConsoleVariable *variable)
@@ -406,7 +406,7 @@ bool ConVarAsBool(ConsoleVariable *variable)
 
 bool GetConVarAsBool(const char input[])
 {
-	return ConVarAsBool(getConsoleVariable(input));
+	return ConVarAsBool(GetConsoleVariable(input));
 }
 
 const char* ConVarAsString(ConsoleVariable *variable)
@@ -421,7 +421,7 @@ const char* ConVarAsString(ConsoleVariable *variable)
 
 const char* GetConVarAsString(const char input[])
 {
-	return ConVarAsString(getConsoleVariable(input));
+	return ConVarAsString(GetConsoleVariable(input));
 }
 
 const char* ConVarValueToString(ConsoleVariable *variable, char result[32])
@@ -529,7 +529,7 @@ void executeCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	}
 	
 
-	ConsoleVariable *variable = getConsoleVariable(commandName);
+	ConsoleVariable *variable = GetConsoleVariable(commandName);
 
 	if (variable == NULL)
 	{
@@ -541,7 +541,7 @@ void executeCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	getNextConsoleArg(input, arg);
 	if (arg[0] > 32)
 	{
-		setConsoleVariable(variable, arg);
+		SetConsoleVariable(variable, arg);
 	}
 	else if ((variable->flags & CONFLAG_PROTECTED) == 0)
 	{
@@ -2000,7 +2000,7 @@ FuncResult ConsoleCommand_Help(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 			return LEMON_SUCCESS;
 		}
 
-		ConsoleVariable *variable = getConsoleVariable(arg);
+		ConsoleVariable *variable = GetConsoleVariable(arg);
 		if (variable != NULL)
 		{
 			putConsole("%s - %s", variable->name, variable->helpString);

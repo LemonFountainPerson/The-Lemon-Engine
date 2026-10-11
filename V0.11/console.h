@@ -4,15 +4,15 @@ void updateConsole(SDL_Window *window, World *GameWorld);
 
 ConsoleCommand* getConsoleCommand(const char name[]);
 
-ConsoleVariable* getConsoleVariable(const char name[]);
+ConsoleVariable* GetConsoleVariable(const char name[]);
 
 ConsoleVariable* NewConsoleVariable(const char name[], const char helpString[], ConsoleVariableType valueType, const char value[], ConsoleFlag flags);
 
 int hashConVar(const char name[]);
 
-void setConsoleVariable(ConsoleVariable *variable, const char value[]);
+void SetConsoleVariable(ConsoleVariable *variable, const char value[]);
 
-void setConVarNamed(const char *name, const char *value);
+void SetConVarNamed(const char *name, const char *value);
 
 int ConVarAsInt(ConsoleVariable *variable);
 

@@ -6,7 +6,7 @@ Defined in [Console.h](../V0.11/console.h).
 
 ## Syntax
 ```
-void setConsoleVariable(ConsoleVariable *variable, const char value[])
+void SetConsoleVariable(ConsoleVariable *variable, const char value[])
 ```
 
 ## Description
@@ -20,7 +20,7 @@ type.)
 
 |                  Type                          |    Name     |      Description      |
 | ---------------------------------------------- | ----------- | --------------------- |
-| [ConsoleVariable](Data_ConsoleVariable.md) * | **variable** | The name of the variable to modify. The input will be forced to lowercase. |
+| [ConsoleVariable](Data_ConsoleVariable.md) * | **variable** | A pointer to the variable to modify. The input will be forced to lowercase. |
 | const char[] | **value** | This is the value to set the variable to, written as a string. |
 
 ## Version
