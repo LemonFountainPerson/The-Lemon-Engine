@@ -344,7 +344,7 @@ int loadSaveData(const char *fileName, World *GameWorld)
 				removeChar(readPhrase, ':', MAX_LEN);
 				getNextArg(fPtr, conValue, CONVAR_VALUE_LEN);
 
-				setConVarNamed(readPhrase, conValue);
+				SetConVarNamed(readPhrase, conValue);
 
 				getNextArg(fPtr, readPhrase, MAX_LEN);
 			}

@@ -89,8 +89,8 @@ bool openServer(const char ip[], Uint16 portNumber, World *GameWorld)
 	Networking.privateKey = 0; // rand64();
 	Networking.publicKey = rand64();
 
-	setConVarNamed("net_password", "");
-	setConVarNamed("cheats", "false");
+	SetConVarNamed("net_password", "");
+	SetConVarNamed("cheats", "false");
 
 	return true;
 }
@@ -161,7 +161,7 @@ bool connect(const char ip[], Uint16 portNumber)
 		return false;
 	}
 
-	setConVarNamed("net_password", "");
+	SetConVarNamed("net_password", "");
 	Networking.connectMode = CLIENT;
 	Networking.connectionStatus = CONNECT_STATE_RESOLVING_ADDRESS;
 	Networking.serverPort = portNumber;
@@ -644,7 +644,7 @@ void sendServerPassword(const char password[])
 
 	if (Networking.myClient == NULL)
 	{
-		setConVarNamed("net_password", password);
+		SetConVarNamed("net_password", password);
 		return;
 	}
 
