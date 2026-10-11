@@ -350,7 +350,7 @@ int UpdateUIElement(World *GameWorld, Object *UIElement)
 			{
 				UIElement->Action = 1;
 				startTimer(0.5, UIElement, GameWorld);
-				switchLevel(UIElement->arg2, GameWorld);
+				SwitchLevel(UIElement->arg2, GameWorld);
 			}
 		}
 		else if (timerExpired(UIElement, GameWorld))

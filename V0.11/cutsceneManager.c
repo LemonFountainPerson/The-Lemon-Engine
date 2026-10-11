@@ -47,8 +47,8 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 		SayText("A test cutscene, huh?", NO_PORTRAIT, BASIC_TEXT, GameWorld);
 	
 		SayTextOption("Play new cutscene?", NO_PORTRAIT, BASIC_TEXT, GameWorld, 3, 
-					"Test scene", 	playCutscene(TEST_SCENE, GameWorld), 
-					"Test scene 2", playCutscene(TEST_SCENE_2, GameWorld),
+					"Test scene", 	PlayCutscene(TEST_SCENE, GameWorld), 
+					"Test scene 2", PlayCutscene(TEST_SCENE_2, GameWorld),
 					"No", NO_ACTION);
 		break;
 
@@ -62,8 +62,8 @@ int initialiseCutscene(CutsceneID inputID, World *GameWorld)
 		SayText("Wait a second..... \nyou've been here before.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
 		SayTextOption("Do you remember the thing about the cherries?", NO_PORTRAIT, BASIC_TEXT, GameWorld, 3, 
 				"No", 	NO_ACTION, 
-				"Yes, they're ugly", playCutscene(TEST_SCENE_2_WRONG, GameWorld),
-				"Yes, they're small tomatoes", playCutscene(TEST_SCENE_2_CORRECT, GameWorld));
+				"Yes, they're ugly", PlayCutscene(TEST_SCENE_2_WRONG, GameWorld),
+				"Yes, they're small tomatoes", PlayCutscene(TEST_SCENE_2_CORRECT, GameWorld));
 		SayText("Oh... ok nevermind then.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
 		break;
 
@@ -309,7 +309,7 @@ FuncResult RunSceneAction(World *GameWorld)
 
 	case SCENE_SWITCH_CUTSCENE:
 		{
-			playCutscene(data->SceneID, GameWorld);
+			PlayCutscene(data->SceneID, GameWorld);
 			return ACTION_DISABLED;
 		} break;
 

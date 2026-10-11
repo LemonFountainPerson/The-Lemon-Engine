@@ -62,7 +62,7 @@ LVFLAG:	PLAYERPOSITION, 3500, 300
 
 LVFLAG:	CutsceneTrigger,	1800, 300, 128, 1280, 9
 
-LVFLAG: AddGameFlag "flag1" 0
+LVFLAG: SetGameFlag "flag1" 0
 IFVARIABLE: "flag1" < 2 
 { 
 	REPEAT: times = 20, XOffset = 64, times=8, YOffset=64, 

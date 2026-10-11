@@ -16,7 +16,7 @@ typedef enum FunctionResult
 	END_OF_FILE = 5
 } FuncResult;
 
-typedef enum LemonKeys 
+typedef enum LemonKey
 {
 	// 0 - 31 are control charcacters and should not be used
 	// 32 - 127 are reserved for ASCII keys
@@ -74,7 +74,7 @@ typedef enum LemonKeys
 	GAMEPAD_RIGHT_STICK,
 
 	INPUT_COUNT
-} LemonKeys;
+} LemonKey;
 
 typedef enum ButtonState
 {
@@ -1365,14 +1365,6 @@ typedef struct ConsoleVariableList
 	int indices[MAX_CONSOLE_VARIABLES];
 } ConsoleVariableList;
 
-typedef struct MessageHistory
-{
-	int head;
-	int searchIndex;
-	Uint64 inputCount;
-	char inputs[INPUT_HISTORY_LEN][MESSAGE_LENGTH];
-} MessageHistory;
-
 typedef struct ChatMessage
 {
 	Uint64 tickSent;
@@ -1380,12 +1372,18 @@ typedef struct ChatMessage
 	char message[MESSAGE_LENGTH];
 } ChatMessage;
 
-typedef struct ChatLog
+typedef struct MessageLog
 {
-	ChatMessage Log[CHAT_LOG_COUNT];
-	int current;
-	Uint64 chatCount;
-} ChatLog;
+	int nextAvailable;
+	int select;
+
+	int scrollVal;
+	int displayLines;
+
+	int logCount;
+	ChatMessage Log[MESSAGE_LOG_COUNT];
+} MessageLog;
+
 
 typedef struct World
 {
@@ -1416,16 +1414,6 @@ typedef struct World
 	float GlobalGravityX;
 } World;
 
-
-/*
-	required data to be sent across networking
-
-	- Game Events (Triggering level transitions, cutscenes, sounds, etc.)
-	- Chat messages (part of game event system or separate?)
-	- State of specifically tracked objects (probably can't be game events, modular components to only signify changed data points?)
-
-
-*/
 
 typedef enum PacketType
 {
@@ -1500,8 +1488,9 @@ typedef struct DisconnectData
 typedef struct ServerSetup
 {
 	char setupString[MAX_LEN];
-	bool passwordRequired;
 	int assignedClientID;
+	bool passwordRequired;
+	Uint64 publicKey;
 
 	int trackedObjectCapacity;
 	int tickRate;
@@ -1740,16 +1729,15 @@ typedef struct DebugConfig
 	Text ConsoleText[2];
 	bool consoleOpen;
 	ConsoleTextSetting ConsoleTextEnabled;
-	MessageHistory consoleHistory;
+	MessageLog consoleHistory;
 	float consoleXPos;
 	float consoleYPos;
-	int scrollVal;
 	bool consoleFocus;
 
 	ConsoleCommand commands[MAX_CONSOLE_COMMANDS];
 	ConsoleVariableList variableList;
 
-	MessageHistory userInputHistory;
+	MessageLog userInputHistory;
 	int argIndex;
 
 	int PauseEngine;
@@ -1791,7 +1779,7 @@ EXPORT extern ButtonState Buttons[INPUT_COUNT];
 
 EXPORT extern GameFlag GameFlags[GAME_FLAG_COUNT];
 
-EXPORT extern ChatLog Chat;
+EXPORT extern MessageLog Chat;
 
 EXPORT extern NetworkData Networking;
 

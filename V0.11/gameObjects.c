@@ -2261,7 +2261,9 @@ int UpdateCoin(Object *coin, World *GameWorld)
 		snprintf(text, 30, "Coin Count: %d", Player->coinCount);
 		updateTextWithName("CoinCounter", text, GameWorld);
 
-		AddParticle(GameWorld, SPARKLE, coinBox->xPos + PickRandomFloatBetween(-20, 20), coinBox->yPos + PickRandomFloatBetween(-20, 20), 1, 0);
+		float xPos = coinBox->xPos + (coinBox->xSize / 2.0) + PickRandomFloatBetween(-20, 20);
+		float yPos = coinBox->yPos + (coinBox->ySize / 2.0) + PickRandomFloatBetween(-20, 20);
+		AddParticle(GameWorld, SPARKLE, xPos, yPos, 1, 0);
 		MarkObjectForDeletion(coin);
 		PlaySound("Objects/Coin_Collect", 0.75, OBJECT_SFX);
 	}
@@ -2855,7 +2857,7 @@ int UpdateDoor(Object *Door, World *GameWorld)
 			SayTextOption("Enter the Door?", "Test_Face", BASIC_FLIP, GameWorld, 3, 
 				"Yes", Event_TeleportPlayerToExitDoor(Door->Parent, GameWorld), 
 				"No", NO_ACTION,
-				"hm... lemme think about it", playCutscene(TEST_SCENE_2, GameWorld));
+				"hm... lemme think about it", PlayCutscene(TEST_SCENE_2, GameWorld));
 		}
 
 		GoTo(player, savedXPos, savedYPos);
@@ -2903,7 +2905,7 @@ int UpdateLevelDoor(Object *Door, World *GameWorld)
 		SayText("It's a door... \nIt eminates a strange glow.", NO_PORTRAIT, BASIC_TEXT, GameWorld);
 		char phrase[MAX_TEXT_LENGTH] = {0};
 		snprintf(phrase, MAX_TEXT_LENGTH, "This Door will send you to level %d!", Door->arg1);
-		SayTextAndTriggerEvent(phrase, NO_PORTRAIT, BASIC_TEXT, GameWorld, switchLevel(Door->arg1, GameWorld));
+		SayTextAndTriggerEvent(phrase, NO_PORTRAIT, BASIC_TEXT, GameWorld, SwitchLevel(Door->arg1, GameWorld));
 	}
 
 	if (Door->arg4 != 0 && GameWorld->SceneActionQueue == NULL)

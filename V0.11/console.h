@@ -10,9 +10,9 @@ ConsoleVariable* NewConsoleVariable(const char name[], const char helpString[], 
 
 int hashConVar(const char name[]);
 
-void setConsoleVariable(ConsoleVariable *variable, const char value[], World *GameWorld);
+void setConsoleVariable(ConsoleVariable *variable, const char value[]);
 
-void setConVarNamed(const char *name, const char *value, World *GameWorld);
+void setConVarNamed(const char *name, const char *value);
 
 int ConVarAsInt(ConsoleVariable *variable);
 
@@ -65,6 +65,8 @@ FuncResult ConsoleCommand_Version(char input[USER_INPUT_MAX_LEN], World *GameWor
 FuncResult ConsoleCommand_Quit(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 FuncResult ConsoleCommand_Restart(char input[USER_INPUT_MAX_LEN], World *GameWorld);
+
+FuncResult ConsoleCommand_Clear(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 FuncResult ConsoleCommand_Tick(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
@@ -163,6 +165,6 @@ FuncResult ConsoleCommand_DoABarrelRoll(char input[USER_INPUT_MAX_LEN], World *G
 FuncResult ConsoleCommand_Noclip(char input[USER_INPUT_MAX_LEN], World *GameWorld);
 
 
-void updateConsoleHistoryText(void);
+void updateMessageLogText(Text *renderText, int maxHeight);
 
 void renderConsole(World *GameWorld, SDL_Renderer *Screen);

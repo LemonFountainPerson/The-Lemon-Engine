@@ -344,14 +344,14 @@ int loadSaveData(const char *fileName, World *GameWorld)
 				removeChar(readPhrase, ':', MAX_LEN);
 				getNextArg(fPtr, conValue, CONVAR_VALUE_LEN);
 
-				setConVarNamed(readPhrase, conValue, GameWorld);
+				setConVarNamed(readPhrase, conValue);
 
 				getNextArg(fPtr, readPhrase, MAX_LEN);
 			}
 		}
 		else if (!strcmp(readPhrase, "LEVEL:"))
 		{
-			switchLevel(getNextArgInt(fPtr), GameWorld);
+			SwitchLevel(getNextArgInt(fPtr), GameWorld);
 		}	
 		else if (!strcmp(readPhrase, "HITBOXTHICKNESS:"))
 		{
@@ -1477,12 +1477,12 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 		if (hasNextArgNumber(fPtr))
 		{
 			int sceneID = getNextArgInt(fPtr);
-			playCutscene(sceneID, GameWorld);
+			PlayCutscene(sceneID, GameWorld);
 		}
 		else
 		{
 			getNextArg(fPtr, buffer, MAX_LEN);
-			playCutsceneFromFile(buffer, GameWorld);
+			PlayCutsceneFromFile(buffer, GameWorld);
 		}
 	}
 	else if (strcmp(buffer, "cutscenetrigger") == 0)
@@ -1712,20 +1712,6 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		AddObject(GameWorld, LEVEL_FLAG_OBJ, xPos, yPos, FALSE_CAMERA_BOUNDARY, xSize, ySize, 0);
 	}
-	else if (strcmp(buffer, "addgameflag") == 0)
-	{
-		char name[MAX_LEN] = {0};
-		getNextArg(fPtr, name, MAX_LEN);
-
-		int startVal = getNextArgInt(fPtr);
-
-		if (getGameFlag(name) >= 0)
-		{
-			return LEMON_SUCCESS;
-		}
-
-		addGameFlag(name, startVal);
-	}
 	else if (strcmp(buffer, "setgameflag") == 0)
 	{
 		char name[MAX_LEN] = {0};
@@ -1733,7 +1719,14 @@ int loadLevelFlag(World *GameWorld, FILE *fPtr)
 
 		int val = getNextArgInt(fPtr);
 
-		setGameFlag(name, val);
+		if (getGameFlag(name) < 0)
+		{
+			addGameFlag(name, val);
+		}
+		else
+		{
+			setGameFlag(name, val);
+		}
 	}
 	else if (strcmp(buffer, "incrementgameflag") == 0 || strcmp(buffer, "incgameflag") == 0)	
 	{

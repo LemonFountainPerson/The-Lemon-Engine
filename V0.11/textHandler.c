@@ -174,13 +174,13 @@ void SetCursorPos(void)
 
 		TTF_GetStringSizeWrapped(font, TextSettings.userInputString, TextSettings.userInputIndex, wrapWidth, &width, &height);
 
-		int lineSkip = TTF_GetFontLineSkip(font);
+		int lineHeight = TTF_GetFontHeight(font);
 
 		TTF_SubString lastLine = {0};
-		TTF_GetTextSubStringForLine(typingText->text, (height / lineSkip) - 1, &lastLine);
+		TTF_GetTextSubStringForLine(typingText->text, (height / lineHeight) - 1, &lastLine);
 
 		TTF_GetStringSize(font, TextSettings.userInputString + lastLine.offset, TextSettings.userInputIndex - lastLine.offset, &width, NULL);
-		TextSettings.cursorYPos = (float)(height - lineSkip);
+		TextSettings.cursorYPos = (float)(height - lineHeight);
 	}
 	else
 	{
@@ -1275,7 +1275,7 @@ void attachTextWithNameToObject(const char name[], Object *input, World *GameWor
 	return;
 }
 
-void moveText(Text *input, float xPos, float yPos)
+void MoveText(Text *input, float xPos, float yPos)
 {
 	if (input == NULL)
 	{
@@ -1284,14 +1284,16 @@ void moveText(Text *input, float xPos, float yPos)
 
 	if (input->text != NULL)
 	{
+		int height = 0;
+		TTF_GetTextSize(input->text, NULL, &height);
 		input->xPos = xPos;
-		input->yPos = yPos;
+		input->yPos = yPos + height;
 	}
 
 	return;
 }
 
-void moveTextWithName(const char name[], float xPos, float yPos, World *GameWorld)
+void MoveTextWithName(const char name[], float xPos, float yPos, World *GameWorld)
 {
 	Text *found = getTextWithName(name, GameWorld);
 

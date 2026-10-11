@@ -1,10 +1,19 @@
 #include "LemonEngine.h"
 
+static const float consoleWidth = 1024.0;
+static const float consoleHeight = 650.0;
+static const float insideSpacing = 8.0;
+static const int consoleLinesDisplayed = 26;
+static const float inputFieldHeight = 28.0;
+//static const int consoleTextWidth =  (int)(consoleWidth - (2.0 * insideSpacing));
+
 
 void InitialiseConsole(void)
 {
 	InitialiseConsoleVariables(&DebugSettings.variableList);
     createConsoleCommands(DebugSettings.commands);
+    InitialiseMessageLog(&DebugSettings.consoleHistory, consoleLinesDisplayed);
+    InitialiseMessageLog(&DebugSettings.userInputHistory, 1);
 
     // technically unnecessary, as DebugSettings is initialised to 0s but just in case
     DebugSettings.ConsoleText[0].text = NULL;
@@ -12,11 +21,6 @@ void InitialiseConsole(void)
 
     return;
 }
-
-static const float consoleWidth = 1024.0;
-static const float consoleHeight = 650.0;
-static const float insideSpacing = 8.0;
-static const int consoleTextWidth =  (int)(consoleWidth - (2.0 * insideSpacing));
 
 void updateConsole(SDL_Window *window, World *GameWorld)
 {
@@ -27,22 +31,16 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 		{
 			AcknowledgeButton(LMN_CONSOLE_OPEN);
 
-			DebugSettings.consoleXPos = -(consoleWidth / 2.0);
-			DebugSettings.consoleYPos = (ScreenData.screenHeight >> 1) - consoleHeight;
-
-			float inputXPos = DebugSettings.consoleXPos + insideSpacing;
-			float inputYPos = DebugSettings.consoleYPos;
-
 			Text *conHistory = &DebugSettings.ConsoleText[1];
 			Text *conText = &DebugSettings.ConsoleText[0];
-			InitialiseDebugText(conText, "", inputXPos, inputYPos, consoleTextWidth, DTFORMAT_SCREEN_RELATIVE);
-			InitialiseDebugText(conHistory, "", inputXPos, inputYPos, consoleTextWidth, DTFORMAT_JUSTIFY_TOP);
-			updateConsoleHistoryText();
+			InitialiseDebugText(conText, "", 0.0, 0.0, 0, DTFORMAT_SCREEN_RELATIVE);
+			InitialiseDebugText(conHistory, "", 0.0, 0.0, 0, DTFORMAT_SCREEN_RELATIVE);
     
 			DebugSettings.consoleOpen = true;
 			DebugSettings.consoleFocus = false;
-			DebugSettings.scrollVal = 0;
 			StartTyping(window, conText);
+
+			DrawMessageLogToText(&DebugSettings.consoleHistory, conHistory);
 		}
 
 		return;
@@ -61,20 +59,20 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 		return;
 	}
 
-	if (TextSettings.Typing == false)
+	if (TextSettings.Typing == false && TextSettings.userInputString[0] != '\0')
 	{
 		putConsole("> %s", TextSettings.userInputString);
 
-		int prevIndex = modulo(DebugSettings.userInputHistory.head - 1, INPUT_HISTORY_LEN);
-		if (strcmp(TextSettings.userInputString, DebugSettings.userInputHistory.inputs[prevIndex]))
+		char *latest = GetLatestMessageFromLog(&DebugSettings.userInputHistory);
+		if (strcmp(TextSettings.userInputString, latest))
 		{
-			addMessageHistory(TextSettings.userInputString, &DebugSettings.userInputHistory);
+			AddMessageToLog(TextSettings.userInputString, LOCAL_CLIENT_ID, &DebugSettings.userInputHistory);
 		}
-		DebugSettings.userInputHistory.searchIndex = DebugSettings.userInputHistory.head;
-		DebugSettings.scrollVal = 0;
 		
 		consoleInput(TextSettings.userInputString, GameWorld);
 		StartTyping(window, &DebugSettings.ConsoleText[0]);
+
+		DrawMessageLogToText(&DebugSettings.consoleHistory, &DebugSettings.ConsoleText[1]);
 
 		return;
 	}
@@ -97,12 +95,12 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 	{
 		if (DebugSettings.consoleFocus || GamePadInput.rightStickY > 0.9)
 		{
-			DebugSettings.scrollVal = clamp(DebugSettings.scrollVal + 1, 0, INPUT_HISTORY_LEN);
+			ScrollUpMessageLog(&DebugSettings.consoleHistory);
 		}
 		else
 		{
-			char *next = getNextMessageHistory(&DebugSettings.userInputHistory);
-
+			char *next = SelectNextMessageLog(&DebugSettings.userInputHistory);
+			
 			if (next != NULL && next[0] != '\0')
 			{
 				strcpy(TextSettings.userInputString, next);
@@ -116,17 +114,19 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 				}
 			}
 		}
+
+		DrawMessageLogToText(&DebugSettings.consoleHistory, &DebugSettings.ConsoleText[1]);
 	}
 
 	if (ButtonPressed(LMN_DOWNARROW) || MouseInput.wheelYDir < 0 || GamePadInput.rightStickY < -0.9)
 	{
 		if (DebugSettings.consoleFocus || GamePadInput.rightStickY < -0.9)
 		{
-			DebugSettings.scrollVal = clamp(DebugSettings.scrollVal - 1, 0, INPUT_HISTORY_LEN);
+			ScrollDownMessageLog(&DebugSettings.consoleHistory);
 		}
 		else
 		{
-			char *prev = getPreviousMessageHistory(&DebugSettings.userInputHistory);
+			char *prev = SelectPreviousMessageLog(&DebugSettings.userInputHistory);
 
 			if (prev != NULL && prev[0] != '\0')
 			{
@@ -141,6 +141,8 @@ void updateConsole(SDL_Window *window, World *GameWorld)
 				}
 			}
 		}
+
+		DrawMessageLogToText(&DebugSettings.consoleHistory, &DebugSettings.ConsoleText[1]);
 	}
 
 
@@ -225,8 +227,6 @@ ConsoleVariable* getUnusedConVar(int hashIndex)
 	{
 		if (varList[hashIndex].name[0] == '\0')
 		{
-			recordVariableOrder(hashIndex);
-
 			return &varList[hashIndex];
 		}
 
@@ -261,14 +261,17 @@ ConsoleVariable* NewConsoleVariable(const char name[], const char helpString[], 
 		return NULL;
 	}
 
+	recordVariableOrder(index);
+
 	LemonStrncpy(variable->name, name, MAX_LEN);
 	stringToLower(variable->name);
 	variable->nameLength = strlen(variable->name);
 	LemonStrncpy(variable->helpString, helpString, CONSOLE_HELP_MAX_LEN);
-	variable->flags = flags;
 	variable->valueType = valueType;
 
-	setConsoleVariable(variable, value, NULL);
+	setConsoleVariable(variable, value);
+
+	variable->flags = flags;
 
 	return variable;
 }
@@ -289,12 +292,11 @@ int hashConVar(const char name[])
 }
 
 
-void setConsoleVariable(ConsoleVariable *variable, const char value[], World *GameWorld)
+void setConsoleVariable(ConsoleVariable *variable, const char value[])
 {
 	// check if command is allowed to run
 	if (variable == NULL || !commandIsAllowed(variable->flags)) 
 	{ 
-		putConsole("Cant update %s", value);
 		return; 
 	}
 
@@ -346,7 +348,7 @@ void setConsoleVariable(ConsoleVariable *variable, const char value[], World *Ga
 	{
 		char msg[MESSAGE_LENGTH] = {0};
 		snprintf(msg, MESSAGE_LENGTH, "'%s' has been set to %s", variable->name, value);
-		Message(msg, LOCAL_CLIENT_ID, GameWorld);	
+		AddMessageToChat(msg, LOCAL_CLIENT_ID, TickNumber());	
 	}
 
 	// sync variable across server
@@ -355,9 +357,9 @@ void setConsoleVariable(ConsoleVariable *variable, const char value[], World *Ga
 	return;
 }
 
-void setConVarNamed(const char *name, const char *value, World *GameWorld)
+void setConVarNamed(const char *name, const char *value)
 {
-	setConsoleVariable(getConsoleVariable(name), value, GameWorld);
+	setConsoleVariable(getConsoleVariable(name), value);
 
 	return;
 }
@@ -539,7 +541,7 @@ void executeCommand(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 	getNextConsoleArg(input, arg);
 	if (arg[0] > 32)
 	{
-		setConsoleVariable(variable, arg, GameWorld);
+		setConsoleVariable(variable, arg);
 	}
 	else if ((variable->flags & CONFLAG_PROTECTED) == 0)
 	{
@@ -781,7 +783,6 @@ void InitialiseConsoleVariables(ConsoleVariableList *list)
 														strcpy(commandList[i].formatString, cFormat);\
 														commandList[i].function = &ConsoleCommand_##cName; i++;
 
-
 void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 {
 	memset(commandList, 0, MAX_CONSOLE_COMMANDS * sizeof(ConsoleCommand));
@@ -795,6 +796,8 @@ void createConsoleCommands(ConsoleCommand commandList[MAX_CONSOLE_COMMANDS])
 	NEWCOMMAND(Quit, "quit the game", "quit", 0);
 
 	NEWCOMMAND(Restart, "restart the game", "restart", 0);
+
+	NEWCOMMAND(Clear, "clear the console", "clear", 0);
 
 	NEWCOMMAND(Tick, "check current tick number", "tick", 0);
 
@@ -926,6 +929,14 @@ FuncResult ConsoleCommand_Quit(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 FuncResult ConsoleCommand_Restart(char input[USER_INPUT_MAX_LEN], World *GameWorld)
 {
 	GameWorld->GameState = RESTART_GAME;
+
+	return LEMON_SUCCESS;
+}
+
+FuncResult ConsoleCommand_Clear(char input[USER_INPUT_MAX_LEN], World *GameWorld)
+{
+	InitialiseMessageLog(&DebugSettings.consoleHistory, consoleLinesDisplayed);
+	DrawMessageLogToText(&DebugSettings.consoleHistory, &DebugSettings.ConsoleText[1]);
 
 	return LEMON_SUCCESS;
 }
@@ -1746,11 +1757,11 @@ FuncResult ConsoleCommand_Cutscene(char input[USER_INPUT_MAX_LEN], World *GameWo
 
 		if (inRange(arg[0], '0', '9'))
 		{
-			playCutscene(atoi(arg), GameWorld);
+			PlayCutscene(atoi(arg), GameWorld);
 		}
 		else
 		{
-			playCutsceneFromFile(arg, GameWorld);
+			PlayCutsceneFromFile(arg, GameWorld);
 		}
 	}
 	else if (strcmp(arg, "stop") == 0)
@@ -2079,51 +2090,28 @@ FuncResult ConsoleCommand_Noclip(char input[USER_INPUT_MAX_LEN], World *GameWorl
 	return LEMON_SUCCESS;
 }
 
-
-void updateConsoleHistoryText(void)
-{
-	Text *consoleHistory = &DebugSettings.ConsoleText[1];
-
-	static const int consoleLinesDisplayed = 32;
-	int firstLineOffset = consoleLinesDisplayed + clamp(DebugSettings.scrollVal, 0, INPUT_HISTORY_LEN - consoleLinesDisplayed);
-	int index = modulo(DebugSettings.consoleHistory.head - firstLineOffset, INPUT_HISTORY_LEN);
-	char all[USER_INPUT_MAX_LEN * INPUT_HISTORY_LEN] = {0};
-
-
-	for (int i = consoleLinesDisplayed; i > 0; i--)
-	{
-		strcat(all, DebugSettings.consoleHistory.inputs[index]);
-		index = (index + 1) % INPUT_HISTORY_LEN;
-
-		if (i > 1)
-		{
-			all[strlen(all)] = '\n';
-		}
-	}
-
- 	updateText(consoleHistory, all);
-
- 	// reposition
- 	int width, height = 0;
-    TTF_GetTextSize(consoleHistory->text, &width, &height);
-
-    consoleHistory->yPos = DebugSettings.consoleYPos + insideSpacing + (float)height;
-
-	return;
-}
-
 void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 {
+	DebugSettings.consoleXPos = -(consoleWidth / 2.0);
+	DebugSettings.consoleYPos = -(consoleHeight / 2.0) - inputFieldHeight + 40;
+
+	// update position
+	Text *conInput = &DebugSettings.ConsoleText[0];
+	Text *conHist = &DebugSettings.ConsoleText[1];
+	conHist->xPos = DebugSettings.consoleXPos + insideSpacing;
+    conHist->yPos = DebugSettings.consoleYPos + consoleHeight - insideSpacing;
+    conInput->xPos = DebugSettings.consoleXPos + insideSpacing;
+    conInput->yPos = DebugSettings.consoleYPos;
+
+
 	float xCorrection = (float)(ScreenData.screenWidth >> 1);
 	float yCorrection = (float)(ScreenData.screenHeight >> 1);
-
-	static const float inputFieldHeight = 28.0;
 
 	SDL_FRect box = {0};
 
 	// render input field
 	box.x = xCorrection + DebugSettings.consoleXPos;
-	box.y = -(DebugSettings.consoleYPos - yCorrection);
+	box.y = yCorrection - DebugSettings.consoleYPos;
 	box.w = consoleWidth;
 	box.h = inputFieldHeight;
 
@@ -2143,21 +2131,6 @@ void renderConsole(World *GameWorld, SDL_Renderer *Screen)
 	box.y -= consoleHeight;
 	SDL_SetRenderDrawColor(Screen, 0x1C, 0x19, 0x19, 0xBB);
 	SDL_RenderFillRect(Screen, &box);
-
-
-	// update text history
-	static Uint64 lastUpdated = 0;
-	static int lastScrollVal = 0;
-	if (lastUpdated == DebugSettings.consoleHistory.inputCount && lastScrollVal == DebugSettings.scrollVal)
-	{
-		return;
-	}
-
-	lastUpdated = DebugSettings.consoleHistory.inputCount;
-	lastScrollVal = DebugSettings.scrollVal;
-
-	updateConsoleHistoryText();
-
 
 	return;
 }

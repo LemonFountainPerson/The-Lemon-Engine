@@ -1533,6 +1533,11 @@ void RenderText(Text *input, TextList *list, Camera inputCamera, SDL_Renderer *S
 			correctedY -= yPos * ((float)ScreenData.screenHeight / (float)ScreenData.HUDHeight);
 
 			input->CameraRelative = false;
+
+			if (RenderSettings.drawHUD == 0)
+			{
+				return;
+			}
 		}
 		else
 		{
@@ -1550,11 +1555,7 @@ void RenderText(Text *input, TextList *list, Camera inputCamera, SDL_Renderer *S
 		SDL_SetRenderScale(Screen, inputCamera.zoomX, inputCamera.zoomY);
 		SDL_SetRenderLogicalPresentation(Screen, inputCamera.width, inputCamera.height, SDL_LOGICAL_PRESENTATION_STRETCH);
 	}
-	else if (RenderSettings.drawHUD == 0)
-	{
-		return;
-	}
-	
+
 	TTF_DrawRendererText(input->text, correctedX, correctedY);
 
 	// cursor

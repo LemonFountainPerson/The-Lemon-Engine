@@ -74,16 +74,26 @@ EXPORT void putConsoleTS(const char input[], ...);
 
 EXPORT void putConsoleError(const char input[], ...);
 
-EXPORT void addMessageHistory(const char input[], MessageHistory *history);
 
-EXPORT char* getPreviousMessageHistory(MessageHistory *history);
+EXPORT void InitialiseMessageLog(MessageLog *input, int linesToDisplay);
 
-EXPORT char* getNextMessageHistory(MessageHistory *history);
+EXPORT ChatMessage* AddMessageToLog(const char msg[], int ID, MessageLog *history);
 
+EXPORT void SetMessageTickSent(ChatMessage *input, Uint64 tickSent);
 
-EXPORT void InitialiseChatLog(ChatLog *chat);
+EXPORT void ScrollUpMessageLog(MessageLog *history);
 
-EXPORT void addMessageToChatLog(const char msg[], int ID, Uint64 tickSent);
+EXPORT void ScrollDownMessageLog(MessageLog *history);
+
+EXPORT char* SelectNextMessageLog(MessageLog *history);
+
+EXPORT char* SelectPreviousMessageLog(MessageLog *history);
+
+EXPORT char* GetLatestMessageFromLog(MessageLog *history);
+
+EXPORT void DrawMessageLogToText(MessageLog *log, Text *renderText);
+
+EXPORT void AddMessageToChat(const char msg[], int ID, Uint64 tickSent);
 
 
 EXPORT int ResetCamera(Camera *inputCam);
@@ -92,26 +102,26 @@ int SetCameraToHUD(Camera *inputCam);
 
 EXPORT int setCameraPos(Camera *input, float xPos, float yPos);
 
-EXPORT void SetEngineSettingsToDefault(void);
+void InitialiseEngineSettings(void);
 
-EXPORT void SetRenderSettingsToDefault(void);
+void InitialiseRenderSettings(void);
 
-EXPORT void SetTextSettingsToDefault(void);
+void InitialiseTextSettings(void);
 
-EXPORT void SetDebugSettingsToDefault(void);
+void InitialiseDebugSettings(void);
 
 
 EXPORT int getKeyboardInput(SDL_KeyboardEvent *key);
 
 EXPORT void updateCustomKeys(void);
 
-EXPORT bool ButtonPressed(int key);
+EXPORT bool ButtonPressed(LemonKey key);
 
-EXPORT bool KeyPressed(int key);
+EXPORT bool KeyPressed(LemonKey key);
 
-EXPORT bool ButtonHeld(int key);
+EXPORT bool ButtonHeld(LemonKey key);
 
-EXPORT bool KeyHeld(int key);
+EXPORT bool KeyHeld(LemonKey key);
 
 EXPORT void ClearInput(void);
 
@@ -136,7 +146,9 @@ EXPORT void AcknowledgeHeldButtons(void);
 
 EXPORT void AcknowledgeMouse(void);
 
-EXPORT void AcknowledgeButton(LemonKeys Key);
+EXPORT void AcknowledgeGamePad(void);
+
+EXPORT void AcknowledgeButton(LemonKey Key);
 
 
 EXPORT int setTickRate(int desiredTickRate);
@@ -188,6 +200,12 @@ EXPORT int LemonStrncpy(char dest[], const char source[], int capacity);
 EXPORT void removeChar(char string[], char remove, int capacity);
 
 EXPORT bool StringsEqual(const char *first, const char *second);
+
+EXPORT int StringLineCount(const char *input, int capacity);
+
+EXPORT void CopyStringLines(const char *source, char *dest, int lineCount, int capacity);
+
+EXPORT void CopyStringLinesFromEnd(const char *source, char *dest, int lineCount, int capacity);
 
 EXPORT int copyStringUntil(const char source[], char dest[], char stopPoint, int capacity);
 

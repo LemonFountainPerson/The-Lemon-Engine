@@ -14,7 +14,7 @@ GamePadData GamePadInput = {0};
 
 GameFlag GameFlags[GAME_FLAG_COUNT] = {0};
 
-ChatLog Chat;
+MessageLog Chat;
 
 NetworkData Networking;
 
@@ -120,7 +120,11 @@ int RunLemonEngine(void)
 
 int StartUpLemonEngine(void)
 {
-	putConsole("\nStarting up...\n");
+	InitialiseConsole();
+    InitialiseMessageLog(&Chat, 20);
+    InitialiseNetworkData();
+
+	putConsole("\nStarting up...\nWOW!\nOK stop pls");
 
 	// Check for resource data access
 	FuncResult result = CheckResourceData();
@@ -178,23 +182,17 @@ int StartUpLemonEngine(void)
 		return LEMON_ERROR;
 	}
 
-	// initialise data not attached to GameWorld
-    InitialiseConsole();
-    InitialiseChatLog(&Chat);
-    InitialiseNetworkData();
-    SetEngineSettingsToDefault();
-	SetRenderSettingsToDefault();
-	SetTextSettingsToDefault();
-	SetDebugSettingsToDefault();
+	// initialise global data
+	InitialiseEngineSettings();
+	InitialiseRenderSettings();
+	InitialiseTextSettings();
+	InitialiseDebugSettings();
 
 	GamePadInput.gamepad = NULL;
     ClearInput();
-	 
-	memset(&DebugSettings.DebugFont, 0, sizeof(Font));
-    DebugSettings.DebugFont.font = TTF_OpenFont(DEBUG_FONT, DebugSettings.DebugTextPointSize);
-    DebugSettings.DebugFont.deleteWhenUnused = false;
-    InitialiseTextList(&DebugSettings.DebugTextList);
 
+    srand(time(NULL));
+	
     SetWindowIcon("MissingIcon");							// Initial window icon
 
 	putConsole("Engine initialised!\n");
@@ -1299,9 +1297,13 @@ int getKeyboardInput(SDL_KeyboardEvent *key)
 
 void keyPressedWhen(int key, bool keyMap)
 {
-	if (Buttons[key] == 0 || keyMap == 0)
+	if (keyMap == false)
 	{
-		Buttons[key] = keyMap;
+		Buttons[key] = BUTTON_RELEASED;
+	}
+	else if (Buttons[key] == 0)
+	{
+		Buttons[key] = BUTTON_PRESSED;
 	}
 
 	return;
@@ -1372,6 +1374,7 @@ void AcknowledgeHeldButtons(void)
 	// Mouse buttons will be 1 when they are first clicked, then set to 2 automatically here 
 	// (MouseInput.LeftButton != 0 => Mouse held down)  (MouseInput.LeftButton == 1 => Mouse just clicked)
 	AcknowledgeMouse();
+	AcknowledgeGamePad();
 
 	return;
 }
@@ -1392,57 +1395,134 @@ void AcknowledgeMouse(void)
 	return;
 }
 
-void AcknowledgeButton(LemonKeys Key)
+void AcknowledgeGamePad(void)
+{
+	if (GamePadInput.gamepad == NULL)
+	{
+		return;
+	}
+
+	AcknowledgeButton(GAMEPAD_WEST);
+	AcknowledgeButton(GAMEPAD_EAST);
+	AcknowledgeButton(GAMEPAD_NORTH);
+	AcknowledgeButton(GAMEPAD_SOUTH);
+	AcknowledgeButton(GAMEPAD_DPAD_LEFT);
+	AcknowledgeButton(GAMEPAD_DPAD_RIGHT);
+	AcknowledgeButton(GAMEPAD_DPAD_UP);
+	AcknowledgeButton(GAMEPAD_DPAD_DOWN);
+	AcknowledgeButton(GAMEPAD_START);
+	AcknowledgeButton(GAMEPAD_BACK);
+	AcknowledgeButton(GAMEPAD_GUIDE);
+	AcknowledgeButton(GAMEPAD_LEFT_SHOULDER);
+	AcknowledgeButton(GAMEPAD_RIGHT_SHOULDER);
+	AcknowledgeButton(GAMEPAD_LEFT_STICK);
+	AcknowledgeButton(GAMEPAD_RIGHT_STICK);
+	GamePadInput.leftStickX = 0.0;
+	GamePadInput.leftStickY = 0.0;
+	GamePadInput.rightStickX = 0.0;
+	GamePadInput.rightStickY = 0.0;
+	GamePadInput.leftTrigger = 0.0;
+	GamePadInput.leftTrigger = 0.0;
+
+	return;
+}
+
+void AcknowledgeButton(LemonKey Key)
 {
 	if (Key >= INPUT_COUNT || Key < 0)
 	{
 		return;
 	}
 
+	if (Buttons[Key] == 1)
+	{
+		Buttons[Key] = 2;
+	}
+
 	switch (Key)
 	{
 		case MOUSE_LEFT:
-			if (MouseInput.LeftButton == 1)
-			{
-				MouseInput.LeftButton = 2;
-			}
+			MouseInput.LeftButton = Buttons[Key];
 			break;
 
 		case MOUSE_RIGHT:
-			if (MouseInput.RightButton == 1)
-			{
-				MouseInput.RightButton = 2;
-			}
+			MouseInput.RightButton = Buttons[Key];
 			break;
 
 		case MOUSE_MIDDLE:
-			if (MouseInput.MiddleButton == 1)
-			{
-				MouseInput.MiddleButton = 2;
-			}
+			MouseInput.MiddleButton = Buttons[Key];
 			break; 
 
 		case MOUSE_SIDE1:
-			if (MouseInput.SideButton1 == 1)
-			{
-				MouseInput.SideButton1 = 2;
-			}
+			MouseInput.SideButton1 = Buttons[Key];
 			break;
 
 		case MOUSE_SIDE2:
-			if (MouseInput.SideButton2 == 1)
-			{
-				MouseInput.SideButton2 = 2;
-			}
+			MouseInput.SideButton2 = Buttons[Key];
+			break;
+
+		case GAMEPAD_WEST:
+			GamePadInput.westButton = Buttons[Key];
+			break;
+
+		case GAMEPAD_EAST:
+			GamePadInput.eastButton = Buttons[Key];
+			break;
+
+		case GAMEPAD_NORTH:
+			GamePadInput.northButton = Buttons[Key];
+			break;
+
+		case GAMEPAD_SOUTH:
+			GamePadInput.southButton = Buttons[Key];
+			break;
+
+		case GAMEPAD_DPAD_UP:
+			GamePadInput.dPadUp = Buttons[Key];
+			break;
+
+		case GAMEPAD_DPAD_DOWN:
+			GamePadInput.dPadDown = Buttons[Key];
+			break;
+
+		case GAMEPAD_DPAD_LEFT:
+			GamePadInput.dPadLeft = Buttons[Key];
+			break;
+
+		case GAMEPAD_DPAD_RIGHT:
+			GamePadInput.dPadRight = Buttons[Key];
+			break;
+
+		case GAMEPAD_START:
+			GamePadInput.start = Buttons[Key];
+			break;
+
+		case GAMEPAD_GUIDE:
+			GamePadInput.guide = Buttons[Key];
+			break;
+
+		case GAMEPAD_BACK:
+			GamePadInput.back = Buttons[Key];
+			break;
+
+		case GAMEPAD_LEFT_SHOULDER:
+			GamePadInput.leftShoulder = Buttons[Key];
+			break;
+
+		case GAMEPAD_RIGHT_SHOULDER:
+			GamePadInput.rightShoulder = Buttons[Key];
+			break;
+
+		case GAMEPAD_LEFT_STICK:
+			GamePadInput.leftStick = Buttons[Key];
+			break;
+
+		case GAMEPAD_RIGHT_STICK:
+			GamePadInput.rightStick = Buttons[Key];
 			break;
 
 		default:
 			break;
-	}
-
-	if (Buttons[Key] == 1)
-	{
-		Buttons[Key] = 2;
 	}
 
 	return;
@@ -1653,7 +1733,7 @@ void updateGamepadAxis(SDL_GamepadAxisEvent *event)
 }
 
 
-bool ButtonPressed(int key)
+bool ButtonPressed(LemonKey key)
 {
 	if (key < 0 || key >= INPUT_COUNT)
 	{
@@ -1663,12 +1743,12 @@ bool ButtonPressed(int key)
 	return (Buttons[key] == BUTTON_PRESSED);
 }
 
-bool KeyPressed(int key)
+bool KeyPressed(LemonKey key)
 {
 	return ButtonPressed(key);
 }
 
-bool ButtonHeld(int key)
+bool ButtonHeld(LemonKey key)
 {
 	if (key < 0 || key >= INPUT_COUNT)
 	{
@@ -1678,7 +1758,7 @@ bool ButtonHeld(int key)
 	return (Buttons[key] > 0);
 }
 
-bool KeyHeld(int key)
+bool KeyHeld(LemonKey key)
 {
 	return ButtonHeld(key);
 }
@@ -1941,11 +2021,11 @@ void putConsole(const char input[], ...)
     vsnprintf(consoleString, MESSAGE_LENGTH, input, argptr);
     va_end(argptr);
 
-    addMessageHistory(consoleString, &DebugSettings.consoleHistory);
+    AddMessageToLog(consoleString, LOCAL_CLIENT_ID, &DebugSettings.consoleHistory);
 
     if (DEBUG_MODE)
     {
-    	printf("%s\n", consoleString);
+    	//printf("%s\n", consoleString);
     }
 
 	return;
@@ -1969,11 +2049,11 @@ void putConsoleTS(const char input[], ...)
     vsnprintf(consoleString, MESSAGE_LENGTH, buffer, argptr);
     va_end(argptr);
 
-    addMessageHistory(consoleString, &DebugSettings.consoleHistory);
+    AddMessageToLog(consoleString, LOCAL_CLIENT_ID, &DebugSettings.consoleHistory);
 
    	if (DEBUG_MODE)
     {
-    	printf("%s\n", consoleString);
+    	//printf("%s\n", consoleString);
     }
 	
 	return;
@@ -1996,83 +2076,232 @@ void putConsoleError(const char input[], ...)
     vsnprintf(consoleString, MESSAGE_LENGTH, errorString, argptr);
     va_end(argptr);
 
-    addMessageHistory(consoleString, &DebugSettings.consoleHistory);
+    AddMessageToLog(consoleString, LOCAL_CLIENT_ID, &DebugSettings.consoleHistory);
 
     if (DEBUG_MODE)
     {
-    	printf("%s\n", consoleString);
+    	//printf("%s\n", consoleString);
     }
 
     return;
 }
 
-void addMessageHistory(const char input[], MessageHistory *history)
+void InitialiseMessageLog(MessageLog *input, int linesToDisplay)
 {
-	int length = strlen(input);
-	if (length >= MESSAGE_LENGTH)
-	{
-		length = MESSAGE_LENGTH - 1;
-	}
-
-	memcpy(history->inputs[history->head], input, length);
-
-	history->inputs[history->head % INPUT_HISTORY_LEN][length] = 0;
-
-	history->head = modulo(history->head + 1, INPUT_HISTORY_LEN);
-	history->searchIndex = history->head;
-	history->inputCount++;
+	input->nextAvailable = 0;
+	input->select = 0;
+	input->logCount = 0;
+	input->scrollVal = 0;
+	input->displayLines = linesToDisplay;
+	memset(input->Log, 0, sizeof(ChatMessage) * MESSAGE_LOG_COUNT);
 
 	return;
 }
 
-char* getPreviousMessageHistory(MessageHistory *history)
+ChatMessage* AddMessageToLog(const char msg[], int ID, MessageLog *history)
 {
-	history->searchIndex = modulo(history->searchIndex - 1, INPUT_HISTORY_LEN);
+	if (msg[0] == '\0')
+	{
+		return NULL;
+	}
+
+	ChatMessage *list = history->Log;
+
+	// just in case 
+	history->nextAvailable = modulo(history->nextAvailable, MESSAGE_LOG_COUNT);
+
+	ChatMessage *msgSlot = &list[history->nextAvailable];
+	LemonStrncpy(msgSlot->message, msg, MESSAGE_LENGTH);
+	msgSlot->tickSent = TickNumber();
+	msgSlot->speakerID = ID;
+
+	history->select = -1;
+	
+	history->nextAvailable = modulo(history->nextAvailable + 1, MESSAGE_LOG_COUNT);
+	history->logCount++;
+
+	return msgSlot;
+}
+
+void SetMessageTickSent(ChatMessage *input, Uint64 tickSent)
+{
+	if (input == NULL)
+	{
+		return;
+	}
+
+	input->tickSent = tickSent;
+
+	return;
+}
+
+void ScrollUpMessageLog(MessageLog *log)
+{
+	if (log->scrollVal >= MESSAGE_LOG_COUNT * MESSAGE_LENGTH)
+	{
+		return;
+	}
+
+	ChatMessage *msgList = log->Log;
+
+	int index = modulo(log->nextAvailable - 1 - log->scrollVal, MESSAGE_LOG_COUNT);
+	int lineCount = 0;
+
+	while (lineCount <= log->displayLines && index != log->nextAvailable && msgList[index].message[0] != '\0')
+	{
+		lineCount += StringLineCount(msgList[index].message, MESSAGE_LENGTH);
+
+		index = modulo(index - 1, MESSAGE_LOG_COUNT);
+	}
+
+	if (lineCount > log->displayLines)
+	{
+		log->scrollVal++;
+	}
+
+	return;
+}
+
+void ScrollDownMessageLog(MessageLog *log)
+{
+	if (log->scrollVal <= 0)
+	{
+		return;
+	}
+
+	log->scrollVal--;
+
+	return;
+}
+
+char* SelectNextMessageLog(MessageLog *history)
+{
+	if (history->select == -1)
+	{
+		history->select = modulo(history->nextAvailable - 1, MESSAGE_LOG_COUNT);
+
+		return history->Log[history->select].message;
+	}
+
+	int next = modulo(history->select + 1, MESSAGE_LOG_COUNT);
+
+	if (next != history->nextAvailable || history->Log[next].message[0] != '\0')
+	{
+		history->select = next;
+	}
 		
-	if (history->inputs[history->searchIndex][0] == '\0')
-	{
-		history->searchIndex = modulo(history->searchIndex + 1, INPUT_HISTORY_LEN);
-	} 
-
-	return history->inputs[history->searchIndex];
+	return history->Log[history->select].message;
 }
 
-char* getNextMessageHistory(MessageHistory *history)
+char* SelectPreviousMessageLog(MessageLog *history)
 {
-	if (history->searchIndex != history->head)
+	if (history->select == -1)
 	{
-		history->searchIndex = modulo(history->searchIndex + 1, INPUT_HISTORY_LEN);
-			
-		if (history->inputs[history->searchIndex][0] == '\0')
-		{
-			history->searchIndex = modulo(history->searchIndex - 1, INPUT_HISTORY_LEN);
-		} 
+		history->select = modulo(history->nextAvailable - 1, MESSAGE_LOG_COUNT);
+
+		return history->Log[history->select].message;
 	}
 
-	return history->inputs[history->searchIndex];
+	int previous = modulo(history->select - 1, MESSAGE_LOG_COUNT);
+
+	if (history->select != history->nextAvailable && history->Log[previous].message[0] != '\0')
+	{
+		history->select = previous;
+	}
+
+	return history->Log[history->select].message;
 }
 
-
-void InitialiseChatLog(ChatLog *chat)
+char* GetLatestMessageFromLog(MessageLog *history)
 {
-	chat->current = 0;
-	chat->chatCount = 0;
-	memset(chat->Log, 0, sizeof(ChatMessage) * CHAT_LOG_COUNT);
+	int current = modulo(history->nextAvailable - 1, MESSAGE_LOG_COUNT);
+	return history->Log[current].message;
+}
+
+void DrawMessageLogToText(MessageLog *log, Text *renderText)
+{
+	if (log == NULL || renderText == NULL || renderText->text == NULL || log->displayLines < 1)
+	{
+		return;
+	}
+
+	// new idea: treat scrollVal as a line-based offset upwards from the start index
+	// if start index has multiple lines, start from its last one
+	// as scrollVal increases, move up one line, not neccesarily one entry
+
+	ChatMessage *history = log->Log;	
+
+	int index = modulo(log->nextAvailable - 1, MESSAGE_LOG_COUNT);
+	char all[MESSAGE_LENGTH * (log->displayLines + 1)];
+	char buffer[MESSAGE_LENGTH * (log->displayLines + 1)];
+	memset(all, 0, MESSAGE_LENGTH * log->displayLines);
+
+	int scrollDistance = log->scrollVal;
+	int msgLineCount = 0;
+	while (scrollDistance > 0)
+	{
+		msgLineCount = StringLineCount(history[index].message, MESSAGE_LENGTH);
+		scrollDistance -= msgLineCount;
+		index = modulo(index - 1, MESSAGE_LOG_COUNT);
+	}
+
+	// here scrollDistance is either 0 or less than 0
+	int lastEntryLineCount = -scrollDistance;
+
+	if (lastEntryLineCount > 0)
+	{
+		// add first n lines where n = totalLines - scrollVal to 'all'
+		int lastIndex = modulo(index + 1, MESSAGE_LOG_COUNT);
+		CopyStringLines(history[lastIndex].message, all, lastEntryLineCount, MESSAGE_LENGTH);
+
+		int length = strlen(all);
+		all[length] = '\n';
+		all[length + 1] = '\0';
+	}
+
+	for (int i = lastEntryLineCount; i < log->displayLines; i += msgLineCount)
+	{
+		if (history[index].message[0] == '\0')
+		{
+			break;
+		}
+
+		// get line count of next entry
+		msgLineCount = StringLineCount(history[index].message, MESSAGE_LENGTH);
+
+		memcpy(buffer, all, MESSAGE_LENGTH * log->displayLines);
+
+		if (msgLineCount > log->displayLines - i)
+		{
+			// number of lines in this entry is more than remaining lines to draw; only draw the last few lines that can fit
+			CopyStringLinesFromEnd(history[index].message, all, log->displayLines - i, MESSAGE_LENGTH);
+		}
+		else
+		{
+			strcpy(all, history[index].message);
+		}
+		
+		if (i > 0)
+		{
+			int length = strlen(all);
+
+			all[length] = '\n';
+			all[length + 1] = '\0';
+		}
+
+		strcat(all, buffer);
+		index = modulo(index - 1, MESSAGE_LOG_COUNT);
+	}
+
+ 	updateText(renderText, all);
 
 	return;
 }
 
-void addMessageToChatLog(const char msg[], int ID, Uint64 tickSent)
+void AddMessageToChat(const char msg[], int ID, Uint64 tickSent)
 {
 	// chatlog copy
-	ChatMessage *log = Chat.Log;
-	Chat.current = abs(Chat.current) % CHAT_LOG_COUNT;
-	LemonStrncpy(log[Chat.current].message, msg, MESSAGE_LENGTH);
-	log[Chat.current].speakerID = ID;
-	log[Chat.current].tickSent = tickSent;
-
-	Chat.current = (Chat.current + 1) % CHAT_LOG_COUNT;
-	Chat.chatCount++;
+	SetMessageTickSent(AddMessageToLog(msg, ID, &Chat), tickSent);
 
 	// console copy
 	char chatMsg[MESSAGE_LENGTH] = {0};
@@ -2081,7 +2310,7 @@ void addMessageToChatLog(const char msg[], int ID, Uint64 tickSent)
 
 	if (username != NULL && username[0] != '\0')
 	{
-		strcpy(chatMsg, username);
+		LemonStrncpy(chatMsg, username, MESSAGE_LENGTH);
 		strcat(chatMsg, ": ");
 	}
 
@@ -2103,9 +2332,9 @@ int ResetCamera(Camera *inputCam)
 
 	inputCam->CameraX = 0;
 	inputCam->CameraY = 0;
-	inputCam->maxCameraX = (int)GetConVarAsFloat("ply_boundx");
+	inputCam->maxCameraX = GetConVarAsFloat("ply_boundx");
 	inputCam->minCameraX = -inputCam->maxCameraX;
-	inputCam->maxCameraY = (int)GetConVarAsFloat("ply_boundy");
+	inputCam->maxCameraY = GetConVarAsFloat("ply_boundy");
 	inputCam->minCameraY = -inputCam->maxCameraY;
 	inputCam->CameraXBuffer = 0;
 	inputCam->CameraYBuffer = 0;
@@ -2148,7 +2377,7 @@ int setCameraPos(Camera *input, float xPos, float yPos)
 	return LEMON_SUCCESS;
 }
 
-void SetEngineSettingsToDefault(void)
+void InitialiseEngineSettings(void)
 {
 	EngineSettings.PreservedSpriteSets = PRESERVED_SPRITESETS;
 	EngineSettings.ReservedObjects = RESERVED_OBJECTS;
@@ -2166,7 +2395,7 @@ void SetEngineSettingsToDefault(void)
 	}
 }
 
-void SetRenderSettingsToDefault(void)
+void InitialiseRenderSettings(void)
 {
 	RenderSettings.drawSprites = true;
 	RenderSettings.drawBackGround = true;
@@ -2192,7 +2421,7 @@ void SetRenderSettingsToDefault(void)
 }
 
 
-void SetTextSettingsToDefault(void)
+void InitialiseTextSettings(void)
 {
 	TextSettings.defaultTextPointSize = DEFAULT_TEXT_SIZE;
 	TextSettings.portraitSize = 200;
@@ -2209,7 +2438,7 @@ void SetTextSettingsToDefault(void)
 	}
 }
 
-void SetDebugSettingsToDefault(void)
+void InitialiseDebugSettings(void)
 {
 	DebugSettings.DebugTextColour.r = 255;
 	DebugSettings.DebugTextColour.g = 255;
@@ -2235,6 +2464,11 @@ void SetDebugSettingsToDefault(void)
 	DebugSettings.PauseEngine = ENGINE_UNPAUSED;
 
 	DebugSettings.noclip = false;
+
+	memset(&DebugSettings.DebugFont, 0, sizeof(Font));
+    DebugSettings.DebugFont.font = TTF_OpenFont(DEBUG_FONT, DebugSettings.DebugTextPointSize);
+    DebugSettings.DebugFont.deleteWhenUnused = false;
+    InitialiseTextList(&DebugSettings.DebugTextList);
 }
 
 
@@ -2478,6 +2712,103 @@ bool StringsEqual(const char *first, const char *second)
 	return (strcmp(first, second) == 0);
 }
 
+int StringLineCount(const char *input, int capacity)
+{
+	if (input == NULL || input[0] == '\0')
+	{
+		return 0;
+	}
+
+	int count = 1;
+
+	for (int i = 0; i < capacity && input[i] != '\0'; i++)
+	{
+		if (input[i] == '\n')
+		{
+			count++;
+		}
+	}
+
+	return count;
+}
+
+void CopyStringLines(const char *source, char *dest, int lineCount, int capacity)
+{
+	if (lineCount < 1 || source[0] == '\0')
+	{
+		return;
+	}
+
+	int i = 0; 
+	while (i < capacity)
+	{
+		if (source[i] == '\0')
+		{
+			dest[i] = '\0';
+			return;
+		}
+
+		if (source[i] == '\n')
+		{
+			lineCount--;
+		}
+
+		if (lineCount == 0)
+		{
+			dest[i] = '\0';
+			return;
+		}
+
+		dest[i] = source[i];
+
+		i++;
+	}
+
+	dest[capacity - 1] = '\0';
+	return;
+}
+
+void CopyStringLinesFromEnd(const char *source, char *dest, int lineCount, int capacity)
+{
+	if (lineCount < 1 || source[0] == '\0')
+	{
+		return;
+	}
+
+	int count = 0;
+	int i = capacity - 1; 
+	while (i > 0 && count < lineCount)
+	{
+		if (source[i - 1] == '\n')
+		{
+			count++;
+		}
+
+		if (count < lineCount)
+		{
+			i--;
+		}
+	}
+
+	int destIndex = 0;
+	while(i < capacity)
+	{
+		if (source[i] == '\0')
+		{
+			dest[destIndex] = '\0';
+			return;
+		}
+
+		dest[destIndex] = source[i];
+
+		i++;
+		destIndex++;
+	}
+
+	dest[capacity - 1] = '\0';
+	return;
+}
+
 int copyStringUntil(const char source[], char dest[], char stopPoint, int capacity)
 {
 	if (source == NULL || dest == NULL)
@@ -2517,7 +2848,7 @@ int PickRandomIntBetween(int low, int high)
 
 	int range = high - low;
 
-	return (8585 % range) + low;
+	return (rand() % range) + low;
 }
 
 float PickRandomFloatBetween(float low, float high)
@@ -2527,11 +2858,9 @@ float PickRandomFloatBetween(float low, float high)
 		return 0.0;
 	}
 	
-	float range = high - low;
-
-	float generatedValue = ((float)8585/(float)(RAND_MAX)) * range;
-
-	return generatedValue + low;
+	float range = (high - low);
+	float val = (((float)rand()/(float)(RAND_MAX)) * range) + low;
+	return val;
 }
 
 int sparseInitialise(IntSparseList *input)

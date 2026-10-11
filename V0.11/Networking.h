@@ -134,15 +134,7 @@ void sendCommandToClients(const char command[]);
 */
 void randinit(/*_ word flag _*/);
 
-void isaac64();
+void isaac64(void);
 
-
-/*
-------------------------------------------------------------------------------
- Call rand() to retrieve a single 64-bit random value
-------------------------------------------------------------------------------
-*/
-#define rand64() \
-   (!randcnt-- ? (isaac64(), randcnt = RANDSIZ - 1, randrsl[randcnt]) : randrsl[randcnt])
-
+Uint64 rand64(void);
 

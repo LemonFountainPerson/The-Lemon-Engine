@@ -54,7 +54,7 @@ void InitialiseNetworkData(void)
 
 	if (LEMON_NETWORKING_ENABLED)
 	{
-		randinit();
+		randinit(time(NULL));
 	}
 
 	return;
@@ -90,8 +90,13 @@ bool openServer(const char ip[], Uint16 portNumber, World *GameWorld)
 	Networking.serverPort = portNumber;
 	Networking.timeElapsed = 0.0;
 
-	setConVarNamed("net_password", "", GameWorld);
-	setConVarNamed("cheats", "false", GameWorld);
+	Networking.privateKey = rand64();
+	Networking.publicKey = rand64();
+
+	putConsole("Chose public: %llu  private: %llu", Networking.publicKey, Networking.privateKey);
+
+	setConVarNamed("net_password", "");
+	setConVarNamed("cheats", "false");
 
 	return true;
 }
@@ -162,7 +167,7 @@ bool connect(const char ip[], Uint16 portNumber)
 		return false;
 	}
 
-	setConVarNamed("net_password", "", NULL);
+	setConVarNamed("net_password", "");
 	Networking.connectMode = CLIENT;
 	Networking.connectionStatus = CONNECT_STATE_RESOLVING_ADDRESS;
 	Networking.serverPort = portNumber;
@@ -385,14 +390,14 @@ const char* getUsername(int clientID)
 		return Networking.serverUsername;
 	}
 
-	if (clientID == Networking.clientID)
-	{
-		return Networking.myUsername;
-	}
-
 	if (clientID < 0)
 	{
 		return NULL;
+	}
+
+	if (clientID == Networking.clientID)
+	{
+		return Networking.myUsername;
 	}
 
 	return Networking.clientUsernames[clientID];
@@ -645,7 +650,7 @@ void sendServerPassword(const char password[])
 
 	if (Networking.myClient == NULL)
 	{
-		setConVarNamed("net_password", password, NULL);
+		setConVarNamed("net_password", password);
 		return;
 	}
 
@@ -1149,7 +1154,7 @@ bool receiveServerData(World *GameWorld)
 				}
 				found->flags &= ~CONFLAG_SERVER_SIDE;
 				char number[32] = {0};
-				setConsoleVariable(found, ConVarValueToString(received, number), GameWorld);
+				setConsoleVariable(found, ConVarValueToString(received, number));
 				found->flags |= CONFLAG_SERVER_SIDE;
 			} break;
 
@@ -1271,6 +1276,7 @@ void acceptClients(World *GameWorld)
 
 			const char *password = GetConVarAsString("net_password");
 			packet.data.setup.passwordRequired = (password[0] != '\0');
+			packet.data.setup.publicKey = Networking.publicKey;
 			
 			NET_WriteToStreamSocket(newSocket, &packet, sizeof(NetworkPacket));
 			outgoing += sizeof(NetworkPacket);
@@ -1305,17 +1311,15 @@ bool processSetupPacket(NetworkPacket *packet, World *GameWorld)
 		return false;
 	}
 
-	// get clientID; server is telling the client which ID they are
-	Networking.clientID = setup->assignedClientID;
-
-	setUsernameLocally(Networking.clientID, Networking.myUsername);
-
 	const char *passwordAttempt = GetConVarAsString("net_password");
 	if (packet->data.setup.passwordRequired && passwordAttempt[0] != '\0')
 	{
 		putConsole("Server waiting for password...");
 		return true;
 	}
+
+	putConsole("Have public: %llu  private: %llu", Networking.publicKey, Networking.privateKey);
+
 
 	// tell server your username (and give password if necessary)
 	NetworkPacket clientEntrance = {0};
@@ -1355,6 +1359,12 @@ void processSettingsPacket(NetworkPacket *packet)
 	setTickRate(setup->tickRate);
 	setTickNumber(packet->tickSent + 1);
 	Networking.connectMode = CLIENT;
+
+	// get clientID; server is telling the client which ID they are
+	Networking.clientID = setup->assignedClientID;
+	setUsernameLocally(Networking.clientID, Networking.myUsername);
+
+	Networking.publicKey = setup->publicKey;
 
 	return;
 }
@@ -2414,4 +2424,9 @@ word flag;
 
    isaac64();          /* fill in the first set of results */
    randcnt=RANDSIZ;    /* prepare to use the first set of results */
+}
+
+Uint64 rand64(void)
+{
+	return (!randcnt-- ? (isaac64(), randcnt = RANDSIZ - 1, randrsl[randcnt]) : randrsl[randcnt]);
 }

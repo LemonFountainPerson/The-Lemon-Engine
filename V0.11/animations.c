@@ -311,7 +311,7 @@ int PlayAnimation(const char desiredName[], int loopCount, DisplayData *inputDat
 
 	Animation *currentAnimation = inputData->spriteSetSource->Animations;
 
-	int i = inputData->spriteSetSource->animationCount;
+	int i = inputData->spriteSetSource->animCount;
 	while (currentAnimation != NULL && strcmp(currentAnimation->name, desiredName) != 0 && i > 0)
 	{
 		currentAnimation = currentAnimation->nextAnimation;
@@ -722,6 +722,7 @@ int deleteFirstAnimation(SpriteSet *inputSet)
 
 	Animation *deleteAnimation = inputSet->Animations;
 	inputSet->Animations = deleteAnimation->nextAnimation;
+	inputSet->animCount--;
 
 	AnimationFrame *frameList = deleteAnimation->animationData;
 	free(frameList);

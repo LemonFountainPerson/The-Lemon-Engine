@@ -59,9 +59,9 @@ void attachTextToObject(Text *input, Object *obj);
 
 void attachTextWithNameToObject(const char name[], Object *input, World *GameWorld);
 
-void moveText(Text *input, float xPos, float yPos);
+void MoveText(Text *input, float xPos, float yPos);
 
-void moveTextWithName(const char name[], float xPos, float yPos, World *GameWorld);
+void MoveTextWithName(const char name[], float xPos, float yPos, World *GameWorld);
 
 void setTextTransparency(Text *input, float transparency);
 

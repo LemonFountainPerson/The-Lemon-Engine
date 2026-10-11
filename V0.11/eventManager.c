@@ -146,7 +146,7 @@ int ExecuteGameEvent(GameEvent *inputEvent, World *GameWorld, RenderFrame *Scree
 				char *msg = getGameEventString(inputEvent, "message");
 				Uint64 tickSent = getGameEventTick(inputEvent, NULL);
 
-				addMessageToChatLog(msg, speakerID, tickSent);
+				AddMessageToChat(msg, speakerID, tickSent);
 			} break;
 
 		case EVENT_MOVE_PLAYER:
@@ -365,7 +365,7 @@ inline void removeEventToTriggerLater(GameEvent *inputEvent, GameEvent *storage,
 }
 
 
-GameEvent* switchLevel(int level, World *GameWorld)
+GameEvent* SwitchLevel(int level, World *GameWorld)
 {
 	if (GameWorld == NULL || level < 0)
 	{
@@ -383,7 +383,7 @@ GameEvent* switchLevel(int level, World *GameWorld)
 	return newEvent;
 }
 
-GameEvent* playCutscene(int scene, World *GameWorld)
+GameEvent* PlayCutscene(int scene, World *GameWorld)
 {
 	if (GameWorld == NULL || scene <= NO_CUTSCENE)
 	{
@@ -401,7 +401,7 @@ GameEvent* playCutscene(int scene, World *GameWorld)
 	return newEvent;
 }
 
-GameEvent* playCutsceneFromFile(const char name[], World *GameWorld)
+GameEvent* PlayCutsceneFromFile(const char name[], World *GameWorld)
 {
 	if (GameWorld == NULL || name == NULL)
 	{
@@ -1363,14 +1363,14 @@ int UpdateFlagObject(Object* flag, World *GameWorld)
 		case CUTSCENE_TRIGGER:
 		if (detectPlayer(flag, Player))
 		{
-			playCutscene(flag->arg2, GameWorld);
+			PlayCutscene(flag->arg2, GameWorld);
 			MarkObjectForDeletion(flag);
 		} break;
 
 		case LEVEL_TRIGGER:
 		if (detectPlayer(flag, Player))
 		{
-			switchLevel(flag->arg2, GameWorld);
+			SwitchLevel(flag->arg2, GameWorld);
 		}
 		break;
 
@@ -1378,7 +1378,7 @@ int UpdateFlagObject(Object* flag, World *GameWorld)
 		if (detectPlayer(flag, Player))
 		{
 			Player->PlayerPtr->reserved |= RFLAG_PRESERVE_ONCE;
-			switchLevel(flag->arg2, GameWorld);
+			SwitchLevel(flag->arg2, GameWorld);
 		}
 		break;
 

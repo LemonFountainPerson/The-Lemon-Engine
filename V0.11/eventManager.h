@@ -31,11 +31,11 @@ int triggerGameEvent(GameEvent *inputEvent, World *GameWorld);
 void removeEventToTriggerLater(GameEvent *inputEvent, GameEvent *storage, World *GameWorld);
 
 
-GameEvent* switchLevel(int level, World *GameWorld);
+GameEvent* SwitchLevel(int level, World *GameWorld);
 
-GameEvent* playCutscene(int scene, World *GameWorld);
+GameEvent* PlayCutscene(int scene, World *GameWorld);
 
-GameEvent* playCutsceneFromFile(const char name[], World *GameWorld);
+GameEvent* PlayCutsceneFromFile(const char name[], World *GameWorld);
 
 GameEvent* Message(char msg[], int speakerID, World *GameWorld);
 
