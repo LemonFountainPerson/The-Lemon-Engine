@@ -4062,7 +4062,7 @@ bool CheckBoxCollidesBox(PhysicsBox *inputBox, PhysicsBox *compareBox)
 		{
 			if (inputBox->yVelocity > compareBox->yVelocity || inputBox->crouch == true || inputBox->prevYPos < (compareBox->prevYPos + compareBox->ySize - 1) )
 			{
-				return false;
+			 	return false;
 			}
 		} break;
 

@@ -1,6 +1,5 @@
 LEMONSCRIPT<1>--ANIMATION--
 AddSprite:	StickMan	Player		SCALE 	
-
 AddSprite:	StickManJump	Player		SCALE
 
 NewAnimation:	Stand		10

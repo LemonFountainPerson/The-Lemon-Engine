@@ -1,7 +1,7 @@
 #include "LemonEngine.h"
 
 
-// Controls what symbol is printed for each tile
+// Controls what colour is printed for each solid type
 const Uint32 colourMap[8] = {	0x00FF00FF, 0x00FF1010, 0x00FF1010, 0x00FFAA00, 
 							 	0x00F8F800, 0x000010FF, 0x00AAFF10, 0x0000DDDD};
 

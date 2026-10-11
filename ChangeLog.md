@@ -29,6 +29,9 @@ variable can only be changed when cheats are active, CONFLAG_SERVER_SIDE means t
 
 -> Added BSPTrees to store static Objects for faster collision detection.
 
+-> Loaded Sprites can now be loaded as 'PixelMode' or 'LinearMode' by adding the repective phrase next to the associated 'AddSprite' command in Animation LemonScript files.
+This will affect how the pixels in the sprite will be rendered when scaled; Aliasing will interpolate the pixels while Pixel will choose the nearest neighbour.
+
 
 ## Structure Changes
 

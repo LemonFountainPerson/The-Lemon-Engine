@@ -25,6 +25,7 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 
 	char argBuffer[MAX_LEN] = {0};
 	Animation *newAnimation = NULL;
+	Sprite *lastSpriteAdded = NULL;
 
 	while (!endOfFile(fPtr))
 	{
@@ -117,29 +118,21 @@ SpriteSet* loadSpriteSetFromFile(const char FileName[], SpriteSetList *setList, 
 				fseek(fPtr, tempFilePosition, SEEK_SET);
 			}
 			
-			loadSpriteIntoSpriteSet(SpriteName, FolderName, newSet, renderMode);
-
-			// if (newSprite == NULL)
-			// {
-			// 	continue;
-			// }
-
-			// tempFilePosition = ftell(fPtr);
-			// getNextArg(fPtr, argBuffer, MAX_LEN);
-			// stringToLower(argBuffer);
-
-			// if (!strcmp(argBuffer, "pixelmode"))
-			// {
-			// 	SDL_SetTextureScaleMode(newSprite->texture, SDL_SCALEMODE_PIXELART);
-			// }
-			// else if (!strcmp(argBuffer, "aliasingmode") || !strcmp(argBuffer, "linearmode"))
-			// {
-			// 	SDL_SetTextureScaleMode(newSprite->texture, SDL_SCALEMODE_LINEAR);
-			// }
-			// else
-			// {
-			// 	fseek(fPtr, tempFilePosition, SEEK_SET);
-			// }
+			lastSpriteAdded = loadSpriteIntoSpriteSet(SpriteName, FolderName, newSet, renderMode);
+		}
+		else if (StringsEqual(argBuffer, "pixelmode"))
+		{
+			if (lastSpriteAdded != NULL)
+			{
+				SDL_SetTextureScaleMode(lastSpriteAdded->texture, SDL_SCALEMODE_PIXELART);
+			}
+		}
+		else if (StringsEqual(argBuffer, "aliasingmode") || StringsEqual(argBuffer, "linearmode"))
+		{
+			if (lastSpriteAdded != NULL)
+			{
+				SDL_SetTextureScaleMode(lastSpriteAdded->texture, SDL_SCALEMODE_LINEAR);
+			}
 		}
 		else if (strcmp(argBuffer, "copy:") == 0)
 		{
