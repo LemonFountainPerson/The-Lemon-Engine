@@ -1090,7 +1090,6 @@ typedef struct TextBox
 	int Counter;
 	int currentXPos;
 	int currentYPos;
-
 	int LineSpacing;	// space between lines 
 	float TextSize;    	// width and height of text characters
 

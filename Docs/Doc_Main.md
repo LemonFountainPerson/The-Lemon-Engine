@@ -80,6 +80,8 @@ Everything is subject to change.
 
 - [SetConsoleVariable()](Func_SetConsoleVariable.md)
 
+- [GetConsoleVariable()](Func_GetConsoleVariable.md)
+
 
 # Data Structures
 
@@ -104,6 +106,8 @@ Everything is subject to change.
 - [SceneAction](Data_SceneAction.md)
 
 - [Text](Data_Text.md)
+
+- [TextBox](Data_TextBox.md)
 
 - [SoundInstance](Data_SoundInstance.md)
 
