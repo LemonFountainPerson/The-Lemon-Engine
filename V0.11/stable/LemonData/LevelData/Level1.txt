@@ -65,7 +65,9 @@ LVFLAG:	CutsceneTrigger,	1800, 300, 128, 1280, 9
 LVFLAG: SetGameFlag "flag1" 0		> will create the flag if does not already exist
 IFVARIABLE: "flag1" < 2 
 { 
-	REPEAT: times = 20, XOffset = 64, times=8, YOffset=64, 
+	REPEAT: times = 64, XOffset = 64, times=64, YOffset=64, 
+	{ OBJECT: 8 2200 192 {SetName "GenericCoin"} } 
+REPEAT: times = 64, XOffset = 64, times=64, YOffset=64, 
 	{ OBJECT: 8 2200 192 {SetName "GenericCoin"} } 
 	LVFLAG: IncrementGameFlag "flag1"
 }

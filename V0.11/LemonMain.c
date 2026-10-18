@@ -374,6 +374,10 @@ void DestroyWorld(World *GameWorld)	// honestly picked this name because its fun
 	ClearObjectController(&GameWorld->ObjectList);
 
 	deleteAllSpriteSets(&GameWorld->WorldBackground.bgSpriteSets);
+	if (GameWorld->WorldBackground.tileBG.tiles != NULL)
+	{
+		free(GameWorld->WorldBackground.tileBG.tiles);
+	}
 
 	free(GameWorld);
 

@@ -38,6 +38,8 @@ Everything is subject to change.
 
 - [Tick()](Func_Tick.md)
 
+- [TickNumber()](Func_TickNumber.md)
+
 - [SwitchLevel()](Func_SwitchLevel.md)
 
 ## Input

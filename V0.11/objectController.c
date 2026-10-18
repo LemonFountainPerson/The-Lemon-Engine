@@ -650,8 +650,8 @@ void MoveLeafNodeUp(BSPNode *node)
 	if (left != NULL && left->objectCount > 0)
 	{
 		// move left's list up to parent node
-		node->objectCount = right->objectCount;
-		node->objects = right->objects;
+		node->objectCount = left->objectCount;
+		node->objects = left->objects;
 		free(left);
 		node->left = NULL;
 	}
