@@ -1956,11 +1956,6 @@ void sendTrackedObjectPacketsToServer(World *GameWorld)
 		return;
 	}
 
-
-	TrackedObject *Tracked = Networking.TrackedObjects;
-	int count = Networking.TrackedObjectCount;
-
-
 	NET_StreamSocket *socket = Networking.myClient;
 
 	if (socket == NULL)
@@ -1968,7 +1963,11 @@ void sendTrackedObjectPacketsToServer(World *GameWorld)
 		return;
 	}
 
-	short *indexes = Networking.TrackedIDs;
+
+	TrackedObject *List = Networking.TrackedObjects;
+	int count = Networking.TrackedObjectCount;
+
+	Sint16 *indexes = Networking.TrackedIDs;
 	int index;
 
 
@@ -1976,14 +1975,18 @@ void sendTrackedObjectPacketsToServer(World *GameWorld)
 	{
 		index = indexes[i];
 
-		if (index < 0 || Tracked[index].clientDeleted)
+		if (index < 0)
 		{
 			continue;
 		}
 
 		count--;
 	
-		sendTrackedObjectPacket(index, socket, GameWorld);
+		// only send packets for objects you own to the server
+		if (!List[index].clientDeleted && List[index].clientID == Networking.clientID)
+		{
+			sendTrackedObjectPacket(index, socket, GameWorld);
+		}
 	}
 	
 
@@ -1993,33 +1996,35 @@ void sendTrackedObjectPacketsToServer(World *GameWorld)
 
 void sendTrackedObjectPacketsToClient(int recipientID, World *GameWorld)
 {
-	TrackedObject *Tracked = Networking.TrackedObjects;
-	int count = Networking.TrackedObjectCount;
-
-
-	NET_StreamSocket *socket = NULL;
-
-	if (recipientID >= 0)
+	if (recipientID < 0)
 	{
-		socket = Networking.connectedClients[recipientID];
+		return;
 	}
+
+	NET_StreamSocket *socket = Networking.connectedClients[recipientID];
 
 	if (socket == NULL)
 	{
 		return;
 	}
 	
+	TrackedObject *List = Networking.TrackedObjects;
+	int count = Networking.TrackedObjectCount;
 
 	for (int i = 0; i < MAX_TRACKED_OBJECTS && count > 0; i++)
 	{
-		if (Tracked[i].clientID == NO_CLIENT_ID)
+		if (List[i].clientID == NO_CLIENT_ID)
 		{
 			continue;
 		}
 
 		count--;
 		
-		sendTrackedObjectPacket(i, socket, GameWorld);
+		// don't send a client their own objects (This should change in the future)
+		if (List[i].clientID != recipientID)
+		{
+			sendTrackedObjectPacket(i, socket, GameWorld);
+		}
 	}
 
 	return;
@@ -2040,11 +2045,6 @@ void sendTrackedObjectPacket(int index, NET_StreamSocket *socket, World *GameWor
 	}
 	else
 	{
-		if (Tracked->clientID != Networking.clientID)
-		{
-			return;
-		}
-
 		Object *tracked = Tracked->object.obj;
 
 		NetworkPacket packet = {0};

@@ -1588,7 +1588,7 @@ typedef struct NetworkData
 	GameEventManager NetworkEvents;
 
 	TrackedObject TrackedObjects[MAX_TRACKED_OBJECTS];
-	short TrackedIDs[MAX_TRACKED_OBJECTS];
+	Sint16 TrackedIDs[MAX_TRACKED_OBJECTS];
 	int TrackedObjectCount;
 
 	// data if app is server
